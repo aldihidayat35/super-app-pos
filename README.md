@@ -1,59 +1,127 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# GudangToko
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Baseline modular monolith Laravel 12 untuk Manajemen Gudang, Toko Internal, dan Pelanggan Langganan/B2B. Proyek menggunakan PHP 8.3+, Blade, Bootstrap 5, dan Metronic 8.
 
-## About Laravel
+## Persyaratan
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.3+ dengan ekstensi `intl`, `pdo_mysql`, `mbstring`, `xml`, `zip`, `gd`, dan `fileinfo`.
+- Composer 2.
+- MySQL 8+/MariaDB yang kompatibel.
+- Node.js dan NPM.
+- Redis opsional untuk cache/queue production.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Instalasi Windows/Laragon
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```powershell
+cd C:\laragon\www\super-app-pos
+Copy-Item .env.example .env
+composer install
+php artisan key:generate
+```
 
-## Learning Laravel
+Buat database `gudangtoko` melalui HeidiSQL/phpMyAdmin, periksa `DB_*` pada `.env`, lalu jalankan:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+```powershell
+php artisan migrate
+php artisan storage:link
+npm install
+npm run build
+php artisan db:seed
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Tambahkan virtual host Laragon `gudangtoko.test` atau jalankan `php artisan serve`.
 
-## Laravel Sponsors
+## Instalasi Linux
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+cp .env.example .env
+composer install --no-interaction
+php artisan key:generate
+php artisan migrate
+php artisan storage:link
+npm ci
+npm run build
+```
 
-### Premium Partners
+Pastikan web server mengarah ke folder `public/` dan user web server dapat menulis ke `storage/` serta `bootstrap/cache/`.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Database, cache, session, dan queue
 
-## Contributing
+Default contoh memakai database:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```dotenv
+CACHE_STORE=database
+SESSION_DRIVER=database
+QUEUE_CONNECTION=database
+```
 
-## Code of Conduct
+Untuk Redis, ubah menjadi:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```dotenv
+CACHE_STORE=redis
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+```
 
-## Security Vulnerabilities
+Jalankan queue worker melalui process manager di production:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan queue:work --tries=3 --timeout=120
+```
 
-## License
+Scheduler development:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan schedule:work
+```
+
+Cron production:
+
+```cron
+* * * * * cd /path/to/gudangtoko && php artisan schedule:run >> /dev/null 2>&1
+```
+
+## Seeder lokal
+
+`DatabaseSeeder` hanya memanggil data demo ketika `APP_ENV=local`. Semua akun lokal menggunakan kata sandi `password`:
+
+| Role | Email |
+|---|---|
+| `super_admin` | `admin@gudangtoko.test` |
+| `owner` | `owner@gudangtoko.test` |
+| `kepala_gudang` | `gudang@gudangtoko.test` |
+| `kepala_toko` | `retail@gudangtoko.test` |
+
+Jangan menjalankan `LocalDatabaseSeeder` di production; seeder memiliki environment guard.
+
+## Quality checks
+
+```bash
+composer lint
+composer analyse
+composer test
+composer quality
+```
+
+Test menggunakan SQLite in-memory dan tidak menyentuh database development.
+
+## Health page
+
+Buka `/system/health`. Route dapat diakses tanpa login hanya pada environment `local`. Di environment lain user harus login dan memiliki permission `system.health.view`.
+
+Pemeriksaan meliputi koneksi database, disk public/storage link, konfigurasi queue, heartbeat scheduler, serta versi Laravel/PHP. Status queue worker yang sesungguhnya tetap harus dipantau oleh Supervisor/systemd/Horizon.
+
+## Asset Metronic
+
+- CSS bundle resmi yang dipakai berada di `public/assets/vendor/metronic/css`.
+- Runtime Metronic berada di `resources/js/vendor/metronic` dan dibangun melalui entry vendor Vite.
+- Plugin frontend pihak ketiga dibundel melalui `resources/js/vendor.js`.
+- CSS dan JavaScript khusus aplikasi berada di `resources/css/app.css` dan `resources/js/app.js`.
+
+Jalankan `npm run build` setelah perubahan asset. Halaman aplikasi tidak bergantung pada CDN JavaScript atau tautan demo Metronic.
+
+## Struktur modular
+
+Kode bisnis ditempatkan per domain di `app/Domain/<Module>` dengan `Actions`, `Services`, `Enums`, `Events`, `Policies`, dan `Models` seperlunya. HTTP controller tetap di `app/Http/Controllers`, request validation di `app/Http/Requests`, job berat di `app/Jobs`, dan efek samping di listener/queue.
+
+Tidak digunakan package modular pihak ketiga. Detail kontrak domain dan fase implementasi berada di folder `docs/`.

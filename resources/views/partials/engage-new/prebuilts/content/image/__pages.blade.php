@@ -7,12 +7,12 @@
 							<!--begin::Tab item-->
 				<li class="nav-item p-0 m-0">
 					<!--begin::Tab link-->
-					<a 
-						class="nav-link text-muted text-active-primary pt-0 pb-4 
-						active" 
-						data-bs-toggle="tab" 
+					<a
+						class="nav-link text-muted text-active-primary pt-0 pb-4
+						active"
+						data-bs-toggle="tab"
 						href="#kt_app_engage_prebuilts_tab_pages_authentication">
-						
+
 						Authentication					</a>
 					<!--end::Tab link-->
 				</li>
@@ -20,12 +20,12 @@
 							<!--begin::Tab item-->
 				<li class="nav-item p-0 m-0">
 					<!--begin::Tab link-->
-					<a 
-						class="nav-link text-muted text-active-primary pt-0 pb-4 
-						" 
-						data-bs-toggle="tab" 
+					<a
+						class="nav-link text-muted text-active-primary pt-0 pb-4
+						"
+						data-bs-toggle="tab"
 						href="#kt_app_engage_prebuilts_tab_pages_general">
-						
+
 						General					</a>
 					<!--end::Tab link-->
 				</li>
@@ -33,12 +33,12 @@
 							<!--begin::Tab item-->
 				<li class="nav-item p-0 m-0">
 					<!--begin::Tab link-->
-					<a 
-						class="nav-link text-muted text-active-primary pt-0 pb-4 
-						" 
-						data-bs-toggle="tab" 
+					<a
+						class="nav-link text-muted text-active-primary pt-0 pb-4
+						"
+						data-bs-toggle="tab"
 						href="#kt_app_engage_prebuilts_tab_pages_account">
-						
+
 						Account					</a>
 					<!--end::Tab link-->
 				</li>
@@ -46,12 +46,12 @@
 							<!--begin::Tab item-->
 				<li class="nav-item p-0 m-0">
 					<!--begin::Tab link-->
-					<a 
-						class="nav-link text-muted text-active-primary pt-0 pb-4 
-						" 
-						data-bs-toggle="tab" 
+					<a
+						class="nav-link text-muted text-active-primary pt-0 pb-4
+						"
+						data-bs-toggle="tab"
 						href="#kt_app_engage_prebuilts_tab_pages_modals">
-						
+
 						Modals					</a>
 					<!--end::Tab link-->
 				</li>
@@ -59,12 +59,12 @@
 							<!--begin::Tab item-->
 				<li class="nav-item p-0 m-0">
 					<!--begin::Tab link-->
-					<a 
-						class="nav-link text-muted text-active-primary pt-0 pb-4 
-						" 
-						data-bs-toggle="tab" 
+					<a
+						class="nav-link text-muted text-active-primary pt-0 pb-4
+						"
+						data-bs-toggle="tab"
 						href="#kt_app_engage_prebuilts_tab_pages_wizards">
-						
+
 						Wizards					</a>
 					<!--end::Tab link-->
 				</li>
@@ -72,12 +72,12 @@
 							<!--begin::Tab item-->
 				<li class="nav-item p-0 m-0">
 					<!--begin::Tab link-->
-					<a 
-						class="nav-link text-muted text-active-primary pt-0 pb-4 
-						" 
-						data-bs-toggle="tab" 
+					<a
+						class="nav-link text-muted text-active-primary pt-0 pb-4
+						"
+						data-bs-toggle="tab"
 						href="#kt_app_engage_prebuilts_tab_pages_search">
-						
+
 						Search					</a>
 					<!--end::Tab link-->
 				</li>
@@ -85,12 +85,12 @@
 							<!--begin::Tab item-->
 				<li class="nav-item p-0 m-0">
 					<!--begin::Tab link-->
-					<a 
-						class="nav-link text-muted text-active-primary pt-0 pb-4 
-						" 
-						data-bs-toggle="tab" 
+					<a
+						class="nav-link text-muted text-active-primary pt-0 pb-4
+						"
+						data-bs-toggle="tab"
 						href="#kt_app_engage_prebuilts_tab_pages_widgets">
-						
+
 						Widgets					</a>
 					<!--end::Tab link-->
 				</li>
@@ -98,12 +98,12 @@
 							<!--begin::Tab item-->
 				<li class="nav-item p-0 m-0">
 					<!--begin::Tab link-->
-					<a 
-						class="nav-link text-muted text-active-primary pt-0 pb-4 
-						" 
-						data-bs-toggle="tab" 
+					<a
+						class="nav-link text-muted text-active-primary pt-0 pb-4
+						"
+						data-bs-toggle="tab"
 						href="#kt_app_engage_prebuilts_tab_pages_email-templates">
-						
+
 						Email Templates					</a>
 					<!--end::Tab link-->
 				</li>
@@ -114,31 +114,31 @@
 </div>
 <!--end::Tabs wrapper-->
 <!--begin::Scroll wrapper-->
-<div 
-	class="hover-scroll-y pe-12 me-n12" 
-	data-kt-scroll="true" 
-	data-kt-scroll-height="auto" 
-	data-kt-scroll-wrappers="#kt_app_engage_prebuilts_modal, #kt_app_engage_prebuilts_modal_dialog, #kt_app_engage_prebuilts_body, #kt_app_engage_prebuilts_view_image" 
-	data-kt-scroll-dependencies="#kt_app_engage_prebuilts_header, #kt_app_engage_prebuilts_view_text_heading" 
+<div
+	class="hover-scroll-y pe-12 me-n12"
+	data-kt-scroll="true"
+	data-kt-scroll-height="auto"
+	data-kt-scroll-wrappers="#kt_app_engage_prebuilts_modal, #kt_app_engage_prebuilts_modal_dialog, #kt_app_engage_prebuilts_body, #kt_app_engage_prebuilts_view_image"
+	data-kt-scroll-dependencies="#kt_app_engage_prebuilts_header, #kt_app_engage_prebuilts_view_text_heading"
 	data-kt-scroll-offset="250px">
 	<!--begin::Tab content-->
 	<div class="tab-content">
 					<div class="tab-pane fade show active" id="kt_app_engage_prebuilts_tab_pages_authentication" role="tabpanel">
-				
-					
+
+
 
 <!--begin::Row-->
-<div class="row g-10"> 
-			
+<div class="row g-10">
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/layouts/corporate/sign-in" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -153,17 +153,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/layouts/creative/sign-in" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -178,17 +178,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/layouts/fancy/sign-in" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -203,17 +203,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/layouts/overlay/sign-in" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -228,17 +228,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/extended/multi-steps-sign-up" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -253,17 +253,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/layouts/corporate/two-factor" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -278,17 +278,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/general/password-confirmation" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -303,17 +303,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/general/verify-email" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -328,17 +328,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/general/welcome" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -353,17 +353,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/general/coming-soon" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -378,17 +378,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/general/account-deactivated" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -403,17 +403,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/general/error-404" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -428,17 +428,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/general/error-500" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -453,44 +453,44 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
+		<!--end::Col-->
 	</div>
 <!--end::Row-->
 
-					
-				
+
+
 			</div>
 					<div class="tab-pane fade " id="kt_app_engage_prebuilts_tab_pages_general" role="tabpanel">
-				
+
 											<div class="mb-5">
-							
+
 
 <!--begin::Collapse toggle-->
-<a 
-	class="btn btn-flex btn-color-dark flex-stack p-0 mb-5 toggle collapsible active" 
-	data-bs-toggle="collapse" 
+<a
+	class="btn btn-flex btn-color-dark flex-stack p-0 mb-5 toggle collapsible active"
+	data-bs-toggle="collapse"
 	href="#kt_app_engage_prebuilts_tab_pages_general_user-profile">
-	
+
 	<span class="fw-bolder fs-2">
 		User Profile	</span>
-	<i class="ki-outline ki-plus-square toggle-off text-primary fs-2 ms-4"></i> 
-	<i class="ki-outline ki-minus-square toggle-on text-primary fs-2 ms-4"></i>                        
+	<i class="ki-outline ki-plus-square toggle-off text-primary fs-2 ms-4"></i>
+	<i class="ki-outline ki-minus-square toggle-on text-primary fs-2 ms-4"></i>
 </a>
 <!--end::Collapse toggle-->
 <!--begin::Collapse content-->
 <div class="show" id="kt_app_engage_prebuilts_tab_pages_general_user-profile">
 	<!--begin::Row-->
 	<div class="row g-10 pt-2 pb-5">
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/user-profile/overview" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -506,16 +506,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/user-profile/projects" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -531,16 +531,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/user-profile/campaigns" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -556,16 +556,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/user-profile/documents" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -581,16 +581,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/user-profile/followers" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -606,16 +606,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/user-profile/activity" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -638,34 +638,34 @@
 
 						</div>
 											<div class="mb-5">
-							
+
 
 <!--begin::Collapse toggle-->
-<a 
-	class="btn btn-flex btn-color-dark flex-stack p-0 mb-5 toggle collapsible collapsed" 
-	data-bs-toggle="collapse" 
+<a
+	class="btn btn-flex btn-color-dark flex-stack p-0 mb-5 toggle collapsible collapsed"
+	data-bs-toggle="collapse"
 	href="#kt_app_engage_prebuilts_tab_pages_general_corporate">
-	
+
 	<span class="fw-bolder fs-2">
 		Corporate	</span>
-	<i class="ki-outline ki-plus-square toggle-off text-primary fs-2 ms-4"></i> 
-	<i class="ki-outline ki-minus-square toggle-on text-primary fs-2 ms-4"></i>                        
+	<i class="ki-outline ki-plus-square toggle-off text-primary fs-2 ms-4"></i>
+	<i class="ki-outline ki-minus-square toggle-on text-primary fs-2 ms-4"></i>
 </a>
 <!--end::Collapse toggle-->
 <!--begin::Collapse content-->
 <div class="collapse" id="kt_app_engage_prebuilts_tab_pages_general_corporate">
 	<!--begin::Row-->
 	<div class="row g-10 pt-2 pb-5">
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/about" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -681,16 +681,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/contact" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -706,16 +706,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/licenses" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -731,16 +731,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/team" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -756,16 +756,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/sitemap" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -788,34 +788,34 @@
 
 						</div>
 											<div class="mb-5">
-							
+
 
 <!--begin::Collapse toggle-->
-<a 
-	class="btn btn-flex btn-color-dark flex-stack p-0 mb-5 toggle collapsible collapsed" 
-	data-bs-toggle="collapse" 
+<a
+	class="btn btn-flex btn-color-dark flex-stack p-0 mb-5 toggle collapsible collapsed"
+	data-bs-toggle="collapse"
 	href="#kt_app_engage_prebuilts_tab_pages_general_social">
-	
+
 	<span class="fw-bolder fs-2">
 		Social	</span>
-	<i class="ki-outline ki-plus-square toggle-off text-primary fs-2 ms-4"></i> 
-	<i class="ki-outline ki-minus-square toggle-on text-primary fs-2 ms-4"></i>                        
+	<i class="ki-outline ki-plus-square toggle-off text-primary fs-2 ms-4"></i>
+	<i class="ki-outline ki-minus-square toggle-on text-primary fs-2 ms-4"></i>
 </a>
 <!--end::Collapse toggle-->
 <!--begin::Collapse content-->
 <div class="collapse" id="kt_app_engage_prebuilts_tab_pages_general_social">
 	<!--begin::Row-->
 	<div class="row g-10 pt-2 pb-5">
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/social/feeds" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -831,16 +831,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/social/activity" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -856,16 +856,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/social/followers" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -881,16 +881,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/social/settings" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -913,28 +913,28 @@
 
 						</div>
 											<div class="mb-5">
-							
+
 @include('partials/engage-new/prebuilts/content/image/__pages-accordion')
 						</div>
-					
-				
+
+
 			</div>
 					<div class="tab-pane fade " id="kt_app_engage_prebuilts_tab_pages_account" role="tabpanel">
-				
-					
+
+
 
 <!--begin::Row-->
-<div class="row g-10"> 
-			
+<div class="row g-10">
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=account/overview" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -949,17 +949,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=account/settings" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -974,17 +974,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=account/billing" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -999,17 +999,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=account/security" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1024,17 +1024,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=account/referrals" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1049,17 +1049,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=account/logs" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1074,17 +1074,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=account/api-keys" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1099,17 +1099,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=account/statements" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1124,17 +1124,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=account/billing" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1149,29 +1149,29 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
+		<!--end::Col-->
 	</div>
 <!--end::Row-->
 
-					
-				
+
+
 			</div>
 					<div class="tab-pane fade " id="kt_app_engage_prebuilts_tab_pages_modals" role="tabpanel">
-				
-					
+
+
 
 <!--begin::Row-->
-<div class="row g-10"> 
-			
+<div class="row g-10">
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/general/view-users" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1186,17 +1186,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/general/upgrade-plan" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1211,17 +1211,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/wizards/top-up-wallet" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1236,17 +1236,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/general/share-earn" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1261,17 +1261,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/general/select-users" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1286,17 +1286,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/forms/bidding" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1311,17 +1311,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/wizards/offer-a-deal" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1336,17 +1336,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/forms/new-target" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1361,17 +1361,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/forms/new-card" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1386,17 +1386,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/forms/new-address" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1411,17 +1411,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/general/invite-friends" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1436,17 +1436,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/wizards/create-project" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1461,17 +1461,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/wizards/create-campaign" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1486,17 +1486,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/wizards/create-account" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1511,17 +1511,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/wizards/create-app" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1536,17 +1536,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/forms/create-api-key" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1561,17 +1561,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/modals/wizards/two-factor-authentication" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1586,29 +1586,29 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
+		<!--end::Col-->
 	</div>
 <!--end::Row-->
 
-					
-				
+
+
 			</div>
 					<div class="tab-pane fade " id="kt_app_engage_prebuilts_tab_pages_wizards" role="tabpanel">
-				
-					
+
+
 
 <!--begin::Row-->
-<div class="row g-10"> 
-			
+<div class="row g-10">
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/wizards/horizontal" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1623,17 +1623,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/wizards/horizontal" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1648,17 +1648,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/wizards/vertical" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1673,29 +1673,29 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
+		<!--end::Col-->
 	</div>
 <!--end::Row-->
 
-					
-				
+
+
 			</div>
 					<div class="tab-pane fade " id="kt_app_engage_prebuilts_tab_pages_search" role="tabpanel">
-				
-					
+
+
 
 <!--begin::Row-->
-<div class="row g-10"> 
-			
+<div class="row g-10">
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/search/users" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1710,17 +1710,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/search/horizontal" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1735,17 +1735,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/search/vertical" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1760,17 +1760,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=utilities/search/select-location" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1785,29 +1785,29 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
+		<!--end::Col-->
 	</div>
 <!--end::Row-->
 
-					
-				
+
+
 			</div>
 					<div class="tab-pane fade " id="kt_app_engage_prebuilts_tab_pages_widgets" role="tabpanel">
-				
-					
+
+
 
 <!--begin::Row-->
-<div class="row g-10"> 
-			
+<div class="row g-10">
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=widgets/charts" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1822,17 +1822,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=widgets/feeds" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1847,17 +1847,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=widgets/lists" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1872,17 +1872,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=widgets/mixed" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1897,17 +1897,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=widgets/statistics" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1922,17 +1922,17 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
-			
+		<!--end::Col-->
+
 		<!--begin::Col-->
 		<div class="col-lg-4">
-			
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=widgets/tables" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1947,22 +1947,22 @@
 <!--end::Preview-->
 
 		</div>
-		<!--end::Col-->	
+		<!--end::Col-->
 	</div>
 <!--end::Row-->
 
-					
-				
+
+
 			</div>
 					<div class="tab-pane fade " id="kt_app_engage_prebuilts_tab_pages_email-templates" role="tabpanel">
-				
-					
+
+
 @include('partials/engage-new/prebuilts/content/image/__pages-default')
-					
-				
+
+
 			</div>
 			</div>
-	<!--end::Tab content-->	
+	<!--end::Tab content-->
 </div>
 <!--end::Scroll wrapper-->
 

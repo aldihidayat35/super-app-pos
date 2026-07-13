@@ -1,7 +1,7 @@
 
 <!--begin::Header-->
-<div id="kt_app_header" class="app-header " 
-     
+<div id="kt_app_header" class="app-header "
+
      >
                         <!--begin::Header container-->
             <div class="app-container  container-fluid d-flex align-items-stretch flex-stack " id="kt_app_header_container">
@@ -10,7 +10,7 @@
 	<div class="btn btn-icon btn-active-color-primary w-35px h-35px me-2" id="kt_app_sidebar_mobile_toggle">
 		<i class="ki-outline ki-abstract-14 fs-2"></i>	</div>
 	<!--begin::Logo image-->
-    <a href="/metronic8/demo38/?page=index">
+    <a href="#">
 		<img alt="Logo" src="/assets/media/logos/demo38-small.svg" class="h-30px"/>
     </a>
     <!--end::Logo image-->

@@ -1,0 +1,263 @@
+<?php
+
+return [
+    [
+        'label' => 'Dashboard',
+        'icon' => 'ki-outline ki-home-2',
+        'route' => 'dashboard',
+        'active' => ['dashboard'],
+        'permission' => 'dashboard.view',
+    ],
+    [
+        'label' => 'Administrasi',
+        'icon' => 'ki-outline ki-security-user',
+        'children' => [
+            [
+                'label' => 'Pengguna',
+                'route' => 'admin.users.index',
+                'active' => ['admin.users.*'],
+                'permission' => 'admin.users.view',
+            ],
+            [
+                'label' => 'Role',
+                'route' => 'admin.roles.index',
+                'active' => ['admin.roles.*'],
+                'permission' => 'admin.roles.view',
+            ],
+            [
+                'label' => 'Permission',
+                'route' => 'admin.permissions.index',
+                'active' => ['admin.permissions.*'],
+                'permission' => 'admin.permissions.view',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Administrasi Sistem',
+        'icon' => 'ki-outline ki-setting-2',
+        'children' => [
+            [
+                'label' => 'Gudang',
+                'route' => 'admin.warehouses.index',
+                'active' => ['admin.warehouses.*'],
+                'permission' => 'admin.warehouses.view',
+            ],
+            [
+                'label' => 'Cabang/Toko',
+                'route' => 'admin.branches.index',
+                'active' => ['admin.branches.*'],
+                'permission' => 'admin.branches.view',
+            ],
+            [
+                'label' => 'Pengaturan Umum',
+                'route' => 'admin.settings.general.edit',
+                'active' => ['admin.settings.general.*'],
+                'permission' => 'admin.settings.view',
+            ],
+            [
+                'label' => 'Nomor Dokumen',
+                'route' => 'admin.settings.document-numbers.index',
+                'active' => ['admin.settings.document-numbers.*'],
+                'permission' => 'admin.settings.view',
+            ],
+            [
+                'label' => 'Kesehatan Sistem',
+                'route' => 'system.health',
+                'active' => ['system.health'],
+                'permission' => 'system.health.view',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Master Produk',
+        'icon' => 'ki-outline ki-parcel',
+        'children' => [
+            [
+                'label' => 'Kategori Produk',
+                'route' => 'admin.product-categories.index',
+                'active' => ['admin.product-categories.*'],
+                'permission' => 'products.view',
+            ],
+            [
+                'label' => 'Merek Produk',
+                'route' => 'admin.product-brands.index',
+                'active' => ['admin.product-brands.*'],
+                'permission' => 'products.view',
+            ],
+            [
+                'label' => 'Satuan',
+                'route' => 'admin.units.index',
+                'active' => ['admin.units.*'],
+                'permission' => 'products.view',
+            ],
+            [
+                'label' => 'Produk',
+                'route' => 'admin.products.index',
+                'active' => ['admin.products.*'],
+                'permission' => 'products.view',
+            ],
+            [
+                'label' => 'Cetak Barcode/QR',
+                'route' => 'admin.products.barcodes.index',
+                'active' => ['admin.products.barcodes.*'],
+                'permission' => 'products.print_barcode',
+            ],
+            [
+                'label' => 'Import Produk',
+                'route' => 'admin.products.import.index',
+                'active' => ['admin.products.import.*'],
+                'permission' => 'products.import',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Relasi Bisnis',
+        'icon' => 'ki-outline ki-people',
+        'children' => [
+            [
+                'label' => 'Supplier',
+                'route' => 'admin.suppliers.index',
+                'active' => ['admin.suppliers.*'],
+                'permission' => 'suppliers.view',
+            ],
+            [
+                'label' => 'Pelanggan & B2B',
+                'route' => 'admin.customers.index',
+                'active' => ['admin.customers.*'],
+                'permission' => 'customers.view',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Gudang & Stok',
+        'icon' => 'ki-outline ki-delivery-3',
+        'children' => [
+            [
+                'label' => 'Dashboard Gudang',
+                'route' => 'warehouse.dashboard',
+                'active' => ['warehouse.dashboard'],
+                'permission' => 'stock.view',
+            ],
+            [
+                'label' => 'Zona, Rak, dan Bin',
+                'route' => 'warehouse.locations.index',
+                'active' => ['warehouse.locations.*'],
+                'permission' => 'stock.view',
+            ],
+            [
+                'label' => 'Saldo Stok',
+                'route' => 'warehouse.stocks.index',
+                'active' => ['warehouse.stocks.*'],
+                'permission' => 'stock.view',
+            ],
+            [
+                'label' => 'Kartu Stok',
+                'route' => 'warehouse.stock-card.index',
+                'active' => ['warehouse.stock-card.*'],
+                'permission' => 'stock.view',
+            ],
+            [
+                'label' => 'Penerimaan Barang',
+                'route' => 'warehouse.goods-receipts.index',
+                'active' => ['warehouse.goods-receipts.*'],
+                'permission' => 'goods_receipts.view',
+            ],
+            [
+                'label' => 'Transfer Lokasi',
+                'route' => 'warehouse.location-transfers.index',
+                'active' => ['warehouse.location-transfers.*'],
+                'permission' => 'stock_transfers.view',
+            ],
+            [
+                'label' => 'Transfer Stok',
+                'route' => 'warehouse.stock-transfers.index',
+                'active' => ['warehouse.stock-transfers.*', 'retail.stock-transfers.*'],
+                'permission' => 'stock_transfers.view',
+            ],
+            [
+                'label' => 'Stok Opname',
+                'route' => 'warehouse.stock-opnames.index',
+                'active' => ['warehouse.stock-opnames.*'],
+                'permission' => 'stock_adjustments.view',
+            ],
+            [
+                'label' => 'Barang Rusak & Loss',
+                'route' => 'warehouse.losses.index',
+                'active' => ['warehouse.losses.*'],
+                'permission' => 'losses.view',
+            ],
+            [
+                'label' => 'Batch/Lot Stok',
+                'route' => 'warehouse.batches.index',
+                'active' => ['warehouse.batches.*'],
+                'permission' => 'stock.view',
+            ],
+            [
+                'label' => 'Histori HPP',
+                'route' => 'pricing.hpp-history.index',
+                'active' => ['pricing.hpp-history.*'],
+                'permission' => 'goods_receipts.view',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Pembelian',
+        'icon' => 'ki-outline ki-purchase',
+        'children' => [
+            [
+                'label' => 'Permintaan Pembelian',
+                'route' => 'purchasing.requests.index',
+                'active' => ['purchasing.requests.*'],
+                'permission' => 'purchase_orders.view',
+            ],
+            [
+                'label' => 'Purchase Order',
+                'route' => 'purchasing.purchase-orders.index',
+                'active' => ['purchasing.purchase-orders.*'],
+                'permission' => 'purchase_orders.view',
+            ],
+            [
+                'label' => 'Performa Supplier',
+                'route' => 'reports.suppliers.index',
+                'active' => ['reports.suppliers.*'],
+                'permission' => 'reports.view',
+            ],
+            [
+                'label' => 'Laporan Loss',
+                'route' => 'reports.losses.index',
+                'active' => ['reports.losses.*'],
+                'permission' => 'losses.view',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Retur',
+        'icon' => 'ki-outline ki-arrow-left-right',
+        'children' => [
+            [
+                'label' => 'Daftar Retur',
+                'route' => 'returns.index',
+                'active' => ['returns.*'],
+                'permission' => 'returns.view',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Toko Internal',
+        'icon' => 'ki-outline ki-shop',
+        'children' => [
+            [
+                'label' => 'Permintaan Restock',
+                'route' => 'retail.restock-requests.index',
+                'active' => ['retail.restock-requests.*'],
+                'permission' => 'stock_transfers.create',
+            ],
+            [
+                'label' => 'Terima Transfer',
+                'route' => 'warehouse.stock-transfers.index',
+                'active' => ['retail.stock-transfers.*'],
+                'permission' => 'stock_transfers.receive',
+            ],
+        ],
+    ],
+];

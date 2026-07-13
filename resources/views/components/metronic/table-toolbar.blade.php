@@ -1,0 +1,2 @@
+@props(['searchPlaceholder' => 'Cari data...'])
+<div {{ $attributes->class(['d-flex flex-wrap align-items-center justify-content-between gap-3 mb-5']) }}><div class="position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4 top-50 translate-middle-y"></i><input type="search" class="form-control form-control-solid w-250px ps-12" placeholder="{{ $searchPlaceholder }}" data-table-search></div><div class="d-flex gap-2">{{ $slot }}</div></div>

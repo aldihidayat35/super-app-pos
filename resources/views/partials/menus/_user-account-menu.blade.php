@@ -26,15 +26,15 @@
     <!--end::Menu separator-->
     <!--begin::Menu item-->
     <div class="menu-item px-5">
-        <a href="/metronic8/demo38/?page=account/overview" class="menu-link px-5">
+        <a href="#" class="menu-link px-5">
             My Profile
         </a>
     </div>
     <!--end::Menu item-->
-    
+
     <!--begin::Menu item-->
     <div class="menu-item px-5">
-        <a href="/metronic8/demo38/?page=apps/projects/list" class="menu-link px-5">
+        <a href="#" class="menu-link px-5">
             <span class="menu-text">My Projects</span>
             <span class="menu-badge">
                 <span class="badge badge-light-danger badge-circle fw-bold fs-7">3</span>
@@ -52,39 +52,39 @@
         <div class="menu-sub menu-sub-dropdown w-175px py-4">
             <!--begin::Menu item-->
             <div class="menu-item px-3">
-                <a href="/metronic8/demo38/?page=account/referrals" class="menu-link px-5">
+                <a href="#" class="menu-link px-5">
                     Referrals
                 </a>
             </div>
             <!--end::Menu item-->
             <!--begin::Menu item-->
             <div class="menu-item px-3">
-                <a href="/metronic8/demo38/?page=account/billing" class="menu-link px-5">
+                <a href="#" class="menu-link px-5">
                     Billing
                 </a>
             </div>
             <!--end::Menu item-->
-            <!--begin::Menu item-->            
+            <!--begin::Menu item-->
             <div class="menu-item px-3">
-                <a href="/metronic8/demo38/?page=account/statements" class="menu-link px-5">
+                <a href="#" class="menu-link px-5">
                     Payments
                 </a>
             </div>
             <!--end::Menu item-->
-            <!--begin::Menu item-->            
+            <!--begin::Menu item-->
             <div class="menu-item px-3">
-                <a href="/metronic8/demo38/?page=account/statements" class="menu-link d-flex flex-stack px-5">
+                <a href="#" class="menu-link d-flex flex-stack px-5">
                     Statements
                     <span class="ms-2 lh-0" data-bs-toggle="tooltip" title="View your statements">
                         <i class="ki-outline ki-information-5 fs-5"></i>                    </span>
                 </a>
             </div>
             <!--end::Menu item-->
-            
+
             <!--begin::Menu separator-->
             <div class="separator my-2"></div>
             <!--end::Menu separator-->
-            <!--begin::Menu item-->            
+            <!--begin::Menu item-->
             <div class="menu-item px-3">
                 <div class="menu-content px-3">
                     <label class="form-check form-switch form-check-custom form-check-solid">
@@ -102,7 +102,7 @@
     <!--end::Menu item-->
     <!--begin::Menu item-->
     <div class="menu-item px-5">
-        <a href="/metronic8/demo38/?page=account/statements" class="menu-link px-5">
+        <a href="#" class="menu-link px-5">
             My Statements
         </a>
     </div>
@@ -114,21 +114,21 @@
         <div class="menu-item px-5" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="left-start" data-kt-menu-offset="-15px, 0">
             <a href="#" class="menu-link px-5">
                 <span class="menu-title position-relative">
-                    Mode 
+                    Mode
                     <span class="ms-5 position-absolute translate-middle-y top-50 end-0">
                         <i class="ki-outline ki-night-day theme-light-show fs-2"></i>                        <i class="ki-outline ki-moon theme-dark-show fs-2"></i>                    </span>
                 </span>
             </a>
-            
+
 @include('partials/theme-mode/__menu')
         </div>
         <!--end::Menu item-->
-    
+
     <!--begin::Menu item-->
     <div class="menu-item px-5" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="left-start" data-kt-menu-offset="-15px, 0">
         <a href="#" class="menu-link px-5">
             <span class="menu-title position-relative">
-                Language 
+                Language
                 <span class="fs-8 rounded bg-light px-3 py-2 position-absolute translate-middle-y top-50 end-0">
                     English <img class="w-15px h-15px rounded-1 ms-2" src="/assets/media/flags/united-states.svg" alt=""/>
                 </span>
@@ -138,7 +138,7 @@
         <div class="menu-sub menu-sub-dropdown w-175px py-4">
             <!--begin::Menu item-->
             <div class="menu-item px-3">
-                <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5 active">
+                <a href="#" class="menu-link d-flex px-5 active">
                     <span class="symbol symbol-20px me-4">
                         <img class="rounded-1" src="/assets/media/flags/united-states.svg" alt=""/>
                     </span>
@@ -148,7 +148,7 @@
             <!--end::Menu item-->
             <!--begin::Menu item-->
             <div class="menu-item px-3">
-                <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5">
+                <a href="#" class="menu-link d-flex px-5">
                     <span class="symbol symbol-20px me-4">
                         <img class="rounded-1" src="/assets/media/flags/spain.svg" alt=""/>
                     </span>
@@ -158,7 +158,7 @@
             <!--end::Menu item-->
             <!--begin::Menu item-->
             <div class="menu-item px-3">
-                <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5">
+                <a href="#" class="menu-link d-flex px-5">
                     <span class="symbol symbol-20px me-4">
                         <img class="rounded-1" src="/assets/media/flags/germany.svg" alt=""/>
                     </span>
@@ -168,7 +168,7 @@
             <!--end::Menu item-->
             <!--begin::Menu item-->
             <div class="menu-item px-3">
-                <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5">
+                <a href="#" class="menu-link d-flex px-5">
                     <span class="symbol symbol-20px me-4">
                         <img class="rounded-1" src="/assets/media/flags/japan.svg" alt=""/>
                     </span>
@@ -178,7 +178,7 @@
             <!--end::Menu item-->
             <!--begin::Menu item-->
             <div class="menu-item px-3">
-                <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5">
+                <a href="#" class="menu-link d-flex px-5">
                     <span class="symbol symbol-20px me-4">
                         <img class="rounded-1" src="/assets/media/flags/france.svg" alt=""/>
                     </span>
@@ -192,14 +192,14 @@
     <!--end::Menu item-->
     <!--begin::Menu item-->
     <div class="menu-item px-5 my-1">
-        <a href="/metronic8/demo38/?page=account/settings" class="menu-link px-5">
+        <a href="#" class="menu-link px-5">
             Account Settings
         </a>
     </div>
     <!--end::Menu item-->
     <!--begin::Menu item-->
     <div class="menu-item px-5">
-        <a href="/metronic8/demo38/?page=authentication/layouts/corporate/sign-in" class="menu-link px-5">
+        <a href="#" class="menu-link px-5">
             Sign Out
         </a>
     </div>

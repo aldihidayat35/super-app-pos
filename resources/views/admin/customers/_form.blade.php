@@ -1,0 +1,26 @@
+@php($isEdit = $customer->exists)
+<form method="POST" action="{{ $isEdit ? route('admin.customers.update', $customer) : route('admin.customers.store') }}">
+@csrf @if($isEdit) @method('PUT') @endif
+<x-metronic.card title="Identitas Pelanggan">
+    <div class="row">
+        <div class="col-md-3"><x-metronic.form-group name="type" label="Tipe" required><select name="type" class="form-select">@foreach($types as $value => $label)<option value="{{ $value }}" @selected(old('type', $customer->type?->value ?? 'general') === $value)>{{ $label }}</option>@endforeach</select></x-metronic.form-group></div>
+        <div class="col-md-3"><x-metronic.form-group name="code" label="Kode" required><input name="code" value="{{ old('code', $customer->code) }}" class="form-control @error('code') is-invalid @enderror"></x-metronic.form-group></div>
+        <div class="col-md-6"><x-metronic.form-group name="business_name" label="Nama Usaha/Pelanggan" required><input name="business_name" value="{{ old('business_name', $customer->business_name) }}" class="form-control @error('business_name') is-invalid @enderror"></x-metronic.form-group></div>
+        <div class="col-md-4"><x-metronic.form-group name="owner_name" label="Pemilik"><input name="owner_name" value="{{ old('owner_name', $customer->owner_name) }}" class="form-control"></x-metronic.form-group></div>
+        <div class="col-md-4"><x-metronic.form-group name="pic_name" label="PIC"><input name="pic_name" value="{{ old('pic_name', $customer->pic_name) }}" class="form-control"></x-metronic.form-group></div>
+        <div class="col-md-4"><x-metronic.form-group name="city" label="Kota"><input name="city" value="{{ old('city', $customer->city) }}" class="form-control"></x-metronic.form-group></div>
+        <div class="col-md-4"><x-metronic.form-group name="whatsapp_number" label="Nomor WA"><input name="whatsapp_number" value="{{ old('whatsapp_number', $customer->whatsapp_number) }}" class="form-control @error('whatsapp_number') is-invalid @enderror"></x-metronic.form-group></div>
+        <div class="col-md-4"><x-metronic.form-group name="email" label="Email"><input name="email" value="{{ old('email', $customer->email) }}" class="form-control @error('email') is-invalid @enderror"></x-metronic.form-group></div>
+        <div class="col-md-4"><x-metronic.form-group name="price_category" label="Ring Harga"><select name="price_category" class="form-select">@foreach($priceCategories as $value => $label)<option value="{{ $value }}" @selected(old('price_category', $customer->price_category ?? 'retail') === $value)>{{ $label }}</option>@endforeach</select></x-metronic.form-group></div>
+        <div class="col-md-4"><x-metronic.form-group name="minimum_order" label="Minimum Order"><input type="number" step="0.01" min="0" name="minimum_order" value="{{ old('minimum_order', $customer->minimum_order ?? 0) }}" class="form-control"></x-metronic.form-group></div>
+        <div class="col-md-4"><x-metronic.form-group name="payment_term_days" label="Termin"><input type="number" min="0" max="365" name="payment_term_days" value="{{ old('payment_term_days', $customer->payment_term_days ?? 0) }}" class="form-control"></x-metronic.form-group></div>
+        <div class="col-md-4"><x-metronic.form-group name="credit_limit" label="Limit Kredit"><input type="number" step="0.01" min="0" name="credit_limit" value="{{ old('credit_limit', $customer->credit_limit ?? 0) }}" class="form-control"></x-metronic.form-group></div>
+        <div class="col-md-6"><x-metronic.form-group name="verification_status" label="Status Verifikasi"><select name="verification_status" class="form-select">@foreach($statuses as $value => $label)<option value="{{ $value }}" @selected(old('verification_status', $customer->verification_status?->value ?? 'pending_verification') === $value)>{{ $label }}</option>@endforeach</select></x-metronic.form-group></div>
+        <div class="col-md-6"><x-metronic.form-group name="account_status" label="Status Akun"><select name="account_status" class="form-select">@foreach($statuses as $value => $label)<option value="{{ $value }}" @selected(old('account_status', $customer->account_status?->value ?? 'pending_verification') === $value)>{{ $label }}</option>@endforeach</select></x-metronic.form-group></div>
+    </div>
+    <x-metronic.form-group name="business_address" label="Alamat Usaha"><textarea name="business_address" rows="3" class="form-control">{{ old('business_address', $customer->business_address) }}</textarea></x-metronic.form-group>
+    <x-metronic.form-group name="notes" label="Catatan"><textarea name="notes" rows="3" class="form-control">{{ old('notes', $customer->notes) }}</textarea></x-metronic.form-group>
+    <input type="hidden" name="is_active" value="0"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="is_active" value="1" @checked(old('is_active', $customer->is_active ?? true))><span class="form-check-label">Pelanggan aktif</span></label>
+</x-metronic.card>
+<div class="d-flex justify-content-end gap-3 mt-6"><a href="{{ $isEdit ? route('admin.customers.show', $customer) : route('admin.customers.index') }}" class="btn btn-light">Batal</a><button class="btn btn-primary">{{ $isEdit ? 'Simpan Pelanggan' : 'Buat Pelanggan' }}</button></div>
+</form>

@@ -7,85 +7,85 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/layouts/corporate/sign-in">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Corporate					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/layouts/creative/sign-in">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Creative					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/layouts/fancy/sign-in">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Fancy					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/layouts/overlay/sign-in">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Overlay					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/extended/multi-steps-sign-up">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Multi-Step					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/layouts/corporate/two-factor">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Two-Factor					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/general/password-confirmation">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Password Changed					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/general/verify-email">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Verify Email					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/general/welcome">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Welcome					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/general/coming-soon">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Coming Soon					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/general/account-deactivated">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Account Deactivated					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/general/error-404">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						404 Page					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/general/error-500">
+
+					<a class="fw-6 fw-semibold" href="#">
 						505 Page					</a>
 																</div>
 						<!--end::List-->
@@ -103,61 +103,61 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=account/overview">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Overview					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=account/settings">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Settings					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=account/billing">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Billing					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=account/security">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Security					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=account/referrals">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Referrals					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=account/logs">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Logs					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=account/api-keys">
+
+					<a class="fw-6 fw-semibold" href="#">
 						API Keys					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=account/statements">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Statements					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=account/billing">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Billing					</a>
 																</div>
 						<!--end::List-->
@@ -175,101 +175,101 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/general/view-users">
+
+					<a class="fw-6 fw-semibold" href="#">
 						View Friends					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/general/upgrade-plan">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Upgrade Plan					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/wizards/top-up-wallet">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Topup Wallet					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/general/share-earn">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Share & Earn					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/general/select-users">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Select User					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/forms/bidding">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Place Bid					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/wizards/offer-a-deal">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Offer Deal					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/forms/new-target">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						New Target					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/forms/new-card">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						New Card					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/forms/new-address">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						New Address					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/general/invite-friends">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Invite Friend					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/wizards/create-project">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Create Project					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/wizards/create-campaign">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Create Campaign					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/wizards/create-account">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Create Business Account					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/wizards/create-app">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Create App					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/forms/create-api-key">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Create Api Key					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/modals/wizards/two-factor-authentication">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						2 Factor Auth					</a>
 																</div>
 						<!--end::List-->
@@ -287,37 +287,37 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/wizards/horizontal">
+
+					<a class="fw-6 fw-semibold" href="#">
 						2 Factor Auth					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/wizards/horizontal">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Horizontal					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/wizards/vertical">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Vertical					</a>
 																</div>
 						<!--end::List-->
@@ -335,49 +335,49 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/search/users">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Search Users					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/search/horizontal">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Search Horizontal					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/search/vertical">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Search Vertical					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=utilities/search/select-location">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Search Location					</a>
 																</div>
 						<!--end::List-->
@@ -395,49 +395,49 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=widgets/charts">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Charts					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=widgets/feeds">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Feeds					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=widgets/lists">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Lists					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=widgets/mixed">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Mixed					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=widgets/statistics">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Statistics					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=widgets/tables">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Tables					</a>
 																</div>
 						<!--end::List-->
@@ -455,61 +455,61 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/email/welcome-message">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Welcome					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/email/subscription-confirmed">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Subscription Confirmed					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/email/reset-password">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Reset Password					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/email/card-declined">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Card Declined					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/email/promo-1">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Promotion 1					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/email/promo-2">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Promotion 2					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=authentication/email/promo-3">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Promotion 3					</a>
 																</div>
 						<!--end::List-->
@@ -527,49 +527,49 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/user-profile/overview">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Profile Overview					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/user-profile/projects">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						User Projects					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/user-profile/campaigns">
+
+					<a class="fw-6 fw-semibold" href="#">
 						User Campaigns					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/user-profile/documents">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						User Documents					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/user-profile/followers">
+
+					<a class="fw-6 fw-semibold" href="#">
 						User Followers					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/user-profile/activity">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						User Activity					</a>
 																</div>
 						<!--end::List-->
@@ -587,45 +587,45 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/about">
+
+					<a class="fw-6 fw-semibold" href="#">
 						About Us					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/contact">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Contact Us					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/licenses">
+
+					<a class="fw-6 fw-semibold" href="#">
 						License					</a>
-											
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/team">
+
+
+					<a class="fw-6 fw-semibold" href="#">
 						Our Team					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/sitemap">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Sitemap					</a>
 																</div>
 						<!--end::List-->
@@ -643,49 +643,49 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/social/feeds">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Activity					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/social/activity">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Feeds					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/social/followers">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Followers					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/social/settings">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Settings					</a>
 																</div>
 						<!--end::List-->
@@ -703,49 +703,49 @@
 		<!--end::Title-->
 		<!--begin::Row-->
 		<div class="row">
-										
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/faq/classic">
+
+					<a class="fw-6 fw-semibold" href="#">
 						FAQ Classic					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/faq/extended">
+
+					<a class="fw-6 fw-semibold" href="#">
 						FAQ Extended					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/blog/home">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Blog Home					</a>
 																</div>
 						<!--end::List-->
 					</div>
 					<!--end::Col-->
-											
+
 									<!--begin::Col-->
 					<div class="col-lg-3">
 						<!--begin::List-->
 						<div class="d-flex flex-column gap-3 gap-lg-5">
-				
-					<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=pages/blog/post">
+
+					<a class="fw-6 fw-semibold" href="#">
 						Blog Post					</a>
 																</div>
 						<!--end::List-->

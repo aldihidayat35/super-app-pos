@@ -6,123 +6,123 @@
 <!--end::Title-->
 <!--begin::Row-->
 <div class="row">
-			
+
 					<!--begin::Col-->
 			<div class="col-lg-3">
 				<!--begin::List-->
 				<div class="d-flex flex-column gap-3 gap-lg-5">
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=index">
+
+			<a class="fw-6 fw-semibold" href="#">
 				Dashboard			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/marketing">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Marketing Dashboard			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/social">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Social Dashboard			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/ecommerce">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				eCommerce Dashboard			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/store-analytics">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Store Analytics			</a>
 										</div>
 				<!--end::List-->
 			</div>
 			<!--end::Col-->
-		
-			
+
+
 					<!--begin::Col-->
 			<div class="col-lg-3">
 				<!--begin::List-->
 				<div class="d-flex flex-column gap-3 gap-lg-5">
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/logistics">
+
+			<a class="fw-6 fw-semibold" href="#">
 				Logistics			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/delivery">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Delivery			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/online-courses">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Online Courses			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/school">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Hello Tyler			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/crypto">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				My Balance: 37,045$			</a>
 										</div>
 				<!--end::List-->
 			</div>
 			<!--end::Col-->
-		
-			
+
+
 					<!--begin::Col-->
 			<div class="col-lg-3">
 				<!--begin::List-->
 				<div class="d-flex flex-column gap-3 gap-lg-5">
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/finance-performance">
+
+			<a class="fw-6 fw-semibold" href="#">
 				Finance Performance			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/website-analytics">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Website Analytics			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/bidding">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Bidding Dashboard			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/podcast">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Podcast Dashboard			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/projects">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Projects Dashboard			</a>
 										</div>
 				<!--end::List-->
 			</div>
 			<!--end::Col-->
-		
-			
+
+
 					<!--begin::Col-->
 			<div class="col-lg-3">
 				<!--begin::List-->
 				<div class="d-flex flex-column gap-3 gap-lg-5">
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/call-center">
+
+			<a class="fw-6 fw-semibold" href="#">
 				Call Center			</a>
-		
-			
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=dashboards/pos">
+
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				POS System			</a>
 										</div>
 				<!--end::List-->
 			</div>
 			<!--end::Col-->
-		
+
 	</div>
 <!--end::Row-->
 

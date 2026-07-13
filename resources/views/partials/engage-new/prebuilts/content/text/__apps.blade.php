@@ -6,81 +6,81 @@
 <!--end::Title-->
 <!--begin::Row-->
 <div class="row">
-			
+
 					<!--begin::Col-->
 			<div class="col-lg-3">
 				<!--begin::List-->
 				<div class="d-flex flex-column gap-3 gap-lg-5">
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/projects/list">
+
+			<a class="fw-6 fw-semibold" href="#">
 				Projects			</a>
-					
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/ecommerce/catalog/products">
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Ecommerce			</a>
-					
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/customers/list">
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Customers			</a>
 										</div>
 				<!--end::List-->
 			</div>
 			<!--end::Col-->
-					
+
 					<!--begin::Col-->
 			<div class="col-lg-3">
 				<!--begin::List-->
 				<div class="d-flex flex-column gap-3 gap-lg-5">
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/subscriptions/list">
+
+			<a class="fw-6 fw-semibold" href="#">
 				Subscriptions			</a>
-					
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/user-management/users/list">
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				User Management			</a>
-					
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/invoices/create">
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Invoices			</a>
 										</div>
 				<!--end::List-->
 			</div>
 			<!--end::Col-->
-					
+
 					<!--begin::Col-->
 			<div class="col-lg-3">
 				<!--begin::List-->
 				<div class="d-flex flex-column gap-3 gap-lg-5">
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/support-center/overview">
+
+			<a class="fw-6 fw-semibold" href="#">
 				Support Center			</a>
-					
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/chat/private">
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Chat			</a>
-					
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/calendar">
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Calendar			</a>
 										</div>
 				<!--end::List-->
 			</div>
 			<!--end::Col-->
-					
+
 					<!--begin::Col-->
 			<div class="col-lg-3">
 				<!--begin::List-->
 				<div class="d-flex flex-column gap-3 gap-lg-5">
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/file-manager/folders">
+
+			<a class="fw-6 fw-semibold" href="#">
 				File Manager			</a>
-					
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/inbox/listing">
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Inbox			</a>
-					
-		
-			<a class="fw-6 fw-semibold" href="/metronic8/demo38/?page=apps/contacts/getting-started">
+
+
+			<a class="fw-6 fw-semibold" href="#">
 				Contacts			</a>
 										</div>
 				<!--end::List-->

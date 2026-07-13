@@ -115,7 +115,7 @@
     <!--begin::Actions-->
     <div class="d-flex justify-content-end">
         <button type="reset" class="btn btn-sm btn-light fw-bold btn-active-light-primary me-2" data-kt-search-element="advanced-options-form-cancel">Cancel</button>
-        <a href="/metronic8/demo38/?page=utilities/search/horizontal" class="btn btn-sm fw-bold btn-primary" data-kt-search-element="advanced-options-form-search">Search</a>
+        <a href="#" class="btn btn-sm fw-bold btn-primary" data-kt-search-element="advanced-options-form-search">Search</a>
     </div>
     <!--end::Actions-->
 </form>

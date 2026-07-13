@@ -3,7 +3,7 @@
 <div class="menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px" data-kt-menu="true" id="kt_menu_notifications">
 	<!--begin::Heading-->
     <div class="d-flex flex-column bgi-no-repeat rounded-top" style="background-image:url('/assets/media/misc/menu-header-bg.jpg')">
-        <!--begin::Title-->                                   
+        <!--begin::Title-->
         <h3 class="text-white fw-semibold px-9 mt-10 mb-6">
             Notifications <span class="fs-8 opacity-75 ps-3">24 reports</span>
         </h3>
@@ -35,8 +35,8 @@
                         <div class="d-flex align-items-center">
                             <!--begin::Symbol-->
                             <div class="symbol symbol-35px me-4">
-                                <span class="symbol-label bg-light-primary">      
-                                    <i class="ki-outline ki-abstract-28 fs-2 text-primary"></i>                                                    
+                                <span class="symbol-label bg-light-primary">
+                                    <i class="ki-outline ki-abstract-28 fs-2 text-primary"></i>
                                 </span>
                             </div>
                             <!--end::Symbol-->
@@ -59,8 +59,8 @@
                         <div class="d-flex align-items-center">
                             <!--begin::Symbol-->
                             <div class="symbol symbol-35px me-4">
-                                <span class="symbol-label bg-light-danger">      
-                                    <i class="ki-outline ki-information fs-2 text-danger"></i>                                                    
+                                <span class="symbol-label bg-light-danger">
+                                    <i class="ki-outline ki-information fs-2 text-danger"></i>
                                 </span>
                             </div>
                             <!--end::Symbol-->
@@ -83,8 +83,8 @@
                         <div class="d-flex align-items-center">
                             <!--begin::Symbol-->
                             <div class="symbol symbol-35px me-4">
-                                <span class="symbol-label bg-light-warning">      
-                                    <i class="ki-outline ki-briefcase fs-2 text-warning"></i>                                                    
+                                <span class="symbol-label bg-light-warning">
+                                    <i class="ki-outline ki-briefcase fs-2 text-warning"></i>
                                 </span>
                             </div>
                             <!--end::Symbol-->
@@ -107,8 +107,8 @@
                         <div class="d-flex align-items-center">
                             <!--begin::Symbol-->
                             <div class="symbol symbol-35px me-4">
-                                <span class="symbol-label bg-light-success">      
-                                    <i class="ki-outline ki-abstract-12 fs-2 text-success"></i>                                                    
+                                <span class="symbol-label bg-light-success">
+                                    <i class="ki-outline ki-abstract-12 fs-2 text-success"></i>
                                 </span>
                             </div>
                             <!--end::Symbol-->
@@ -131,8 +131,8 @@
                         <div class="d-flex align-items-center">
                             <!--begin::Symbol-->
                             <div class="symbol symbol-35px me-4">
-                                <span class="symbol-label bg-light-primary">      
-                                    <i class="ki-outline ki-colors-square fs-2 text-primary"></i>                                                    
+                                <span class="symbol-label bg-light-primary">
+                                    <i class="ki-outline ki-colors-square fs-2 text-primary"></i>
                                 </span>
                             </div>
                             <!--end::Symbol-->
@@ -155,9 +155,9 @@
                         <div class="d-flex align-items-center">
                             <!--begin::Symbol-->
                             <div class="symbol symbol-35px me-4">
-                                <span class="symbol-label bg-light-info">      
+                                <span class="symbol-label bg-light-info">
                                     <i class="ki-outline ki-picture
- fs-2 text-info"></i>                                                    
+ fs-2 text-info"></i>
                                 </span>
                             </div>
                             <!--end::Symbol-->
@@ -180,8 +180,8 @@
                         <div class="d-flex align-items-center">
                             <!--begin::Symbol-->
                             <div class="symbol symbol-35px me-4">
-                                <span class="symbol-label bg-light-warning">      
-                                    <i class="ki-outline ki-color-swatch fs-2 text-warning"></i>                                                    
+                                <span class="symbol-label bg-light-warning">
+                                    <i class="ki-outline ki-color-swatch fs-2 text-warning"></i>
                                 </span>
                             </div>
                             <!--end::Symbol-->
@@ -198,18 +198,18 @@
                         <!--end::Label-->
                     </div>
                     <!--end::Item-->
-                  
+
             </div>
             <!--end::Items-->
             <!--begin::View more-->
 			<div class="py-3 text-center border-top">
-                <a href="/metronic8/demo38/?page=pages/user-profile/activity" class="btn btn-color-gray-600 btn-active-color-primary">
-                    View All 
-                    <i class="ki-outline ki-arrow-right fs-5"></i>                </a>			 
+                <a href="#" class="btn btn-color-gray-600 btn-active-color-primary">
+                    View All
+                    <i class="ki-outline ki-arrow-right fs-5"></i>                </a>
 			</div>
-			<!--end::View more--> 
+			<!--end::View more-->
         </div>
-        <!--end::Tab panel-->      
+        <!--end::Tab panel-->
         <!--begin::Tab panel-->
         <div class="tab-pane fade show active" id="kt_topbar_notifications_2" role="tabpanel">
             <!--begin::Wrapper-->
@@ -218,7 +218,7 @@
                 <div class="pt-10 pb-0">
                     <!--begin::Title-->
                     <h3 class="text-gray-900 text-center fw-bold">
-                        Get Pro Access                
+                        Get Pro Access
                     </h3>
                     <!--end::Title-->
                     <!--begin::Text-->
@@ -228,7 +228,7 @@
                     <!--end::Text-->
                     <!--begin::Action-->
                     <div class="text-center mt-5 mb-9">
-                        <a href="#" class="btn btn-sm btn-primary px-6"  data-bs-toggle="modal" data-bs-target="#kt_modal_upgrade_plan" >Upgrade</a>                  
+                        <a href="#" class="btn btn-sm btn-primary px-6"  data-bs-toggle="modal" data-bs-target="#kt_modal_upgrade_plan" >Upgrade</a>
                     </div>
                     <!--end::Action-->
                 </div>
@@ -242,7 +242,7 @@
             <!--end::Wrapper-->
         </div>
         <!--end::Tab panel-->
-        
+
         <!--begin::Tab panel-->
         <div class="tab-pane fade" id="kt_topbar_notifications_3" role="tabpanel">
             <!--begin::Items-->
@@ -451,16 +451,16 @@
                         <!--end::Label-->
                     </div>
                     <!--end::Item-->
-                  
+
             </div>
             <!--end::Items-->
             <!--begin::View more-->
 			<div class="py-3 text-center border-top">
-                <a href="/metronic8/demo38/?page=pages/user-profile/activity" class="btn btn-color-gray-600 btn-active-color-primary">
-                    View All 
-                    <i class="ki-outline ki-arrow-right fs-5"></i>                </a>			 
+                <a href="#" class="btn btn-color-gray-600 btn-active-color-primary">
+                    View All
+                    <i class="ki-outline ki-arrow-right fs-5"></i>                </a>
 			</div>
-			<!--end::View more--> 
+			<!--end::View more-->
         </div>
         <!--end::Tab panel-->
     </div>

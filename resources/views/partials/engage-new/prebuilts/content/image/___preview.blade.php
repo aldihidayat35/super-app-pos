@@ -1,9 +1,9 @@
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=authentication/email/promo-3" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">

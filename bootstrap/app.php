@@ -1,8 +1,13 @@
 <?php
 
+use App\Http\Middleware\EnsureHealthAccess;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\ResolveWorkLocation;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,7 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'health.access' => EnsureHealthAccess::class,
+            'active.user' => EnsureUserIsActive::class,
+            'permission' => PermissionMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'work.location' => ResolveWorkLocation::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

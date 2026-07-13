@@ -1,15 +1,15 @@
 
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo1/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -25,17 +25,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo2/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -51,17 +51,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo39/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -77,17 +77,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo31/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -103,17 +103,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo9/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -129,17 +129,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo38/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -155,17 +155,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo30/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -181,17 +181,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo6/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -207,17 +207,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo60/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -233,17 +233,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo8/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -259,17 +259,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo62/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -285,17 +285,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo58/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -311,17 +311,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo56/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -337,17 +337,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo34/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -363,17 +363,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo27/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -389,17 +389,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo29/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -415,17 +415,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo57/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -441,17 +441,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo3/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -467,17 +467,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo36/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -493,17 +493,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo20/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -519,17 +519,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo59/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -545,17 +545,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo55/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -571,17 +571,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo51/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -597,17 +597,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo10/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -623,17 +623,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo61/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -649,17 +649,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo52/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -675,17 +675,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo63/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -701,17 +701,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo40/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -727,17 +727,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo23/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -753,17 +753,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo64/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -779,17 +779,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo35/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -805,17 +805,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo33/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -831,17 +831,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo19/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -857,17 +857,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo25/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -883,17 +883,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo50/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -909,17 +909,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo32/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -935,17 +935,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo37/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -961,17 +961,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo42/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -987,17 +987,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo5/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1013,17 +1013,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo16/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1039,17 +1039,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo4/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1065,17 +1065,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo53/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1091,17 +1091,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo7/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1117,17 +1117,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo21/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1143,17 +1143,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo24/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1169,17 +1169,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo28/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1195,17 +1195,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo44/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1221,17 +1221,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo11/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1247,17 +1247,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo26/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1273,17 +1273,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo22/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1299,17 +1299,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo41/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1325,17 +1325,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo18/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1351,17 +1351,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo54/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1377,17 +1377,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo15/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1403,17 +1403,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo14/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1429,17 +1429,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo13/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1455,17 +1455,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo12/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1481,17 +1481,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo48/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1507,17 +1507,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo17/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1533,17 +1533,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo49/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1559,17 +1559,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo43/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1585,17 +1585,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo45/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1611,17 +1611,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo47/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -1637,17 +1637,17 @@
 
 	</div>
 	<!--end::Col-->
-	
+
 	<!--begin::Col-->
 	<div class="col-lg-4">
-		
-		
+
+
 
 <!--begin::Preview-->
-<a 
-	href="https://preview.keenthemes.com/metronic8/demo46/index.html" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">

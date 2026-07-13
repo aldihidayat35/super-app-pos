@@ -1,0 +1,2 @@
+@props(['id' => 'filter-drawer', 'title' => 'Filter Data'])
+<div class="offcanvas offcanvas-end" tabindex="-1" id="{{ $id }}" aria-labelledby="{{ $id }}-label"><div class="offcanvas-header"><h2 id="{{ $id }}-label">{{ $title }}</h2><button type="button" class="btn btn-sm btn-icon btn-active-light-primary" data-bs-dismiss="offcanvas"><i class="ki-outline ki-cross fs-1"></i></button></div><div class="offcanvas-body">{{ $slot }}</div></div>

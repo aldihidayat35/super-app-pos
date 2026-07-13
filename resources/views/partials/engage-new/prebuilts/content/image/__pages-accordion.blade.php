@@ -1,30 +1,30 @@
 
 <!--begin::Collapse toggle-->
-<a 
-	class="btn btn-flex btn-color-dark flex-stack p-0 mb-5 toggle collapsible collapsed" 
-	data-bs-toggle="collapse" 
+<a
+	class="btn btn-flex btn-color-dark flex-stack p-0 mb-5 toggle collapsible collapsed"
+	data-bs-toggle="collapse"
 	href="#kt_app_engage_prebuilts_tab_pages_general_others">
-	
+
 	<span class="fw-bolder fs-2">
 		Others	</span>
-	<i class="ki-outline ki-plus-square toggle-off text-primary fs-2 ms-4"></i> 
-	<i class="ki-outline ki-minus-square toggle-on text-primary fs-2 ms-4"></i>                        
+	<i class="ki-outline ki-plus-square toggle-off text-primary fs-2 ms-4"></i>
+	<i class="ki-outline ki-minus-square toggle-on text-primary fs-2 ms-4"></i>
 </a>
 <!--end::Collapse toggle-->
 <!--begin::Collapse content-->
 <div class="collapse" id="kt_app_engage_prebuilts_tab_pages_general_others">
 	<!--begin::Row-->
 	<div class="row g-10 pt-2 pb-5">
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/faq/classic" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -40,16 +40,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/faq/extended" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -65,16 +65,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/blog/home" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
@@ -90,16 +90,16 @@
 
 			</div>
 			<!--end::Col-->
-					
+
 			<!--begin::Col-->
 			<div class="col-lg-4">
-				
+
 
 <!--begin::Preview-->
-<a 
-	href="/metronic8/demo38/?page=pages/blog/post" 
-	data-kt-href="true" 
-	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden" 
+<a
+	href="#"
+	data-kt-href="true"
+	class="preview-thumbnail bg-light border d-flex flex-column rounded-3 hover-elevate-up overflow-hidden"
 >
 	<!--begin::Title-->
 	<h3 class="ps-12 pt-9 mb-7 text-gray-900 fw-bold letter-spacing fs-4">
