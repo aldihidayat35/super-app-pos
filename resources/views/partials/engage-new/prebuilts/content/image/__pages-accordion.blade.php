@@ -32,7 +32,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/pages/faq-classic.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/pages/faq-classic.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -57,7 +57,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/pages/faq-extended.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/pages/faq-extended.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -82,7 +82,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/pages/blog-home.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/pages/blog-home.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -107,7 +107,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/pages/blog-post.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/pages/blog-post.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>

@@ -16,7 +16,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/marketing.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/marketing.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -41,7 +41,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/social.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/social.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -66,7 +66,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/ecommerce.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/ecommerce.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -91,7 +91,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/store-analytics.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/store-analytics.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -116,7 +116,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/logistics.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/logistics.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -141,7 +141,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/delivery.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/delivery.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -166,7 +166,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/online-courses.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/online-courses.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -191,7 +191,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/school.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/school.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -216,7 +216,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/crypto.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/crypto.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -241,7 +241,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/finance-performance.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/finance-performance.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -266,7 +266,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/website-analytics.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/website-analytics.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -291,7 +291,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/bidding.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/bidding.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -316,7 +316,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/podcast.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/podcast.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -341,7 +341,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/projects.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/projects.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -366,7 +366,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/call-center.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/call-center.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>
@@ -391,7 +391,7 @@
 	<!--end::Title-->
 	<!--begin::Thumbnail-->
 	<span class="app-prebuilts-thumbnail rounded ms-12 mb-n6 mb-lg-n15 me-n6 mh-350px overflow-hidden">
-		<img src="/metronic8/demo38/assets/media/preview/demos/placeholder.jpg" data-src="/metronic8/demo38/assets/media/preview/prebuilts/dashboards/pos.png" class="lozad w-100 rounded" alt=""/>
+		<img src="/assets/media/preview/demos/placeholder.jpg" data-src="/assets/media/preview/prebuilts/dashboards/pos.png" class="lozad w-100 rounded" alt=""/>
 	</span>
 	<!--end::Thumbnail-->
 </a>

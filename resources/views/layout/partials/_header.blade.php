@@ -11,7 +11,7 @@
 		<i class="ki-outline ki-abstract-14 fs-2"></i>	</div>
 	<!--begin::Logo image-->
     <a href="/metronic8/demo38/?page=index">
-		<img alt="Logo" src="/metronic8/demo38/assets/media/logos/demo38-small.svg" class="h-30px"/>
+		<img alt="Logo" src="/assets/media/logos/demo38-small.svg" class="h-30px"/>
     </a>
     <!--end::Logo image-->
 </div>

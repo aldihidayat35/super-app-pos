@@ -14,8 +14,8 @@
             
             <!--begin::Illustration-->
             <div class="py-10 text-center">
-                                    <img src="/metronic8/demo38/assets/media/svg/illustrations/easy/2.svg" class="theme-light-show w-200px" alt=""/>
-                    <img src="/metronic8/demo38/assets/media/svg/illustrations/easy/2-dark.svg" class="theme-dark-show w-200px" alt=""/>
+                                    <img src="/assets/media/svg/illustrations/easy/2.svg" class="theme-light-show w-200px" alt=""/>
+                    <img src="/assets/media/svg/illustrations/easy/2-dark.svg" class="theme-dark-show w-200px" alt=""/>
                             </div>
             <!--end::Illustration-->
         </div>

@@ -24,7 +24,7 @@
                                 <!--begin::Item-->
                 <div class="d-flex flex-stack">
                     <!--begin::Flag-->                    
-                    <img src="/metronic8/demo38/assets/media/flags/united-states.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
+                    <img src="/assets/media/flags/united-states.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
                     <!--end::Flag-->
                     <!--begin::Section-->
                     <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
@@ -70,7 +70,7 @@
                                 <!--begin::Item-->
                 <div class="d-flex flex-stack">
                     <!--begin::Flag-->                    
-                    <img src="/metronic8/demo38/assets/media/flags/brazil.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
+                    <img src="/assets/media/flags/brazil.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
                     <!--end::Flag-->
                     <!--begin::Section-->
                     <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
@@ -116,7 +116,7 @@
                                 <!--begin::Item-->
                 <div class="d-flex flex-stack">
                     <!--begin::Flag-->                    
-                    <img src="/metronic8/demo38/assets/media/flags/turkey.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
+                    <img src="/assets/media/flags/turkey.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
                     <!--end::Flag-->
                     <!--begin::Section-->
                     <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
@@ -162,7 +162,7 @@
                                 <!--begin::Item-->
                 <div class="d-flex flex-stack">
                     <!--begin::Flag-->                    
-                    <img src="/metronic8/demo38/assets/media/flags/france.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
+                    <img src="/assets/media/flags/france.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
                     <!--end::Flag-->
                     <!--begin::Section-->
                     <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
@@ -208,7 +208,7 @@
                                 <!--begin::Item-->
                 <div class="d-flex flex-stack">
                     <!--begin::Flag-->                    
-                    <img src="/metronic8/demo38/assets/media/flags/india.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
+                    <img src="/assets/media/flags/india.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
                     <!--end::Flag-->
                     <!--begin::Section-->
                     <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
@@ -254,7 +254,7 @@
                                 <!--begin::Item-->
                 <div class="d-flex flex-stack">
                     <!--begin::Flag-->                    
-                    <img src="/metronic8/demo38/assets/media/flags/sweden.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
+                    <img src="/assets/media/flags/sweden.svg" class="me-4 w-25px" style="border-radius: 4px" alt=""/>                     
                     <!--end::Flag-->
                     <!--begin::Section-->
                     <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">

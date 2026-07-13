@@ -42,7 +42,7 @@
             data-kt-menu-trigger="{default: 'click', lg: 'hover'}" 
             data-kt-menu-attach="parent" 
             data-kt-menu-placement="bottom-end">
-            <img src="/metronic8/demo38/assets/media/avatars/300-2.jpg" alt="user"/>
+            <img src="/assets/media/avatars/300-2.jpg" alt="user"/>
         </div>
         
 @include('partials/menus/_user-account-menu')

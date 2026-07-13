@@ -6,7 +6,7 @@
         <div class="menu-content d-flex align-items-center px-3">
             <!--begin::Avatar-->
             <div class="symbol symbol-50px me-5">
-                <img alt="Logo" src="/metronic8/demo38/assets/media/avatars/300-2.jpg"/>
+                <img alt="Logo" src="/assets/media/avatars/300-2.jpg"/>
             </div>
             <!--end::Avatar-->
             <!--begin::Username-->
@@ -130,7 +130,7 @@
             <span class="menu-title position-relative">
                 Language 
                 <span class="fs-8 rounded bg-light px-3 py-2 position-absolute translate-middle-y top-50 end-0">
-                    English <img class="w-15px h-15px rounded-1 ms-2" src="/metronic8/demo38/assets/media/flags/united-states.svg" alt=""/>
+                    English <img class="w-15px h-15px rounded-1 ms-2" src="/assets/media/flags/united-states.svg" alt=""/>
                 </span>
             </span>
         </a>
@@ -140,7 +140,7 @@
             <div class="menu-item px-3">
                 <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5 active">
                     <span class="symbol symbol-20px me-4">
-                        <img class="rounded-1" src="/metronic8/demo38/assets/media/flags/united-states.svg" alt=""/>
+                        <img class="rounded-1" src="/assets/media/flags/united-states.svg" alt=""/>
                     </span>
                     English
                 </a>
@@ -150,7 +150,7 @@
             <div class="menu-item px-3">
                 <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5">
                     <span class="symbol symbol-20px me-4">
-                        <img class="rounded-1" src="/metronic8/demo38/assets/media/flags/spain.svg" alt=""/>
+                        <img class="rounded-1" src="/assets/media/flags/spain.svg" alt=""/>
                     </span>
                     Spanish
                 </a>
@@ -160,7 +160,7 @@
             <div class="menu-item px-3">
                 <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5">
                     <span class="symbol symbol-20px me-4">
-                        <img class="rounded-1" src="/metronic8/demo38/assets/media/flags/germany.svg" alt=""/>
+                        <img class="rounded-1" src="/assets/media/flags/germany.svg" alt=""/>
                     </span>
                     German
                 </a>
@@ -170,7 +170,7 @@
             <div class="menu-item px-3">
                 <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5">
                     <span class="symbol symbol-20px me-4">
-                        <img class="rounded-1" src="/metronic8/demo38/assets/media/flags/japan.svg" alt=""/>
+                        <img class="rounded-1" src="/assets/media/flags/japan.svg" alt=""/>
                     </span>
                     Japanese
                 </a>
@@ -180,7 +180,7 @@
             <div class="menu-item px-3">
                 <a href="/metronic8/demo38/?page=account/settings" class="menu-link d-flex px-5">
                     <span class="symbol symbol-20px me-4">
-                        <img class="rounded-1" src="/metronic8/demo38/assets/media/flags/france.svg" alt=""/>
+                        <img class="rounded-1" src="/assets/media/flags/france.svg" alt=""/>
                     </span>
                     French
                 </a>

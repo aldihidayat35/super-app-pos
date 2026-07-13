@@ -35,7 +35,7 @@
                 <tbody>
                                             <tr>
                             <td>                                    
-                                <img src="/metronic8/demo38/assets/media/stock/ecommerce/210.png" class="w-50px" alt=""/>                             
+                                <img src="/assets/media/stock/ecommerce/210.png" class="w-50px" alt=""/>                             
                             </td>
                             <td class="ps-0">
                                 <a href="/metronic8/demo38/?page=apps/ecommerce/sales/details" class="text-gray-800 fw-bold text-hover-primary mb-1 fs-6 text-start pe-0">Elephant 1802</a>
@@ -47,7 +47,7 @@
                         </tr>                                     
                                             <tr>
                             <td>                                    
-                                <img src="/metronic8/demo38/assets/media/stock/ecommerce/215.png" class="w-50px" alt=""/>                             
+                                <img src="/assets/media/stock/ecommerce/215.png" class="w-50px" alt=""/>                             
                             </td>
                             <td class="ps-0">
                                 <a href="/metronic8/demo38/?page=apps/ecommerce/sales/details" class="text-gray-800 fw-bold text-hover-primary mb-1 fs-6 text-start pe-0">Red Laga</a>
@@ -59,7 +59,7 @@
                         </tr>                                     
                                             <tr>
                             <td>                                    
-                                <img src="/metronic8/demo38/assets/media/stock/ecommerce/209.png" class="w-50px" alt=""/>                             
+                                <img src="/assets/media/stock/ecommerce/209.png" class="w-50px" alt=""/>                             
                             </td>
                             <td class="ps-0">
                                 <a href="/metronic8/demo38/?page=apps/ecommerce/sales/details" class="text-gray-800 fw-bold text-hover-primary mb-1 fs-6 text-start pe-0">RiseUP</a>
@@ -71,7 +71,7 @@
                         </tr>                                     
                                             <tr>
                             <td>                                    
-                                <img src="/metronic8/demo38/assets/media/stock/ecommerce/214.png" class="w-50px" alt=""/>                             
+                                <img src="/assets/media/stock/ecommerce/214.png" class="w-50px" alt=""/>                             
                             </td>
                             <td class="ps-0">
                                 <a href="/metronic8/demo38/?page=apps/ecommerce/sales/details" class="text-gray-800 fw-bold text-hover-primary mb-1 fs-6 text-start pe-0">Yellow Stone</a>
