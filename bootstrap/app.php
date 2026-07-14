@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\BlockB2bPortalOnlyUserFromInternal;
+use App\Http\Middleware\EnsureB2bCustomerAccess;
 use App\Http\Middleware\EnsureHealthAccess;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveWorkLocation;
@@ -19,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'health.access' => EnsureHealthAccess::class,
             'active.user' => EnsureUserIsActive::class,
+            'b2b.customer' => EnsureB2bCustomerAccess::class,
+            'internal.access' => BlockB2bPortalOnlyUserFromInternal::class,
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,
             'work.location' => ResolveWorkLocation::class,

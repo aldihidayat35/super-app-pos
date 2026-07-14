@@ -27,17 +27,42 @@ use App\Http\Controllers\Auth\PasswordConfirmationController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\B2B\B2bAuthenticatedSessionController;
+use App\Http\Controllers\B2B\B2bPasswordResetLinkController;
+use App\Http\Controllers\B2B\CartController as B2bCartController;
+use App\Http\Controllers\B2B\CatalogController as B2bCatalogController;
+use App\Http\Controllers\B2B\CheckoutController as B2bCheckoutController;
+use App\Http\Controllers\B2B\ComplaintController as B2bComplaintController;
+use App\Http\Controllers\B2B\DashboardController as B2bDashboardController;
+use App\Http\Controllers\B2B\OrderController as B2bOrderController;
+use App\Http\Controllers\B2B\ProfileController as B2bProfileController;
+use App\Http\Controllers\B2B\ReorderController as B2bReorderController;
+use App\Http\Controllers\B2B\ShipmentTrackingController as B2bShipmentTrackingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Pricing\HppHistoryController;
+use App\Http\Controllers\Pricing\MarginSimulatorController;
+use App\Http\Controllers\Pricing\PriceApprovalController;
+use App\Http\Controllers\Pricing\PriceHistoryController;
+use App\Http\Controllers\Pricing\PriceRuleController;
+use App\Http\Controllers\Pricing\ProductPriceController;
+use App\Http\Controllers\Pricing\SpecialPriceController;
 use App\Http\Controllers\Purchasing\PurchaseOrderController;
 use App\Http\Controllers\Purchasing\PurchaseOrderPrintController;
 use App\Http\Controllers\Purchasing\PurchaseRequestController;
 use App\Http\Controllers\Reports\LossReportController;
 use App\Http\Controllers\Reports\SupplierPerformanceController;
+use App\Http\Controllers\Retail\CashShiftController;
+use App\Http\Controllers\Retail\PosController;
+use App\Http\Controllers\Retail\PosSaleController;
 use App\Http\Controllers\Retail\RestockRequestController;
 use App\Http\Controllers\Returns\InventoryLossController;
 use App\Http\Controllers\Returns\ReturnController;
+use App\Http\Controllers\ShipmentController;
+use App\Http\Controllers\ShipmentProofController;
 use App\Http\Controllers\System\HealthController;
+use App\Http\Controllers\Warehouse\B2bOrderController as WarehouseB2bOrderController;
 use App\Http\Controllers\Warehouse\GoodsReceiptController;
 use App\Http\Controllers\Warehouse\LocationTransferController;
 use App\Http\Controllers\Warehouse\StockBatchController;
@@ -45,6 +70,7 @@ use App\Http\Controllers\Warehouse\StockCardController;
 use App\Http\Controllers\Warehouse\StockController;
 use App\Http\Controllers\Warehouse\StockMutationController;
 use App\Http\Controllers\Warehouse\StockOpnameController;
+use App\Http\Controllers\Warehouse\StockReservationController;
 use App\Http\Controllers\Warehouse\StockTransferController;
 use App\Http\Controllers\Warehouse\WarehouseDashboardController;
 use App\Http\Controllers\Warehouse\WarehouseLocationController;
@@ -55,6 +81,12 @@ Route::redirect('/', '/dashboard')->name('home');
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+    Route::get('/langganan/login', [B2bAuthenticatedSessionController::class, 'create'])->name('langganan.login');
+    Route::post('/langganan/login', [B2bAuthenticatedSessionController::class, 'store'])->name('langganan.login.store');
+    Route::get('/langganan/forgot-password', [B2bPasswordResetLinkController::class, 'create'])->name('langganan.password.request');
+    Route::post('/langganan/forgot-password', [B2bPasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('langganan.password.email');
 
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
@@ -64,7 +96,108 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
-Route::middleware(['auth', 'active.user', 'work.location'])->group(function (): void {
+Route::middleware(['auth', 'active.user', 'b2b.customer'])->prefix('langganan')->name('langganan.')->group(function (): void {
+    Route::redirect('/', '/langganan/dashboard')->name('home');
+    Route::get('/dashboard', B2bDashboardController::class)
+        ->middleware('permission:dashboard.view')
+        ->name('dashboard');
+    Route::get('/katalog', [B2bCatalogController::class, 'index'])
+        ->middleware('permission:b2b_orders.view|b2b_orders.create')
+        ->name('katalog.index');
+    Route::get('/katalog/{product}', [B2bCatalogController::class, 'show'])
+        ->middleware('permission:b2b_orders.view|b2b_orders.create')
+        ->name('katalog.show');
+    Route::post('/keranjang/add', [B2bCatalogController::class, 'add'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('keranjang.add');
+    Route::get('/keranjang', [B2bCartController::class, 'index'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('keranjang.index');
+    Route::put('/keranjang', [B2bCartController::class, 'update'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('keranjang.update');
+    Route::delete('/keranjang/items/{item}', [B2bCartController::class, 'destroy'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('keranjang.items.destroy');
+    Route::post('/keranjang/checkout', [B2bCartController::class, 'submit'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('keranjang.checkout');
+    Route::get('/checkout', [B2bCheckoutController::class, 'show'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('checkout.show');
+    Route::post('/checkout', [B2bCheckoutController::class, 'store'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('checkout.store');
+    Route::get('/profil', [B2bProfileController::class, 'edit'])
+        ->middleware('permission:customers.view_own')
+        ->name('profil.edit');
+    Route::put('/profil', [B2bProfileController::class, 'update'])
+        ->middleware('role:langganan_owner')
+        ->name('profil.update');
+    Route::get('/reorder', [B2bReorderController::class, 'index'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('reorder.index');
+    Route::post('/reorder', [B2bReorderController::class, 'store'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('reorder.store');
+    Route::get('/orders', [B2bOrderController::class, 'index'])
+        ->middleware('permission:b2b_orders.view')
+        ->name('orders.index');
+    Route::get('/orders/{order}', [B2bOrderController::class, 'show'])
+        ->middleware('permission:b2b_orders.view')
+        ->name('orders.show');
+    Route::post('/orders/{order}/cancel', [B2bOrderController::class, 'cancel'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('orders.cancel');
+    Route::post('/orders/{order}/receive', [B2bOrderController::class, 'receive'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('orders.receive');
+    Route::get('/shipments/{shipment}', [B2bShipmentTrackingController::class, 'show'])
+        ->middleware('permission:b2b_orders.view')
+        ->name('shipments.show');
+    Route::post('/shipments/{shipment}/confirm', [B2bShipmentTrackingController::class, 'confirm'])
+        ->middleware('permission:b2b_orders.create')
+        ->name('shipments.confirm');
+    Route::get('/complaints', [B2bComplaintController::class, 'index'])
+        ->middleware('permission:b2b_orders.view|complaints.view')
+        ->name('complaints.index');
+    Route::post('/complaints', [B2bComplaintController::class, 'store'])
+        ->middleware('permission:b2b_orders.create|complaints.create')
+        ->name('complaints.store');
+    Route::post('/logout', [B2bAuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
+
+Route::middleware(['auth', 'active.user'])->group(function (): void {
+    Route::get('/invoices', [InvoiceController::class, 'index'])
+        ->middleware('permission:invoices.view|receivables.view')
+        ->name('invoices.index');
+    Route::post('/invoices/from-b2b/{order}', [InvoiceController::class, 'issueFromOrder'])
+        ->middleware('permission:invoices.create|b2b_orders.approve')
+        ->name('invoices.issue-b2b');
+    Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])
+        ->middleware('permission:invoices.view|receivables.view')
+        ->name('invoices.show');
+    Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])
+        ->middleware('permission:invoices.view|receivables.view')
+        ->name('invoices.pdf');
+    Route::get('/payments/create', [PaymentController::class, 'create'])
+        ->middleware('permission:payments.create')
+        ->name('payments.create');
+    Route::post('/payments', [PaymentController::class, 'store'])
+        ->middleware('permission:payments.create')
+        ->name('payments.store');
+    Route::get('/payments/{payment}/verify', [PaymentController::class, 'verifyForm'])
+        ->middleware('permission:payments.verify|approvals.approve')
+        ->name('payments.verify');
+    Route::post('/payments/{payment}/verify', [PaymentController::class, 'verify'])
+        ->middleware('permission:payments.verify|approvals.approve')
+        ->name('payments.verify.store');
+    Route::get('/payments/{payment}/proof', [PaymentController::class, 'proof'])
+        ->middleware('signed')
+        ->name('payments.proof');
+});
+
+Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)
         ->middleware('permission:dashboard.view')
         ->name('dashboard');
@@ -333,6 +466,35 @@ Route::middleware(['auth', 'active.user', 'work.location'])->group(function (): 
             ->middleware('permission:stock.view')
             ->name('stock-mutations.show');
 
+        Route::get('/b2b-orders', [WarehouseB2bOrderController::class, 'index'])
+            ->middleware('permission:b2b_orders.view')
+            ->name('b2b-orders.index');
+        Route::get('/b2b-orders/{order}/review', [WarehouseB2bOrderController::class, 'review'])
+            ->middleware('permission:b2b_orders.view|b2b_orders.approve')
+            ->name('b2b-orders.review');
+        Route::post('/b2b-orders/{order}/reserve', [WarehouseB2bOrderController::class, 'reserve'])
+            ->middleware('permission:b2b_orders.approve')
+            ->name('b2b-orders.reserve');
+        Route::post('/b2b-orders/{order}/reject', [WarehouseB2bOrderController::class, 'reject'])
+            ->middleware('permission:b2b_orders.approve')
+            ->name('b2b-orders.reject');
+        Route::post('/b2b-orders/{order}/pack', [WarehouseB2bOrderController::class, 'pack'])
+            ->middleware('permission:b2b_orders.approve')
+            ->name('b2b-orders.pack');
+        Route::post('/b2b-orders/{order}/ship', [WarehouseB2bOrderController::class, 'ship'])
+            ->middleware('permission:b2b_orders.approve')
+            ->name('b2b-orders.ship');
+
+        Route::get('/reservations', [StockReservationController::class, 'index'])
+            ->middleware('permission:b2b_orders.view|stock.view')
+            ->name('reservations.index');
+        Route::post('/reservations/expire', [StockReservationController::class, 'expire'])
+            ->middleware('permission:b2b_orders.approve')
+            ->name('reservations.expire');
+        Route::post('/reservations/{reservation}/release', [StockReservationController::class, 'release'])
+            ->middleware('permission:b2b_orders.approve')
+            ->name('reservations.release');
+
         Route::get('/goods-receipts/export', [GoodsReceiptController::class, 'export'])
             ->middleware('permission:reports.export|goods_receipts.view')
             ->name('goods-receipts.export');
@@ -487,6 +649,45 @@ Route::middleware(['auth', 'active.user', 'work.location'])->group(function (): 
     });
 
     Route::prefix('pricing')->name('pricing.')->group(function (): void {
+        Route::get('/rules', [PriceRuleController::class, 'index'])
+            ->middleware('permission:prices.view')
+            ->name('rules.index');
+        Route::post('/rules', [PriceRuleController::class, 'store'])
+            ->middleware('permission:prices.update')
+            ->name('rules.store');
+        Route::get('/product-prices', [ProductPriceController::class, 'index'])
+            ->middleware('permission:prices.view')
+            ->name('product-prices.index');
+        Route::get('/product-prices/export', [ProductPriceController::class, 'export'])
+            ->middleware('permission:reports.export|prices.view')
+            ->name('product-prices.export');
+        Route::post('/product-prices', [ProductPriceController::class, 'store'])
+            ->middleware('permission:prices.update')
+            ->name('product-prices.store');
+        Route::get('/special-prices', [SpecialPriceController::class, 'index'])
+            ->middleware('permission:prices.view')
+            ->name('special-prices.index');
+        Route::post('/special-prices', [SpecialPriceController::class, 'store'])
+            ->middleware('permission:prices.update')
+            ->name('special-prices.store');
+        Route::get('/history', [PriceHistoryController::class, 'index'])
+            ->middleware('permission:prices.view')
+            ->name('history.index');
+        Route::get('/history/export', [PriceHistoryController::class, 'export'])
+            ->middleware('permission:reports.export|prices.view')
+            ->name('history.export');
+        Route::get('/approvals', [PriceApprovalController::class, 'index'])
+            ->middleware('permission:prices.approve|approvals.view')
+            ->name('approvals.index');
+        Route::post('/approvals/{approval}/approve', [PriceApprovalController::class, 'approve'])
+            ->middleware('permission:prices.approve')
+            ->name('approvals.approve');
+        Route::post('/approvals/{approval}/reject', [PriceApprovalController::class, 'reject'])
+            ->middleware('permission:prices.approve')
+            ->name('approvals.reject');
+        Route::get('/simulator', [MarginSimulatorController::class, 'index'])
+            ->middleware('permission:prices.view')
+            ->name('simulator.index');
         Route::get('/hpp-history', [HppHistoryController::class, 'index'])
             ->middleware('permission:goods_receipts.view|stock.view|purchase_orders.view')
             ->name('hpp-history.index');
@@ -538,7 +739,107 @@ Route::middleware(['auth', 'active.user', 'work.location'])->group(function (): 
         ->middleware('permission:returns.view')
         ->name('returns.show');
 
+    Route::get('/shipments/create', [ShipmentController::class, 'create'])
+        ->middleware('permission:shipments.create|b2b_orders.approve')
+        ->name('shipments.create');
+    Route::post('/shipments', [ShipmentController::class, 'store'])
+        ->middleware('permission:shipments.create|b2b_orders.approve')
+        ->name('shipments.store');
+    Route::get('/shipments', [ShipmentController::class, 'index'])
+        ->middleware('permission:shipments.view|b2b_orders.view')
+        ->name('shipments.index');
+    Route::post('/shipments/{shipment}/post', [ShipmentController::class, 'post'])
+        ->middleware('permission:shipments.update|b2b_orders.approve')
+        ->name('shipments.post');
+    Route::get('/shipments/{shipment}/proof', [ShipmentProofController::class, 'show'])
+        ->middleware('permission:shipments.update|b2b_orders.view')
+        ->name('shipments.proof');
+    Route::post('/shipments/{shipment}/proof', [ShipmentProofController::class, 'store'])
+        ->middleware('permission:shipments.update|b2b_orders.approve')
+        ->name('shipments.proof.store');
+    Route::get('/shipments/{shipment}', [ShipmentController::class, 'show'])
+        ->middleware('permission:shipments.view|b2b_orders.view')
+        ->name('shipments.show');
+
     Route::prefix('retail')->name('retail.')->group(function (): void {
+        Route::get('/shifts/open', [CashShiftController::class, 'open'])
+            ->middleware('permission:cash_shifts.create')
+            ->name('shifts.open');
+        Route::post('/shifts/open', [CashShiftController::class, 'store'])
+            ->middleware('permission:cash_shifts.create')
+            ->name('shifts.store');
+        Route::get('/shifts/current', [CashShiftController::class, 'current'])
+            ->middleware('permission:cash_shifts.view')
+            ->name('shifts.current');
+        Route::get('/shifts/export', [CashShiftController::class, 'export'])
+            ->middleware('permission:reports.export|cash_shifts.view')
+            ->name('shifts.export');
+        Route::get('/shifts', [CashShiftController::class, 'index'])
+            ->middleware('permission:cash_shifts.view')
+            ->name('shifts.index');
+        Route::get('/shifts/{shift}/expenses', [CashShiftController::class, 'expenses'])
+            ->middleware('permission:cash_shifts.create')
+            ->name('shifts.expenses');
+        Route::post('/shifts/{shift}/expenses', [CashShiftController::class, 'storeExpense'])
+            ->middleware('permission:cash_shifts.create')
+            ->name('shifts.expenses.store');
+        Route::get('/shifts/{shift}/close', [CashShiftController::class, 'close'])
+            ->middleware('permission:cash_shifts.create')
+            ->name('shifts.close');
+        Route::post('/shifts/{shift}/close', [CashShiftController::class, 'submitClose'])
+            ->middleware('permission:cash_shifts.create')
+            ->name('shifts.close.submit');
+        Route::get('/shifts/{shift}/approval', [CashShiftController::class, 'approval'])
+            ->middleware('permission:cash_shifts.approve')
+            ->name('shifts.approval');
+        Route::post('/shifts/{shift}/approve', [CashShiftController::class, 'approve'])
+            ->middleware('permission:cash_shifts.approve')
+            ->name('shifts.approve');
+        Route::post('/shifts/{shift}/reject', [CashShiftController::class, 'reject'])
+            ->middleware('permission:cash_shifts.approve')
+            ->name('shifts.reject');
+        Route::get('/shifts/{shift}/report', [CashShiftController::class, 'report'])
+            ->middleware('permission:cash_shifts.view')
+            ->name('shifts.report');
+        Route::get('/pos', [PosController::class, 'index'])
+            ->middleware('permission:pos.view')
+            ->name('pos.index');
+        Route::post('/pos', [PosController::class, 'store'])
+            ->middleware('permission:pos.create')
+            ->name('pos.store');
+        Route::get('/pos/checkout', [PosController::class, 'checkout'])
+            ->middleware('permission:pos.create')
+            ->name('pos.checkout');
+        Route::get('/pos/holds', [PosController::class, 'holds'])
+            ->middleware('permission:pos.create')
+            ->name('pos.holds');
+        Route::post('/pos/holds', [PosController::class, 'storeHold'])
+            ->middleware('permission:pos.create')
+            ->name('pos.holds.store');
+        Route::post('/pos/holds/{hold}/resume', [PosController::class, 'resumeHold'])
+            ->middleware('permission:pos.create')
+            ->name('pos.holds.resume');
+        Route::post('/pos/holds/{hold}/cancel', [PosController::class, 'cancelHold'])
+            ->middleware('permission:pos.create')
+            ->name('pos.holds.cancel');
+        Route::get('/sales/{sale}', [PosSaleController::class, 'show'])
+            ->middleware('permission:pos.view')
+            ->name('sales.show');
+        Route::get('/sales/{sale}/print', [PosSaleController::class, 'print'])
+            ->middleware('permission:pos.view')
+            ->name('sales.print');
+        Route::get('/sales/{sale}/void', [PosSaleController::class, 'voidForm'])
+            ->middleware('permission:pos.void')
+            ->name('sales.void');
+        Route::post('/sales/{sale}/void', [PosSaleController::class, 'void'])
+            ->middleware('permission:pos.void')
+            ->name('sales.void.store');
+        Route::get('/sales/{sale}/return', [PosSaleController::class, 'returnForm'])
+            ->middleware('permission:returns.create|pos.void')
+            ->name('sales.return');
+        Route::post('/sales/{sale}/return', [PosSaleController::class, 'return'])
+            ->middleware('permission:returns.create|pos.void')
+            ->name('sales.return.store');
         Route::get('/restock-requests', [RestockRequestController::class, 'index'])
             ->middleware('permission:stock_transfers.view|stock_transfers.create')
             ->name('restock-requests.index');

@@ -89,6 +89,13 @@ class User extends Authenticatable implements MustVerifyEmailContract
             ->withTimestamps();
     }
 
+    public function hasOnlyB2bPortalRoles(): bool
+    {
+        $roles = $this->roles()->pluck('name')->all();
+
+        return $roles !== [] && collect($roles)->every(fn (string $role): bool => in_array($role, ['langganan_owner', 'langganan_staff'], true));
+    }
+
     public function hasUnrestrictedLocationScope(): bool
     {
         return $this->hasAnyRole(['super_admin', 'owner_viewer', 'owner_approver', 'admin_config']);

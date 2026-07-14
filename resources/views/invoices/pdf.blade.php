@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="id">
+<head><meta charset="utf-8"><style>body{font-family:DejaVu Sans,sans-serif;font-size:12px;color:#222}.header{display:flex;justify-content:space-between;border-bottom:2px solid #222;padding-bottom:12px;margin-bottom:18px}.title{font-size:24px;font-weight:bold}.muted{color:#666}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ddd;padding:8px}th{background:#f3f4f6;text-align:left}.right{text-align:right}.total{font-weight:bold;font-size:14px}</style></head>
+<body>
+<div class="header"><div><div class="title">INVOICE</div><div>{{ $invoice->number }}</div></div><div class="right"><div>GudangToko</div><div class="muted">Tanggal: {{ $invoice->issue_date?->format('d/m/Y') }}</div><div class="muted">Jatuh Tempo: {{ $invoice->due_date?->format('d/m/Y') }}</div></div></div>
+<p><strong>Tagihan Kepada:</strong><br>{{ $invoice->customer?->business_name }}<br>{{ $invoice->customer?->business_address }}</p>
+<table><thead><tr><th>Item</th><th class="right">Qty</th><th class="right">Harga</th><th class="right">Total</th></tr></thead><tbody>@foreach($invoice->items as $item)<tr><td>{{ $item->description }}</td><td class="right">{{ $item->quantity }} {{ $item->unit_name_snapshot }}</td><td class="right">{{ App\Support\CurrencyFormatter::rupiah($item->unit_price) }}</td><td class="right">{{ App\Support\CurrencyFormatter::rupiah($item->line_total) }}</td></tr>@endforeach</tbody></table>
+<table><tr><td class="right">Subtotal</td><td class="right">{{ App\Support\CurrencyFormatter::rupiah($invoice->subtotal_amount) }}</td></tr><tr><td class="right">Ongkir</td><td class="right">{{ App\Support\CurrencyFormatter::rupiah($invoice->shipping_amount) }}</td></tr><tr><td class="right total">Total</td><td class="right total">{{ App\Support\CurrencyFormatter::rupiah($invoice->total_amount) }}</td></tr><tr><td class="right">Paid</td><td class="right">{{ App\Support\CurrencyFormatter::rupiah($invoice->paid_amount) }}</td></tr><tr><td class="right total">Outstanding</td><td class="right total">{{ App\Support\CurrencyFormatter::rupiah($invoice->outstanding_amount) }}</td></tr></table>
+</body>
+</html>

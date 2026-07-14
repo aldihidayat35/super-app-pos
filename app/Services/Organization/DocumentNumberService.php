@@ -20,6 +20,8 @@ class DocumentNumberService
         'order' => 'ORD',
         'invoice' => 'INV',
         'payment' => 'PAY',
+        'shipment' => 'SHP',
+        'complaint' => 'CMP',
         'return' => 'RET',
         'loss' => 'LOS',
     ];

@@ -163,6 +163,24 @@ return [
                 'permission' => 'goods_receipts.view',
             ],
             [
+                'label' => 'Order B2B Gudang',
+                'route' => 'warehouse.b2b-orders.index',
+                'active' => ['warehouse.b2b-orders.*'],
+                'permission' => 'b2b_orders.view',
+            ],
+            [
+                'label' => 'Reserved Stock',
+                'route' => 'warehouse.reservations.index',
+                'active' => ['warehouse.reservations.*'],
+                'permission' => 'b2b_orders.view',
+            ],
+            [
+                'label' => 'Pengiriman B2B',
+                'route' => 'shipments.index',
+                'active' => ['shipments.*'],
+                'permission' => 'shipments.view',
+            ],
+            [
                 'label' => 'Transfer Lokasi',
                 'route' => 'warehouse.location-transfers.index',
                 'active' => ['warehouse.location-transfers.*'],
@@ -231,6 +249,48 @@ return [
         ],
     ],
     [
+        'label' => 'Harga & Margin',
+        'icon' => 'ki-outline ki-price-tag',
+        'children' => [
+            [
+                'label' => 'Aturan Harga',
+                'route' => 'pricing.rules.index',
+                'active' => ['pricing.rules.*'],
+                'permission' => 'prices.view',
+            ],
+            [
+                'label' => 'Harga Produk',
+                'route' => 'pricing.product-prices.index',
+                'active' => ['pricing.product-prices.*'],
+                'permission' => 'prices.view',
+            ],
+            [
+                'label' => 'Harga Khusus',
+                'route' => 'pricing.special-prices.index',
+                'active' => ['pricing.special-prices.*'],
+                'permission' => 'prices.view',
+            ],
+            [
+                'label' => 'Histori Harga',
+                'route' => 'pricing.history.index',
+                'active' => ['pricing.history.*'],
+                'permission' => 'prices.view',
+            ],
+            [
+                'label' => 'Approval Harga',
+                'route' => 'pricing.approvals.index',
+                'active' => ['pricing.approvals.*'],
+                'permission' => 'prices.approve',
+            ],
+            [
+                'label' => 'Simulasi Margin',
+                'route' => 'pricing.simulator.index',
+                'active' => ['pricing.simulator.*'],
+                'permission' => 'prices.view',
+            ],
+        ],
+    ],
+    [
         'label' => 'Retur',
         'icon' => 'ki-outline ki-arrow-left-right',
         'children' => [
@@ -247,6 +307,30 @@ return [
         'icon' => 'ki-outline ki-shop',
         'children' => [
             [
+                'label' => 'Kasir POS',
+                'route' => 'retail.pos.index',
+                'active' => ['retail.pos.*'],
+                'permission' => 'pos.view',
+            ],
+            [
+                'label' => 'Shift Aktif',
+                'route' => 'retail.shifts.current',
+                'active' => ['retail.shifts.current', 'retail.shifts.open', 'retail.shifts.close', 'retail.shifts.expenses'],
+                'permission' => 'cash_shifts.view',
+            ],
+            [
+                'label' => 'Riwayat Shift',
+                'route' => 'retail.shifts.index',
+                'active' => ['retail.shifts.index', 'retail.shifts.approval'],
+                'permission' => 'cash_shifts.view',
+            ],
+            [
+                'label' => 'Transaksi Ditahan',
+                'route' => 'retail.pos.holds',
+                'active' => ['retail.pos.holds*'],
+                'permission' => 'pos.create',
+            ],
+            [
                 'label' => 'Permintaan Restock',
                 'route' => 'retail.restock-requests.index',
                 'active' => ['retail.restock-requests.*'],
@@ -257,6 +341,84 @@ return [
                 'route' => 'warehouse.stock-transfers.index',
                 'active' => ['retail.stock-transfers.*'],
                 'permission' => 'stock_transfers.receive',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Invoice & Pembayaran',
+        'icon' => 'ki-outline ki-bill',
+        'children' => [
+            [
+                'label' => 'Invoice',
+                'route' => 'invoices.index',
+                'active' => ['invoices.*'],
+                'permission' => 'invoices.view',
+            ],
+            [
+                'label' => 'Input Pembayaran',
+                'route' => 'payments.create',
+                'active' => ['payments.*'],
+                'permission' => 'payments.create',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Portal Langganan',
+        'icon' => 'ki-outline ki-basket',
+        'children' => [
+            [
+                'label' => 'Dashboard Langganan',
+                'route' => 'langganan.dashboard',
+                'active' => ['langganan.dashboard'],
+                'permission' => 'dashboard.view',
+            ],
+            [
+                'label' => 'Katalog',
+                'route' => 'langganan.katalog.index',
+                'active' => ['langganan.katalog.*'],
+                'permission' => 'b2b_orders.view',
+            ],
+            [
+                'label' => 'Keranjang',
+                'route' => 'langganan.keranjang.index',
+                'active' => ['langganan.keranjang.*'],
+                'permission' => 'b2b_orders.create',
+            ],
+            [
+                'label' => 'Checkout',
+                'route' => 'langganan.checkout.show',
+                'active' => ['langganan.checkout.*'],
+                'permission' => 'b2b_orders.create',
+            ],
+            [
+                'label' => 'Reorder Cepat',
+                'route' => 'langganan.reorder.index',
+                'active' => ['langganan.reorder.*'],
+                'permission' => 'b2b_orders.create',
+            ],
+            [
+                'label' => 'Riwayat Order',
+                'route' => 'langganan.orders.index',
+                'active' => ['langganan.orders.*'],
+                'permission' => 'b2b_orders.view',
+            ],
+            [
+                'label' => 'Invoice',
+                'route' => 'invoices.index',
+                'active' => ['invoices.*'],
+                'permission' => 'receivables.view',
+            ],
+            [
+                'label' => 'Komplain',
+                'route' => 'langganan.complaints.index',
+                'active' => ['langganan.complaints.*'],
+                'permission' => 'complaints.create',
+            ],
+            [
+                'label' => 'Profil Usaha',
+                'route' => 'langganan.profil.edit',
+                'active' => ['langganan.profil.*'],
+                'permission' => 'customers.view_own',
             ],
         ],
     ],

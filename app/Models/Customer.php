@@ -65,6 +65,36 @@ class Customer extends Model
         return $this->hasMany(CustomerPriceOverride::class);
     }
 
+    /** @return HasMany<B2bCart, $this> */
+    public function b2bCarts(): HasMany
+    {
+        return $this->hasMany(B2bCart::class);
+    }
+
+    /** @return HasMany<B2bOrder, $this> */
+    public function b2bOrders(): HasMany
+    {
+        return $this->hasMany(B2bOrder::class);
+    }
+
+    /** @return HasMany<Invoice, $this> */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /** @return HasMany<Payment, $this> */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /** @return HasMany<Shipment, $this> */
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
+
     /** @return HasOne<CreditLimit, $this> */
     public function creditLimit(): HasOne
     {

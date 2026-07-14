@@ -68,9 +68,9 @@ class PartyMasterTest extends TestCase
         $user->assignRole(Role::findOrCreate('langganan_owner'));
         $owned->users()->attach($user->id, ['role' => 'langganan_owner', 'is_active' => true]);
 
-        $this->actingAs($user)->get(route('admin.customers.index'))->assertOk()->assertSee('Customer Milik Saya')->assertDontSee('Customer Orang Lain');
-        $this->actingAs($user)->get(route('admin.customers.show', $owned))->assertOk();
-        $this->actingAs($user)->get(route('admin.customers.show', $blocked))->assertForbidden();
+        $this->actingAs($user)->get(route('admin.customers.index'))->assertRedirect(route('langganan.dashboard'));
+        $this->actingAs($user)->get(route('admin.customers.show', $owned))->assertRedirect(route('langganan.dashboard'));
+        $this->actingAs($user)->get(route('admin.customers.show', $blocked))->assertRedirect(route('langganan.dashboard'));
     }
 
     public function test_customer_access_keeps_single_primary_address_and_creates_b2b_user(): void
