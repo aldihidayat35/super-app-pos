@@ -103,7 +103,7 @@
                     </table>
                 </div>
                 {{ $requests->links() }}
-            </x-metronic.card>
+            </x-metronic.card> v     
         </div>
     </div>
 @endsection

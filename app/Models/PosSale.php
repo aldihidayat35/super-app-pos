@@ -87,4 +87,10 @@ class PosSale extends Model
     {
         return $this->hasMany(PosReturn::class);
     }
+
+    /** @return HasMany<Receivable, $this> */
+    public function receivables(): HasMany
+    {
+        return $this->hasMany(Receivable::class);
+    }
 }

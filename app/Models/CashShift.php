@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CashShift extends Model
 {
     protected $fillable = [
-        'number', 'branch_id', 'work_location_id', 'cashier_user_id', 'opened_by', 'closed_by', 'status',
+        'number', 'branch_id', 'work_location_id', 'cashier_user_id', 'attendance_id', 'attendance_override_by', 'attendance_override_reason', 'opened_by', 'closed_by', 'status',
         'opening_cash_amount', 'expected_cash_amount', 'actual_cash_amount', 'terminal_code',
         'cash_sales_amount', 'non_cash_sales_amount', 'refund_amount', 'expense_amount', 'receivable_amount',
         'difference_amount', 'discrepancy_threshold_amount', 'opened_at', 'closing_submitted_at',
@@ -57,6 +57,12 @@ class CashShift extends Model
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cashier_user_id');
+    }
+
+    /** @return BelongsTo<Attendance, $this> */
+    public function attendance(): BelongsTo
+    {
+        return $this->belongsTo(Attendance::class);
     }
 
     /** @return HasMany<PosSale, $this> */

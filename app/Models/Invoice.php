@@ -54,4 +54,10 @@ class Invoice extends Model
     {
         return $this->hasMany(PaymentAllocation::class);
     }
+
+    /** @return HasMany<Receivable, $this> */
+    public function receivables(): HasMany
+    {
+        return $this->hasMany(Receivable::class);
+    }
 }

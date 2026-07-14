@@ -12,11 +12,17 @@ use App\Models\PriceRule;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\User;
+use App\Services\Control\AnomalyDetectionService;
+use App\Services\Control\ApprovalWorkflowService;
 use Illuminate\Support\Facades\DB;
 
 class PriceManagementService
 {
-    public function __construct(private readonly PriceResolverService $resolver) {}
+    public function __construct(
+        private readonly PriceResolverService $resolver,
+        private readonly ApprovalWorkflowService $approvals,
+        private readonly AnomalyDetectionService $anomalies,
+    ) {}
 
     /** @param array<string, mixed> $data */
     public function saveRule(array $data): PriceRule
@@ -179,7 +185,7 @@ class PriceManagementService
     /** @param array<string, mixed> $resolved */
     private function requestApproval(string $type, int $documentId, Product $product, ?Customer $customer, User $actor, string $requestedPrice, array $resolved, ?string $reason): void
     {
-        PriceApprovalRequest::query()->create([
+        $approval = PriceApprovalRequest::query()->create([
             'approval_type' => implode(',', $resolved['approval_reasons'] ?? [$type]),
             'document_type' => $type === 'product_price' ? 'product_price' : 'customer_price_override',
             'document_id' => $documentId,
@@ -194,5 +200,34 @@ class PriceManagementService
             'reason' => $reason,
             'expires_at' => now()->addDays(7),
         ]);
+
+        $this->approvals->create(
+            subject: $approval,
+            type: (string) $approval->approval_type,
+            module: 'pricing',
+            requester: $actor,
+            riskValue: $requestedPrice,
+            reason: $reason ?: 'Approval perubahan harga',
+            before: [
+                'product_id' => $product->id,
+                'customer_id' => $customer?->id,
+                'minimum_price' => $resolved['minimum_price'] ?? null,
+                'maximum_price' => $resolved['maximum_price'] ?? null,
+            ],
+            after: [
+                'document_type' => $approval->document_type,
+                'document_id' => $documentId,
+                'requested_price' => $requestedPrice,
+                'approval_type' => $approval->approval_type,
+            ],
+            metadata: [
+                'hpp_snapshot' => $resolved['hpp_base'] ?? null,
+                'approval_reasons' => $resolved['approval_reasons'] ?? [],
+            ],
+            requiredPermission: 'approvals.approve',
+            handlerKey: 'pricing.approval',
+            correlationId: 'pricing-'.$approval->id,
+        );
+        $this->anomalies->detectPriceApproval($approval);
     }
 }

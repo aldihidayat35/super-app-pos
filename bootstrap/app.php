@@ -1,5 +1,7 @@
 <?php
 
+use App\Console\Commands\RunNotificationSchedulesCommand;
+use App\Console\Commands\SendDailyReportCommand;
 use App\Http\Middleware\BlockB2bPortalOnlyUserFromInternal;
 use App\Http\Middleware\EnsureB2bCustomerAccess;
 use App\Http\Middleware\EnsureHealthAccess;
@@ -17,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([
+        RunNotificationSchedulesCommand::class,
+        SendDailyReportCommand::class,
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'health.access' => EnsureHealthAccess::class,

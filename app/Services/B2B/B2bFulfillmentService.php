@@ -20,6 +20,7 @@ use App\Models\Shipment;
 use App\Models\ShipmentProof;
 use App\Models\User;
 use App\Services\Organization\DocumentNumberService;
+use App\Services\Receivables\ReceivableService;
 use App\Support\Decimal;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ class B2bFulfillmentService
     public function __construct(
         private readonly DocumentNumberService $numbers,
         private readonly B2bOrderWorkflowService $workflow,
+        private readonly ReceivableService $receivables,
     ) {}
 
     public function issueInvoice(B2bOrder $order, User $actor, ?Carbon $dueDate = null): Invoice
@@ -90,9 +92,7 @@ class B2bFulfillmentService
                 ]);
             }
 
-            $customer->forceFill([
-                'receivable_balance' => Decimal::add((string) $customer->receivable_balance, $total, 2),
-            ])->save();
+            $this->receivables->createFromInvoice($invoice, $actor);
 
             $nextStatus = $order->payment_preference === 'credit' ? B2bOrderStatus::APPROVED_CREDIT : B2bOrderStatus::AWAITING_PAYMENT;
             $this->transitionOrder($order, $nextStatus, $actor, 'Invoice '.$invoice->number.' diterbitkan.');
@@ -166,20 +166,14 @@ class B2bFulfillmentService
                     throw ServiceException::validation('Alokasi pembayaran melebihi sisa invoice.');
                 }
 
-                $paid = Decimal::add((string) $invoice->paid_amount, (string) $allocation->amount, 2);
-                $outstanding = Decimal::sub((string) $invoice->total_amount, $paid, 2);
-                $invoiceStatus = Decimal::compare($outstanding, '0', 2) <= 0 ? InvoiceStatus::PAID : InvoiceStatus::PARTIAL;
-                $invoice->forceFill([
-                    'paid_amount' => $paid,
-                    'outstanding_amount' => $outstanding,
-                    'status' => $invoiceStatus,
-                    'paid_at' => $invoiceStatus === InvoiceStatus::PAID ? now() : $invoice->paid_at,
-                ])->save();
+                $receivable = $invoice->receivables()->first();
+                if ($receivable === null) {
+                    $receivable = $this->receivables->createFromInvoice($invoice, $actor);
+                }
 
-                $customer = $this->requireCustomer($invoice->customer);
-                $customer->forceFill([
-                    'receivable_balance' => Decimal::sub((string) $customer->receivable_balance, (string) $allocation->amount, 2),
-                ])->save();
+                $this->receivables->applyExternalPayment($receivable, (string) $allocation->amount, 'payment', $payment->id, $payment->number, $actor);
+                $invoice = $invoice->fresh(['order.customer']);
+                $invoiceStatus = $this->invoiceStatus($invoice);
 
                 if ($invoiceStatus === InvoiceStatus::PAID && $invoice->order instanceof B2bOrder) {
                     $this->transitionOrder($invoice->order, B2bOrderStatus::APPROVED_CREDIT, $actor, 'Pembayaran invoice '.$invoice->number.' telah diverifikasi.');

@@ -2,9 +2,16 @@
 
 namespace Database\Seeders;
 
+use App\Models\AlertRule;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\DocumentSequence;
+use App\Models\Employee;
+use App\Models\EmployeeSchedule;
+use App\Models\NotificationChannel;
+use App\Models\NotificationRecipient;
+use App\Models\NotificationSchedule;
+use App\Models\NotificationTemplate;
 use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\ProductBrand;
@@ -20,6 +27,8 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
+use App\Models\WorkLocation;
+use App\Models\WorkShift;
 use App\Services\Inventory\InventoryService;
 use App\Services\Organization\DocumentNumberService;
 use App\Services\Organization\WorkLocationSyncService;
@@ -114,6 +123,8 @@ class LocalDatabaseSeeder extends Seeder
         User::query()->where('email', 'kasir@gudangtoko.test')->first()?->workLocations()->syncWithoutDetaching([
             $branchLocation->id => ['is_default' => true, 'is_active' => true],
         ]);
+
+        $this->seedLocalAttendance($warehouseLocation, $branchLocation);
 
         foreach ($this->defaultSettings() as $key => $value) {
             SystemSetting::query()->updateOrCreate(['key' => $key], ['value' => $value, 'group' => 'general']);
@@ -288,7 +299,179 @@ class LocalDatabaseSeeder extends Seeder
             }
         }
 
+        $this->seedLocalNotifications($warehouseLocation, $branchLocation);
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    private function seedLocalNotifications(WorkLocation $warehouseLocation, WorkLocation $branchLocation): void
+    {
+        $owner = User::query()->where('email', 'approver@gudangtoko.test')->first();
+
+        $waTemplate = NotificationTemplate::query()->updateOrCreate(
+            ['key' => 'daily_report', 'channel_type' => 'whatsapp', 'version' => 1],
+            [
+                'name' => 'Laporan Harian Owner WA',
+                'subject' => 'Laporan Harian {{ report_date }}',
+                'body' => "Ringkasan GudangToko {{ report_date }}\nOmzet: {{ revenue }}\nMargin: {{ gross_margin }} ({{ margin_percent }}%)\nStok kritis: {{ critical_stock_count }}\nPiutang overdue: {{ overdue_receivable }}\nDetail aman: {{ secure_link }}",
+                'fallback_body' => 'Laporan harian tersedia. Silakan login ke GudangToko.',
+                'allowed_variables' => config('notifications.template_variables.daily_report'),
+                'is_active' => true,
+                'created_by' => $owner?->id,
+            ],
+        );
+
+        NotificationTemplate::query()->updateOrCreate(
+            ['key' => 'daily_report', 'channel_type' => 'telegram', 'version' => 1],
+            [
+                'name' => 'Laporan Harian Owner Telegram',
+                'subject' => 'Laporan Harian {{ report_date }}',
+                'body' => "<b>GudangToko {{ report_date }}</b>\nOmzet: {{ revenue }}\nMargin: {{ gross_margin }}\nStok kritis: {{ critical_stock_count }}\nDetail: {{ secure_link }}",
+                'fallback_body' => 'Laporan harian tersedia.',
+                'allowed_variables' => config('notifications.template_variables.daily_report'),
+                'is_active' => true,
+                'created_by' => $owner?->id,
+            ],
+        );
+
+        NotificationChannel::query()->updateOrCreate(
+            ['name' => 'WA Dry Run Lokal', 'channel_type' => 'whatsapp'],
+            [
+                'endpoint' => 'https://example.invalid/wa/send',
+                'auth_type' => 'bearer',
+                'credentials' => ['token' => 'local-only-not-production'],
+                'sender' => 'gudangtoko-local',
+                'default_destination' => '6281234567890',
+                'timeout_seconds' => 10,
+                'retry_attempts' => 3,
+                'is_active' => true,
+                'created_by' => $owner?->id,
+            ],
+        );
+
+        NotificationChannel::query()->updateOrCreate(
+            ['name' => 'Telegram Dry Run Lokal', 'channel_type' => 'telegram'],
+            [
+                'credentials' => ['bot_token' => 'local-only-not-production'],
+                'default_destination' => '123456789',
+                'timeout_seconds' => 10,
+                'retry_attempts' => 3,
+                'is_active' => true,
+                'created_by' => $owner?->id,
+            ],
+        );
+
+        NotificationRecipient::query()->updateOrCreate(
+            ['destination' => '6281234567890', 'channel_type' => 'whatsapp', 'report_type' => 'daily_report'],
+            [
+                'name' => 'Owner Approver WA Lokal',
+                'recipient_type' => 'user',
+                'user_id' => $owner?->id,
+                'role_name' => 'owner_approver',
+                'work_location_id' => null,
+                'is_verified' => true,
+                'is_active' => true,
+            ],
+        );
+
+        NotificationSchedule::query()->updateOrCreate(
+            ['schedule_key' => 'daily-owner-local'],
+            [
+                'name' => 'Laporan Harian Owner Lokal',
+                'frequency' => 'daily',
+                'run_time' => config('notifications.daily_report_time', '08:00'),
+                'timezone' => 'Asia/Jakarta',
+                'report_type' => 'daily_report',
+                'report_period' => 'yesterday',
+                'template_id' => $waTemplate->id,
+                'channel_types' => ['whatsapp'],
+                'recipient_scope' => ['role_name' => 'owner_approver'],
+                'work_location_id' => null,
+                'is_active' => true,
+            ],
+        );
+
+        foreach ([
+            ['critical_stock', 'Stok Kritis Lokal', 'critical_stock', 'high', 10],
+            ['overdue_receivable', 'Piutang Overdue Lokal', 'receivable_due', 'high', 1],
+            ['closing_difference', 'Selisih Closing Lokal', 'closing_difference', 'medium', 50000],
+        ] as [$key, $name, $type, $severity, $threshold]) {
+            AlertRule::query()->updateOrCreate(
+                ['rule_key' => $key],
+                [
+                    'name' => $name,
+                    'alert_type' => $type,
+                    'severity' => $severity,
+                    'threshold_value' => $threshold,
+                    'cooldown_minutes' => 60,
+                    'channel_types' => ['whatsapp'],
+                    'recipient_scope' => ['warehouse_location_id' => $warehouseLocation->id, 'branch_location_id' => $branchLocation->id],
+                    'is_active' => true,
+                ],
+            );
+        }
+    }
+
+    private function seedLocalAttendance(WorkLocation $warehouseLocation, WorkLocation $branchLocation): void
+    {
+        $employees = [
+            ['email' => 'gudang@gudangtoko.test', 'employee_no' => 'EMP-GDG-001', 'position' => 'Kepala Gudang', 'location_id' => $warehouseLocation->id],
+            ['email' => 'retail@gudangtoko.test', 'employee_no' => 'EMP-TKO-001', 'position' => 'Kepala Toko', 'location_id' => $branchLocation->id],
+            ['email' => 'kasir@gudangtoko.test', 'employee_no' => 'EMP-TKO-002', 'position' => 'Kasir', 'location_id' => $branchLocation->id],
+        ];
+
+        foreach ($employees as $row) {
+            $user = User::query()->where('email', $row['email'])->first();
+            if (! $user instanceof User) {
+                continue;
+            }
+            Employee::query()->updateOrCreate(
+                ['employee_no' => $row['employee_no']],
+                [
+                    'user_id' => $user->id,
+                    'work_location_id' => $row['location_id'],
+                    'name' => $user->name,
+                    'position' => $row['position'],
+                    'whatsapp_number' => $user->phone_number,
+                    'joined_at' => now()->startOfMonth()->toDateString(),
+                    'status' => 'active',
+                    'is_active' => true,
+                ],
+            );
+        }
+
+        $shift = WorkShift::query()->updateOrCreate(
+            ['code' => 'SHIFT-PAGI-LOCAL'],
+            [
+                'work_location_id' => $branchLocation->id,
+                'name' => 'Shift Pagi Lokal',
+                'start_time' => '08:00',
+                'end_time' => '16:00',
+                'is_cross_midnight' => false,
+                'tolerance_late_minutes' => 10,
+                'tolerance_early_leave_minutes' => 10,
+                'break_minutes' => 60,
+                'work_days' => [1, 2, 3, 4, 5, 6],
+                'effective_from' => now()->startOfMonth()->toDateString(),
+                'is_active' => true,
+            ],
+        );
+
+        Employee::query()->where('work_location_id', $branchLocation->id)->where('is_active', true)->each(function (Employee $employee) use ($branchLocation, $shift): void {
+            $start = now()->setTime(8, 0);
+            $end = now()->setTime(16, 0);
+            EmployeeSchedule::query()->updateOrCreate(
+                ['employee_id' => $employee->id, 'scheduled_date' => now()->toDateString()],
+                [
+                    'work_shift_id' => $shift->id,
+                    'work_location_id' => $branchLocation->id,
+                    'scheduled_start_at' => $start,
+                    'scheduled_end_at' => $end,
+                    'status' => 'scheduled',
+                    'notes' => 'Jadwal demo lokal hari ini.',
+                ],
+            );
+        });
     }
 
     /** @return array<string, mixed> */

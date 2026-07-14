@@ -12,3 +12,9 @@ Artisan::command('inspire', function () {
 Schedule::call(function (): void {
     Cache::put('system.scheduler.last_run', now()->toDateTimeString(), now()->addMinutes(5));
 })->everyMinute()->name('system-scheduler-heartbeat')->withoutOverlapping();
+
+Schedule::command('notifications:run-schedules')
+    ->everyMinute()
+    ->timezone(config('notifications.timezone', 'Asia/Jakarta'))
+    ->name('notification-schedule-runner')
+    ->withoutOverlapping();

@@ -95,6 +95,12 @@ class Customer extends Model
         return $this->hasMany(Shipment::class);
     }
 
+    /** @return HasMany<Receivable, $this> */
+    public function receivables(): HasMany
+    {
+        return $this->hasMany(Receivable::class);
+    }
+
     /** @return HasOne<CreditLimit, $this> */
     public function creditLimit(): HasOne
     {

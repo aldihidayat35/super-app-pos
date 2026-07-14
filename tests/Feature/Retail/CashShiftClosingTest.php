@@ -6,17 +6,21 @@ use App\Enums\CashShiftStatus;
 use App\Exceptions\ServiceException;
 use App\Models\Branch;
 use App\Models\CashShift;
+use App\Models\Employee;
 use App\Models\PriceRule;
 use App\Models\Product;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WorkLocation;
+use App\Models\WorkShift;
+use App\Services\Attendance\AttendanceService;
 use App\Services\Inventory\InventoryService;
 use App\Services\Retail\CashShiftService;
 use App\Services\Retail\PosService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -43,6 +47,7 @@ class CashShiftClosingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Carbon::setTestNow('2026-07-14 09:00:00');
         $this->seed(RolePermissionSeeder::class);
 
         $this->shifts = app(CashShiftService::class);
@@ -62,6 +67,13 @@ class CashShiftClosingTest extends TestCase
         $this->supervisor->workLocations()->sync([$this->branchLocation->id => ['is_default' => true, 'is_active' => true]]);
         $this->unit = Unit::factory()->create(['name' => 'Pcs']);
         $this->defaultRule();
+        $this->prepareAttendance();
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
     }
 
     public function test_p17_pages_can_be_opened(): void
@@ -217,5 +229,35 @@ class CashShiftClosingTest extends TestCase
             'priority' => 1,
             'is_active' => true,
         ]);
+    }
+
+    private function prepareAttendance(): void
+    {
+        $employee = Employee::query()->create([
+            'user_id' => $this->cashier->id,
+            'work_location_id' => $this->branchLocation->id,
+            'employee_no' => 'EMP-SHF-001',
+            'name' => 'Kasir Shift',
+            'position' => 'Kasir',
+            'status' => 'active',
+            'is_active' => true,
+        ]);
+        $shift = WorkShift::query()->create([
+            'work_location_id' => $this->branchLocation->id,
+            'code' => 'SHF-P17',
+            'name' => 'Shift P17 Test',
+            'start_time' => '08:00',
+            'end_time' => '23:59',
+            'tolerance_late_minutes' => 60,
+            'tolerance_early_leave_minutes' => 10,
+            'is_active' => true,
+        ]);
+        app(AttendanceService::class)->createSchedule([
+            'employee_id' => $employee->id,
+            'work_shift_id' => $shift->id,
+            'work_location_id' => $this->branchLocation->id,
+            'scheduled_date' => now()->toDateString(),
+        ], $this->supervisor);
+        app(AttendanceService::class)->checkIn($this->cashier, ['checked_at' => now()->toDateTimeString()]);
     }
 }

@@ -22,6 +22,8 @@ class DocumentNumberService
         'payment' => 'PAY',
         'shipment' => 'SHP',
         'complaint' => 'CMP',
+        'receivable' => 'AR',
+        'credit_note' => 'CN',
         'return' => 'RET',
         'loss' => 'LOS',
     ];

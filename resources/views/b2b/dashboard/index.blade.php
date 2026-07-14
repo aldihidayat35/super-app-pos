@@ -8,10 +8,15 @@
         <a href="{{ route('langganan.katalog.index') }}" class="btn btn-primary">Belanja Lagi</a>
     </x-metronic.page-title>
     <div class="row g-5 mb-5">
-        <div class="col-md-3"><x-metronic.card title="Order Aktif"><div class="fs-2 fw-bold">{{ $activeOrders->count() }}</div><div class="text-muted">Sedang diajukan/diproses</div></x-metronic.card></div>
-        <div class="col-md-3"><x-metronic.card title="Invoice Belum Lunas"><div class="fs-2 fw-bold">0</div><div class="text-muted">Modul invoice B2B menyusul</div></x-metronic.card></div>
+        <div class="col-md-3"><x-metronic.card title="Order Aktif"><div class="fs-2 fw-bold">{{ $dashboard['kpis']['active_orders'] }}</div><div class="text-muted">Sedang diajukan/diproses</div></x-metronic.card></div>
+        <div class="col-md-3"><x-metronic.card title="Invoice Belum Lunas"><div class="fs-2 fw-bold">{{ $dashboard['kpis']['open_invoices'] }}</div><div class="text-muted">Issued/partial/overdue</div></x-metronic.card></div>
         <div class="col-md-3"><x-metronic.card title="Sisa Limit"><div class="fs-2 fw-bold">{{ App\Support\CurrencyFormatter::rupiah($creditAvailable) }}</div><div class="text-muted">Piutang: {{ App\Support\CurrencyFormatter::rupiah($customer->receivable_balance) }}</div></x-metronic.card></div>
         <div class="col-md-3"><x-metronic.card title="Keranjang"><div class="fs-2 fw-bold">{{ $cart->items->count() }}</div><div class="text-muted">Item siap checkout</div></x-metronic.card></div>
+    </div>
+    <div class="row g-5 mb-5">
+        <div class="col-md-4"><x-metronic.card title="Order Periode"><div class="fs-3 fw-bold">{{ App\Support\CurrencyFormatter::rupiah($dashboard['kpis']['revenue']) }}</div><div class="text-muted">Nilai order non-cancelled periode aktif</div></x-metronic.card></div>
+        <div class="col-md-4"><x-metronic.card title="Outstanding"><div class="fs-3 fw-bold">{{ App\Support\CurrencyFormatter::rupiah($dashboard['kpis']['outstanding_receivable']) }}</div><div class="text-muted">Invoice/piutang belum lunas</div></x-metronic.card></div>
+        <div class="col-md-4"><x-metronic.card title="Pengiriman Pending"><div class="fs-3 fw-bold">{{ $dashboard['kpis']['shipment_pending'] }}</div><div class="text-muted">Waiting/packing/ready/shipped</div></x-metronic.card></div>
     </div>
     <div class="row g-5">
         <div class="col-lg-7"><x-metronic.card title="Order Terbaru">

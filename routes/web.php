@@ -19,6 +19,12 @@ use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserLocationController;
 use App\Http\Controllers\Admin\WarehouseController;
+use App\Http\Controllers\Attendance\AttendanceRequestController;
+use App\Http\Controllers\Attendance\CheckController as AttendanceCheckController;
+use App\Http\Controllers\Attendance\CorrectionController as AttendanceCorrectionController;
+use App\Http\Controllers\Attendance\EmployeeController as AttendanceEmployeeController;
+use App\Http\Controllers\Attendance\ScheduleController as AttendanceScheduleController;
+use App\Http\Controllers\Attendance\WorkShiftController as AttendanceWorkShiftController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
@@ -38,8 +44,19 @@ use App\Http\Controllers\B2B\OrderController as B2bOrderController;
 use App\Http\Controllers\B2B\ProfileController as B2bProfileController;
 use App\Http\Controllers\B2B\ReorderController as B2bReorderController;
 use App\Http\Controllers\B2B\ShipmentTrackingController as B2bShipmentTrackingController;
+use App\Http\Controllers\Control\AnomalyController;
+use App\Http\Controllers\Control\ApprovalInboxController;
+use App\Http\Controllers\Control\AuditLogController;
+use App\Http\Controllers\Control\SecurityAuditController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\Notifications\AlertRuleController;
+use App\Http\Controllers\Notifications\NotificationChannelController;
+use App\Http\Controllers\Notifications\NotificationLogController;
+use App\Http\Controllers\Notifications\NotificationRecipientController;
+use App\Http\Controllers\Notifications\NotificationScheduleController;
+use App\Http\Controllers\Notifications\NotificationTemplateController;
+use App\Http\Controllers\Notifications\SecureDailyReportController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Pricing\HppHistoryController;
 use App\Http\Controllers\Pricing\MarginSimulatorController;
@@ -51,7 +68,13 @@ use App\Http\Controllers\Pricing\SpecialPriceController;
 use App\Http\Controllers\Purchasing\PurchaseOrderController;
 use App\Http\Controllers\Purchasing\PurchaseOrderPrintController;
 use App\Http\Controllers\Purchasing\PurchaseRequestController;
+use App\Http\Controllers\Receivables\ReceivableController;
+use App\Http\Controllers\Reports\AttendanceReportController;
 use App\Http\Controllers\Reports\LossReportController;
+use App\Http\Controllers\Reports\OwnerDashboardController;
+use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Reports\ReportExportController;
+use App\Http\Controllers\Reports\RetailDashboardController;
 use App\Http\Controllers\Reports\SupplierPerformanceController;
 use App\Http\Controllers\Retail\CashShiftController;
 use App\Http\Controllers\Retail\PosController;
@@ -77,6 +100,10 @@ use App\Http\Controllers\Warehouse\WarehouseLocationController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
+
+Route::get('/reports/daily/{token}', [SecureDailyReportController::class, 'show'])
+    ->middleware('throttle:20,1')
+    ->name('reports.daily.secure');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -201,6 +228,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     Route::get('/dashboard', DashboardController::class)
         ->middleware('permission:dashboard.view')
         ->name('dashboard');
+    Route::get('/owner/dashboard', OwnerDashboardController::class)
+        ->middleware('permission:dashboard.view|reports.view')
+        ->name('owner.dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -218,6 +248,45 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
+
+    Route::prefix('receivables')->name('receivables.')->group(function (): void {
+        Route::get('/dashboard', [ReceivableController::class, 'dashboard'])
+            ->middleware('permission:receivables.view')
+            ->name('dashboard');
+        Route::get('/', [ReceivableController::class, 'index'])
+            ->middleware('permission:receivables.view')
+            ->name('index');
+        Route::get('/payments/create', [ReceivableController::class, 'paymentCreate'])
+            ->middleware('permission:receivables.pay|payments.create')
+            ->name('payments.create');
+        Route::post('/payments', [ReceivableController::class, 'paymentStore'])
+            ->middleware('permission:receivables.pay|payments.create')
+            ->name('payments.store');
+        Route::get('/reminders', [ReceivableController::class, 'reminders'])
+            ->middleware('permission:receivables.view|receivables.remind')
+            ->name('reminders');
+        Route::post('/reminders', [ReceivableController::class, 'storeReminder'])
+            ->middleware('permission:receivables.remind|receivables.pay')
+            ->name('reminders.store');
+        Route::get('/credit-limits', [ReceivableController::class, 'creditLimits'])
+            ->middleware('permission:receivables.manage_limits|customers.manage_settings')
+            ->name('credit-limits');
+        Route::put('/credit-limits/{creditLimit}', [ReceivableController::class, 'updateCreditLimit'])
+            ->middleware('permission:receivables.manage_limits|customers.manage_settings')
+            ->name('credit-limits.update');
+        Route::get('/customers/{customer}', [ReceivableController::class, 'customer'])
+            ->middleware('permission:receivables.view')
+            ->name('customers.show');
+        Route::get('/{receivable}/adjustments', [ReceivableController::class, 'adjustments'])
+            ->middleware('permission:receivables.adjust|receivables.approve')
+            ->name('adjustments');
+        Route::post('/{receivable}/adjustments', [ReceivableController::class, 'storeAdjustment'])
+            ->middleware('permission:receivables.adjust')
+            ->name('adjustments.store');
+        Route::post('/credit-notes/{creditNote}/approve', [ReceivableController::class, 'approveAdjustment'])
+            ->middleware('permission:receivables.approve|approvals.approve')
+            ->name('credit-notes.approve');
+    });
 
     Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('/users', [UserController::class, 'index'])
@@ -282,6 +351,80 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/permissions', [PermissionController::class, 'index'])
             ->middleware('permission:admin.permissions.view')
             ->name('permissions.index');
+
+        Route::prefix('notifications')->name('notifications.')->group(function (): void {
+            Route::get('/channels', [NotificationChannelController::class, 'index'])
+                ->middleware('permission:notifications.view')
+                ->name('channels.index');
+            Route::post('/channels', [NotificationChannelController::class, 'store'])
+                ->middleware('permission:notifications.update')
+                ->name('channels.store');
+            Route::put('/channels/{channel}', [NotificationChannelController::class, 'update'])
+                ->middleware('permission:notifications.update')
+                ->name('channels.update');
+            Route::post('/channels/{channel}/test', [NotificationChannelController::class, 'test'])
+                ->middleware('permission:notifications.send')
+                ->name('channels.test');
+
+            Route::get('/templates', [NotificationTemplateController::class, 'index'])
+                ->middleware('permission:notifications.view')
+                ->name('templates.index');
+            Route::post('/templates', [NotificationTemplateController::class, 'store'])
+                ->middleware('permission:notifications.update')
+                ->name('templates.store');
+            Route::put('/templates/{template}', [NotificationTemplateController::class, 'update'])
+                ->middleware('permission:notifications.update')
+                ->name('templates.update');
+            Route::post('/templates/{template}/preview', [NotificationTemplateController::class, 'preview'])
+                ->middleware('permission:notifications.view')
+                ->name('templates.preview');
+
+            Route::get('/schedules', [NotificationScheduleController::class, 'index'])
+                ->middleware('permission:notifications.view')
+                ->name('schedules.index');
+            Route::post('/schedules', [NotificationScheduleController::class, 'store'])
+                ->middleware('permission:notifications.update')
+                ->name('schedules.store');
+            Route::put('/schedules/{schedule}', [NotificationScheduleController::class, 'update'])
+                ->middleware('permission:notifications.update')
+                ->name('schedules.update');
+            Route::post('/schedules/{schedule}/run', [NotificationScheduleController::class, 'run'])
+                ->middleware('permission:notifications.send')
+                ->name('schedules.run');
+
+            Route::get('/recipients', [NotificationRecipientController::class, 'index'])
+                ->middleware('permission:notifications.view')
+                ->name('recipients.index');
+            Route::post('/recipients', [NotificationRecipientController::class, 'store'])
+                ->middleware('permission:notifications.update')
+                ->name('recipients.store');
+            Route::put('/recipients/{recipient}', [NotificationRecipientController::class, 'update'])
+                ->middleware('permission:notifications.update')
+                ->name('recipients.update');
+
+            Route::get('/logs', [NotificationLogController::class, 'index'])
+                ->middleware('permission:notifications.view|audit.view')
+                ->name('logs.index');
+            Route::post('/logs/{log}/retry', [NotificationLogController::class, 'retry'])
+                ->middleware('permission:notifications.send')
+                ->name('logs.retry');
+            Route::post('/report-tokens/{token}/revoke', [SecureDailyReportController::class, 'revoke'])
+                ->middleware('permission:notifications.update')
+                ->name('report-tokens.revoke');
+
+            Route::get('/alerts', [AlertRuleController::class, 'index'])
+                ->middleware('permission:notifications.view|audit.view')
+                ->name('alerts.index');
+            Route::post('/alerts', [AlertRuleController::class, 'store'])
+                ->middleware('permission:notifications.update|audit.resolve')
+                ->name('alerts.store');
+            Route::put('/alerts/{alert}', [AlertRuleController::class, 'update'])
+                ->middleware('permission:notifications.update|audit.resolve')
+                ->name('alerts.update');
+            Route::post('/alerts/{alert}/preview', [AlertRuleController::class, 'preview'])
+                ->middleware('permission:notifications.view|audit.view')
+                ->name('alerts.preview');
+        });
 
         Route::resource('warehouses', WarehouseController::class)
             ->except(['destroy'])
@@ -423,6 +566,70 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:customers.update')
             ->name('customers.deactivate');
     });
+
+    Route::prefix('attendance')->name('attendance.')->group(function (): void {
+        Route::get('/employees', [AttendanceEmployeeController::class, 'index'])->middleware('permission:attendance.view')->name('employees.index');
+        Route::get('/employees/create', [AttendanceEmployeeController::class, 'create'])->middleware('permission:attendance.update')->name('employees.create');
+        Route::post('/employees', [AttendanceEmployeeController::class, 'store'])->middleware('permission:attendance.update')->name('employees.store');
+        Route::get('/employees/{employee}/edit', [AttendanceEmployeeController::class, 'edit'])->middleware('permission:attendance.update')->name('employees.edit');
+        Route::put('/employees/{employee}', [AttendanceEmployeeController::class, 'update'])->middleware('permission:attendance.update')->name('employees.update');
+        Route::patch('/employees/{employee}/deactivate', [AttendanceEmployeeController::class, 'deactivate'])->middleware('permission:attendance.update')->name('employees.deactivate');
+
+        Route::get('/work-shifts', [AttendanceWorkShiftController::class, 'index'])->middleware('permission:attendance.view')->name('work-shifts.index');
+        Route::get('/work-shifts/create', [AttendanceWorkShiftController::class, 'create'])->middleware('permission:attendance.update')->name('work-shifts.create');
+        Route::post('/work-shifts', [AttendanceWorkShiftController::class, 'store'])->middleware('permission:attendance.update')->name('work-shifts.store');
+        Route::get('/work-shifts/{workShift}/edit', [AttendanceWorkShiftController::class, 'edit'])->middleware('permission:attendance.update')->name('work-shifts.edit');
+        Route::put('/work-shifts/{workShift}', [AttendanceWorkShiftController::class, 'update'])->middleware('permission:attendance.update')->name('work-shifts.update');
+
+        Route::get('/schedules', [AttendanceScheduleController::class, 'index'])->middleware('permission:attendance.view')->name('schedules.index');
+        Route::post('/schedules', [AttendanceScheduleController::class, 'store'])->middleware('permission:attendance.update')->name('schedules.store');
+
+        Route::get('/check', [AttendanceCheckController::class, 'show'])->middleware('permission:attendance.check')->name('check.show');
+        Route::post('/check/in', [AttendanceCheckController::class, 'checkIn'])->middleware('permission:attendance.check')->name('check.in');
+        Route::post('/check/out', [AttendanceCheckController::class, 'checkOut'])->middleware('permission:attendance.check')->name('check.out');
+
+        Route::get('/requests', [AttendanceRequestController::class, 'index'])->middleware('permission:attendance.check|attendance.approve')->name('requests.index');
+        Route::post('/requests', [AttendanceRequestController::class, 'store'])->middleware('permission:attendance.check')->name('requests.store');
+        Route::post('/requests/{attendanceRequest}/approve', [AttendanceRequestController::class, 'approve'])->middleware('permission:attendance.approve')->name('requests.approve');
+        Route::post('/requests/{attendanceRequest}/reject', [AttendanceRequestController::class, 'reject'])->middleware('permission:attendance.approve')->name('requests.reject');
+
+        Route::get('/corrections', [AttendanceCorrectionController::class, 'index'])->middleware('permission:attendance.update|attendance.approve')->name('corrections.index');
+        Route::post('/corrections', [AttendanceCorrectionController::class, 'store'])->middleware('permission:attendance.update')->name('corrections.store');
+        Route::post('/corrections/{correction}/approve', [AttendanceCorrectionController::class, 'approve'])->middleware('permission:attendance.approve')->name('corrections.approve');
+        Route::post('/corrections/{correction}/reject', [AttendanceCorrectionController::class, 'reject'])->middleware('permission:attendance.approve')->name('corrections.reject');
+    });
+
+    Route::get('/approvals', [ApprovalInboxController::class, 'index'])
+        ->middleware('permission:approvals.view')
+        ->name('approvals.index');
+    Route::get('/approvals/{approval}', [ApprovalInboxController::class, 'show'])
+        ->middleware('permission:approvals.view')
+        ->name('approvals.show');
+    Route::post('/approvals/{approval}/approve', [ApprovalInboxController::class, 'approve'])
+        ->middleware('permission:approvals.approve')
+        ->name('approvals.approve');
+    Route::post('/approvals/{approval}/reject', [ApprovalInboxController::class, 'reject'])
+        ->middleware('permission:approvals.approve')
+        ->name('approvals.reject');
+
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])
+        ->middleware('permission:audit.view')
+        ->name('audit-logs.index');
+    Route::get('/audit-logs/export', [AuditLogController::class, 'export'])
+        ->middleware('permission:audit.export')
+        ->name('audit-logs.export');
+    Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])
+        ->middleware('permission:audit.view')
+        ->name('audit-logs.show');
+    Route::get('/audit/anomalies', [AnomalyController::class, 'index'])
+        ->middleware('permission:audit.view')
+        ->name('audit.anomalies.index');
+    Route::post('/audit/anomalies/{anomaly}/resolve', [AnomalyController::class, 'resolve'])
+        ->middleware('permission:audit.resolve')
+        ->name('audit.anomalies.resolve');
+    Route::get('/audit/security', [SecurityAuditController::class, 'index'])
+        ->middleware('permission:audit.view')
+        ->name('audit.security.index');
 
     Route::prefix('warehouse')->name('warehouse.')->group(function (): void {
         Route::get('/dashboard', WarehouseDashboardController::class)
@@ -697,12 +904,55 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     });
 
     Route::prefix('reports')->name('reports.')->group(function (): void {
+        Route::get('/daily', [ReportController::class, 'show'])
+            ->defaults('type', 'daily')
+            ->middleware('permission:reports.view')
+            ->name('daily.index');
+        Route::get('/warehouse', [ReportController::class, 'show'])
+            ->defaults('type', 'warehouse')
+            ->middleware('permission:reports.view|stock.view')
+            ->name('warehouse.index');
+        Route::get('/retail', [ReportController::class, 'show'])
+            ->defaults('type', 'retail')
+            ->middleware('permission:reports.view|cash_shifts.view|pos.view')
+            ->name('retail.index');
+        Route::get('/b2b', [ReportController::class, 'show'])
+            ->defaults('type', 'b2b')
+            ->middleware('permission:reports.view|b2b_orders.view')
+            ->name('b2b.index');
+        Route::get('/pricing', [ReportController::class, 'show'])
+            ->defaults('type', 'pricing')
+            ->middleware('permission:reports.view|prices.view')
+            ->name('pricing.index');
         Route::get('/suppliers', SupplierPerformanceController::class)
             ->middleware('permission:reports.view|suppliers.view')
             ->name('suppliers.index');
         Route::get('/losses', LossReportController::class)
             ->middleware('permission:reports.view|losses.view')
             ->name('losses.index');
+        Route::get('/attendance', [AttendanceReportController::class, 'attendance'])
+            ->middleware('permission:reports.view|attendance.view')
+            ->name('attendance.index');
+        Route::get('/shift-productivity', [AttendanceReportController::class, 'productivity'])
+            ->middleware('permission:reports.view|attendance.view')
+            ->name('shift-productivity.index');
+        Route::get('/receivables', [ReportController::class, 'show'])
+            ->defaults('type', 'receivables')
+            ->middleware('permission:reports.view|receivables.view')
+            ->name('receivables.index');
+        Route::get('/audit-notifications', [ReportController::class, 'show'])
+            ->defaults('type', 'audit_notifications')
+            ->middleware('permission:reports.view|audit.view')
+            ->name('audit-notifications.index');
+        Route::get('/exports', [ReportExportController::class, 'index'])
+            ->middleware('permission:reports.export|audit.export')
+            ->name('exports.index');
+        Route::post('/exports', [ReportExportController::class, 'store'])
+            ->middleware('permission:reports.export|audit.export')
+            ->name('exports.store');
+        Route::get('/exports/{export}/download', [ReportExportController::class, 'download'])
+            ->middleware('permission:reports.export|audit.export')
+            ->name('exports.download');
     });
 
     Route::get('/returns/export', [ReturnController::class, 'export'])
@@ -762,6 +1012,14 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         ->name('shipments.show');
 
     Route::prefix('retail')->name('retail.')->group(function (): void {
+        Route::get('/dashboard', RetailDashboardController::class)
+            ->middleware('permission:dashboard.view|cash_shifts.view|reports.view')
+            ->name('dashboard');
+
+        Route::get('/receivables', [ReceivableController::class, 'retail'])
+            ->middleware('permission:receivables.view')
+            ->name('receivables.index');
+
         Route::get('/shifts/open', [CashShiftController::class, 'open'])
             ->middleware('permission:cash_shifts.create')
             ->name('shifts.open');

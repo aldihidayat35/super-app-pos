@@ -24,6 +24,7 @@ use App\Models\WarehouseLocation;
 use App\Services\Inventory\InventoryService;
 use App\Services\Organization\DocumentNumberService;
 use App\Services\Pricing\PriceResolverService;
+use App\Services\Receivables\ReceivableService;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +34,7 @@ class PosService
         private readonly DocumentNumberService $numbers,
         private readonly InventoryService $inventory,
         private readonly PriceResolverService $prices,
+        private readonly ReceivableService $receivables,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -60,7 +62,10 @@ class PosService
             }
 
             $calculated = $this->calculateItems($itemPayloads, $branch, $customer, $cashier);
-            $payments = $this->validatePayments($data['payments'] ?? [], $calculated['grand_total']);
+            $payments = $this->validatePayments($data['payments'] ?? [], $calculated['grand_total'], $customer);
+            if (Decimal::compare($payments['credit_amount'], '0', 2) > 0) {
+                $this->receivables->assertCanUseCredit($this->requireCustomer($customer), $payments['credit_amount']);
+            }
             $number = $this->numbers->next('sale', $branch->workLocation);
 
             $sale = PosSale::query()->create([
@@ -136,6 +141,10 @@ class PosService
                 $shift->forceFill([
                     'expected_cash_amount' => Decimal::add((string) $shift->expected_cash_amount, $payments['cash_amount'], 2),
                 ])->save();
+            }
+
+            if (Decimal::compare($payments['credit_amount'], '0', 2) > 0) {
+                $this->receivables->createFromPosSale($sale, $cashier);
             }
 
             return $sale->load(['items.product', 'payments', 'branch', 'cashShift', 'customer']);
@@ -423,9 +432,9 @@ class PosService
     }
 
     /**
-     * @return array{rows: list<array<string, mixed>>, paid: string, change: string, cash_amount: string}
+     * @return array{rows: list<array<string, mixed>>, paid: string, change: string, cash_amount: string, credit_amount: string}
      */
-    private function validatePayments(mixed $payments, string $grandTotal): array
+    private function validatePayments(mixed $payments, string $grandTotal, ?Customer $customer): array
     {
         if (! is_array($payments) || $payments === []) {
             throw ServiceException::validation('Minimal satu metode pembayaran wajib diisi.');
@@ -433,6 +442,7 @@ class PosService
 
         $paid = '0.00';
         $cash = '0.00';
+        $credit = '0.00';
         $rows = [];
 
         foreach ($payments as $payment) {
@@ -443,9 +453,6 @@ class PosService
             if (! in_array($method, array_keys(PaymentMethod::options()), true)) {
                 throw ServiceException::validation('Metode pembayaran tidak valid.');
             }
-            if ($method === PaymentMethod::CREDIT->value) {
-                throw ServiceException::validation('Pembayaran tempo/piutang belum aktif untuk POS internal.');
-            }
             $amount = Decimal::normalize($payment['amount'] ?? 0, 2);
             if (Decimal::compare($amount, '0', 2) <= 0) {
                 throw ServiceException::validation('Nominal pembayaran harus lebih besar dari nol.');
@@ -454,6 +461,12 @@ class PosService
             if ($method === PaymentMethod::CASH->value) {
                 $cash = Decimal::add($cash, $amount, 2);
             }
+            if ($method === PaymentMethod::CREDIT->value) {
+                if (! $customer instanceof Customer) {
+                    throw ServiceException::validation('Pelanggan wajib dipilih untuk transaksi POS kredit.');
+                }
+                $credit = Decimal::add($credit, $amount, 2);
+            }
             $rows[] = [...$payment, 'method' => $method, 'amount' => $amount];
         }
 
@@ -461,6 +474,15 @@ class PosService
             throw ServiceException::validation('Total pembayaran kurang dari grand total.');
         }
 
-        return ['rows' => $rows, 'paid' => $paid, 'change' => Decimal::sub($paid, $grandTotal, 2), 'cash_amount' => $cash];
+        return ['rows' => $rows, 'paid' => $paid, 'change' => Decimal::sub($paid, $grandTotal, 2), 'cash_amount' => $cash, 'credit_amount' => $credit];
+    }
+
+    private function requireCustomer(?Customer $customer): Customer
+    {
+        if (! $customer instanceof Customer) {
+            throw ServiceException::validation('Pelanggan wajib dipilih untuk transaksi kredit.');
+        }
+
+        return $customer;
     }
 }

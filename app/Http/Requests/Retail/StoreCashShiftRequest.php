@@ -20,6 +20,7 @@ class StoreCashShiftRequest extends FormRequest
             'terminal_code' => ['nullable', 'string', 'max:80'],
             'opening_cash_amount' => ['required', 'numeric', 'min:0'],
             'discrepancy_threshold_amount' => ['nullable', 'numeric', 'min:0'],
+            'attendance_override_reason' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }

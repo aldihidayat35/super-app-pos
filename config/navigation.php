@@ -9,6 +9,13 @@ return [
         'permission' => 'dashboard.view',
     ],
     [
+        'label' => 'Dashboard Owner',
+        'icon' => 'ki-outline ki-chart-line-up',
+        'route' => 'owner.dashboard',
+        'active' => ['owner.dashboard'],
+        'permission' => 'reports.view',
+    ],
+    [
         'label' => 'Administrasi',
         'icon' => 'ki-outline ki-security-user',
         'children' => [
@@ -307,6 +314,12 @@ return [
         'icon' => 'ki-outline ki-shop',
         'children' => [
             [
+                'label' => 'Dashboard Cabang',
+                'route' => 'retail.dashboard',
+                'active' => ['retail.dashboard'],
+                'permission' => 'cash_shifts.view',
+            ],
+            [
                 'label' => 'Kasir POS',
                 'route' => 'retail.pos.index',
                 'active' => ['retail.pos.*'],
@@ -345,9 +358,141 @@ return [
         ],
     ],
     [
+        'label' => 'Kehadiran',
+        'icon' => 'ki-outline ki-calendar-tick',
+        'children' => [
+            [
+                'label' => 'Master Karyawan',
+                'route' => 'attendance.employees.index',
+                'active' => ['attendance.employees.*'],
+                'permission' => 'attendance.view',
+            ],
+            [
+                'label' => 'Master Shift',
+                'route' => 'attendance.work-shifts.index',
+                'active' => ['attendance.work-shifts.*'],
+                'permission' => 'attendance.view',
+            ],
+            [
+                'label' => 'Jadwal Shift',
+                'route' => 'attendance.schedules.index',
+                'active' => ['attendance.schedules.*'],
+                'permission' => 'attendance.view',
+            ],
+            [
+                'label' => 'Check-in/out',
+                'route' => 'attendance.check.show',
+                'active' => ['attendance.check.*'],
+                'permission' => 'attendance.check',
+            ],
+            [
+                'label' => 'Izin/Sakit/Cuti',
+                'route' => 'attendance.requests.index',
+                'active' => ['attendance.requests.*'],
+                'permission' => 'attendance.check',
+            ],
+            [
+                'label' => 'Koreksi Absensi',
+                'route' => 'attendance.corrections.index',
+                'active' => ['attendance.corrections.*'],
+                'permission' => 'attendance.update',
+            ],
+            [
+                'label' => 'Laporan Kehadiran',
+                'route' => 'reports.attendance.index',
+                'active' => ['reports.attendance.*'],
+                'permission' => 'attendance.view',
+            ],
+            [
+                'label' => 'Produktivitas Shift',
+                'route' => 'reports.shift-productivity.index',
+                'active' => ['reports.shift-productivity.*'],
+                'permission' => 'attendance.view',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Kontrol & Audit',
+        'icon' => 'ki-outline ki-shield-tick',
+        'children' => [
+            [
+                'label' => 'Kotak Masuk Approval',
+                'route' => 'approvals.index',
+                'active' => ['approvals.*'],
+                'permission' => 'approvals.view',
+            ],
+            [
+                'label' => 'Audit Log',
+                'route' => 'audit-logs.index',
+                'active' => ['audit-logs.*'],
+                'permission' => 'audit.view',
+            ],
+            [
+                'label' => 'Dashboard Anomali',
+                'route' => 'audit.anomalies.index',
+                'active' => ['audit.anomalies.*'],
+                'permission' => 'audit.view',
+            ],
+            [
+                'label' => 'Log Login & Keamanan',
+                'route' => 'audit.security.index',
+                'active' => ['audit.security.*'],
+                'permission' => 'audit.view',
+            ],
+            [
+                'label' => 'Channel Notifikasi',
+                'route' => 'admin.notifications.channels.index',
+                'active' => ['admin.notifications.channels.*'],
+                'permission' => 'notifications.view',
+            ],
+            [
+                'label' => 'Template Pesan',
+                'route' => 'admin.notifications.templates.index',
+                'active' => ['admin.notifications.templates.*'],
+                'permission' => 'notifications.view',
+            ],
+            [
+                'label' => 'Jadwal Notifikasi',
+                'route' => 'admin.notifications.schedules.index',
+                'active' => ['admin.notifications.schedules.*'],
+                'permission' => 'notifications.view',
+            ],
+            [
+                'label' => 'Penerima Notifikasi',
+                'route' => 'admin.notifications.recipients.index',
+                'active' => ['admin.notifications.recipients.*'],
+                'permission' => 'notifications.view',
+            ],
+            [
+                'label' => 'Log Pengiriman',
+                'route' => 'admin.notifications.logs.index',
+                'active' => ['admin.notifications.logs.*'],
+                'permission' => 'notifications.view',
+            ],
+            [
+                'label' => 'Aturan Alert',
+                'route' => 'admin.notifications.alerts.index',
+                'active' => ['admin.notifications.alerts.*'],
+                'permission' => 'notifications.view',
+            ],
+        ],
+    ],
+    [
         'label' => 'Invoice & Pembayaran',
         'icon' => 'ki-outline ki-bill',
         'children' => [
+            [
+                'label' => 'Dashboard Piutang',
+                'route' => 'receivables.dashboard',
+                'active' => ['receivables.dashboard'],
+                'permission' => 'receivables.view',
+            ],
+            [
+                'label' => 'Daftar Piutang',
+                'route' => 'receivables.index',
+                'active' => ['receivables.index', 'receivables.customers.*', 'receivables.adjustments'],
+                'permission' => 'receivables.view',
+            ],
             [
                 'label' => 'Invoice',
                 'route' => 'invoices.index',
@@ -355,10 +500,94 @@ return [
                 'permission' => 'invoices.view',
             ],
             [
-                'label' => 'Input Pembayaran',
-                'route' => 'payments.create',
-                'active' => ['payments.*'],
-                'permission' => 'payments.create',
+                'label' => 'Pembayaran Piutang',
+                'route' => 'receivables.payments.create',
+                'active' => ['receivables.payments.*', 'payments.*'],
+                'permission' => 'receivables.pay',
+            ],
+            [
+                'label' => 'Reminder Tagihan',
+                'route' => 'receivables.reminders',
+                'active' => ['receivables.reminders'],
+                'permission' => 'receivables.view',
+            ],
+            [
+                'label' => 'Limit Kredit',
+                'route' => 'receivables.credit-limits',
+                'active' => ['receivables.credit-limits'],
+                'permission' => 'receivables.manage_limits',
+            ],
+            [
+                'label' => 'Piutang Toko',
+                'route' => 'retail.receivables.index',
+                'active' => ['retail.receivables.*'],
+                'permission' => 'receivables.view',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Laporan',
+        'icon' => 'ki-outline ki-chart-pie-4',
+        'children' => [
+            [
+                'label' => 'Harian Owner',
+                'route' => 'reports.daily.index',
+                'active' => ['reports.daily.*'],
+                'permission' => 'reports.view',
+            ],
+            [
+                'label' => 'Gudang',
+                'route' => 'reports.warehouse.index',
+                'active' => ['reports.warehouse.*'],
+                'permission' => 'stock.view',
+            ],
+            [
+                'label' => 'Toko',
+                'route' => 'reports.retail.index',
+                'active' => ['reports.retail.*'],
+                'permission' => 'cash_shifts.view',
+            ],
+            [
+                'label' => 'Langganan/B2B',
+                'route' => 'reports.b2b.index',
+                'active' => ['reports.b2b.*'],
+                'permission' => 'b2b_orders.view',
+            ],
+            [
+                'label' => 'Harga & Margin',
+                'route' => 'reports.pricing.index',
+                'active' => ['reports.pricing.*'],
+                'permission' => 'prices.view',
+            ],
+            [
+                'label' => 'Supplier',
+                'route' => 'reports.suppliers.index',
+                'active' => ['reports.suppliers.*'],
+                'permission' => 'suppliers.view',
+            ],
+            [
+                'label' => 'Kehadiran',
+                'route' => 'reports.attendance.index',
+                'active' => ['reports.attendance.*'],
+                'permission' => 'attendance.view',
+            ],
+            [
+                'label' => 'Piutang',
+                'route' => 'reports.receivables.index',
+                'active' => ['reports.receivables.*'],
+                'permission' => 'receivables.view',
+            ],
+            [
+                'label' => 'Audit & Notifikasi',
+                'route' => 'reports.audit-notifications.index',
+                'active' => ['reports.audit-notifications.*'],
+                'permission' => 'audit.view',
+            ],
+            [
+                'label' => 'Pusat Export',
+                'route' => 'reports.exports.index',
+                'active' => ['reports.exports.*'],
+                'permission' => 'reports.export',
             ],
         ],
     ],

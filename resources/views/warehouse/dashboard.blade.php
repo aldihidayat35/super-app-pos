@@ -1,5 +1,7 @@
 @extends('layouts.metronic.app')
 
+@php($kpis = $dashboard['kpis'])
+
 @section('title', 'Dashboard Gudang - ' . config('app.name'))
 @section('page_title', 'Dashboard Gudang')
 
@@ -8,36 +10,52 @@
 @endsection
 
 @section('content')
-    <div class="row g-5 mb-5">
-        <div class="col-md-3"><x-metronic.card title="Stok Tersedia"><div class="fs-2 fw-bold">{{ number_format((float) (($totals->on_hand ?? 0) - ($totals->reserved ?? 0) - ($totals->damaged ?? 0)), 4, ',', '.') }}</div><div class="text-muted">On hand - reserved - rusak</div></x-metronic.card></div>
-        <div class="col-md-3"><x-metronic.card title="Reserved"><div class="fs-2 fw-bold">{{ number_format((float) ($totals->reserved ?? 0), 4, ',', '.') }}</div><div class="text-muted">Dialokasikan order</div></x-metronic.card></div>
-        <div class="col-md-3"><x-metronic.card title="Rusak"><div class="fs-2 fw-bold">{{ number_format((float) ($totals->damaged ?? 0), 4, ',', '.') }}</div><div class="text-muted">Tidak tersedia dijual</div></x-metronic.card></div>
-        <div class="col-md-3"><x-metronic.card title="Nilai Persediaan"><div class="fs-2 fw-bold">Rp {{ number_format((float) ($totals->value ?? 0), 0, ',', '.') }}</div><div class="text-muted">Berdasarkan cost_value</div></x-metronic.card></div>
-    </div>
+    <x-metronic.page-title title="Dashboard Gudang" description="DASH-02 stok, nilai, receipt/issue, PO/transfer/order pending, damaged, opname, dan workload.">
+        <a href="{{ route('reports.warehouse.index', request()->query()) }}" class="btn btn-light-primary">Laporan Gudang</a>
+    </x-metronic.page-title>
+
+    @include('reports.partials.filter', ['filters' => $filters])
+
+    @include('reports.partials.kpi-grid', ['items' => [
+        ['label' => 'Stok Tersedia', 'value' => $kpis['available_quantity'], 'color' => 'primary', 'description' => 'On hand - reserved - rusak'],
+        ['label' => 'Reserved', 'value' => $kpis['reserved_quantity'], 'color' => 'warning'],
+        ['label' => 'Rusak', 'value' => $kpis['damaged_quantity'], 'color' => 'danger'],
+        ['label' => 'Nilai Persediaan', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['stock_value']), 'color' => 'success'],
+        ['label' => 'Stok Kritis', 'value' => $kpis['critical_count'], 'color' => 'danger'],
+        ['label' => 'Stok Kosong', 'value' => $kpis['empty_count'], 'color' => 'danger'],
+        ['label' => 'Masuk/Keluar', 'value' => $kpis['incoming_count'].' / '.$kpis['outgoing_count'], 'color' => 'info'],
+        ['label' => 'Pending PO/Transfer', 'value' => $kpis['pending_po'].' / '.$kpis['pending_transfer'], 'color' => 'warning'],
+    ]])
 
     <div class="row g-5 mb-5">
-        <div class="col-lg-4"><x-metronic.card title="Stok Kritis/Kosong"><div class="d-flex justify-content-between"><span>Kritis</span><span class="fw-bold">{{ $criticalStocks }}</span></div><div class="d-flex justify-content-between"><span>Kosong</span><span class="fw-bold">{{ $emptyStocks }}</span></div><div class="d-flex justify-content-between"><span>Produk aktif</span><span class="fw-bold">{{ $activeProductCount }}</span></div></x-metronic.card></div>
-        <div class="col-lg-4"><x-metronic.card title="Barang Masuk/Keluar 30 Hari"><div class="d-flex justify-content-between"><span>Masuk</span><span class="fw-bold text-success">{{ $incomingCount }}</span></div><div class="d-flex justify-content-between"><span>Keluar</span><span class="fw-bold text-danger">{{ $outgoingCount }}</span></div><div class="text-muted mt-3">Grafik 30 hari disiapkan dari data mutasi harian.</div></x-metronic.card></div>
-        <div class="col-lg-4"><x-metronic.card title="Order & Transfer Pending"><div class="d-flex justify-content-between"><span>Order pending</span><span class="badge badge-light">Modul berikutnya</span></div><div class="d-flex justify-content-between"><span>Transfer tertunda</span><span class="badge badge-light">Belum ada dokumen approval</span></div><div class="mt-3"><a href="{{ route('warehouse.stocks.index', ['status' => 'critical']) }}" class="btn btn-sm btn-light-primary">Lihat stok kritis</a></div></x-metronic.card></div>
+        <div class="col-lg-4">
+            <x-metronic.card title="Dokumen Pending">
+                <div class="d-flex justify-content-between mb-3"><span>Order B2B Pending</span><span class="fw-bold">{{ $kpis['pending_order'] }}</span></div>
+                <div class="d-flex justify-content-between mb-3"><span>Receipt Posted</span><span class="fw-bold">{{ $kpis['posted_receipts'] }}</span></div>
+                <div class="d-flex justify-content-between"><span>Opname Terbuka</span><span class="fw-bold">{{ $kpis['open_opname'] }}</span></div>
+            </x-metronic.card>
+        </div>
+        <div class="col-lg-8">
+            @include('reports.partials.definitions', ['definitions' => $definitions])
+        </div>
     </div>
 
     <x-metronic.card title="Mutasi Besar Terbaru">
+        <div class="text-muted mb-4">Last updated: {{ $dashboard['last_updated_at']->format('d/m/Y H:i:s') }}</div>
         <div class="table-responsive">
             <table class="table table-row-dashed align-middle">
-                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Waktu</th><th>Produk</th><th>Lokasi</th><th>Jenis</th><th>Perubahan</th><th>User</th><th></th></tr></thead>
+                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Waktu</th><th>Produk</th><th>Lokasi</th><th>Jenis</th><th>Perubahan</th></tr></thead>
                 <tbody>
-                @forelse ($largeMutations as $mutation)
+                @forelse ($dashboard['large_mutations'] as $mutation)
                     <tr>
-                        <td>{{ $mutation->occurred_at?->format('d/m/Y H:i') }}</td>
-                        <td>{{ $mutation->product?->sku }} — {{ $mutation->product?->name }}</td>
-                        <td>{{ $mutation->warehouseLocation?->full_code ?: $mutation->workLocation?->name }}</td>
-                        <td>{{ $mutation->mutation_type->label() }}</td>
-                        <td class="fw-bold">{{ $mutation->quantity_on_hand_change }}</td>
-                        <td>{{ $mutation->actor?->name ?: '-' }}</td>
-                        <td class="text-end"><a class="btn btn-sm btn-light" href="{{ route('warehouse.stock-mutations.show', $mutation) }}">Detail</a></td>
+                        <td>{{ \Illuminate\Support\Carbon::parse($mutation['occurred_at'])->format('d/m/Y H:i') }}</td>
+                        <td>{{ $mutation['sku'] }} — {{ $mutation['product'] }}</td>
+                        <td>{{ $mutation['location'] ?: '-' }}</td>
+                        <td>{{ $mutation['mutation_type'] }}</td>
+                        <td class="fw-bold">{{ $mutation['quantity_on_hand_change'] }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="7"><x-metronic.empty-state title="Belum ada mutasi besar" description="Mutasi besar akan tampil setelah stok bergerak." /></td></tr>
+                    <tr><td colspan="5"><x-metronic.empty-state title="Belum ada mutasi besar" description="Mutasi besar akan tampil setelah stok bergerak." /></td></tr>
                 @endforelse
                 </tbody>
             </table>

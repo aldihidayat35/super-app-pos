@@ -4,15 +4,23 @@ namespace App\Actions\Auth;
 
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
+use App\Services\Control\AnomalyDetectionService;
+use App\Services\Control\AuditLogService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 final class AuthenticateUserAction
 {
+    public function __construct(
+        private readonly AuditLogService $audit,
+        private readonly AnomalyDetectionService $anomalies,
+    ) {}
+
     public function execute(LoginRequest $request): User
     {
         $login = Str::lower((string) $request->string('login'));
@@ -62,6 +70,10 @@ final class AuthenticateUserAction
             'ip' => $request->ip(),
             'user_agent_hash' => sha1((string) $request->userAgent()),
         ]);
+
+        if (Schema::hasTable('audit_logs')) {
+            $this->audit->security($request, 'auth.login_success', $user, ['user_id' => $user->getKey()]);
+        }
     }
 
     private function logFailure(LoginRequest $request, ?User $user, string $reason): void
@@ -72,5 +84,12 @@ final class AuthenticateUserAction
             'ip' => $request->ip(),
             'user_agent_hash' => sha1((string) $request->userAgent()),
         ]);
+
+        if (Schema::hasTable('audit_logs')) {
+            $this->audit->security($request, 'auth.login_failed', $user, ['user_id' => $user?->getKey(), 'reason' => $reason], 'warning');
+        }
+        if ($user instanceof User && Schema::hasTable('anomaly_alerts')) {
+            $this->anomalies->detectLoginFailures($user);
+        }
     }
 }

@@ -6,15 +6,17 @@ use App\Enums\B2bOrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\B2bOrder;
 use App\Services\B2B\B2bPortalService;
+use App\Services\Reports\ReportMetricService;
 use App\Support\Decimal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, B2bPortalService $portal): View
+    public function __invoke(Request $request, B2bPortalService $portal, ReportMetricService $reports): View
     {
         $customer = $portal->activeCustomerFor($request->user());
+        $filters = $reports->filters($request->user(), $request->query());
         $activeOrders = B2bOrder::query()
             ->where('customer_id', $customer->id)
             ->whereIn('status', [
@@ -40,6 +42,9 @@ class DashboardController extends Controller
             'latestOrders' => B2bOrder::query()->where('customer_id', $customer->id)->latest('id')->limit(5)->get(),
             'creditAvailable' => $creditAvailable,
             'cart' => $portal->currentCart($customer, $request->user()),
+            'dashboard' => $reports->b2bDashboard($request->user(), $filters, $customer->id),
+            'filters' => $filters,
+            'definitions' => $reports->definitions('b2b'),
         ]);
     }
 }

@@ -15,19 +15,38 @@ use App\Models\SalePayment;
 use App\Models\ShiftApproval;
 use App\Models\ShiftExpense;
 use App\Models\User;
+use App\Services\Attendance\AttendanceService;
+use App\Services\Control\AnomalyDetectionService;
 use App\Services\Organization\DocumentNumberService;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 
 class CashShiftService
 {
-    public function __construct(private readonly DocumentNumberService $numbers) {}
+    public function __construct(
+        private readonly DocumentNumberService $numbers,
+        private readonly AttendanceService $attendance,
+        private readonly AnomalyDetectionService $anomalies,
+    ) {}
 
     /** @param array<string, mixed> $data */
     public function open(array $data, User $cashier): CashShift
     {
         return DB::transaction(function () use ($data, $cashier): CashShift {
             $branch = $this->branch((int) $data['branch_id'], $cashier);
+            $attendance = null;
+            $overrideBy = null;
+            $overrideReason = null;
+            try {
+                $attendance = $this->attendance->activeAttendanceForCashShift($cashier, $branch->workLocation);
+            } catch (ServiceException $exception) {
+                $overrideReason = $data['attendance_override_reason'] ?? null;
+                if (! filled($overrideReason) || (! $cashier->can('attendance.approve') && ! $cashier->can('cash_shifts.approve'))) {
+                    throw $exception;
+                }
+                $overrideBy = $cashier->id;
+            }
+
             $active = CashShift::query()
                 ->where('branch_id', $branch->id)
                 ->where('cashier_user_id', $cashier->id)
@@ -44,6 +63,9 @@ class CashShiftService
                 'branch_id' => $branch->id,
                 'work_location_id' => $branch->work_location_id,
                 'cashier_user_id' => $cashier->id,
+                'attendance_id' => $attendance?->id,
+                'attendance_override_by' => $overrideBy,
+                'attendance_override_reason' => $overrideReason,
                 'opened_by' => $cashier->id,
                 'status' => CashShiftStatus::OPEN,
                 'terminal_code' => $data['terminal_code'] ?? null,
@@ -176,6 +198,7 @@ class CashShiftService
             ])->save();
 
             $this->logApproval($shift, $cashier, 'submit', $data['handover_notes'] ?? null);
+            $this->anomalies->detectClosingDifference($shift);
 
             return $shift->fresh(['branch', 'cashier', 'expenses', 'cashCounts']);
         });
