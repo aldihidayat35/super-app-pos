@@ -80,6 +80,7 @@ use App\Policies\UserPolicy;
 use App\Policies\WarehouseLocationPolicy;
 use App\Policies\WarehousePolicy;
 use App\Policies\WorkLocationPolicy;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Permission;
@@ -100,6 +101,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::useBootstrapFive();
+
         Gate::before(fn (User $user, string $ability): ?bool => $user->hasRole('super_admin') ? true : null);
 
         Gate::policy(User::class, UserPolicy::class);

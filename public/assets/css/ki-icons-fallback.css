@@ -1,0 +1,55 @@
+/* ==========================================================================
+   Ki Icons Fallback — Emoji (sidebar scoped only)
+   Karena tree-shaking Vite memotong script yang merender SVG ikon Ki,
+   gunakan pseudo-class ::after pada span.menu-icon untuk menampilkan emoji.
+   Tidak mengganggu elemen lain di luar sidebar.
+   ========================================================================== */
+
+/* Sembunyikan <i class="ki-outline"> asli */
+#kt_app_sidebar .menu-icon .ki-outline {
+    display: none !important;
+}
+
+/* Style menu-icon container */
+#kt_app_sidebar .menu-icon {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background-color: transparent;
+    color: var(--bs-gray-500);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+    margin-right: 8px;
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+/* Base emoji pseudo */
+#kt_app_sidebar .menu-icon::after {
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+    content: "";
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* Map icon class → emoji unicode */
+#kt_app_sidebar .menu-icon.ki-home-2::after               { content: "\1F3E0"; }
+#kt_app_sidebar .menu-icon.ki-chart-line-up::after         { content: "\1F4C8"; }
+#kt_app_sidebar .menu-icon.ki-security-user::after         { content: "\1F465"; }
+#kt_app_sidebar .menu-icon.ki-setting-2::after             { content: "\2699";  }
+#kt_app_sidebar .menu-icon.ki-parcel::after                { content: "\1F4E6"; }
+#kt_app_sidebar .menu-icon.ki-people::after                { content: "\1F465"; }
+#kt_app_sidebar .menu-icon.ki-delivery-3::after            { content: "\1F69A"; }
+#kt_app_sidebar .menu-icon.ki-purchase::after              { content: "\1F6D2"; }
+#kt_app_sidebar .menu-icon.ki-price-tag::after             { content: "\1F3F7"; }
+#kt_app_sidebar .menu-icon.ki-arrow-left-right::after      { content: "\21C4";  }
+#kt_app_sidebar .menu-icon.ki-shop::after                  { content: "\1F3EA"; }
+#kt_app_sidebar .menu-icon.ki-calendar-tick::after         { content: "\1F4C5"; }
+#kt_app_sidebar .menu-icon.ki-shield-tick::after           { content: "\1F6E1"; }
+#kt_app_sidebar .menu-icon.ki-bill::after                  { content: "\1F4DC"; }
+#kt_app_sidebar .menu-icon.ki-chart-pie-4::after           { content: "\1F967"; }
+#kt_app_sidebar .menu-icon.ki-basket::after                { content: "\1F9D5"; }

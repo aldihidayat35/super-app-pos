@@ -11,7 +11,7 @@
 		<i class="ki-outline ki-abstract-14 fs-2"></i>	</div>
 	<!--begin::Logo image-->
     <a href="#">
-		<img alt="Logo" src="/assets/media/logos/demo38-small.svg" class="h-30px"/>
+		<img alt="Logo" src="/assets/media/logos/demo38-small.svg" class="h-22px"/>
     </a>
     <!--end::Logo image-->
 </div>

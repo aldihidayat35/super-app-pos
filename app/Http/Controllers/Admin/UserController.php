@@ -13,6 +13,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\DataTables\UsersDataTable;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Spatie\Activitylog\Models\Activity;
@@ -59,6 +62,16 @@ class UserController extends Controller
             'roleFilter' => $request->query('role'),
             'locationFilter' => $request->query('location'),
         ]);
+    }
+
+    /** Server-side DataTable endpoint for AJAX requests */
+    public function dataTable(UsersDataTable $dataTable): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('viewAny', User::class);
+
+        $response = $dataTable->paginate();
+
+        return response()->json($response);
     }
 
     public function create(): View

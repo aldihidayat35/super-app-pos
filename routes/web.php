@@ -293,6 +293,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/users', [UserController::class, 'index'])
             ->middleware('permission:admin.users.view')
             ->name('users.index');
+        Route::get('/users/datatable', [UserController::class, 'dataTable'])
+            ->middleware('permission:admin.users.view')
+            ->name('users.datatable');
         Route::get('/users/export', [UserController::class, 'export'])
             ->middleware('permission:admin.users.export')
             ->name('users.export');

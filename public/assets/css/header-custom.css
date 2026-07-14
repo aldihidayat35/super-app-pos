@@ -1,0 +1,55 @@
+/* ==========================================================================
+   GudangToko — Header Height Polish
+   Mengurangi tinggi header agar lebih compact.
+   ========================================================================== */
+
+/* Override default Metronic app-header padding */
+:root {
+    --gt-header-height: 44px;
+}
+
+#kt_app_header {
+    height: var(--gt-header-height) !important;
+    min-height: var(--gt-header-height) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+#kt_app_header_container {
+    min-height: var(--gt-header-height) !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+[data-bs-theme='dark'] #kt_app_header {
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Compensate main content offset to match shorter header */
+[data-kt-app-header-fixed='true'] .app-wrapper {
+    padding-top: var(--gt-header-height) !important;
+}
+
+[data-kt-app-header-fixed='true'][data-kt-app-sidebar-fixed='true'] .app-sidebar {
+    top: var(--gt-header-height) !important;
+    height: calc(100dvh - var(--gt-header-height)) !important;
+}
+
+[data-kt-app-header-fixed='true'] .app-main {
+    padding-top: 0 !important;
+}
+
+/* Make theme buttons smaller and aligned with header height */
+#kt_app_header_container .btn-icon {
+    width: 32px !important;
+    height: 32px !important;
+}
+
+#kt_app_header_container .btn-icon i.fs-1,
+#kt_app_header_container .btn-icon i.fs-2 {
+    font-size: 1.1rem !important;
+}
+
+/* Notification area tighter */
+#kt_app_header_container .dropdown-menu {
+    margin-top: 4px !important;
+}
