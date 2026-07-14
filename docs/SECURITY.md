@@ -15,8 +15,8 @@ Dokumen ini mencatat audit keamanan aplikasi GudangToko setelah modul P01-P26 da
 | Secret/token masking | Selesai | Low | `AuditLogService` dan notification dispatch melakukan redaction untuk password/token/secret/file sensitif. Test memastikan token tidak muncul mentah. |
 | Private/signed files | Selesai | Medium | Route bukti pembayaran memakai signed URL; dokumen P25 daily report memakai token akses. Test P27 menambah bukti signed URL expiry. |
 | File upload validation | Perlu audit lanjutan per modul | Medium | Modul avatar/bukti memakai validasi file yang ada. Sebelum production perlu sampling manual semua endpoint upload dan pembatasan storage private. |
-| CSP ketat | Belum diaktifkan | Medium | Belum dipasang karena Metronic/Blade masih memakai inline script. Perlu fase CSP nonce/hash agar UI tidak rusak. |
-| Backup/restore encrypted | Prosedur terdokumentasi | Medium | Belum dipasang job backup otomatis. Production wajib memakai backup terenkripsi dan uji restore berkala. |
+| CSP ketat | Termitigasi bertahap | Low | Header `Content-Security-Policy-Report-Only` aktif secara default melalui `SecureResponseHeaders`. Mode enforce menunggu nonce/hash Metronic agar tidak mematahkan UI. |
+| Backup/restore encrypted | Selesai baseline | Low | Command `system:encrypted-backup` tersedia, hasil terenkripsi dengan app key, dapat dijadwalkan melalui `SECURITY_BACKUP_ENABLED=true`, dan health page memunculkan status backup. |
 | Webhook validation | Tidak aktif | Low | Belum ada webhook inbound production. Jika WA/payment gateway inbound ditambahkan, wajib HMAC/signature validation. |
 
 ## Checklist OWASP dan kontrol proyek
@@ -55,6 +55,27 @@ Dokumen ini mencatat audit keamanan aplikasi GudangToko setelah modul P01-P26 da
 - Laporan harian P25 memakai token aman, bukan URL publik acak tanpa validasi.
 - Upload produksi harus disimpan pada disk privat jika mengandung data pelanggan/pembayaran; public disk hanya untuk aset publik.
 
+### Backup terenkripsi
+
+Baseline backup tersedia melalui command berikut:
+
+```bash
+php artisan system:encrypted-backup --connection=mysql --dry-run
+php artisan system:encrypted-backup --connection=mysql
+```
+
+Aktifkan scheduler production dengan konfigurasi:
+
+```env
+SECURITY_BACKUP_ENABLED=true
+SECURITY_BACKUP_DISK=local
+SECURITY_BACKUP_PATH=private/backups
+SECURITY_BACKUP_RETENTION_DAYS=14
+SECURITY_BACKUP_SCHEDULE_TIME=02:30
+```
+
+File backup disimpan terenkripsi menggunakan app key Laravel. Uji restore tetap wajib dilakukan di staging secara berkala.
+
 ### Production readiness
 
 Wajib sebelum go-live:
@@ -67,7 +88,7 @@ Wajib sebelum go-live:
 6. Backup database/file terenkripsi, dengan uji restore.
 7. Rotasi secret WA/API/payment gateway.
 8. Log akses server disimpan sesuai kebijakan retensi.
-9. CSP nonce/hash direncanakan setelah inline script Metronic dirapikan.
+9. Pantau laporan CSP report-only sebelum mengubah `SECURITY_CSP_REPORT_ONLY=false`.
 
 ## Evidence test
 
@@ -82,6 +103,6 @@ Wajib sebelum go-live:
 
 ## Risiko tersisa
 
-- CSP belum ketat karena risiko breaking change pada Metronic. Severity medium, mitigasi: tambah nonce/hash pada script custom lalu aktifkan policy bertahap dalam report-only mode.
-- Belum ada automation backup encrypted. Severity medium, mitigasi: gunakan backup eksternal terenkripsi dan tambah test restore staging.
-- Audit upload endpoint perlu sampling manual modul per modul sebelum production. Severity medium.
+- CSP enforce belum diaktifkan karena risiko breaking change pada Metronic. Severity low setelah report-only aktif; enforce dilakukan setelah violation report bersih.
+- Backup command memakai `mysqldump` dan enkripsi berbasis APP_KEY. Untuk database sangat besar, gunakan backup engine storage/database native yang tetap terenkripsi.
+- Upload endpoint utama sudah memakai validasi `file/image`, `mimes`, dan `max`; sampling manual tetap dilakukan saat UAT production.

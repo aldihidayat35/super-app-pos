@@ -20,6 +20,7 @@ final class HealthCheckService
             'folder_permissions' => $this->folderPermissions(),
             'queue' => $this->queue(),
             'scheduler' => $this->scheduler(),
+            'backup' => $this->backup(),
             'application' => $this->application(),
             'server_time' => $this->serverTime(),
         ];
@@ -110,6 +111,34 @@ final class HealthCheckService
                 ? "Heartbeat scheduler terakhir: {$lastRun}."
                 : 'Heartbeat belum tersedia. Jalankan scheduler lalu muat ulang halaman.',
         ];
+    }
+
+    /** @return array{status: string, message: string} */
+    private function backup(): array
+    {
+        if (! config('security.backup.enabled')) {
+            return [
+                'status' => app()->environment('production') ? 'warning' : 'ok',
+                'message' => 'Backup terenkripsi belum diaktifkan. Aktifkan SECURITY_BACKUP_ENABLED=true di production.',
+            ];
+        }
+
+        $disk = (string) config('security.backup.disk');
+        $path = trim((string) config('security.backup.path'), '/');
+
+        try {
+            Storage::disk($disk)->put($path.'/.health-check', now()->toDateTimeString());
+            Storage::disk($disk)->delete($path.'/.health-check');
+
+            return [
+                'status' => 'ok',
+                'message' => 'Disk backup dapat ditulis. Jadwal backup terenkripsi aktif pada '.config('security.backup.schedule_time', '02:30').'.',
+            ];
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return ['status' => 'error', 'message' => 'Disk backup tidak dapat ditulis. Periksa konfigurasi backup.'];
+        }
     }
 
     /** @return array{status: string, message: string} */

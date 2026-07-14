@@ -14,8 +14,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        if ($this->command?->getLaravel()->environment('local')) {
-            $this->call(LocalDatabaseSeeder::class);
+        if ($this->command->getLaravel()->environment('local')) {
+            $this->call(DemoFullApplicationSeeder::class);
         }
     }
 }

@@ -18,3 +18,11 @@ Schedule::command('notifications:run-schedules')
     ->timezone(config('notifications.timezone', 'Asia/Jakarta'))
     ->name('notification-schedule-runner')
     ->withoutOverlapping();
+
+if (config('security.backup.enabled')) {
+    Schedule::command('system:encrypted-backup')
+        ->dailyAt((string) config('security.backup.schedule_time', '02:30'))
+        ->timezone(config('app.timezone', 'Asia/Jakarta'))
+        ->name('system-encrypted-backup')
+        ->withoutOverlapping();
+}

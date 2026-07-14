@@ -73,6 +73,30 @@ return [
                 'active' => ['admin.system.health', 'system.health'],
                 'permission' => 'system.health.view',
             ],
+            [
+                'label' => 'Backup',
+                'route' => 'admin.system.backups.index',
+                'active' => ['admin.system.backups.*'],
+                'permission' => 'system.operations.view',
+            ],
+            [
+                'label' => 'Log & Queue',
+                'route' => 'admin.system.logs.index',
+                'active' => ['admin.system.logs.*'],
+                'permission' => 'system.operations.view',
+            ],
+            [
+                'label' => 'Import Data Awal',
+                'route' => 'admin.system.imports.index',
+                'active' => ['admin.system.imports.*'],
+                'permission' => 'system.operations.view',
+            ],
+            [
+                'label' => 'Maintenance & Go-Live',
+                'route' => 'admin.system.maintenance.index',
+                'active' => ['admin.system.maintenance.*'],
+                'permission' => 'system.operations.view',
+            ],
         ],
     ],
     [

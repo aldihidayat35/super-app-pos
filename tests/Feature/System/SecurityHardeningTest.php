@@ -46,6 +46,7 @@ class SecurityHardeningTest extends TestCase
             ->assertOk()
             ->assertSee('Kesehatan Sistem')
             ->assertSee('database')
+            ->assertSee('backup')
             ->assertDontSee('APP_KEY')
             ->assertDontSee('DB_PASSWORD');
     }
@@ -58,7 +59,24 @@ class SecurityHardeningTest extends TestCase
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+            ->assertHeader('Content-Security-Policy-Report-Only');
+    }
+
+    #[Test]
+    public function encrypted_backup_command_can_validate_configuration_without_dumping_database(): void
+    {
+        config([
+            'database.connections.mysql.host' => '127.0.0.1',
+            'database.connections.mysql.database' => 'gudangtoko_test',
+            'database.connections.mysql.username' => 'root',
+            'security.backup.disk' => 'local',
+            'security.backup.path' => 'private/backups',
+        ]);
+
+        $this->artisan('system:encrypted-backup --connection=mysql --dry-run')
+            ->expectsOutput('Konfigurasi backup terenkripsi valid. Dry-run selesai tanpa membuat file backup.')
+            ->assertExitCode(0);
     }
 
     #[Test]

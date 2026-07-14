@@ -85,6 +85,7 @@ use App\Http\Controllers\Returns\ReturnController;
 use App\Http\Controllers\ShipmentController;
 use App\Http\Controllers\ShipmentProofController;
 use App\Http\Controllers\System\HealthController;
+use App\Http\Controllers\System\OperationsController;
 use App\Http\Controllers\Warehouse\B2bOrderController as WarehouseB2bOrderController;
 use App\Http\Controllers\Warehouse\GoodsReceiptController;
 use App\Http\Controllers\Warehouse\LocationTransferController;
@@ -355,6 +356,22 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/system/health', HealthController::class)
             ->middleware('permission:system.health.view')
             ->name('system.health');
+
+        Route::prefix('system')->name('system.')->middleware('role:super_admin')->group(function (): void {
+            Route::get('/backups', [OperationsController::class, 'backups'])->name('backups.index');
+            Route::post('/backups/run', [OperationsController::class, 'runBackup'])->name('backups.run');
+            Route::get('/backups/download', [OperationsController::class, 'downloadBackup'])
+                ->middleware('signed')
+                ->name('backups.download');
+            Route::get('/logs', [OperationsController::class, 'logs'])->name('logs.index');
+            Route::post('/logs/failed-jobs/{failedJob}/retry', [OperationsController::class, 'retryFailedJob'])->name('logs.failed-jobs.retry');
+            Route::post('/logs/resolve', [OperationsController::class, 'resolveLog'])->name('logs.resolve');
+            Route::get('/imports', [OperationsController::class, 'imports'])->name('imports.index');
+            Route::get('/imports/templates/{type}', [OperationsController::class, 'downloadImportTemplate'])->name('imports.templates.download');
+            Route::post('/imports/preview', [OperationsController::class, 'previewImport'])->name('imports.preview');
+            Route::get('/maintenance', [OperationsController::class, 'maintenance'])->name('maintenance.index');
+            Route::post('/maintenance', [OperationsController::class, 'runMaintenance'])->name('maintenance.run');
+        });
 
         Route::prefix('notifications')->name('notifications.')->group(function (): void {
             Route::get('/channels', [NotificationChannelController::class, 'index'])

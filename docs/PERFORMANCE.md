@@ -13,6 +13,7 @@ Dokumen ini mencatat audit performa dan optimasi baseline untuk GudangToko setel
 | Cache permission/menu/KPI | Selesai sebagian | Spatie permission cache tersedia. KPI dashboard/report masih perlu cache TTL pendek per role/lokasi saat data production membesar. |
 | Chunk/cursor | Tersedia pada export tertentu | Export audit menggunakan streaming cursor style (`each`). Export baru wajib memakai chunk/cursor. |
 | Health observability | Selesai | `SYS-01 /admin/system/health` mengecek DB/cache/session/queue/scheduler/storage/runtime folder. |
+| Backup operasional | Selesai baseline | `system:encrypted-backup` tersedia dan dijadwalkan opsional; health page memberi warning jika production belum aktif. |
 
 ## Index yang ditambahkan
 
@@ -71,5 +72,5 @@ Dokumen ini mencatat audit performa dan optimasi baseline untuk GudangToko setel
 ## Risiko tersisa
 
 - Belum ada benchmark query count browser/Dusk. Perlu profiling dengan data production-like.
-- Cache KPI dashboard belum menyeluruh; risiko sedang saat transaksi dan laporan sudah besar.
+- Cache KPI dashboard belum menyeluruh; risiko rendah-sedang saat transaksi dan laporan sudah besar, mitigasi awal: batasi periode default dan aktifkan cache TTL pendek per role/lokasi.
 - Index tambahan mempercepat read tetapi menambah biaya write. Pantau slow query dan write latency di tabel `stock_mutations` dan `pos_sales`.

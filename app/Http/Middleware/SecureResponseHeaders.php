@@ -21,6 +21,8 @@ class SecureResponseHeaders
             }
         }
 
+        $this->setContentSecurityPolicy($response);
+
         return $response;
     }
 
@@ -33,5 +35,28 @@ class SecureResponseHeaders
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
             'Permissions-Policy' => 'camera=(), microphone=(), geolocation=()',
         ];
+    }
+
+    private function setContentSecurityPolicy(Response $response): void
+    {
+        if (! config('security.headers.csp.enabled')) {
+            return;
+        }
+
+        $header = config('security.headers.csp.report_only')
+            ? 'Content-Security-Policy-Report-Only'
+            : 'Content-Security-Policy';
+
+        if ($response->headers->has($header)) {
+            return;
+        }
+
+        $directives = config('security.headers.csp.directives', []);
+
+        if (! is_array($directives) || $directives === []) {
+            return;
+        }
+
+        $response->headers->set($header, implode('; ', $directives));
     }
 }

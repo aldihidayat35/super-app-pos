@@ -425,19 +425,22 @@ class LocalDatabaseSeeder extends Seeder
             if (! $user instanceof User) {
                 continue;
             }
-            Employee::query()->updateOrCreate(
-                ['employee_no' => $row['employee_no']],
-                [
-                    'user_id' => $user->id,
-                    'work_location_id' => $row['location_id'],
-                    'name' => $user->name,
-                    'position' => $row['position'],
-                    'whatsapp_number' => $user->phone_number,
-                    'joined_at' => now()->startOfMonth()->toDateString(),
-                    'status' => 'active',
-                    'is_active' => true,
-                ],
-            );
+            $employee = Employee::query()
+                ->where('employee_no', $row['employee_no'])
+                ->orWhere('user_id', $user->id)
+                ->first() ?? new Employee;
+
+            $employee->fill([
+                'employee_no' => $row['employee_no'],
+                'user_id' => $user->id,
+                'work_location_id' => $row['location_id'],
+                'name' => $user->name,
+                'position' => $row['position'],
+                'whatsapp_number' => $user->phone_number,
+                'joined_at' => now()->startOfMonth()->toDateString(),
+                'status' => 'active',
+                'is_active' => true,
+            ])->save();
         }
 
         $shift = WorkShift::query()->updateOrCreate(
@@ -458,10 +461,11 @@ class LocalDatabaseSeeder extends Seeder
         );
 
         Employee::query()->where('work_location_id', $branchLocation->id)->where('is_active', true)->each(function (Employee $employee) use ($branchLocation, $shift): void {
+            $scheduledDate = now()->startOfDay();
             $start = now()->setTime(8, 0);
             $end = now()->setTime(16, 0);
             EmployeeSchedule::query()->updateOrCreate(
-                ['employee_id' => $employee->id, 'scheduled_date' => now()->toDateString()],
+                ['employee_id' => $employee->id, 'scheduled_date' => $scheduledDate],
                 [
                     'work_shift_id' => $shift->id,
                     'work_location_id' => $branchLocation->id,

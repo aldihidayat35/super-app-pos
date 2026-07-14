@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\CreateEncryptedBackupCommand;
 use App\Console\Commands\RunNotificationSchedulesCommand;
 use App\Console\Commands\SendDailyReportCommand;
 use App\Http\Middleware\BlockB2bPortalOnlyUserFromInternal;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withCommands([
+        CreateEncryptedBackupCommand::class,
         RunNotificationSchedulesCommand::class,
         SendDailyReportCommand::class,
     ])

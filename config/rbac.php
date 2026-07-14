@@ -24,6 +24,8 @@ return [
         'admin.settings.view' => ['label' => 'Lihat Pengaturan Sistem', 'module' => 'admin.settings', 'action' => 'view', 'description' => 'Melihat pengaturan umum dan nomor dokumen.'],
         'admin.settings.update' => ['label' => 'Ubah Pengaturan Sistem', 'module' => 'admin.settings', 'action' => 'update', 'description' => 'Mengubah pengaturan umum dan nomor dokumen.'],
         'system.health.view' => ['label' => 'Lihat Kesehatan Sistem', 'module' => 'system.health', 'action' => 'view', 'description' => 'Mengakses halaman health check.'],
+        'system.operations.view' => ['label' => 'Lihat Operasional Sistem', 'module' => 'system.operations', 'action' => 'view', 'description' => 'Mengakses backup, log, import awal, dan maintenance.'],
+        'system.operations.update' => ['label' => 'Kelola Operasional Sistem', 'module' => 'system.operations', 'action' => 'update', 'description' => 'Menjalankan backup, retry job, dan aksi maintenance terkontrol.'],
         'products.view' => ['label' => 'Lihat Produk', 'module' => 'products', 'action' => 'view', 'description' => 'Melihat master produk.'],
         'products.create' => ['label' => 'Tambah Produk', 'module' => 'products', 'action' => 'create', 'description' => 'Membuat master produk.'],
         'products.update' => ['label' => 'Ubah Produk', 'module' => 'products', 'action' => 'update', 'description' => 'Mengubah master produk.'],
