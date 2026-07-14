@@ -69,8 +69,8 @@ return [
             ],
             [
                 'label' => 'Kesehatan Sistem',
-                'route' => 'system.health',
-                'active' => ['system.health'],
+                'route' => 'admin.system.health',
+                'active' => ['admin.system.health', 'system.health'],
                 'permission' => 'system.health.view',
             ],
         ],

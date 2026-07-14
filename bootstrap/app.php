@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureB2bCustomerAccess;
 use App\Http\Middleware\EnsureHealthAccess;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveWorkLocation;
+use App\Http\Middleware\SecureResponseHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,6 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
         SendDailyReportCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [
+            SecureResponseHeaders::class,
+        ]);
+
         $middleware->alias([
             'health.access' => EnsureHealthAccess::class,
             'active.user' => EnsureUserIsActive::class,

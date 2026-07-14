@@ -14,13 +14,14 @@ final class HealthCheckService
     {
         return [
             'database' => $this->database(),
+            'cache' => $this->cache(),
+            'session' => $this->session(),
             'storage' => $this->storage(),
+            'folder_permissions' => $this->folderPermissions(),
             'queue' => $this->queue(),
             'scheduler' => $this->scheduler(),
-            'application' => [
-                'status' => 'ok',
-                'message' => sprintf('Laravel %s, PHP %s', app()->version(), PHP_VERSION),
-            ],
+            'application' => $this->application(),
+            'server_time' => $this->serverTime(),
         ];
     }
 
@@ -36,6 +37,41 @@ final class HealthCheckService
 
             return ['status' => 'error', 'message' => 'Koneksi database gagal. Periksa log aplikasi.'];
         }
+    }
+
+    /** @return array{status: string, message: string} */
+    private function cache(): array
+    {
+        try {
+            $key = 'system.health.'.str()->uuid()->toString();
+            Cache::put($key, 'ok', now()->addMinute());
+            $ok = Cache::get($key) === 'ok';
+            Cache::forget($key);
+
+            return [
+                'status' => $ok ? 'ok' : 'warning',
+                'message' => $ok
+                    ? 'Cache dapat ditulis dan dibaca.'
+                    : 'Cache tidak mengembalikan nilai yang ditulis. Periksa driver cache.',
+            ];
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return ['status' => 'error', 'message' => 'Cache gagal diuji. Periksa log aplikasi.'];
+        }
+    }
+
+    /** @return array{status: string, message: string} */
+    private function session(): array
+    {
+        $driver = (string) config('session.driver');
+        $secure = (bool) config('session.secure');
+        $sameSite = (string) config('session.same_site');
+
+        return [
+            'status' => app()->environment('production') && ! $secure ? 'warning' : 'ok',
+            'message' => "Session menggunakan driver {$driver}, same-site {$sameSite}. Cookie secure wajib aktif di production HTTPS.",
+        ];
     }
 
     /** @return array{status: string, message: string} */
@@ -73,6 +109,59 @@ final class HealthCheckService
             'message' => $lastRun
                 ? "Heartbeat scheduler terakhir: {$lastRun}."
                 : 'Heartbeat belum tersedia. Jalankan scheduler lalu muat ulang halaman.',
+        ];
+    }
+
+    /** @return array{status: string, message: string} */
+    private function folderPermissions(): array
+    {
+        $paths = [
+            'storage/app' => storage_path('app'),
+            'storage/framework/cache' => storage_path('framework/cache'),
+            'storage/logs' => storage_path('logs'),
+            'bootstrap/cache' => base_path('bootstrap/cache'),
+        ];
+
+        $unwritable = [];
+
+        foreach ($paths as $label => $path) {
+            if (! is_dir($path) || ! is_writable($path)) {
+                $unwritable[] = $label;
+            }
+        }
+
+        return [
+            'status' => $unwritable === [] ? 'ok' : 'error',
+            'message' => $unwritable === []
+                ? 'Folder runtime utama dapat ditulis.'
+                : 'Folder perlu diperbaiki permission: '.implode(', ', $unwritable).'.',
+        ];
+    }
+
+    /** @return array{status: string, message: string} */
+    private function application(): array
+    {
+        $debugEnabled = (bool) config('app.debug');
+        $environment = (string) app()->environment();
+
+        return [
+            'status' => $debugEnabled && $environment === 'production' ? 'error' : ($debugEnabled ? 'warning' : 'ok'),
+            'message' => sprintf(
+                'Laravel %s, PHP %s, environment %s, debug %s.',
+                app()->version(),
+                PHP_VERSION,
+                $environment,
+                $debugEnabled ? 'aktif' : 'nonaktif'
+            ),
+        ];
+    }
+
+    /** @return array{status: string, message: string} */
+    private function serverTime(): array
+    {
+        return [
+            'status' => config('app.timezone') === 'Asia/Jakarta' ? 'ok' : 'warning',
+            'message' => 'Waktu server aplikasi: '.now()->format('d/m/Y H:i:s').' ('.config('app.timezone').').',
         ];
     }
 }

@@ -55,6 +55,17 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "test:critical": [
+            "@php artisan test --testsuite=Unit --filter=CriticalBusinessCalculationTest",
+            "@php artisan test tests/Feature/EndToEnd tests/Feature/Notifications/NotificationDailyReportTest.php"
+        ],
+        "ci": [
+            "@php artisan config:clear --ansi",
+            "@php artisan migrate:fresh --seed --seeder=TestingScenarioSeeder --env=testing --force",
+            "@lint",
+            "@analyse",
+            "@test"
+        ],
         "lint": [
             "@php vendor/bin/pint --test"
         ],

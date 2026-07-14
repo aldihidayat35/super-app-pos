@@ -352,6 +352,10 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:admin.permissions.view')
             ->name('permissions.index');
 
+        Route::get('/system/health', HealthController::class)
+            ->middleware('permission:system.health.view')
+            ->name('system.health');
+
         Route::prefix('notifications')->name('notifications.')->group(function (): void {
             Route::get('/channels', [NotificationChannelController::class, 'index'])
                 ->middleware('permission:notifications.view')
