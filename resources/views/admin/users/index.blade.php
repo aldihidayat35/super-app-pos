@@ -145,14 +145,15 @@ document.addEventListener('DOMContentLoaded', function () {
             't' +
             '<"d-flex justify-content-between align-items-center mt-3"<"text-muted fs-7"i><"pagination pagination-outline"p>>',
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.11/i18n/id.json',
             processing: '<div class="overlay-layer"><div class="spinner-border text-secondary fs-2"></div></div>',
             emptyTable: 'Tidak ada data pengguna',
             search: 'Cari cepat:',
             lengthMenu: 'Tampil _MENU_ data/halaman',
             info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
             infoEmpty: 'Tidak ada data',
+            infoFiltered: '(disaring dari _MAX_ total data)',
             paginate: { first: 'Pertama', last: 'Terakhir', next: 'Berikutnya', previous: 'Sebelumnya' },
+            zeroRecords: 'Tidak ada data yang sesuai',
         },
         initComplete: function () {
             if (typeof ktScrollbar !== 'undefined') {

@@ -8,7 +8,7 @@
             </button>
 
             <a href="{{ route('dashboard') }}" class="d-flex align-items-center gap-2 text-decoration-none">
-                <img alt="{{ config('app.name') }}" src="{{ asset('assets/media/logos/demo38-small.svg') }}" class="h-18px">
+                <img alt="{{ config('app.name') }}" src="{{ asset('assets/media/logos/demo38-small.svg') }}" class="gt-header-logo">
                 <span class="text-gray-900 fw-bold fs-5">{{ config('app.name', 'GudangToko') }}</span>
             </a>
         </div>

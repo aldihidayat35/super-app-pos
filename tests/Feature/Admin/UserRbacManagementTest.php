@@ -179,6 +179,65 @@ class UserRbacManagementTest extends TestCase
     }
 
     #[Test]
+    public function only_super_admin_can_delete_unused_custom_role(): void
+    {
+        $superAdmin = $this->createAdmin();
+        $role = Role::query()->create([
+            'name' => 'temporary_role',
+            'label' => 'Role Sementara',
+            'guard_name' => 'web',
+            'is_system' => false,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('admin.roles.show', $role))
+            ->assertOk()
+            ->assertSee('Hapus Role');
+
+        $this->actingAs($superAdmin)
+            ->delete(route('admin.roles.destroy', $role))
+            ->assertRedirect(route('admin.roles.index'));
+
+        $this->assertDatabaseMissing('roles', ['name' => 'temporary_role']);
+    }
+
+    #[Test]
+    public function system_or_used_role_cannot_be_deleted(): void
+    {
+        $superAdmin = $this->createAdmin();
+        $systemRole = Role::findByName('super_admin');
+        $usedRole = Role::query()->create([
+            'name' => 'used_custom_role',
+            'label' => 'Role Dipakai',
+            'guard_name' => 'web',
+            'is_system' => false,
+        ]);
+        User::factory()->create()->assignRole($usedRole);
+
+        $this->actingAs($superAdmin)->delete(route('admin.roles.destroy', $systemRole))->assertForbidden();
+        $this->actingAs($superAdmin)->delete(route('admin.roles.destroy', $usedRole))->assertForbidden();
+
+        $this->assertDatabaseHas('roles', ['name' => 'super_admin']);
+        $this->assertDatabaseHas('roles', ['name' => 'used_custom_role']);
+    }
+
+    #[Test]
+    public function non_super_admin_cannot_delete_role_even_with_role_update_permission(): void
+    {
+        $adminConfig = User::factory()->create();
+        $adminConfig->assignRole(Role::findByName('admin_config'));
+        $role = Role::query()->create([
+            'name' => 'delete_by_admin_config',
+            'label' => 'Role Tidak Boleh Dihapus',
+            'guard_name' => 'web',
+            'is_system' => false,
+        ]);
+
+        $this->actingAs($adminConfig)->delete(route('admin.roles.destroy', $role))->assertForbidden();
+        $this->assertDatabaseHas('roles', ['name' => 'delete_by_admin_config']);
+    }
+
+    #[Test]
     public function seeded_role_matrix_enforces_sensitive_permissions(): void
     {
         $ownerViewer = User::factory()->create();

@@ -53,3 +53,122 @@
 #kt_app_sidebar .menu-icon.ki-bill::after                  { content: "\1F4DC"; }
 #kt_app_sidebar .menu-icon.ki-chart-pie-4::after           { content: "\1F967"; }
 #kt_app_sidebar .menu-icon.ki-basket::after                { content: "\1F9D5"; }
+
+/* ==========================================================================
+   Global fallback untuk ikon KeenIcons di luar sidebar.
+   Dipakai karena asset font KeenIcons belum tersedia di public/assets.
+   ========================================================================== */
+
+i.ki-outline,
+i.ki-solid,
+i.ki-duotone {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-style: normal;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+i.ki-outline::before,
+i.ki-solid::before,
+i.ki-duotone::before {
+    content: "•";
+    font-family: "Segoe UI Symbol", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    font-weight: 600;
+    line-height: 1;
+}
+
+i.ki-abstract-12::before,
+i.ki-abstract-14::before,
+i.ki-abstract-25::before,
+i.ki-abstract-26::before,
+i.ki-abstract-28::before,
+i.ki-abstract-35::before,
+i.ki-abstract-41::before { content: "◈"; }
+i.ki-arrow-down::before { content: "↓"; }
+i.ki-arrow-left-right::before,
+i.ki-arrow-right-left::before { content: "⇄"; }
+i.ki-arrow-right::before { content: "→"; }
+i.ki-arrow-up::before { content: "↑"; }
+i.ki-arrows-circle::before { content: "↻"; }
+i.ki-bank::before { content: "▤"; }
+i.ki-basket::before { content: "🛒"; }
+i.ki-bill::before { content: "▤"; }
+i.ki-box::before,
+i.ki-parcel::before { content: "□"; }
+i.ki-briefcase::before { content: "▣"; }
+i.ki-calendar::before,
+i.ki-calendar-tick::before,
+i.ki-time::before { content: "◷"; }
+i.ki-chart::before,
+i.ki-chart-line-down::before,
+i.ki-chart-line-up::before,
+i.ki-chart-pie-4::before,
+i.ki-chart-simple::before { content: "⌁"; }
+i.ki-check::before,
+i.ki-check-circle::before { content: "✓"; }
+i.ki-cloud-download::before { content: "☁"; }
+i.ki-color-swatch::before,
+i.ki-colors-square::before { content: "▧"; }
+i.ki-copy::before { content: "⧉"; }
+i.ki-cross::before,
+i.ki-cross-circle::before,
+i.ki-cross-square::before { content: "×"; }
+i.ki-delivery-2::before,
+i.ki-delivery-3::before,
+i.ki-truck::before { content: "🚚"; }
+i.ki-dollar::before { content: "$"; }
+i.ki-dots-square::before { content: "⋯"; }
+i.ki-down::before { content: "⌄"; }
+i.ki-exit-right::before { content: "↪"; }
+i.ki-file-down::before { content: "⇩"; }
+i.ki-file-up::before { content: "⇧"; }
+i.ki-filter::before { content: "≡"; }
+i.ki-folder::before { content: "▱"; }
+i.ki-frame::before { content: "▢"; }
+i.ki-geolocation::before { content: "⌖"; }
+i.ki-gift::before { content: "◇"; }
+i.ki-home-2::before { content: "⌂"; }
+i.ki-icon::before { content: "◌"; }
+i.ki-information::before,
+i.ki-information-5::before,
+i.ki-question::before { content: "i"; }
+i.ki-key::before,
+i.ki-lock-2::before { content: "⚿"; }
+i.ki-laptop::before { content: "▭"; }
+i.ki-left::before { content: "‹"; }
+i.ki-like-shapes::before { content: "♡"; }
+i.ki-magnifier::before,
+i.ki-search-list::before { content: "⌕"; }
+i.ki-message-text-2::before,
+i.ki-sms::before { content: "✉"; }
+i.ki-minus-square::before { content: "−"; }
+i.ki-moon::before,
+i.ki-night-day::before { content: "☾"; }
+i.ki-notepad::before { content: "▤"; }
+i.ki-notification-on::before { content: "●"; }
+i.ki-people::before,
+i.ki-profile-circle::before,
+i.ki-profile-user::before,
+i.ki-security-user::before,
+i.ki-user::before { content: "👤"; }
+i.ki-pencil::before { content: "✎"; }
+i.ki-picture::before { content: "▧"; }
+i.ki-plus::before,
+i.ki-plus-square::before { content: "+"; }
+i.ki-price-tag::before { content: "◇"; }
+i.ki-printer::before { content: "⎙"; }
+i.ki-pulse::before { content: "⌁"; }
+i.ki-purchase::before { content: "🛒"; }
+i.ki-right::before { content: "›"; }
+i.ki-rocket::before { content: "↗"; }
+i.ki-screen::before { content: "▭"; }
+i.ki-setting-2::before { content: "⚙"; }
+i.ki-shield-cross::before,
+i.ki-shield-tick::before { content: "⛨"; }
+i.ki-shop::before { content: "⌂"; }
+i.ki-sun::before { content: "☼"; }
+i.ki-text-align-right::before { content: "≡"; }
+i.ki-tiktok::before { content: "♪"; }
+i.ki-wallet::before { content: "▣"; }

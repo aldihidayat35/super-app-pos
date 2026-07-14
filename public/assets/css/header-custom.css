@@ -20,13 +20,22 @@
     padding-bottom: 0 !important;
 }
 
+.gt-header-logo {
+    display: block;
+    width: auto;
+    height: 26px;
+    max-height: calc(var(--gt-header-height) - 10px);
+    object-fit: contain;
+}
+
 [data-bs-theme='dark'] #kt_app_header {
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
 }
 
 /* Compensate main content offset to match shorter header */
 [data-kt-app-header-fixed='true'] .app-wrapper {
-    padding-top: var(--gt-header-height) !important;
+    margin-top: var(--gt-header-height) !important;
+    padding-top: 0 !important;
 }
 
 [data-kt-app-header-fixed='true'][data-kt-app-sidebar-fixed='true'] .app-sidebar {
@@ -52,4 +61,56 @@
 /* Notification area tighter */
 #kt_app_header_container .dropdown-menu {
     margin-top: 4px !important;
+}
+
+/* Dekatkan toolbar dan konten ke header agar tidak terasa kosong. */
+#kt_app_toolbar {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+
+#kt_app_toolbar_container {
+    min-height: auto !important;
+}
+
+#kt_app_content {
+    padding-top: 0 !important;
+}
+
+#kt_app_content_container {
+    padding-top: 0 !important;
+}
+
+.gt-help-icon {
+    align-items: center;
+    background: rgba(124, 58, 237, 0.1);
+    border-radius: 999px;
+    color: #7c3aed;
+    cursor: help;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.72em;
+    font-weight: 700;
+    height: 1.15em;
+    justify-content: center;
+    line-height: 1;
+    position: relative;
+    top: -0.04em;
+    width: 1.15em;
+}
+
+.gt-help-icon i {
+    font-size: 0.78em !important;
+    line-height: 1 !important;
+}
+
+.gt-help-icon i::before {
+    content: "?";
+    font-family: Inter, system-ui, sans-serif;
+    font-weight: 700;
+}
+
+[data-bs-theme='dark'] .gt-help-icon {
+    background: rgba(167, 139, 250, 0.18);
+    color: #c4b5fd;
 }

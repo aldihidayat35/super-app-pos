@@ -4,6 +4,8 @@
 @section('page_title', 'Detail Role')
 
 @section('toolbar_actions')
+    @php($canDeleteRole = auth()->user()?->hasRole('super_admin') && ! (bool) $role->is_system && $role->users->count() === 0)
+
     @can('create', \Spatie\Permission\Models\Role::class)
         <form method="POST" action="{{ route('admin.roles.duplicate', $role) }}">
             @csrf
@@ -13,9 +15,33 @@
     @can('update', $role)
         <a href="{{ route('admin.roles.edit', $role) }}" class="btn btn-primary"><i class="ki-outline ki-pencil"></i> Edit Role</a>
     @endcan
+    @if ($canDeleteRole)
+        <form method="POST" action="{{ route('admin.roles.destroy', $role) }}" id="delete-role-{{ $role->id }}">
+            @csrf
+            @method('DELETE')
+            <button
+                type="submit"
+                class="btn btn-light-danger"
+                data-confirm
+                data-confirm-form="delete-role-{{ $role->id }}"
+                data-confirm-title="Hapus role ini?"
+                data-confirm-text="Role kustom ini akan dihapus permanen. Pastikan tidak ada pengguna yang masih membutuhkan role ini."
+                data-confirm-button="Ya, hapus role"
+            >
+                <i class="ki-outline ki-cross-circle"></i> Hapus Role
+            </button>
+        </form>
+    @endif
 @endsection
 
 @section('content')
+    <x-metronic.page-title
+        title="Detail Role"
+        description="Lihat pengguna yang memakai role ini dan atur hak aksesnya."
+        help="Role adalah kelompok hak akses. Semua pengguna yang memakai role ini akan mengikuti daftar permission yang dicentang di halaman ini."
+        class="mb-5"
+    />
+
     <div class="row g-6">
         <div class="col-lg-4">
             <x-metronic.card title="Informasi Role">
@@ -50,14 +76,20 @@
 
                     @foreach ($permissions as $group => $groupPermissions)
                         <div class="mb-8">
-                            <h4 class="fw-bold text-gray-900 mb-4">{{ strtoupper($group) }}</h4>
+                            <h4 class="fw-bold text-gray-900 mb-4 d-flex align-items-center">
+                                {{ strtoupper($group) }}
+                                @include('admin.roles._help-icon', ['text' => 'Bagian ini berisi hak akses untuk satu area kerja. Centang berarti role ini boleh melakukan tindakan tersebut.'])
+                            </h4>
                             <div class="row g-3">
                                 @foreach ($groupPermissions as $permission)
                                     <div class="col-md-6">
                                         <label class="form-check form-check-custom form-check-solid border rounded p-3 h-100">
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->id }}" @checked(collect(old('permissions', $selectedPermissions))->contains($permission->id)) @disabled(! auth()->user()?->can('updatePermissions', $role))>
                                             <span class="form-check-label ms-2">
-                                                <span class="fw-semibold d-block">{{ $permission->label ?: $permission->name }}</span>
+                                                <span class="fw-semibold d-flex align-items-center">
+                                                    {{ $permission->label ?: $permission->name }}
+                                                    @include('admin.roles._help-icon', ['text' => $permission->help_text])
+                                                </span>
                                                 <span class="text-muted fs-8">{{ $permission->name }} · {{ $permission->guard_name }}</span>
                                             </span>
                                         </label>

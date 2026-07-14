@@ -351,6 +351,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])
             ->middleware('permission:admin.roles.update')
             ->name('roles.permissions.update');
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
+            ->middleware('role:super_admin')
+            ->name('roles.destroy');
 
         Route::get('/permissions', [PermissionController::class, 'index'])
             ->middleware('permission:admin.permissions.view')

@@ -31,4 +31,11 @@ class RolePolicy
     {
         return $user->can('admin.roles.update');
     }
+
+    public function delete(User $user, Role $role): bool
+    {
+        return $user->hasRole('super_admin')
+            && ! (bool) $role->getAttribute('is_system')
+            && $role->users()->count() === 0;
+    }
 }

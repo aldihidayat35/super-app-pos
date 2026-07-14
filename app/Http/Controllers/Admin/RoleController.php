@@ -160,6 +160,29 @@ class RoleController extends Controller
         ]);
     }
 
+    public function destroy(Request $request, Role $role): RedirectResponse
+    {
+        $this->authorize('delete', $role);
+        abort_if((bool) $role->getAttribute('is_system'), 403, 'Role sistem tidak boleh dihapus.');
+        abort_if($role->users()->count() > 0, 403, 'Role yang masih dipakai pengguna tidak boleh dihapus.');
+
+        DB::transaction(function () use ($request, $role): void {
+            $this->audit($request, $role, 'admin.role.deleted', [
+                'role_name' => $role->name,
+                'role_label' => $role->getAttribute('label'),
+            ]);
+
+            $role->delete();
+        });
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        return redirect()->route('admin.roles.index')->with('notification', [
+            'type' => 'success',
+            'message' => 'Role berhasil dihapus.',
+        ]);
+    }
+
     /**
      * @return list<int>
      */
@@ -187,7 +210,29 @@ class RoleController extends Controller
             ->orderBy('action')
             ->orderBy('name')
             ->get()
+            ->each(fn (Permission $permission) => $permission->setAttribute('help_text', $this->permissionHelpText($permission)))
             ->groupBy(fn (Permission $permission): string => (string) ($permission->getAttribute('module') ?: explode('.', $permission->name)[0]));
+    }
+
+    private function permissionHelpText(Permission $permission): string
+    {
+        $label = (string) ($permission->getAttribute('label') ?: $permission->name);
+        $name = (string) $permission->name;
+        $action = str($name)->afterLast('.')->replace('_', ' ')->lower()->value();
+        $module = str((string) ($permission->getAttribute('module') ?: str($name)->before('.')->value()))->replace(['_', '-'], ' ')->title()->value();
+        $actionText = [
+            'view' => 'melihat data',
+            'create' => 'menambah data baru',
+            'update' => 'mengubah data',
+            'delete' => 'menghapus data',
+            'approve' => 'menyetujui proses',
+            'void' => 'membatalkan transaksi dengan jejak audit',
+            'export' => 'mengunduh atau mengekspor data',
+            'manage settings' => 'mengatur konfigurasi',
+            'view sensitive' => 'melihat informasi sensitif',
+        ][$action] ?? 'menggunakan fitur ini';
+
+        return "Memberi izin untuk {$actionText} pada area {$module}. Centang hanya jika role ini benar-benar membutuhkan akses tersebut. ({$label})";
     }
 
     private function uniqueRoleName(string $baseName): string
