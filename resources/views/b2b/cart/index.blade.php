@@ -15,7 +15,7 @@
                     <tr>
                         <td><input type="hidden" name="items[{{ $loop->index }}][id]" value="{{ $item->id }}"><div class="fw-bold">{{ $item->product->name }}</div><div class="text-muted">{{ $item->product->sku }}</div><input name="items[{{ $loop->index }}][notes]" value="{{ $item->notes }}" class="form-control form-control-sm mt-2" placeholder="Catatan item"></td>
                         <td>{{ $item->unit->name }}</td>
-                        <td><input name="items[{{ $loop->index }}][quantity]" type="number" min="0" step="0.0001" value="{{ $item->quantity }}" class="form-control"></td>
+                        <td><input name="items[{{ $loop->index }}][quantity]" type="number" min="0" step="1" value="{{ qty_input($item->quantity) }}" class="form-control"></td>
                         <td>{{ App\Support\CurrencyFormatter::rupiah($item->price_snapshot) }}</td>
                         <td class="fw-bold">{{ App\Support\CurrencyFormatter::rupiah($item->line_total) }}</td>
                         <td><span class="badge badge-light-{{ $item->availability_snapshot === 'available' ? 'success' : ($item->availability_snapshot === 'limited' ? 'warning' : 'danger') }}">{{ $item->availability_snapshot === 'available' ? 'Tersedia' : ($item->availability_snapshot === 'limited' ? 'Terbatas' : 'Kosong') }}</span></td>

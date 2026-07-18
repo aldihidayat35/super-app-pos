@@ -42,7 +42,7 @@
             <tr>
                 <td><select name="items[{{ $i }}][product_id]" class="form-select form-select-solid" required><option value="">Produk</option>@foreach($products as $product)<option value="{{ $product->id }}" @selected(($item['product_id'] ?? '') == $product->id)>{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select></td>
                 <td><select name="items[{{ $i }}][unit_id]" class="form-select form-select-solid" required><option value="">Unit</option>@foreach($units as $unit)<option value="{{ $unit->id }}" @selected(($item['unit_id'] ?? '') == $unit->id)>{{ $unit->name }}</option>@endforeach</select></td>
-                <td><input name="items[{{ $i }}][quantity_ordered]" value="{{ $item['quantity_ordered'] ?? 1 }}" type="number" step="0.0001" min="0.0001" class="form-control form-control-solid po-calc po-qty" required></td>
+                <td><input name="items[{{ $i }}][quantity_ordered]" value="{{ qty_input($item['quantity_ordered'] ?? 1) }}" type="number" step="1" min="1" class="form-control form-control-solid po-calc po-qty" required></td>
                 <td><input name="items[{{ $i }}][unit_price]" value="{{ $item['unit_price'] ?? 0 }}" type="number" step="0.01" min="0" class="form-control form-control-solid po-calc po-price" required></td>
                 <td><input name="items[{{ $i }}][discount_amount]" value="{{ $item['discount_amount'] ?? 0 }}" type="number" step="0.01" min="0" class="form-control form-control-solid po-calc po-discount"></td>
                 <td><input name="items[{{ $i }}][tax_amount]" value="{{ $item['tax_amount'] ?? 0 }}" type="number" step="0.01" min="0" class="form-control form-control-solid po-calc po-tax"></td>

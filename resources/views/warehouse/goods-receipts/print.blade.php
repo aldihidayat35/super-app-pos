@@ -15,7 +15,7 @@
     </table>
     <table>
         <thead><tr><th>Produk</th><th>Unit</th><th>Datang</th><th>Accepted</th><th>Rejected</th><th>Damaged</th><th>Lokasi</th><th>Batch</th></tr></thead>
-        <tbody>@foreach($receipt->items as $item)<tr><td>{{ $item->product_sku_snapshot }} - {{ $item->product_name_snapshot }}</td><td>{{ $item->unit_name_snapshot }}</td><td>{{ $item->quantity_received }}</td><td>{{ $item->quantity_accepted }}</td><td>{{ $item->quantity_rejected }}</td><td>{{ $item->quantity_damaged }}</td><td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td><td>{{ $item->batch_no ?: '-' }}</td></tr>@endforeach</tbody>
+        <tbody>@foreach($receipt->items as $item)<tr><td>{{ $item->product_sku_snapshot }} - {{ $item->product_name_snapshot }}</td><td>{{ $item->unit_name_snapshot }}</td><td>{{ qty($item->quantity_received) }}</td><td>{{ qty($item->quantity_accepted) }}</td><td>{{ qty($item->quantity_rejected) }}</td><td>{{ qty($item->quantity_damaged) }}</td><td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td><td>{{ $item->batch_no ?: '-' }}</td></tr>@endforeach</tbody>
     </table>
     <br><br>
     <table><tr><td style="height:90px;vertical-align:bottom;text-align:center">Penerima<br>{{ $receipt->receiver?->name }}</td><td style="height:90px;vertical-align:bottom;text-align:center">Kepala Gudang</td></tr></table>

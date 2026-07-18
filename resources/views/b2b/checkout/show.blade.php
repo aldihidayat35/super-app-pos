@@ -73,7 +73,7 @@
                 <div class="mb-3">Piutang: <span class="fw-bold">{{ App\Support\CurrencyFormatter::rupiah($customer->receivable_balance) }}</span></div>
                 <div class="separator my-4"></div>
                 @foreach($cart->items as $item)
-                    <div class="d-flex justify-content-between mb-2"><span>{{ $item->product->name }} × {{ $item->quantity }}</span><span>{{ App\Support\CurrencyFormatter::rupiah($item->line_total) }}</span></div>
+                    <div class="d-flex justify-content-between mb-2"><span>{{ $item->product->name }} × {{ qty($item->quantity) }}</span><span>{{ App\Support\CurrencyFormatter::rupiah($item->line_total) }}</span></div>
                 @endforeach
                 <div class="separator my-4"></div>
                 <div class="d-flex justify-content-between fs-4 fw-bold"><span>Total</span><span>{{ App\Support\CurrencyFormatter::rupiah($totals['grand_total']) }}</span></div>

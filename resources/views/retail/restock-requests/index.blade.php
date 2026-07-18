@@ -21,7 +21,7 @@
                                     @for($i = 0; $i < 3; $i++)
                                         <tr>
                                             <td><select name="items[{{ $i }}][product_id]" class="form-select form-select-sm"><option value="">Pilih</option>@foreach($products as $product)<option value="{{ $product->id }}">{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select></td>
-                                            <td><input name="items[{{ $i }}][quantity_requested]" type="number" min="0" step="0.0001" class="form-control form-control-sm" value="{{ $i === 0 ? '1' : '' }}"></td>
+                                            <td><input name="items[{{ $i }}][quantity_requested]" type="number" min="0" step="1" class="form-control form-control-sm" value="{{ $i === 0 ? '1' : '' }}"></td>
                                         </tr>
                                     @endfor
                                 </tbody>
@@ -55,7 +55,7 @@
                                 <td>
                                     @can('approve', $request)
                                         @if($request->status === \App\Enums\RestockRequestStatus::PENDING_APPROVAL)
-                                            <form method="POST" action="{{ route('retail.restock-requests.approve', $request) }}" class="d-inline">@csrf @foreach($request->items as $item)<input type="hidden" name="items[{{ $item->id }}][quantity_approved]" value="{{ $item->quantity_requested }}">@endforeach<button class="btn btn-sm btn-light-success">Approve</button></form>
+                                            <form method="POST" action="{{ route('retail.restock-requests.approve', $request) }}" class="d-inline">@csrf @foreach($request->items as $item)<input type="hidden" name="items[{{ $item->id }}][quantity_approved]" value="{{ qty_input($item->quantity_requested) }}">@endforeach<button class="btn btn-sm btn-light-success">Approve</button></form>
                                             <form method="POST" action="{{ route('retail.restock-requests.reject', $request) }}" class="d-inline">@csrf<input type="hidden" name="reason" value="Ditolak dari daftar"><button class="btn btn-sm btn-light-danger">Reject</button></form>
                                         @endif
                                         @if($request->status === \App\Enums\RestockRequestStatus::APPROVED)

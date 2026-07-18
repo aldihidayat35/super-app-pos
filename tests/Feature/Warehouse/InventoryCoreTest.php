@@ -134,6 +134,56 @@ class InventoryCoreTest extends TestCase
         $this->assertDatabaseCount('stock_mutations', 3);
     }
 
+    public function test_location_transfer_rejects_bin_from_different_work_location_as_form_error(): void
+    {
+        [$product, $sourceWorkLocation, $sourceBin] = $this->inventoryFixture('GDG-SRC');
+        [$destinationWorkLocation, $destinationBin] = $this->locationFixture('GDG-DST');
+
+        $this->actingAs($this->admin)
+            ->from(route('warehouse.location-transfers.index'))
+            ->post(route('warehouse.location-transfers.store'), [
+                'product_id' => $product->id,
+                'source_work_location_id' => $sourceWorkLocation->id,
+                'source_warehouse_location_id' => $destinationBin->id,
+                'destination_work_location_id' => $destinationWorkLocation->id,
+                'destination_warehouse_location_id' => null,
+                'quantity' => 1,
+                'reason' => 'Tes bin beda lokasi kerja.',
+                'idempotency_key' => 'location-transfer-wrong-bin',
+            ])
+            ->assertRedirect(route('warehouse.location-transfers.index'))
+            ->assertSessionHasErrors('source_warehouse_location_id');
+
+        $this->assertDatabaseCount('stock_mutations', 0);
+        $this->assertDatabaseMissing('stocks', [
+            'product_id' => $product->id,
+            'warehouse_location_id' => $sourceBin->id,
+        ]);
+    }
+
+    public function test_location_transfer_service_exception_returns_to_form_without_server_error(): void
+    {
+        [$product, $sourceWorkLocation, $sourceBin] = $this->inventoryFixture('GDG-SRC');
+        [$destinationWorkLocation, $destinationBin] = $this->locationFixture('GDG-DST');
+
+        $this->actingAs($this->admin)
+            ->from(route('warehouse.location-transfers.index'))
+            ->post(route('warehouse.location-transfers.store'), [
+                'product_id' => $product->id,
+                'source_work_location_id' => $sourceWorkLocation->id,
+                'source_warehouse_location_id' => $sourceBin->id,
+                'destination_work_location_id' => $destinationWorkLocation->id,
+                'destination_warehouse_location_id' => $destinationBin->id,
+                'quantity' => 1,
+                'reason' => 'Tes stok tidak cukup.',
+                'idempotency_key' => 'location-transfer-service-error',
+            ])
+            ->assertRedirect(route('warehouse.location-transfers.index'))
+            ->assertSessionHasErrors('transfer');
+
+        $this->assertDatabaseCount('stock_mutations', 0);
+    }
+
     public function test_stock_card_is_ordered_by_occurrence_and_id(): void
     {
         [$product, $workLocation, $bin] = $this->inventoryFixture();

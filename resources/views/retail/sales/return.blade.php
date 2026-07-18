@@ -19,8 +19,8 @@
                             <tr>
                                 <td><input type="hidden" name="items[{{ $index }}][pos_sale_item_id]" value="{{ $item->id }}"></td>
                                 <td>{{ $item->product_name_snapshot }}</td>
-                                <td>{{ $item->base_quantity }} / {{ $item->returned_quantity }}</td>
-                                <td><input type="number" step="0.0001" min="0" name="items[{{ $index }}][quantity]" value="0" class="form-control"></td>
+                                <td>{{ qty($item->base_quantity) }} / {{ qty($item->returned_quantity) }}</td>
+                                <td><input type="number" step="1" min="0" name="items[{{ $index }}][quantity]" value="0" class="form-control"></td>
                                 <td><select name="items[{{ $index }}][condition]" class="form-select"><option value="good">Baik</option><option value="damaged">Rusak</option></select></td>
                             </tr>
                         @endforeach

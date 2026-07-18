@@ -15,9 +15,9 @@
     @endif
 
     <div class="row g-4 mb-6">
-        <div class="col-md-3"><x-metronic.card title="Total Selisih Qty"><div class="fs-2 fw-bold">{{ number_format((float) $opname->total_difference_qty, 4, ',', '.') }}</div></x-metronic.card></div>
+        <div class="col-md-3"><x-metronic.card title="Total Selisih Qty"><div class="fs-2 fw-bold">{{ qty($opname->total_difference_qty) }}</div></x-metronic.card></div>
         <div class="col-md-3"><x-metronic.card title="Nilai Selisih"><div class="fs-5 fw-bold">{{ \App\Support\CurrencyFormatter::rupiah($opname->total_difference_value) }}</div></x-metronic.card></div>
-        <div class="col-md-3"><x-metronic.card title="Threshold Qty"><div class="fs-2 fw-bold">{{ number_format((float) $opname->threshold_qty, 4, ',', '.') }}</div></x-metronic.card></div>
+        <div class="col-md-3"><x-metronic.card title="Threshold Qty"><div class="fs-2 fw-bold">{{ qty($opname->threshold_qty) }}</div></x-metronic.card></div>
         <div class="col-md-3"><x-metronic.card title="Approval Owner"><div class="fs-4 fw-bold">{{ $opname->requires_owner_approval ? 'Wajib' : 'Tidak' }}</div></x-metronic.card></div>
     </div>
 
@@ -34,9 +34,9 @@
                     <tr>
                         <td class="fw-bold">{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td>
                         <td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td>
-                        <td class="text-end">{{ number_format((float) $item->system_qty_snapshot, 4, ',', '.') }}</td>
-                        <td class="text-end">{{ $item->counted_qty === null ? '-' : number_format((float) $item->counted_qty, 4, ',', '.') }}</td>
-                        <td class="text-end fw-bold">{{ number_format((float) $item->difference_qty, 4, ',', '.') }}</td>
+                        <td class="text-end">{{ qty($item->system_qty_snapshot) }}</td>
+                        <td class="text-end">{{ $item->counted_qty === null ? '-' : qty($item->counted_qty) }}</td>
+                        <td class="text-end fw-bold">{{ qty($item->difference_qty) }}</td>
                         <td class="text-end">{{ \App\Support\CurrencyFormatter::rupiah($item->estimated_value) }}</td>
                         <td>{{ $item->reason?->label() ?: '-' }}<div class="text-muted fs-8">{{ $item->note }}</div></td>
                         <td><span class="badge badge-light-{{ $risk === 'Normal' ? 'success' : 'warning' }}">{{ $risk }}</span></td>

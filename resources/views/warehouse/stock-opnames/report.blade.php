@@ -20,14 +20,14 @@
         <div class="row mb-8">
             <div class="col-md-3"><div class="border rounded p-4"><div class="text-muted">Item</div><div class="fs-2 fw-bold">{{ $opname->items->count() }}</div></div></div>
             <div class="col-md-3"><div class="border rounded p-4"><div class="text-muted">Progress</div><div class="fs-2 fw-bold">{{ $opname->countedProgress() }}</div></div></div>
-            <div class="col-md-3"><div class="border rounded p-4"><div class="text-muted">Selisih Qty</div><div class="fs-2 fw-bold">{{ number_format((float) $opname->total_difference_qty, 4, ',', '.') }}</div></div></div>
+            <div class="col-md-3"><div class="border rounded p-4"><div class="text-muted">Selisih Qty</div><div class="fs-2 fw-bold">{{ qty($opname->total_difference_qty) }}</div></div></div>
             <div class="col-md-3"><div class="border rounded p-4"><div class="text-muted">Nilai Selisih</div><div class="fw-bold">{{ \App\Support\CurrencyFormatter::rupiah($opname->total_difference_value) }}</div></div></div>
         </div>
         <table class="table table-row-dashed">
             <thead><tr class="fw-bold text-muted"><th>Produk</th><th>Lokasi</th><th class="text-end">Sistem</th><th class="text-end">Fisik</th><th class="text-end">Selisih</th><th>Alasan</th></tr></thead>
             <tbody>
                 @foreach($opname->items->sortByDesc(fn($item) => abs((float) $item->difference_qty))->take(50) as $item)
-                    <tr><td>{{ $item->product_sku_snapshot }} — {{ $item->product_name_snapshot }}</td><td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td><td class="text-end">{{ number_format((float) $item->system_qty_snapshot, 4, ',', '.') }}</td><td class="text-end">{{ number_format((float) $item->counted_qty, 4, ',', '.') }}</td><td class="text-end">{{ number_format((float) $item->difference_qty, 4, ',', '.') }}</td><td>{{ $item->reason?->label() ?: '-' }}</td></tr>
+                    <tr><td>{{ $item->product_sku_snapshot }} — {{ $item->product_name_snapshot }}</td><td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td><td class="text-end">{{ qty($item->system_qty_snapshot) }}</td><td class="text-end">{{ qty($item->counted_qty) }}</td><td class="text-end">{{ qty($item->difference_qty) }}</td><td>{{ $item->reason?->label() ?: '-' }}</td></tr>
                 @endforeach
             </tbody>
         </table>

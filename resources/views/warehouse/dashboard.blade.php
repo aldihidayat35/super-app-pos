@@ -17,9 +17,9 @@
     @include('reports.partials.filter', ['filters' => $filters])
 
     @include('reports.partials.kpi-grid', ['items' => [
-        ['label' => 'Stok Tersedia', 'value' => $kpis['available_quantity'], 'color' => 'primary', 'description' => 'On hand - reserved - rusak'],
-        ['label' => 'Reserved', 'value' => $kpis['reserved_quantity'], 'color' => 'warning'],
-        ['label' => 'Rusak', 'value' => $kpis['damaged_quantity'], 'color' => 'danger'],
+        ['label' => 'Stok Tersedia', 'value' => qty($kpis['available_quantity']), 'color' => 'primary', 'description' => 'On hand - reserved - rusak'],
+        ['label' => 'Reserved', 'value' => qty($kpis['reserved_quantity']), 'color' => 'warning'],
+        ['label' => 'Rusak', 'value' => qty($kpis['damaged_quantity']), 'color' => 'danger'],
         ['label' => 'Nilai Persediaan', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['stock_value']), 'color' => 'success'],
         ['label' => 'Stok Kritis', 'value' => $kpis['critical_count'], 'color' => 'danger'],
         ['label' => 'Stok Kosong', 'value' => $kpis['empty_count'], 'color' => 'danger'],
@@ -52,7 +52,7 @@
                         <td>{{ $mutation['sku'] }} — {{ $mutation['product'] }}</td>
                         <td>{{ $mutation['location'] ?: '-' }}</td>
                         <td>{{ $mutation['mutation_type'] }}</td>
-                        <td class="fw-bold">{{ $mutation['quantity_on_hand_change'] }}</td>
+                        <td class="fw-bold">{{ qty($mutation['quantity_on_hand_change']) }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="5"><x-metronic.empty-state title="Belum ada mutasi besar" description="Mutasi besar akan tampil setelah stok bergerak." /></td></tr>

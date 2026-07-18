@@ -1,0 +1,1778 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dokumentasi Aplikasi Operasional Gudang, Toko, dan Langganan</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f5f8fa;
+            --panel: #ffffff;
+            --ink: #17213a;
+            --muted: #667085;
+            --line: #e4e7ec;
+            --soft: #eef4ff;
+            --primary: #1b84ff;
+            --primary-dark: #0f5fb7;
+            --success: #17a673;
+            --warning: #f59e0b;
+            --danger: #f1416c;
+            --radius: 8px;
+            --shadow: 0 18px 45px rgba(16, 24, 40, .08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.65;
+        }
+
+        a {
+            color: var(--primary-dark);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: 300px minmax(0, 1fr);
+            gap: 24px;
+            width: min(1440px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 24px 0 48px;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 16px;
+            align-self: start;
+            max-height: calc(100vh - 32px);
+            overflow: auto;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 14px;
+        }
+
+        .brand-mark {
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            background: var(--soft);
+            color: var(--primary-dark);
+            font-weight: 800;
+        }
+
+        .brand strong {
+            display: block;
+            font-size: 15px;
+            line-height: 1.25;
+        }
+
+        .brand span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .search {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font: inherit;
+            color: var(--ink);
+            background: #fff;
+            outline: none;
+        }
+
+        .search:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(27, 132, 255, .12);
+        }
+
+        .toc {
+            display: grid;
+            gap: 4px;
+            margin-top: 14px;
+            padding: 0;
+            list-style: none;
+        }
+
+        .toc a {
+            display: block;
+            padding: 8px 10px;
+            border-radius: 7px;
+            color: #344054;
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            background: #f2f4f7;
+            color: var(--primary-dark);
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .button {
+            border: 1px solid var(--line);
+            background: #fff;
+            color: #344054;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .button.primary {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .content {
+            min-width: 0;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fbff 52%, #eef6ff 100%);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: clamp(24px, 4vw, 48px);
+            overflow: hidden;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #e9f5ff;
+            color: var(--primary-dark);
+            border: 1px solid #cae6ff;
+            border-radius: 999px;
+            padding: 7px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .02em;
+            text-transform: uppercase;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            margin: 0;
+            line-height: 1.22;
+            color: #111827;
+        }
+
+        h1 {
+            max-width: 920px;
+            margin-top: 18px;
+            font-size: clamp(30px, 4vw, 52px);
+            letter-spacing: 0;
+        }
+
+        h2 {
+            font-size: clamp(24px, 3vw, 34px);
+            margin-bottom: 12px;
+        }
+
+        h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        h4 {
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .lead {
+            max-width: 980px;
+            color: #475467;
+            font-size: 17px;
+            margin: 16px 0 0;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .metric {
+            background: rgba(255, 255, 255, .86);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+
+        .metric strong {
+            display: block;
+            font-size: 24px;
+            color: #101828;
+        }
+
+        .metric span {
+            display: block;
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        section {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: clamp(22px, 3vw, 34px);
+            margin-top: 20px;
+        }
+
+        .section-intro {
+            max-width: 960px;
+            color: #475467;
+            margin: 0 0 20px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        .grid.two {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grid.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            padding: 18px;
+        }
+
+        .card.soft {
+            background: #f8fafc;
+        }
+
+        .module {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            padding: 20px;
+            margin-top: 16px;
+        }
+
+        .module-head {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 14px;
+            margin-bottom: 16px;
+        }
+
+        .tag-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #d6e4ff;
+            border-radius: 999px;
+            background: #eef4ff;
+            color: #1849a9;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+        .pill {
+            display: inline-flex;
+            border-radius: 999px;
+            padding: 6px 10px;
+            background: #f2f4f7;
+            color: #475467;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .steps,
+        .plain-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .steps li,
+        .plain-list li {
+            margin: 8px 0;
+        }
+
+        .feature-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            overflow: hidden;
+            display: table;
+        }
+
+        .feature-table th,
+        .feature-table td {
+            border-bottom: 1px solid var(--line);
+            padding: 12px 14px;
+            text-align: left;
+            vertical-align: top;
+            font-size: 14px;
+        }
+
+        .feature-table th {
+            background: #f8fafc;
+            color: #344054;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .feature-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .flow {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .flow-step {
+            position: relative;
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 14px;
+        }
+
+        .flow-step strong {
+            display: block;
+            color: #101828;
+            margin-bottom: 5px;
+        }
+
+        .flow-step span {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        details {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            padding: 14px 16px;
+        }
+
+        details + details {
+            margin-top: 10px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 750;
+            color: #111827;
+        }
+
+        .notice {
+            border-left: 4px solid var(--primary);
+            background: #f0f7ff;
+            border-radius: 8px;
+            padding: 14px 16px;
+            color: #344054;
+        }
+
+        .notice.warning {
+            border-left-color: var(--warning);
+            background: #fffbeb;
+        }
+
+        .notice.success {
+            border-left-color: var(--success);
+            background: #ecfdf3;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .no-result {
+            display: none;
+            border: 1px dashed #b8c2d6;
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-top: 16px;
+            color: var(--muted);
+        }
+
+        .hidden-by-search {
+            display: none;
+        }
+
+        .back-top {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            border: 0;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 999px;
+            padding: 12px 16px;
+            box-shadow: 0 12px 30px rgba(27, 132, 255, .25);
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        @media (max-width: 1100px) {
+            .shell {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+                max-height: none;
+            }
+
+            .hero-grid,
+            .grid.three,
+            .flow {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 720px) {
+            .shell {
+                width: min(100% - 20px, 1440px);
+                padding-top: 10px;
+            }
+
+            .hero,
+            section {
+                padding: 20px;
+            }
+
+            .hero-grid,
+            .grid.two,
+            .grid.three,
+            .flow {
+                grid-template-columns: 1fr;
+            }
+
+            .module-head {
+                display: block;
+            }
+
+            .pill {
+                margin-top: 10px;
+            }
+
+            .feature-table,
+            .feature-table thead,
+            .feature-table tbody,
+            .feature-table th,
+            .feature-table td,
+            .feature-table tr {
+                display: block;
+            }
+
+            .feature-table thead {
+                display: none;
+            }
+
+            .feature-table td {
+                border-bottom: 0;
+                padding: 8px 12px;
+            }
+
+            .feature-table tr {
+                border-bottom: 1px solid var(--line);
+                padding: 8px 0;
+            }
+
+            .feature-table tr:last-child {
+                border-bottom: 0;
+            }
+
+            .feature-table td::before {
+                content: attr(data-label);
+                display: block;
+                color: var(--muted);
+                font-size: 11px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: .04em;
+                margin-bottom: 2px;
+            }
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+            }
+
+            .shell {
+                display: block;
+                width: 100%;
+                padding: 0;
+            }
+
+            .sidebar,
+            .back-top,
+            .actions,
+            .search {
+                display: none !important;
+            }
+
+            .hero,
+            section,
+            .module,
+            .card {
+                box-shadow: none;
+                break-inside: avoid;
+            }
+
+            a {
+                color: #000;
+                text-decoration: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <aside class="sidebar" aria-label="Navigasi dokumentasi">
+            <div class="brand">
+                <div class="brand-mark">DOC</div>
+                <div>
+                    <strong>Panduan Aplikasi</strong>
+                    <span>Gudang, Toko, POS, B2B</span>
+                </div>
+            </div>
+            <label for="docSearch" class="muted">Cari bagian dokumentasi</label>
+            <input id="docSearch" class="search" type="search" placeholder="Contoh: POS, stok, harga, invoice">
+            <div class="actions">
+                <button class="button primary" type="button" onclick="window.print()">Cetak</button>
+                <button class="button" type="button" id="clearSearch">Reset</button>
+            </div>
+            <ul class="toc">
+                <li><a href="#ringkasan">Ringkasan</a></li>
+                <li><a href="#mulai">Cara Mulai</a></li>
+                <li><a href="#alur">Alur Kerja</a></li>
+                <li><a href="#peran">Peran Pengguna</a></li>
+                <li><a href="#fitur">Semua Fitur</a></li>
+                <li><a href="#sop">SOP Harian</a></li>
+                <li><a href="#glosarium">Glosarium</a></li>
+                <li><a href="#tips">Tips Aman</a></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            <header class="hero" id="ringkasan">
+                <span class="eyebrow">Dokumentasi pengguna non-IT</span>
+                <h1>Panduan lengkap penggunaan aplikasi operasional gudang, toko internal, POS, dan pelanggan langganan</h1>
+                <p class="lead">
+                    Halaman ini menjelaskan fungsi setiap menu, cara mengoperasikan fitur, dan cara kerja proses bisnis di dalam aplikasi dengan bahasa sederhana. Panduan ini cocok untuk owner, admin, kepala gudang, staf gudang, purchasing, kepala toko, kasir, tim piutang, dan pelanggan B2B.
+                </p>
+                <div class="hero-grid">
+                    <div class="metric">
+                        <strong>15+</strong>
+                        <span>Kelompok menu utama</span>
+                    </div>
+                    <div class="metric">
+                        <strong>3</strong>
+                        <span>Area operasional: gudang, toko, B2B</span>
+                    </div>
+                    <div class="metric">
+                        <strong>1</strong>
+                        <span>Sumber data stok yang dapat ditelusuri</span>
+                    </div>
+                    <div class="metric">
+                        <strong>Audit</strong>
+                        <span>Jejak aktivitas dan approval tersedia</span>
+                    </div>
+                </div>
+            </header>
+
+            <section id="mulai" class="doc-block">
+                <h2>Cara Mulai Menggunakan Aplikasi</h2>
+                <p class="section-intro">
+                    Sebelum menggunakan menu transaksi, pastikan akun dan data dasar sudah benar. Aplikasi ini bekerja berurutan: data master disiapkan lebih dulu, lalu transaksi operasional dapat berjalan.
+                </p>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Langkah awal untuk pengguna baru</h3>
+                        <ol class="steps">
+                            <li>Buka alamat aplikasi melalui browser, lalu masuk menggunakan email dan password yang diberikan admin.</li>
+                            <li>Periksa nama pengguna di pojok kanan atas untuk memastikan akun yang dipakai sudah benar.</li>
+                            <li>Lihat menu di sisi kiri. Menu yang tampil mengikuti hak akses masing-masing pengguna.</li>
+                            <li>Pilih lokasi kerja bila aplikasi meminta pilihan gudang atau cabang.</li>
+                            <li>Gunakan kolom pencarian dan filter tanggal/status untuk menemukan data dengan cepat.</li>
+                            <li>Simpan transaksi hanya setelah data sudah diperiksa, terutama jumlah barang, harga, pelanggan, supplier, dan lokasi.</li>
+                        </ol>
+                    </div>
+                    <div class="card soft">
+                        <h3>Istilah tombol yang sering muncul</h3>
+                        <table class="feature-table">
+                            <thead>
+                                <tr>
+                                    <th>Tombol</th>
+                                    <th>Arti untuk pengguna</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td data-label="Tombol">Tambah / Buat</td>
+                                    <td data-label="Arti">Membuat data atau dokumen baru.</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Tombol">Simpan</td>
+                                    <td data-label="Arti">Menyimpan isian. Untuk dokumen draft, data biasanya masih bisa diperbaiki.</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Tombol">Submit / Ajukan</td>
+                                    <td data-label="Arti">Mengirim dokumen untuk diproses atau menunggu persetujuan.</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Tombol">Approve / Setujui</td>
+                                    <td data-label="Arti">Menyetujui aksi penting. Setelah disetujui, efeknya bisa mengubah stok, harga, atau uang.</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Tombol">Void / Batalkan Final</td>
+                                    <td data-label="Arti">Membatalkan transaksi yang sudah final dengan jejak koreksi, bukan menghapus data.</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Tombol">Export / Cetak</td>
+                                    <td data-label="Arti">Mengambil laporan atau dokumen dalam bentuk file/cetakan.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="alur" class="doc-block">
+                <h2>Alur Kerja Besar Aplikasi</h2>
+                <p class="section-intro">
+                    Aplikasi dirancang agar stok, harga, penjualan, piutang, dan laporan saling tersambung. Jika data awal benar, laporan akhir akan lebih mudah dipercaya.
+                </p>
+                <div class="flow">
+                    <div class="flow-step">
+                        <strong>1. Siapkan master</strong>
+                        <span>Gudang, cabang, supplier, pelanggan, produk, satuan, barcode, dan pengguna.</span>
+                    </div>
+                    <div class="flow-step">
+                        <strong>2. Beli dan terima</strong>
+                        <span>Purchasing membuat PO, gudang menerima barang, stok bertambah setelah penerimaan diposting.</span>
+                    </div>
+                    <div class="flow-step">
+                        <strong>3. Atur stok dan harga</strong>
+                        <span>Sistem menyimpan saldo stok, mutasi, HPP, harga minimum, harga jual, dan histori perubahan.</span>
+                    </div>
+                    <div class="flow-step">
+                        <strong>4. Jual dan kirim</strong>
+                        <span>Kasir melayani POS, pelanggan B2B membuat order, gudang melakukan fulfillment dan pengiriman.</span>
+                    </div>
+                    <div class="flow-step">
+                        <strong>5. Tagih dan laporkan</strong>
+                        <span>Invoice, pembayaran, piutang, audit, notifikasi, dan laporan owner digunakan untuk kontrol bisnis.</span>
+                    </div>
+                </div>
+                <div class="notice warning" style="margin-top: 18px;">
+                    Prinsip penting: transaksi yang sudah selesai tidak diedit langsung. Jika terjadi kesalahan, gunakan fitur void, retur, reversal, credit note, koreksi, atau approval sesuai jenis masalahnya.
+                </div>
+            </section>
+
+            <section id="peran" class="doc-block">
+                <h2>Peran Pengguna dan Tanggung Jawab</h2>
+                <p class="section-intro">
+                    Hak akses menentukan menu yang bisa dilihat dan tindakan yang bisa dilakukan. Dua orang bisa melihat menu berbeda walaupun memakai aplikasi yang sama.
+                </p>
+                <div class="grid three">
+                    <div class="card">
+                        <h3>Owner</h3>
+                        <p>Melihat dashboard strategis, laporan, margin, audit, dan memberi persetujuan tertinggi untuk aksi sensitif.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Super Admin</h3>
+                        <p>Mengelola pengguna, role, permission, pengaturan sistem, cabang, gudang, serta konfigurasi utama.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Kepala Gudang</h3>
+                        <p>Mengawasi stok, penerimaan barang, transfer, stock opname, order B2B gudang, dan approval operasional gudang.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Staf Gudang</h3>
+                        <p>Mengerjakan penerimaan, pencatatan stok, transfer, picking, packing, opname, dan pencatatan barang rusak.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Purchasing</h3>
+                        <p>Mengelola supplier, permintaan pembelian, purchase order, harga beli, dan performa supplier.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Kepala Toko</h3>
+                        <p>Mengawasi cabang, shift, kasir, stok cabang, retur toko, piutang pelanggan toko, dan laporan cabang.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Kasir</h3>
+                        <p>Membuka shift, melayani penjualan POS, menerima pembayaran, menahan transaksi, mencetak struk, dan menutup shift.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Pelanggan Langganan/B2B</h3>
+                        <p>Melihat katalog, membuat order, checkout, reorder, melihat invoice, melacak pengiriman, dan membuat komplain.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Tim Audit/Approval</h3>
+                        <p>Memeriksa aktivitas, menyetujui permintaan, melihat anomali, dan memastikan proses bisnis berjalan sesuai aturan.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="fitur" class="doc-block">
+                <h2>Semua Fitur dan Cara Mengoperasikannya</h2>
+                <p class="section-intro">
+                    Bagian ini menjelaskan seluruh kelompok menu yang tersedia di aplikasi. Nama menu dapat berbeda sedikit tergantung hak akses, tetapi fungsi besarnya tetap sama.
+                </p>
+                <div id="noResult" class="no-result">Tidak ada bagian yang cocok dengan pencarian. Coba kata lain seperti "stok", "kasir", "harga", "B2B", atau "piutang".</div>
+
+                <article class="module searchable" id="dashboard" data-keywords="dashboard owner ringkasan kpi grafik laporan cepat">
+                    <div class="module-head">
+                        <div>
+                            <h3>Dashboard dan Dashboard Owner</h3>
+                            <p class="muted">Pusat ringkasan kondisi bisnis untuk melihat data penting tanpa membuka banyak menu.</p>
+                            <div class="tag-row">
+                                <span class="tag">Dashboard</span>
+                                <span class="tag">KPI</span>
+                                <span class="tag">Ringkasan owner</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Dashboard, Dashboard Owner</span>
+                    </div>
+                    <div class="grid two">
+                        <div>
+                            <h4>Fungsi</h4>
+                            <ul class="plain-list">
+                                <li>Melihat ringkasan penjualan, stok, piutang, aktivitas gudang, dan indikator penting lain.</li>
+                                <li>Membantu owner dan pimpinan mengetahui kondisi bisnis harian.</li>
+                                <li>Menjadi pintu awal untuk masuk ke laporan atau detail transaksi.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Cara mengoperasikan</h4>
+                            <ol class="steps">
+                                <li>Buka menu Dashboard.</li>
+                                <li>Pilih filter tanggal atau lokasi jika tersedia.</li>
+                                <li>Baca angka ringkasan, lalu klik bagian yang ingin diperiksa lebih detail.</li>
+                                <li>Gunakan Dashboard Owner untuk pemantauan lebih strategis seperti margin, penjualan, dan performa.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="module searchable" id="administrasi" data-keywords="administrasi pengguna user role permission hak akses login akun">
+                    <div class="module-head">
+                        <div>
+                            <h3>Administrasi Pengguna, Role, dan Permission</h3>
+                            <p class="muted">Mengatur siapa saja yang boleh masuk aplikasi dan menu apa saja yang boleh digunakan.</p>
+                            <div class="tag-row">
+                                <span class="tag">Pengguna</span>
+                                <span class="tag">Role</span>
+                                <span class="tag">Permission</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Administrasi</span>
+                    </div>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Fitur</th>
+                                <th>Fungsi</th>
+                                <th>Cara menggunakan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Fitur">Pengguna</td>
+                                <td data-label="Fungsi">Membuat akun karyawan, mengubah data akun, menonaktifkan akun, reset password, dan mengatur lokasi kerja.</td>
+                                <td data-label="Cara">Buka Pengguna, klik Tambah, isi identitas, pilih role dan lokasi, lalu simpan. Nonaktifkan akun saat karyawan tidak lagi memakai aplikasi.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Role</td>
+                                <td data-label="Fungsi">Mengelompokkan hak akses, misalnya kasir, staf gudang, kepala gudang, purchasing, atau owner.</td>
+                                <td data-label="Cara">Buka Role, buat atau edit role, centang permission yang sesuai, lalu simpan. Hindari memberi akses berlebihan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Permission</td>
+                                <td data-label="Fungsi">Daftar izin rinci seperti melihat, membuat, menyetujui, membatalkan, export, atau mengelola modul tertentu.</td>
+                                <td data-label="Cara">Gunakan menu ini untuk pemeriksaan hak akses. Perubahan permission sebaiknya dilakukan oleh admin yang memahami struktur operasional.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="notice" style="margin-top: 16px;">
+                        Cara kerja: aplikasi selalu memeriksa hak akses di sisi server. Menyembunyikan menu saja tidak cukup, sehingga aksi penting tetap dicek ulang saat tombol diklik.
+                    </div>
+                </article>
+
+                <article class="module searchable" id="sistem" data-keywords="administrasi sistem gudang cabang toko pengaturan nomor dokumen health backup log queue import maintenance go live">
+                    <div class="module-head">
+                        <div>
+                            <h3>Administrasi Sistem</h3>
+                            <p class="muted">Mengatur fondasi operasional seperti gudang, cabang, nomor dokumen, kesehatan sistem, backup, log, import data awal, dan maintenance.</p>
+                            <div class="tag-row">
+                                <span class="tag">Gudang</span>
+                                <span class="tag">Cabang/Toko</span>
+                                <span class="tag">Backup</span>
+                                <span class="tag">Maintenance</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Administrasi Sistem</span>
+                    </div>
+                    <div class="grid two">
+                        <div class="card">
+                            <h4>Fitur utama</h4>
+                            <ul class="plain-list">
+                                <li>Gudang: mencatat lokasi pusat penyimpanan dan distribusi.</li>
+                                <li>Cabang/Toko: mencatat toko internal yang memiliki stok, kasir, shift, dan piutang sendiri.</li>
+                                <li>Pengaturan Umum: mengelola konfigurasi dasar aplikasi.</li>
+                                <li>Nomor Dokumen: mengatur pola nomor untuk PO, penerimaan, transfer, invoice, struk, dan dokumen lain.</li>
+                                <li>Kesehatan Sistem: memeriksa kondisi aplikasi, koneksi, dan layanan penting.</li>
+                                <li>Backup, Log & Queue: memantau cadangan, proses latar belakang, dan error.</li>
+                                <li>Import Data Awal: memasukkan data master dan saldo awal saat persiapan go-live.</li>
+                            </ul>
+                        </div>
+                        <div class="card soft">
+                            <h4>Cara mengoperasikan</h4>
+                            <ol class="steps">
+                                <li>Mulai dari membuat gudang dan cabang sebelum transaksi stok atau POS digunakan.</li>
+                                <li>Atur nomor dokumen agar setiap transaksi memiliki nomor unik dan mudah dicari.</li>
+                                <li>Gunakan Import Data Awal hanya dengan file yang sudah diperiksa.</li>
+                                <li>Periksa Log & Queue jika ada laporan, notifikasi, export, atau proses otomatis yang belum selesai.</li>
+                                <li>Gunakan Maintenance & Go-Live untuk persiapan operasional, bukan untuk transaksi harian.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="module searchable" id="master-produk" data-keywords="produk kategori merek satuan barcode qr sku import produk master catalog">
+                    <div class="module-head">
+                        <div>
+                            <h3>Master Produk</h3>
+                            <p class="muted">Tempat mengelola seluruh data barang yang dijual, dibeli, disimpan, atau dipindahkan.</p>
+                            <div class="tag-row">
+                                <span class="tag">Kategori</span>
+                                <span class="tag">Merek</span>
+                                <span class="tag">Satuan</span>
+                                <span class="tag">Produk</span>
+                                <span class="tag">Barcode</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Master Produk</span>
+                    </div>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Subfitur</th>
+                                <th>Fungsi</th>
+                                <th>Langkah penggunaan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Subfitur">Kategori Produk</td>
+                                <td data-label="Fungsi">Mengelompokkan produk agar pencarian, laporan, dan pengaturan harga lebih rapi.</td>
+                                <td data-label="Langkah">Buat kategori, isi nama dan status, lalu gunakan kategori itu saat membuat produk.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Subfitur">Merek Produk</td>
+                                <td data-label="Fungsi">Mencatat brand produk untuk filter, laporan, dan identifikasi barang.</td>
+                                <td data-label="Langkah">Tambahkan merek, lalu pilih merek pada data produk.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Subfitur">Satuan</td>
+                                <td data-label="Fungsi">Mengatur satuan dasar dan satuan transaksi, misalnya pcs, dus, pack, atau kg.</td>
+                                <td data-label="Langkah">Buat satuan, lalu pastikan konversi satuan pada produk sudah benar sebelum transaksi.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Subfitur">Produk</td>
+                                <td data-label="Fungsi">Menyimpan SKU, nama, kategori, merek, satuan, status, barcode, dan pengaturan dasar barang.</td>
+                                <td data-label="Langkah">Klik Tambah Produk, isi SKU unik dan data penting, pilih satuan dasar, lalu simpan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Subfitur">Cetak Barcode/QR</td>
+                                <td data-label="Fungsi">Mencetak label untuk memudahkan scan produk di gudang atau kasir.</td>
+                                <td data-label="Langkah">Pilih produk, tentukan jumlah label, lalu cetak sesuai ukuran label yang digunakan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Subfitur">Import Produk</td>
+                                <td data-label="Fungsi">Memasukkan banyak produk sekaligus menggunakan file template.</td>
+                                <td data-label="Langkah">Unduh/ikuti template, isi data, lakukan preview, perbaiki baris yang ditolak, lalu import.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="notice success" style="margin-top: 16px;">
+                        Tips: jangan mengganti SKU produk lama untuk barang yang berbeda. Buat produk baru agar histori transaksi dan laporan tidak tercampur.
+                    </div>
+                </article>
+
+                <article class="module searchable" id="relasi" data-keywords="supplier pelanggan customer b2b relasi bisnis kontak alamat akses limit">
+                    <div class="module-head">
+                        <div>
+                            <h3>Relasi Bisnis</h3>
+                            <p class="muted">Mengelola data supplier, pelanggan toko, dan pelanggan langganan/B2B.</p>
+                            <div class="tag-row">
+                                <span class="tag">Supplier</span>
+                                <span class="tag">Pelanggan</span>
+                                <span class="tag">B2B</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Relasi Bisnis</span>
+                    </div>
+                    <div class="grid two">
+                        <div class="card">
+                            <h4>Supplier</h4>
+                            <p>Menyimpan nama supplier, kontak, alamat, dokumen pendukung, produk yang biasa dipasok, dan performa supplier.</p>
+                            <ol class="steps">
+                                <li>Buka Supplier, klik Tambah.</li>
+                                <li>Isi identitas, kontak, dan alamat.</li>
+                                <li>Tambahkan produk terkait jika dibutuhkan.</li>
+                                <li>Gunakan status aktif/nonaktif agar supplier lama tidak dipilih lagi pada PO baru.</li>
+                            </ol>
+                        </div>
+                        <div class="card">
+                            <h4>Pelanggan & B2B</h4>
+                            <p>Menyimpan pelanggan toko dan akun langganan/B2B, termasuk alamat, dokumen, akses portal, dan pengaturan kredit.</p>
+                            <ol class="steps">
+                                <li>Buka Pelanggan & B2B, klik Tambah.</li>
+                                <li>Isi profil pelanggan dan alamat pengiriman.</li>
+                                <li>Aktifkan akses B2B bila pelanggan boleh login ke portal langganan.</li>
+                                <li>Atur limit kredit dan termin bila pelanggan boleh bertransaksi kredit.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="module searchable" id="gudang-stok" data-keywords="gudang stok saldo kartu mutasi transfer lokasi stock opname reserved batch lot loss rusak penerimaan barang hpp">
+                    <div class="module-head">
+                        <div>
+                            <h3>Gudang & Stok</h3>
+                            <p class="muted">Mengelola lokasi barang, saldo stok, mutasi, penerimaan, transfer, reservasi, opname, barang rusak, dan histori HPP.</p>
+                            <div class="tag-row">
+                                <span class="tag">Saldo Stok</span>
+                                <span class="tag">Kartu Stok</span>
+                                <span class="tag">Penerimaan</span>
+                                <span class="tag">Transfer</span>
+                                <span class="tag">Opname</span>
+                                <span class="tag">Loss</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Gudang & Stok</span>
+                    </div>
+                    <div class="grid two">
+                        <div>
+                            <h4>Fitur yang tersedia</h4>
+                            <ul class="plain-list">
+                                <li>Dashboard Gudang: ringkasan kondisi gudang.</li>
+                                <li>Zona, Rak, dan Bin: mengatur lokasi fisik penyimpanan barang.</li>
+                                <li>Saldo Stok: melihat jumlah stok saat ini per produk dan lokasi.</li>
+                                <li>Kartu Stok: melihat riwayat keluar masuk barang secara berurutan.</li>
+                                <li>Penerimaan Barang: mencatat barang datang dari supplier dan hasil QC.</li>
+                                <li>Order B2B Gudang: memvalidasi order pelanggan langganan dari sisi gudang.</li>
+                                <li>Reserved Stock: melihat stok yang sudah dipesan tetapi belum keluar.</li>
+                                <li>Pengiriman B2B: mengelola pengiriman dan bukti terima.</li>
+                                <li>Transfer Lokasi: memindahkan barang antar rak/bin dalam gudang.</li>
+                                <li>Transfer Stok: memindahkan barang antar gudang/cabang.</li>
+                                <li>Stok Opname: menghitung fisik barang dan mencatat selisih.</li>
+                                <li>Barang Rusak & Loss: mencatat stok rusak, hilang, atau tidak layak jual.</li>
+                                <li>Batch/Lot Stok: melihat kelompok stok berdasarkan batch atau lot bila digunakan.</li>
+                                <li>Histori HPP: melihat perubahan biaya pokok produk.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Cara kerja stok</h4>
+                            <ol class="steps">
+                                <li>Stok bertambah saat penerimaan barang diposting.</li>
+                                <li>Stok berkurang saat penjualan, pengiriman, transfer keluar, retur tertentu, atau loss diposting.</li>
+                                <li>Setiap perubahan stok membuat catatan mutasi. Catatan ini tidak dihapus agar audit tetap jelas.</li>
+                                <li>Available stock dihitung dari stok fisik dikurangi stok reserved dan stok blocked/rusak.</li>
+                                <li>Stok opname membuat koreksi setelah selisih disetujui, bukan mengubah saldo tanpa jejak.</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <details>
+                        <summary>Contoh alur penerimaan barang</summary>
+                        <ol class="steps">
+                            <li>Purchasing membuat PO kepada supplier.</li>
+                            <li>Barang datang ke gudang.</li>
+                            <li>Staf gudang membuka Penerimaan Barang dan memilih PO terkait.</li>
+                            <li>Jumlah diterima, kondisi barang, dan hasil QC diisi.</li>
+                            <li>Dokumen diajukan dan disetujui bila perlu.</li>
+                            <li>Saat diposting, stok bertambah, mutasi tercatat, dan HPP dapat diperbarui.</li>
+                        </ol>
+                    </details>
+                    <details>
+                        <summary>Contoh alur transfer stok ke cabang</summary>
+                        <ol class="steps">
+                            <li>Cabang membuat permintaan restock atau gudang membuat transfer stok.</li>
+                            <li>Gudang menyiapkan barang sesuai dokumen.</li>
+                            <li>Barang dipicking, dipacking, lalu dikirim.</li>
+                            <li>Cabang menerima transfer dan memasukkan jumlah yang diterima.</li>
+                            <li>Jika ada selisih, sistem mencatat discrepancy untuk diselesaikan.</li>
+                            <li>Setelah lengkap, dokumen diselesaikan dan laporan stok cabang ikut berubah.</li>
+                        </ol>
+                    </details>
+                </article>
+
+                <article class="module searchable" id="pembelian" data-keywords="pembelian permintaan pembelian purchase request purchase order po supplier performa laporan loss">
+                    <div class="module-head">
+                        <div>
+                            <h3>Pembelian</h3>
+                            <p class="muted">Mengatur permintaan pembelian, purchase order, performa supplier, dan laporan loss yang berkaitan dengan pembelian/stok.</p>
+                            <div class="tag-row">
+                                <span class="tag">Permintaan Pembelian</span>
+                                <span class="tag">Purchase Order</span>
+                                <span class="tag">Supplier</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Pembelian</span>
+                    </div>
+                    <div class="grid two">
+                        <div class="card">
+                            <h4>Permintaan Pembelian</h4>
+                            <p>Dipakai saat tim membutuhkan barang tetapi belum langsung membuat PO. Permintaan ini bisa diperiksa dan disetujui lebih dulu.</p>
+                            <ol class="steps">
+                                <li>Buka Permintaan Pembelian.</li>
+                                <li>Isi produk, jumlah, kebutuhan lokasi, dan catatan.</li>
+                                <li>Ajukan permintaan.</li>
+                                <li>Approver menyetujui atau menolak.</li>
+                                <li>Jika disetujui, permintaan dapat dikonversi menjadi PO.</li>
+                            </ol>
+                        </div>
+                        <div class="card">
+                            <h4>Purchase Order</h4>
+                            <p>Dokumen resmi pembelian barang ke supplier. PO tidak menambah stok sampai barang benar-benar diterima melalui penerimaan barang.</p>
+                            <ol class="steps">
+                                <li>Buka Purchase Order dan klik Tambah.</li>
+                                <li>Pilih supplier, produk, jumlah, harga beli, dan tanggal kebutuhan.</li>
+                                <li>Simpan sebagai draft, lalu submit.</li>
+                                <li>Setelah approved/sent, gudang dapat membuat penerimaan barang.</li>
+                                <li>Cetak atau export PO jika perlu dikirim ke supplier.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="module searchable" id="harga" data-keywords="harga margin pricing price rule harga produk harga khusus histori approval simulasi margin hpp minimum price ring channel pos b2b">
+                    <div class="module-head">
+                        <div>
+                            <h3>Harga & Margin</h3>
+                            <p class="muted">Mengatur harga jual, harga minimum, harga khusus, histori harga, approval harga sensitif, simulasi margin, dan HPP.</p>
+                            <div class="tag-row">
+                                <span class="tag">Aturan Harga</span>
+                                <span class="tag">Harga Produk</span>
+                                <span class="tag">Harga Khusus</span>
+                                <span class="tag">Approval Harga</span>
+                                <span class="tag">Simulasi Margin</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Harga & Margin</span>
+                    </div>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Fitur</th>
+                                <th>Fungsi</th>
+                                <th>Cara menggunakan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Fitur">Aturan Harga</td>
+                                <td data-label="Fungsi">Mengatur aturan umum seperti channel POS/B2B, rentang harga, minimum price, atau kebijakan margin.</td>
+                                <td data-label="Cara">Buat aturan, pilih cakupan produk/lokasi/channel, isi nilai harga atau margin, lalu simpan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Harga Produk</td>
+                                <td data-label="Fungsi">Mengatur harga jual produk. Dapat dipakai untuk banyak produk sekaligus sesuai fitur multi-select.</td>
+                                <td data-label="Cara">Pilih channel, pilih satu atau beberapa produk, masukkan harga, tanggal berlaku, lalu simpan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Harga Khusus</td>
+                                <td data-label="Fungsi">Memberikan harga berbeda untuk pelanggan, segmen, cabang, atau kondisi tertentu.</td>
+                                <td data-label="Cara">Pilih pelanggan/segmen dan produk, isi harga khusus serta masa berlaku.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Histori Harga</td>
+                                <td data-label="Fungsi">Melihat perubahan harga lama dan baru, siapa yang mengubah, kapan, dan alasannya.</td>
+                                <td data-label="Cara">Gunakan filter produk, channel, tanggal, atau user untuk menelusuri perubahan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Approval Harga</td>
+                                <td data-label="Fungsi">Menyetujui harga yang berisiko, misalnya terlalu rendah dari minimum atau terlalu tinggi dari batas wajar.</td>
+                                <td data-label="Cara">Buka daftar approval, periksa alasan dan angka, lalu setujui atau tolak.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Simulasi Margin</td>
+                                <td data-label="Fungsi">Menguji harga jual sebelum diterapkan agar margin terlihat jelas.</td>
+                                <td data-label="Cara">Pilih produk, isi harga simulasi, lihat estimasi margin, lalu gunakan hasilnya sebagai pertimbangan.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="notice warning" style="margin-top: 16px;">
+                        Catatan: HPP dan margin transaksi disimpan sebagai snapshot. Artinya, laporan transaksi lama tidak ikut berubah ketika harga master atau HPP produk diperbarui.
+                    </div>
+                </article>
+
+                <article class="module searchable" id="retur" data-keywords="retur return barang kembali inspeksi approval refund replacement credit note settlement">
+                    <div class="module-head">
+                        <div>
+                            <h3>Retur</h3>
+                            <p class="muted">Mengelola barang kembali dari pelanggan, toko, atau proses B2B, termasuk pemeriksaan kondisi dan penyelesaian finansial.</p>
+                            <div class="tag-row">
+                                <span class="tag">Daftar Retur</span>
+                                <span class="tag">Inspeksi</span>
+                                <span class="tag">Settlement</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Retur</span>
+                    </div>
+                    <div class="grid two">
+                        <div>
+                            <h4>Cara mengoperasikan</h4>
+                            <ol class="steps">
+                                <li>Buka Daftar Retur dan klik buat retur jika ada barang kembali.</li>
+                                <li>Pilih sumber transaksi jika tersedia, lalu isi produk, jumlah, alasan, dan kondisi awal.</li>
+                                <li>Lakukan inspeksi untuk menentukan barang layak jual, rusak, perlu diganti, atau perlu credit note/refund.</li>
+                                <li>Ajukan approval bila nominal atau kondisi retur membutuhkan persetujuan.</li>
+                                <li>Selesaikan retur melalui refund, penggantian barang, credit note, repair, supplier return, atau write-off sesuai kebijakan.</li>
+                            </ol>
+                        </div>
+                        <div>
+                            <h4>Cara kerja</h4>
+                            <ul class="plain-list">
+                                <li>Retur tidak menghapus transaksi penjualan asli.</li>
+                                <li>Stok akan dikembalikan ke kondisi yang sesuai, misalnya sellable, damaged, quarantine, atau loss.</li>
+                                <li>Efek uang/piutang dibuat melalui dokumen koreksi agar laporan tetap bisa diaudit.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="module searchable" id="toko" data-keywords="toko internal retail pos kasir shift aktif riwayat shift transaksi ditahan hold restock terima transfer piutang toko">
+                    <div class="module-head">
+                        <div>
+                            <h3>Toko Internal, POS, dan Shift</h3>
+                            <p class="muted">Mengelola operasional cabang, kasir, transaksi POS, shift aktif, transaksi ditahan, restock, dan penerimaan transfer.</p>
+                            <div class="tag-row">
+                                <span class="tag">Kasir POS</span>
+                                <span class="tag">Shift</span>
+                                <span class="tag">Hold</span>
+                                <span class="tag">Restock</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Toko Internal</span>
+                    </div>
+                    <div class="grid two">
+                        <div class="card">
+                            <h4>Alur kasir POS</h4>
+                            <ol class="steps">
+                                <li>Buka shift terlebih dahulu dengan memasukkan kas awal.</li>
+                                <li>Buka Kasir POS.</li>
+                                <li>Cari produk dengan nama, SKU, atau barcode.</li>
+                                <li>Masukkan jumlah barang ke keranjang.</li>
+                                <li>Periksa harga, diskon, pelanggan, dan total.</li>
+                                <li>Pilih metode pembayaran, lalu selesaikan transaksi.</li>
+                                <li>Cetak struk jika dibutuhkan.</li>
+                            </ol>
+                        </div>
+                        <div class="card">
+                            <h4>Alur tutup shift</h4>
+                            <ol class="steps">
+                                <li>Buka Shift Aktif.</li>
+                                <li>Pastikan semua transaksi pada shift sudah selesai atau dibatalkan.</li>
+                                <li>Masukkan hitungan kas fisik dan catatan selisih jika ada.</li>
+                                <li>Tambahkan pengeluaran shift bila ada.</li>
+                                <li>Submit closing untuk diverifikasi supervisor/kepala toko.</li>
+                                <li>Setelah verified/closed, transaksi shift terkunci.</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <table class="feature-table" style="margin-top: 16px;">
+                        <thead>
+                            <tr>
+                                <th>Fitur</th>
+                                <th>Kegunaan</th>
+                                <th>Catatan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Fitur">Transaksi Ditahan</td>
+                                <td data-label="Kegunaan">Menyimpan sementara keranjang pelanggan, misalnya pelanggan ingin mengambil barang tambahan.</td>
+                                <td data-label="Catatan">Transaksi ditahan belum menjadi penjualan final sampai dilanjutkan dan dibayar.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Permintaan Restock</td>
+                                <td data-label="Kegunaan">Cabang meminta tambahan barang ke gudang.</td>
+                                <td data-label="Catatan">Permintaan dapat disetujui dan dikonversi menjadi transfer stok.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Terima Transfer</td>
+                                <td data-label="Kegunaan">Cabang mengonfirmasi barang yang dikirim dari gudang.</td>
+                                <td data-label="Catatan">Masukkan jumlah nyata yang diterima agar selisih tercatat.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </article>
+
+                <article class="module searchable" id="kehadiran" data-keywords="kehadiran absensi karyawan shift jadwal check in check out izin sakit cuti koreksi absensi produktivitas">
+                    <div class="module-head">
+                        <div>
+                            <h3>Kehadiran</h3>
+                            <p class="muted">Mengelola karyawan, shift kerja, jadwal, check-in/out, izin, sakit, cuti, koreksi absensi, dan laporan produktivitas.</p>
+                            <div class="tag-row">
+                                <span class="tag">Karyawan</span>
+                                <span class="tag">Shift</span>
+                                <span class="tag">Check-in/out</span>
+                                <span class="tag">Koreksi</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Kehadiran</span>
+                    </div>
+                    <div class="grid two">
+                        <div>
+                            <h4>Fitur</h4>
+                            <ul class="plain-list">
+                                <li>Master Karyawan: data karyawan toko atau operasional.</li>
+                                <li>Master Shift: jam kerja dan pola shift.</li>
+                                <li>Jadwal Shift: penempatan karyawan pada hari dan jam tertentu.</li>
+                                <li>Check-in/out: mencatat hadir dan pulang.</li>
+                                <li>Izin/Sakit/Cuti: mengajukan ketidakhadiran dengan alasan.</li>
+                                <li>Koreksi Absensi: memperbaiki data absensi dengan persetujuan.</li>
+                                <li>Laporan Kehadiran dan Produktivitas Shift: menganalisis kehadiran dan performa.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>Cara mengoperasikan</h4>
+                            <ol class="steps">
+                                <li>Admin membuat data karyawan dan shift.</li>
+                                <li>Kepala toko/admin membuat jadwal shift.</li>
+                                <li>Karyawan melakukan check-in saat mulai kerja dan check-out saat selesai.</li>
+                                <li>Jika lupa absen atau ada kesalahan, ajukan koreksi absensi.</li>
+                                <li>Approver memeriksa alasan dan menyetujui atau menolak koreksi.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="module searchable" id="kontrol" data-keywords="kontrol audit approval kotak masuk audit log anomali keamanan login notifikasi channel template jadwal penerima log alert">
+                    <div class="module-head">
+                        <div>
+                            <h3>Kontrol, Approval, Audit, dan Notifikasi</h3>
+                            <p class="muted">Mengawasi tindakan penting, membuat jejak audit, mendeteksi anomali, dan mengatur pengiriman notifikasi/laporan.</p>
+                            <div class="tag-row">
+                                <span class="tag">Approval</span>
+                                <span class="tag">Audit Log</span>
+                                <span class="tag">Anomali</span>
+                                <span class="tag">Notifikasi</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Kontrol & Audit</span>
+                    </div>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Fitur</th>
+                                <th>Fungsi</th>
+                                <th>Cara menggunakan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Fitur">Kotak Masuk Approval</td>
+                                <td data-label="Fungsi">Menampilkan permintaan persetujuan seperti harga sensitif, void, koreksi stok, limit kredit, atau closing tertentu.</td>
+                                <td data-label="Cara">Buka daftar, periksa detail dan alasan, lalu pilih setujui atau tolak.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Audit Log</td>
+                                <td data-label="Fungsi">Melihat siapa melakukan apa, kapan, dari mana, dan perubahan data apa yang terjadi.</td>
+                                <td data-label="Cara">Gunakan filter user, tanggal, modul, atau aktivitas saat investigasi.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Dashboard Anomali</td>
+                                <td data-label="Fungsi">Menampilkan aktivitas yang perlu perhatian, misalnya void tinggi, perubahan harga tidak biasa, atau selisih stok.</td>
+                                <td data-label="Cara">Buka dashboard, lihat indikator, lalu telusuri ke transaksi sumber.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Log Login & Keamanan</td>
+                                <td data-label="Fungsi">Memantau aktivitas masuk akun dan risiko keamanan.</td>
+                                <td data-label="Cara">Periksa login tidak biasa, akun gagal login berkali-kali, atau aktivitas dari lokasi yang mencurigakan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Channel Notifikasi</td>
+                                <td data-label="Fungsi">Mengatur media pengiriman seperti WhatsApp API atau Telegram Bot jika dikonfigurasi.</td>
+                                <td data-label="Cara">Isi channel, kredensial, status aktif, dan lakukan test sesuai izin.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Template Pesan</td>
+                                <td data-label="Fungsi">Menentukan isi pesan untuk laporan harian, reminder, alert, atau pemberitahuan.</td>
+                                <td data-label="Cara">Buat template dengan bahasa yang jelas, lalu hubungkan dengan jadwal atau alert.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Fitur">Jadwal, Penerima, Log, dan Alert</td>
+                                <td data-label="Fungsi">Mengatur kapan pesan dikirim, siapa penerimanya, mencatat hasil kirim, dan menentukan aturan peringatan.</td>
+                                <td data-label="Cara">Atur jadwal dan penerima, pantau log pengiriman, lalu sesuaikan alert bila terlalu sering atau kurang sensitif.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </article>
+
+                <article class="module searchable" id="invoice" data-keywords="invoice pembayaran piutang receivable tagihan payment allocation reminder limit kredit kredit toko b2b">
+                    <div class="module-head">
+                        <div>
+                            <h3>Invoice, Pembayaran, dan Piutang</h3>
+                            <p class="muted">Mengelola tagihan, pembayaran pelanggan, alokasi pembayaran, reminder, limit kredit, dan piutang toko.</p>
+                            <div class="tag-row">
+                                <span class="tag">Invoice</span>
+                                <span class="tag">Pembayaran</span>
+                                <span class="tag">Piutang</span>
+                                <span class="tag">Limit Kredit</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Invoice & Pembayaran</span>
+                    </div>
+                    <div class="grid two">
+                        <div class="card">
+                            <h4>Fitur utama</h4>
+                            <ul class="plain-list">
+                                <li>Dashboard Piutang: ringkasan piutang, jatuh tempo, dan pembayaran.</li>
+                                <li>Daftar Piutang: daftar hak tagih yang masih terbuka, sebagian dibayar, overdue, atau selesai.</li>
+                                <li>Invoice: dokumen tagihan untuk transaksi B2B atau kredit.</li>
+                                <li>Pembayaran Piutang: mencatat pembayaran dan mengalokasikannya ke invoice.</li>
+                                <li>Reminder Tagihan: membantu mengingatkan pelanggan yang belum membayar.</li>
+                                <li>Limit Kredit: mengatur batas kredit pelanggan.</li>
+                                <li>Piutang Toko: piutang yang berasal dari transaksi toko/cabang.</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h4>Cara mengoperasikan pembayaran</h4>
+                            <ol class="steps">
+                                <li>Buka Pembayaran Piutang.</li>
+                                <li>Pilih pelanggan atau invoice yang dibayar.</li>
+                                <li>Isi tanggal, metode pembayaran, nominal, dan bukti jika diperlukan.</li>
+                                <li>Alokasikan pembayaran ke invoice yang tepat.</li>
+                                <li>Simpan dan lakukan verifikasi bila aturan bisnis memintanya.</li>
+                                <li>Periksa saldo piutang setelah pembayaran diposting.</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div class="notice warning" style="margin-top: 16px;">
+                        Cara kerja: saldo piutang tidak diketik manual. Saldo berasal dari invoice dikurangi pembayaran, reversal, dan credit note yang sah.
+                    </div>
+                </article>
+
+                <article class="module searchable" id="laporan" data-keywords="laporan report export harian owner gudang toko retail b2b pricing supplier kehadiran piutang audit notifikasi pusat export pdf xlsx">
+                    <div class="module-head">
+                        <div>
+                            <h3>Laporan dan Pusat Export</h3>
+                            <p class="muted">Menyediakan laporan harian, gudang, toko, B2B, harga, supplier, kehadiran, piutang, audit, notifikasi, dan export.</p>
+                            <div class="tag-row">
+                                <span class="tag">Harian Owner</span>
+                                <span class="tag">Gudang</span>
+                                <span class="tag">Toko</span>
+                                <span class="tag">Export</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Laporan</span>
+                    </div>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Laporan</th>
+                                <th>Isi utama</th>
+                                <th>Kapan digunakan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Laporan">Harian Owner</td>
+                                <td data-label="Isi">Ringkasan harian untuk owner, seperti penjualan, stok, piutang, dan aktivitas penting.</td>
+                                <td data-label="Kapan">Dipakai untuk review harian.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Laporan">Gudang</td>
+                                <td data-label="Isi">Saldo stok, mutasi, penerimaan, transfer, opname, loss, dan reserved stock.</td>
+                                <td data-label="Kapan">Dipakai kepala gudang atau owner untuk kontrol persediaan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Laporan">Toko</td>
+                                <td data-label="Isi">Penjualan POS, shift, closing, pembayaran, retur, dan performa cabang.</td>
+                                <td data-label="Kapan">Dipakai kepala toko dan owner.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Laporan">Langganan/B2B</td>
+                                <td data-label="Isi">Order B2B, reservasi, invoice, pengiriman, retur, dan status pelanggan.</td>
+                                <td data-label="Kapan">Dipakai untuk memantau pelanggan langganan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Laporan">Harga & Margin</td>
+                                <td data-label="Isi">Harga jual, margin, HPP, perubahan harga, dan approval harga.</td>
+                                <td data-label="Kapan">Dipakai saat evaluasi profit dan kebijakan harga.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Laporan">Supplier</td>
+                                <td data-label="Isi">Performa supplier, pembelian, penerimaan, dan catatan kendala.</td>
+                                <td data-label="Kapan">Dipakai purchasing untuk evaluasi supplier.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Laporan">Kehadiran</td>
+                                <td data-label="Isi">Absensi, izin, koreksi, jadwal shift, dan produktivitas.</td>
+                                <td data-label="Kapan">Dipakai kepala toko/admin untuk evaluasi karyawan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Laporan">Piutang</td>
+                                <td data-label="Isi">Piutang terbuka, overdue, pembayaran, limit kredit, dan aging.</td>
+                                <td data-label="Kapan">Dipakai finance/admin untuk penagihan.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Laporan">Audit & Notifikasi</td>
+                                <td data-label="Isi">Aktivitas pengguna, approval, anomali, dan log pengiriman pesan.</td>
+                                <td data-label="Kapan">Dipakai saat pemeriksaan atau investigasi.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Laporan">Pusat Export</td>
+                                <td data-label="Isi">Daftar proses export laporan dan file yang siap diunduh.</td>
+                                <td data-label="Kapan">Dipakai saat data besar perlu diproses di latar belakang.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </article>
+
+                <article class="module searchable" id="portal" data-keywords="portal langganan b2b katalog keranjang checkout reorder cepat riwayat order invoice komplain profil usaha shipment pengiriman">
+                    <div class="module-head">
+                        <div>
+                            <h3>Portal Langganan / B2B</h3>
+                            <p class="muted">Area khusus pelanggan langganan untuk melihat katalog, membuat pesanan, checkout, reorder, memantau order, invoice, komplain, dan profil usaha.</p>
+                            <div class="tag-row">
+                                <span class="tag">Katalog</span>
+                                <span class="tag">Keranjang</span>
+                                <span class="tag">Checkout</span>
+                                <span class="tag">Order</span>
+                                <span class="tag">Komplain</span>
+                            </div>
+                        </div>
+                        <span class="pill">Menu: Portal Langganan</span>
+                    </div>
+                    <div class="grid two">
+                        <div class="card">
+                            <h4>Alur pelanggan B2B membuat order</h4>
+                            <ol class="steps">
+                                <li>Pelanggan login melalui halaman langganan.</li>
+                                <li>Buka Katalog dan cari produk.</li>
+                                <li>Masukkan produk ke Keranjang.</li>
+                                <li>Periksa jumlah, harga, alamat, dan catatan pada Checkout.</li>
+                                <li>Kirim order.</li>
+                                <li>Gudang memvalidasi stok, harga, dan aturan kredit.</li>
+                                <li>Order diproses menjadi invoice, fulfillment, pengiriman, dan penyelesaian.</li>
+                            </ol>
+                        </div>
+                        <div class="card">
+                            <h4>Fitur pelanggan</h4>
+                            <ul class="plain-list">
+                                <li>Dashboard Langganan: ringkasan order dan status.</li>
+                                <li>Katalog: daftar produk yang boleh dilihat pelanggan.</li>
+                                <li>Keranjang dan Checkout: tempat menyusun pesanan.</li>
+                                <li>Reorder Cepat: memesan ulang berdasarkan histori.</li>
+                                <li>Riwayat Order: melihat status order dari draft sampai selesai.</li>
+                                <li>Invoice: melihat tagihan.</li>
+                                <li>Komplain: mengirim keluhan terkait order/pengiriman.</li>
+                                <li>Profil Usaha: memperbarui data usaha dan alamat.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section id="sop" class="doc-block">
+                <h2>SOP Harian yang Disarankan</h2>
+                <p class="section-intro">
+                    Bagian ini dapat dipakai sebagai checklist operasional sederhana agar pengguna awam tidak bingung harus mulai dari mana.
+                </p>
+                <div class="grid three">
+                    <div class="card">
+                        <h3>Kasir</h3>
+                        <ol class="steps">
+                            <li>Login dengan akun sendiri.</li>
+                            <li>Buka shift dan isi kas awal.</li>
+                            <li>Lakukan transaksi POS sesuai barang pelanggan.</li>
+                            <li>Gunakan hold jika transaksi belum jadi.</li>
+                            <li>Cetak struk setelah pembayaran selesai.</li>
+                            <li>Tutup shift, isi kas fisik, dan submit closing.</li>
+                        </ol>
+                    </div>
+                    <div class="card">
+                        <h3>Staf Gudang</h3>
+                        <ol class="steps">
+                            <li>Cek dashboard gudang dan tugas hari ini.</li>
+                            <li>Proses penerimaan barang dari supplier.</li>
+                            <li>Siapkan transfer atau order B2B sesuai dokumen.</li>
+                            <li>Catat barang rusak/loss jika ditemukan.</li>
+                            <li>Gunakan kartu stok saat menelusuri selisih.</li>
+                            <li>Ikuti stock opname sesuai jadwal.</li>
+                        </ol>
+                    </div>
+                    <div class="card">
+                        <h3>Kepala Toko/Gudang</h3>
+                        <ol class="steps">
+                            <li>Periksa dashboard dan laporan ringkas.</li>
+                            <li>Review transaksi yang membutuhkan approval.</li>
+                            <li>Cek selisih shift, stok, dan retur.</li>
+                            <li>Pastikan transfer diterima sesuai jumlah fisik.</li>
+                            <li>Gunakan laporan untuk evaluasi harian.</li>
+                        </ol>
+                    </div>
+                    <div class="card">
+                        <h3>Purchasing</h3>
+                        <ol class="steps">
+                            <li>Periksa kebutuhan pembelian atau restock.</li>
+                            <li>Buat permintaan pembelian atau PO.</li>
+                            <li>Pastikan supplier, produk, jumlah, dan harga benar.</li>
+                            <li>Pantau status PO sampai barang diterima.</li>
+                            <li>Evaluasi performa supplier melalui laporan.</li>
+                        </ol>
+                    </div>
+                    <div class="card">
+                        <h3>Admin/Finance</h3>
+                        <ol class="steps">
+                            <li>Periksa invoice dan piutang jatuh tempo.</li>
+                            <li>Input pembayaran dan alokasikan ke invoice.</li>
+                            <li>Kirim reminder tagihan bila diperlukan.</li>
+                            <li>Review limit kredit pelanggan.</li>
+                            <li>Export laporan sesuai kebutuhan.</li>
+                        </ol>
+                    </div>
+                    <div class="card">
+                        <h3>Owner</h3>
+                        <ol class="steps">
+                            <li>Buka Dashboard Owner.</li>
+                            <li>Periksa penjualan, margin, stok, dan piutang.</li>
+                            <li>Lihat approval penting yang menunggu keputusan.</li>
+                            <li>Gunakan audit/anomali untuk melihat risiko.</li>
+                            <li>Review laporan harian atau laporan export.</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <section id="glosarium" class="doc-block">
+                <h2>Glosarium Istilah Penting</h2>
+                <p class="section-intro">
+                    Daftar istilah ini membantu pengguna baru memahami kata-kata yang sering muncul di aplikasi.
+                </p>
+                <table class="feature-table">
+                    <thead>
+                        <tr>
+                            <th>Istilah</th>
+                            <th>Arti sederhana</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td data-label="Istilah">SKU</td>
+                            <td data-label="Arti">Kode unik untuk membedakan satu produk dengan produk lain.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Warehouse / Gudang</td>
+                            <td data-label="Arti">Lokasi pusat penyimpanan barang.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Branch / Cabang</td>
+                            <td data-label="Arti">Toko internal yang punya stok, kasir, shift, dan laporan sendiri.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">On Hand Stock</td>
+                            <td data-label="Arti">Jumlah stok fisik yang tercatat di sistem.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Available Stock</td>
+                            <td data-label="Arti">Stok yang boleh dijual atau dijanjikan, setelah dikurangi reserved dan stok bermasalah.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Reserved Stock</td>
+                            <td data-label="Arti">Stok yang sudah dipesan untuk order tertentu tetapi belum benar-benar keluar.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Mutasi Stok</td>
+                            <td data-label="Arti">Catatan setiap perubahan stok, baik masuk, keluar, transfer, retur, loss, maupun koreksi.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">HPP</td>
+                            <td data-label="Arti">Harga pokok produk, yaitu biaya dasar barang yang dipakai untuk menghitung margin.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Minimum Price</td>
+                            <td data-label="Arti">Harga jual terendah yang diperbolehkan agar transaksi tidak merugikan.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Price Ring</td>
+                            <td data-label="Arti">Kelompok harga untuk channel atau pelanggan tertentu.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">PO</td>
+                            <td data-label="Arti">Purchase Order, yaitu dokumen pembelian barang ke supplier.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Goods Receipt</td>
+                            <td data-label="Arti">Dokumen penerimaan barang dari supplier.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">POS</td>
+                            <td data-label="Arti">Point of Sale, yaitu halaman kasir untuk transaksi penjualan toko.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Shift</td>
+                            <td data-label="Arti">Periode kerja kasir yang memiliki kas awal, transaksi, kas akhir, dan selisih.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Invoice</td>
+                            <td data-label="Arti">Dokumen tagihan kepada pelanggan.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Piutang</td>
+                            <td data-label="Arti">Tagihan yang belum dibayar lunas oleh pelanggan.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Approval</td>
+                            <td data-label="Arti">Persetujuan dari pengguna berwenang untuk aksi penting atau berisiko.</td>
+                        </tr>
+                        <tr>
+                            <td data-label="Istilah">Audit Log</td>
+                            <td data-label="Arti">Catatan jejak aktivitas pengguna dan perubahan data di aplikasi.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="tips" class="doc-block">
+                <h2>Tips Aman untuk Pengguna Awam</h2>
+                <div class="grid two">
+                    <div class="card">
+                        <h3>Yang sebaiknya dilakukan</h3>
+                        <ul class="plain-list">
+                            <li>Gunakan akun sendiri, jangan berbagi password.</li>
+                            <li>Periksa produk, jumlah, harga, supplier, pelanggan, dan lokasi sebelum menyimpan.</li>
+                            <li>Gunakan filter tanggal dan status agar tidak salah membuka dokumen.</li>
+                            <li>Tulis alasan yang jelas saat membuat koreksi, void, retur, atau approval.</li>
+                            <li>Laporkan selisih stok atau kas segera, jangan menunggu akhir bulan.</li>
+                            <li>Gunakan export/cetak dari aplikasi agar format data konsisten.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Yang perlu dihindari</h3>
+                        <ul class="plain-list">
+                            <li>Jangan membuat produk baru untuk barang yang sebenarnya sama hanya karena lupa mencari.</li>
+                            <li>Jangan mengubah data master lama untuk mengganti arti barang yang berbeda.</li>
+                            <li>Jangan menyetujui approval tanpa membaca angka, alasan, dan dampaknya.</li>
+                            <li>Jangan menutup shift sebelum semua transaksi sudah benar.</li>
+                            <li>Jangan memakai fitur import tanpa preview dan pemeriksaan baris error.</li>
+                            <li>Jangan menghapus bukti pembayaran, bukti pengiriman, atau catatan retur.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="notice success" style="margin-top: 16px;">
+                    Pegangan sederhana: jika transaksi sudah mengubah stok atau uang, jangan diperbaiki dengan hapus/edit langsung. Gunakan fitur koreksi yang tersedia agar laporan tetap rapi dan bisa dipertanggungjawabkan.
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <button class="back-top" type="button" aria-label="Kembali ke atas">Ke atas</button>
+
+    <script>
+        const searchInput = document.getElementById('docSearch');
+        const clearSearch = document.getElementById('clearSearch');
+        const searchable = Array.from(document.querySelectorAll('.searchable'));
+        const noResult = document.getElementById('noResult');
+        const backTop = document.querySelector('.back-top');
+
+        function filterDocumentation() {
+            const query = searchInput.value.trim().toLowerCase();
+            let visibleCount = 0;
+
+            searchable.forEach((item) => {
+                const haystack = `${item.textContent} ${item.dataset.keywords || ''}`.toLowerCase();
+                const isVisible = !query || haystack.includes(query);
+                item.classList.toggle('hidden-by-search', !isVisible);
+                if (isVisible) {
+                    visibleCount += 1;
+                }
+            });
+
+            noResult.style.display = query && visibleCount === 0 ? 'block' : 'none';
+        }
+
+        searchInput.addEventListener('input', filterDocumentation);
+        clearSearch.addEventListener('click', () => {
+            searchInput.value = '';
+            filterDocumentation();
+            searchInput.focus();
+        });
+        backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    </script>
+</body>
+</html>

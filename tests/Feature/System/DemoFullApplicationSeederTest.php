@@ -23,22 +23,16 @@ class DemoFullApplicationSeederTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @var array<string, string> */
+    /** @var array<string, array{email: string, roles: list<string>}> */
     private array $roleAccounts = [
-        'super_admin' => 'super_admin@gudangtoko.test',
-        'owner_viewer' => 'owner_viewer@gudangtoko.test',
-        'owner_approver' => 'owner_approver@gudangtoko.test',
-        'admin_user' => 'admin_user@gudangtoko.test',
-        'admin_config' => 'admin_config@gudangtoko.test',
-        'kepala_gudang' => 'kepala_gudang@gudangtoko.test',
-        'staff_gudang' => 'staff_gudang@gudangtoko.test',
-        'picker_packer' => 'picker_packer@gudangtoko.test',
-        'purchasing' => 'purchasing@gudangtoko.test',
-        'kepala_toko' => 'kepala_toko@gudangtoko.test',
-        'kasir' => 'kasir@gudangtoko.test',
-        'supervisor_shift' => 'supervisor_shift@gudangtoko.test',
-        'langganan_owner' => 'langganan_owner@gudangtoko.test',
-        'langganan_staff' => 'langganan_staff@gudangtoko.test',
+        'owner' => ['email' => 'owner@gudangtoko.test', 'roles' => ['owner_approver']],
+        'super_admin' => ['email' => 'superadmin@gudangtoko.test', 'roles' => ['super_admin']],
+        'manajemen_gudang' => ['email' => 'manajemen-gudang@gudangtoko.test', 'roles' => ['kepala_gudang', 'purchasing']],
+        'staff_gudang' => ['email' => 'staff-gudang@gudangtoko.test', 'roles' => ['staff_gudang']],
+        'toko_internal' => ['email' => 'toko@gudangtoko.test', 'roles' => ['kepala_toko']],
+        'kasir_kepala_toko' => ['email' => 'kasir@gudangtoko.test', 'roles' => ['kasir', 'kepala_toko']],
+        'langganan_b2b' => ['email' => 'langganan-b2b@gudangtoko.test', 'roles' => ['langganan_owner']],
+        'akun_pelanggan' => ['email' => 'pelanggan@gudangtoko.test', 'roles' => ['langganan_staff']],
     ];
 
     #[Test]
@@ -46,12 +40,17 @@ class DemoFullApplicationSeederTest extends TestCase
     {
         $this->seed(DemoFullApplicationSeeder::class);
 
-        foreach ($this->roleAccounts as $role => $email) {
-            $user = User::query()->where('email', $email)->first();
+        $this->assertSame(8, User::query()->count());
+
+        foreach ($this->roleAccounts as $account) {
+            $user = User::query()->where('email', $account['email'])->first();
 
             $this->assertInstanceOf(User::class, $user);
             $this->assertTrue(Hash::check('password', (string) $user->password));
-            $this->assertTrue($user->hasRole($role));
+
+            foreach ($account['roles'] as $role) {
+                $this->assertTrue($user->hasRole($role));
+            }
         }
 
         $this->assertGreaterThanOrEqual(3, Product::query()->where('sku', 'like', 'DEMO-%')->count());

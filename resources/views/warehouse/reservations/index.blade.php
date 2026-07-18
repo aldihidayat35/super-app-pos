@@ -21,7 +21,7 @@
                     <td><a href="{{ route('warehouse.b2b-orders.review', $reservation->order) }}" class="fw-bold text-gray-900 text-hover-primary">{{ $reservation->order?->number }}</a><div class="text-muted">{{ $reservation->order?->customer?->business_name }}</div></td>
                     <td>{{ $reservation->product?->name }}<div class="text-muted">{{ $reservation->product?->sku }}</div></td>
                     <td>{{ $reservation->workLocation?->name }}<div class="text-muted">{{ $reservation->warehouseLocation?->full_code ?: 'Tanpa bin' }}</div></td>
-                    <td>Reserved {{ $reservation->quantity_reserved }}<div class="text-muted">Released {{ $reservation->quantity_released }} · Issued {{ $reservation->quantity_issued }}</div></td>
+                    <td>Reserved {{ qty($reservation->quantity_reserved) }}<div class="text-muted">Released {{ qty($reservation->quantity_released) }} · Issued {{ qty($reservation->quantity_issued) }}</div></td>
                     <td>{{ $reservation->expires_at?->format('d/m/Y H:i') ?: '-' }}</td>
                     <td><x-metronic.status-badge :status="$reservation->status->value" :label="$reservation->status->label()" /></td>
                     <td class="text-end">@if($reservation->status === App\Enums\StockReservationStatus::ACTIVE)<form method="POST" action="{{ route('warehouse.reservations.release', $reservation) }}" class="d-flex gap-2">@csrf<input name="reason" class="form-control form-control-sm" required placeholder="Alasan release"><button class="btn btn-sm btn-light-warning">Release</button></form>@endif</td>

@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Guide Book GudangToko</title>
+    <style>
+        :root {
+            --green: #17c653;
+            --dark: #071437;
+            --muted: #6b7280;
+            --soft: #f5f8fa;
+            --line: #e5e7eb;
+            --warn: #fff8dd;
+            --danger: #fff5f8;
+            --info: #eef6ff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            color: var(--dark);
+            background: #fff;
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            line-height: 1.65;
+        }
+        a { color: #0f8f3e; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .layout {
+            display: grid;
+            grid-template-columns: 310px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+        aside {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: auto;
+            padding: 24px 18px;
+            border-right: 1px solid var(--line);
+            background: #fbfcfd;
+        }
+        main {
+            max-width: 1180px;
+            padding: 38px 48px 80px;
+        }
+        .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 24px;
+            font-weight: 800;
+            font-size: 18px;
+        }
+        .logo {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #17c653, #72e6a0);
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-weight: 900;
+        }
+        .toc-title {
+            font-size: 12px;
+            color: #98a2b3;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            font-weight: 700;
+            margin: 22px 0 10px;
+        }
+        .toc a {
+            display: block;
+            padding: 8px 10px;
+            border-radius: 9px;
+            color: #344054;
+            font-size: 14px;
+        }
+        .toc a:hover {
+            background: #ecfdf3;
+            color: #027a48;
+            text-decoration: none;
+        }
+        h1 {
+            font-size: 38px;
+            line-height: 1.15;
+            margin: 0 0 10px;
+        }
+        h2 {
+            font-size: 30px;
+            margin: 54px 0 14px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+        }
+        h3 {
+            font-size: 22px;
+            margin: 34px 0 12px;
+        }
+        h4 {
+            font-size: 17px;
+            margin: 24px 0 8px;
+        }
+        p { margin: 8px 0 12px; }
+        .subtitle {
+            color: var(--muted);
+            font-size: 17px;
+            max-width: 880px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: #ecfdf3;
+            color: #027a48;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin: 18px 0;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .04);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .note, .warning, .danger {
+            padding: 14px 16px;
+            border-radius: 14px;
+            margin: 16px 0;
+            border: 1px solid var(--line);
+        }
+        .note { background: var(--info); }
+        .warning { background: var(--warn); }
+        .danger { background: var(--danger); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 14px 0 22px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid var(--line);
+            padding: 10px 12px;
+            vertical-align: top;
+        }
+        th {
+            background: var(--soft);
+            text-align: left;
+        }
+        code {
+            background: #f2f4f7;
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 90%;
+        }
+        .steps {
+            counter-reset: step;
+            margin: 14px 0 22px;
+            padding: 0;
+        }
+        .steps li {
+            list-style: none;
+            counter-increment: step;
+            position: relative;
+            padding: 0 0 13px 42px;
+            margin: 0;
+        }
+        .steps li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: var(--green);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .flow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0 18px;
+        }
+        .flow span {
+            border: 1px solid #b7ebc6;
+            background: #f0fff4;
+            border-radius: 999px;
+            padding: 7px 11px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .small { color: var(--muted); font-size: 13px; }
+        .page-break { break-before: page; }
+        @media (max-width: 980px) {
+            .layout { grid-template-columns: 1fr; }
+            aside { position: static; height: auto; }
+            main { padding: 26px 20px 60px; }
+            .grid, .grid-3 { grid-template-columns: 1fr; }
+        }
+        @media print {
+            aside { display: none; }
+            .layout { display: block; }
+            main { max-width: none; padding: 0; }
+            a { color: inherit; }
+            .card { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <aside>
+        <div class="brand"><div class="logo">G</div><div>GudangToko<br><span class="small">Guide Book HTML</span></div></div>
+        <div class="toc">
+            <div class="toc-title">Awal</div>
+            <a href="#ringkasan">Ringkasan</a>
+            <a href="#akun-demo">Akun demo</a>
+            <a href="#prinsip">Prinsip kerja aplikasi</a>
+            <div class="toc-title">5 Bagian Guide</div>
+            <a href="#owner">1. Owner</a>
+            <a href="#super-admin">2. Super Admin</a>
+            <a href="#gudang">3. Gudang</a>
+            <a href="#toko">4. Toko Internal</a>
+            <a href="#b2b">5. Langganan/B2B</a>
+            <div class="toc-title">Lampiran</div>
+            <a href="#status">Status dokumen</a>
+            <a href="#troubleshooting">Troubleshooting</a>
+            <a href="#checklist">Checklist training</a>
+        </div>
+    </aside>
+
+    <main>
+        <section id="ringkasan">
+            <span class="badge">Versi internal training</span>
+            <h1>Guide Book Aplikasi GudangToko</h1>
+            <p class="subtitle">Panduan operasional step-by-step untuk Owner, Super Admin, Gudang, Toko Internal, dan Langganan/B2B. Dokumen ini menjelaskan bukan hanya tombol yang diklik, tetapi juga apa yang terjadi di belakang layar agar user memahami dampak setiap tindakan.</p>
+
+            <div class="note">
+                <strong>Catatan penting:</strong> hak akses menu mengikuti role, permission, dan lokasi kerja. Jika user tidak melihat menu tertentu, kemungkinan role belum punya permission atau lokasi kerjanya belum ditugaskan oleh Super Admin.
+            </div>
+
+            <h3>Pembagian user pokok</h3>
+            <table>
+                <thead>
+                <tr><th>Bagian</th><th>User yang masuk bagian ini</th><th>Fokus kerja</th></tr>
+                </thead>
+                <tbody>
+                <tr><td>Owner</td><td><code>owner_viewer</code>, <code>owner_approver</code></td><td>Kontrol bisnis, approval, audit, laporan, margin, piutang.</td></tr>
+                <tr><td>Super Admin</td><td><code>super_admin</code>, <code>admin_user</code>, <code>admin_config</code></td><td>User, role, konfigurasi, master organisasi, backup, health check.</td></tr>
+                <tr><td>Gudang</td><td><code>kepala_gudang</code>, <code>staff_gudang</code>, <code>picker_packer</code>, <code>purchasing</code></td><td>Pembelian, stok, receipt, QC, HPP, transfer, opname, retur/loss, shipment.</td></tr>
+                <tr><td>Toko Internal</td><td><code>kepala_toko</code>, <code>kasir</code>, <code>supervisor_shift</code>, karyawan toko</td><td>POS, shift, closing, restock, terima transfer, retur, piutang toko, kehadiran.</td></tr>
+                <tr><td>Langganan/B2B</td><td><code>langganan_owner</code>, <code>langganan_staff</code></td><td>Katalog, order, checkout, invoice, pembayaran, shipment, komplain.</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="akun-demo">
+            <h2>Akun Demo Lokal</h2>
+            <p>Gunakan akun ini hanya pada environment lokal/testing. Password semua akun demo adalah <code>password</code>.</p>
+            <table>
+                <thead><tr><th>Bagian</th><th>Email</th><th>Username</th><th>Role</th><th>Login</th></tr></thead>
+                <tbody>
+                <tr><td>Owner</td><td><code>owner@gudangtoko.test</code></td><td><code>owner</code></td><td><code>owner_approver</code></td><td><code>/login</code></td></tr>
+                <tr><td>Super Admin</td><td><code>superadmin@gudangtoko.test</code></td><td><code>superadmin</code></td><td><code>super_admin</code></td><td><code>/login</code></td></tr>
+                <tr><td>Gudang</td><td><code>manajemen-gudang@gudangtoko.test</code></td><td><code>manajemen-gudang</code></td><td><code>kepala_gudang</code>, <code>purchasing</code></td><td><code>/login</code></td></tr>
+                <tr><td>Gudang</td><td><code>staff-gudang@gudangtoko.test</code></td><td><code>staff-gudang</code></td><td><code>staff_gudang</code></td><td><code>/login</code></td></tr>
+                <tr><td>Toko</td><td><code>toko@gudangtoko.test</code></td><td><code>toko-internal</code></td><td><code>kepala_toko</code></td><td><code>/login</code></td></tr>
+                <tr><td>Toko</td><td><code>kasir@gudangtoko.test</code></td><td><code>kasir</code></td><td><code>kasir</code>, <code>kepala_toko</code></td><td><code>/login</code></td></tr>
+                <tr><td>B2B</td><td><code>langganan-b2b@gudangtoko.test</code></td><td><code>langganan-b2b</code></td><td><code>langganan_owner</code></td><td><code>/langganan/login</code></td></tr>
+                <tr><td>B2B</td><td><code>pelanggan@gudangtoko.test</code></td><td><code>pelanggan</code></td><td><code>langganan_staff</code></td><td><code>/langganan/login</code></td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="prinsip">
+            <h2>Prinsip Kerja Aplikasi</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Warehouse-first</h3>
+                    <p>Gudang adalah sumber kebenaran stok. Toko dan B2B memakai stok melalui transfer, reservation, POS, shipment, receipt, dan dokumen resmi lain.</p>
+                </div>
+                <div class="card">
+                    <h3>Audit-first</h3>
+                    <p>Transaksi final tidak dihapus. Jika salah, gunakan void, reversal, retur, credit note, loss, atau koreksi stok dengan alasan.</p>
+                </div>
+                <div class="card">
+                    <h3>Stok tidak negatif</h3>
+                    <p>Sistem menolak issue, reserve, transfer, POS, atau shipment jika stok available tidak cukup.</p>
+                </div>
+                <div class="card">
+                    <h3>Harga aman</h3>
+                    <p>Harga minimum, HPP, margin, dan diskon disimpan sebagai snapshot agar laporan lama tidak berubah saat master harga berubah.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="owner" class="page-break">
+            <h2>1. Guide Step-by-Step Owner</h2>
+            <p>Owner memakai aplikasi untuk mengawasi bisnis, bukan melakukan transaksi harian. Jika owner ikut input transaksi, risiko konflik otorisasi dan audit menjadi lebih tinggi.</p>
+
+            <h3>1.1 Login dan membuka dashboard</h3>
+            <ol class="steps">
+                <li>Buka browser dan masuk ke <code>/login</code>.</li>
+                <li>Isi email atau username owner, contoh <code>owner@gudangtoko.test</code>.</li>
+                <li>Isi password.</li>
+                <li>Klik tombol login.</li>
+                <li>Jika berhasil, buka menu <strong>Dashboard Owner</strong> atau URL <code>/owner/dashboard</code>.</li>
+                <li>Periksa kartu KPI: omzet, margin, stok kritis, piutang, approval, dan anomali.</li>
+                <li>Klik KPI yang bermasalah untuk masuk ke halaman detail atau laporan terkait.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> sistem memeriksa akun aktif, role, permission <code>dashboard.view</code>/<code>reports.view</code>, dan session. Data owner mengambil ringkasan transaksi final, bukan transaksi draft.</div>
+
+            <h3>1.2 Memeriksa approval tertunda</h3>
+            <ol class="steps">
+                <li>Buka menu <strong>Kontrol & Audit → Kotak Masuk Approval</strong> atau URL <code>/approvals</code>.</li>
+                <li>Pilih filter status <strong>pending</strong>.</li>
+                <li>Urutkan dari nilai risiko terbesar atau tanggal paling lama.</li>
+                <li>Buka detail approval.</li>
+                <li>Baca jenis dokumen, pemohon, lokasi, nilai transaksi, alasan, dan data sebelum/sesudah.</li>
+                <li>Jika dokumen terkait stok, buka referensi dokumen dan cocokkan dampak stock mutation/reservation.</li>
+                <li>Jika dokumen terkait uang, cocokkan invoice/payment/piutang/closing.</li>
+                <li>Klik <strong>Approve</strong> jika alasan valid dan dampaknya dapat diterima.</li>
+                <li>Klik <strong>Reject</strong> jika data tidak lengkap, alasan tidak kuat, atau berisiko.</li>
+                <li>Isi catatan keputusan dengan jelas, misalnya "Disetujui karena selisih opname sudah dibuktikan foto dan berita acara."</li>
+            </ol>
+            <div class="warning"><strong>Jangan approve buta.</strong> Approval owner sering membuka jalan untuk transaksi sensitif seperti koreksi stok besar, credit note, void, diskon besar, perubahan harga, dan limit kredit.</div>
+
+            <h3>1.3 Membaca laporan harian</h3>
+            <ol class="steps">
+                <li>Buka <code>/reports/daily</code>.</li>
+                <li>Pilih tanggal laporan.</li>
+                <li>Periksa ringkasan penjualan retail, B2B, margin, kas, pembayaran, piutang, dan stok.</li>
+                <li>Bandingkan omzet dengan target harian/mingguan.</li>
+                <li>Periksa anomali: void tinggi, retur tinggi, diskon besar, stok minus dicegah, atau pembayaran belum diverifikasi.</li>
+                <li>Jika perlu, klik export dan ambil file dari <code>/reports/exports</code>.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> export besar dibuat sebagai report export agar tidak membuat halaman lambat. Data laporan memakai snapshot transaksi dan ledger, bukan kalkulasi manual Excel.</div>
+
+            <h3>1.4 Review stok dan kartu stok</h3>
+            <ol class="steps">
+                <li>Buka <code>/reports/warehouse</code> untuk ringkasan atau <code>/warehouse/stocks</code> untuk saldo detail.</li>
+                <li>Filter gudang/cabang/lokasi.</li>
+                <li>Periksa kolom <strong>on hand</strong>, <strong>reserved</strong>, <strong>damaged</strong>, dan <strong>available</strong>.</li>
+                <li>Prioritaskan produk stok kosong, kritis, atau damaged tinggi.</li>
+                <li>Klik kartu stok atau buka <code>/warehouse/stock-card</code>.</li>
+                <li>Pilih produk, lokasi, periode, jenis mutasi, dan user.</li>
+                <li>Cocokkan saldo berjalan dengan dokumen asal seperti receipt, POS, transfer, retur, atau opname.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> saldo ada di tabel stock, riwayat ada di stock mutation. Mutation append-only sehingga audit stok bisa ditelusuri.</div>
+
+            <h3>1.5 Review margin dan harga</h3>
+            <ol class="steps">
+                <li>Buka <code>/reports/pricing</code>.</li>
+                <li>Filter periode, produk, cabang, channel, atau price ring.</li>
+                <li>Lihat produk dengan margin rendah atau harga di bawah minimum.</li>
+                <li>Buka <code>/pricing/hpp-history</code> untuk melihat perubahan HPP.</li>
+                <li>Buka <code>/pricing/history</code> untuk melihat perubahan harga.</li>
+                <li>Buka <code>/pricing/simulator</code> untuk simulasi harga jual dan margin.</li>
+                <li>Jika ada request approval harga, buka <code>/pricing/approvals</code>.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> HPP dihitung dari receipt dan landed cost. Penjualan menyimpan HPP snapshot agar laba lama tidak berubah saat HPP baru masuk.</div>
+
+            <h3>1.6 Review piutang dan limit kredit</h3>
+            <ol class="steps">
+                <li>Buka <code>/receivables/dashboard</code>.</li>
+                <li>Periksa total outstanding, overdue, aging bucket, dan pelanggan yang mendekati limit.</li>
+                <li>Buka <code>/receivables</code> untuk daftar piutang.</li>
+                <li>Buka detail customer untuk melihat invoice, pembayaran, reminder, dan saldo.</li>
+                <li>Buka <code>/receivables/credit-limits</code> jika ada permintaan perubahan limit.</li>
+                <li>Approve perubahan limit hanya jika histori bayar dan risiko bisnis mendukung.</li>
+            </ol>
+
+            <h3>1.7 Menindaklanjuti anomali dan audit</h3>
+            <ol class="steps">
+                <li>Buka <code>/audit/anomalies</code>.</li>
+                <li>Filter severity high/medium.</li>
+                <li>Buka detail alert dan baca evidence.</li>
+                <li>Jika benar masalah, hubungi user terkait dan minta dokumen koreksi resmi.</li>
+                <li>Jika false positive, resolve dengan catatan.</li>
+                <li>Buka <code>/audit-logs</code> untuk melihat kronologi tindakan user.</li>
+            </ol>
+        </section>
+
+        <section id="super-admin" class="page-break">
+            <h2>2. Guide Step-by-Step Super Admin</h2>
+            <p>Super Admin bertugas menyiapkan dan menjaga struktur aplikasi. Hindari memakai akun ini untuk transaksi kasir/gudang harian.</p>
+
+            <h3>2.1 Membuat user baru</h3>
+            <ol class="steps">
+                <li>Buka <code>/admin/users</code>.</li>
+                <li>Klik <strong>Tambah Pengguna</strong>.</li>
+                <li>Isi nama lengkap user.</li>
+                <li>Isi username unik. Gunakan format mudah, misalnya <code>staff-gudang-01</code>.</li>
+                <li>Isi email aktif.</li>
+                <li>Isi nomor WhatsApp jika user menerima notifikasi.</li>
+                <li>Upload avatar jika diperlukan.</li>
+                <li>Centang status aktif jika user boleh login.</li>
+                <li>Pilih role sesuai pekerjaan, bukan jabatan bebas.</li>
+                <li>Simpan.</li>
+                <li>Buka detail user dan pastikan role tampil benar.</li>
+                <li>Lanjutkan ke assignment lokasi kerja.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> user disimpan di tabel users, role dari Spatie Permission, dan akun nonaktif ditolak middleware active user.</div>
+
+            <h3>2.2 Menugaskan lokasi kerja user</h3>
+            <ol class="steps">
+                <li>Buka detail user dari <code>/admin/users</code>.</li>
+                <li>Klik menu <strong>Lokasi Kerja</strong> atau buka <code>/admin/users/{id}/locations</code>.</li>
+                <li>Pilih gudang/cabang yang boleh diakses user.</li>
+                <li>Tandai satu lokasi sebagai default.</li>
+                <li>Pastikan status assignment aktif.</li>
+                <li>Simpan.</li>
+                <li>Minta user logout-login agar session membaca konteks terbaru jika perlu.</li>
+            </ol>
+            <div class="warning"><strong>Efek penting:</strong> user gudang/toko tanpa lokasi kerja bisa gagal melihat data atau melihat menu tetapi tidak bisa memproses dokumen.</div>
+
+            <h3>2.3 Mengubah atau menonaktifkan user</h3>
+            <ol class="steps">
+                <li>Buka <code>/admin/users</code>.</li>
+                <li>Cari user berdasarkan nama/email/username.</li>
+                <li>Klik edit.</li>
+                <li>Ubah data yang diperlukan.</li>
+                <li>Jika user resign/nonaktif, ubah status menjadi nonaktif.</li>
+                <li>Simpan.</li>
+                <li>Jangan hapus transaksi lama user; riwayat tetap dibutuhkan audit.</li>
+            </ol>
+
+            <h3>2.4 Membuat role baru</h3>
+            <ol class="steps">
+                <li>Buka <code>/admin/roles/create</code>.</li>
+                <li>Isi nama role teknis, contoh <code>staff_gudang_qc</code>.</li>
+                <li>Isi label/deskripsi dengan bahasa manusia.</li>
+                <li>Baca tooltip tanda tanya pada modul/permission untuk memahami dampak akses.</li>
+                <li>Centang permission hanya sesuai kebutuhan kerja.</li>
+                <li>Simpan role.</li>
+                <li>Uji dengan akun user testing sebelum dipakai massal.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> permission dipakai route middleware, policy, dan pengecekan server-side. Tombol tersembunyi bukan satu-satunya pengaman.</div>
+
+            <h3>2.5 Menghapus role</h3>
+            <ol class="steps">
+                <li>Buka <code>/admin/roles</code>.</li>
+                <li>Pilih role yang ingin dihapus.</li>
+                <li>Pastikan role bukan role sistem utama.</li>
+                <li>Pastikan tidak ada user aktif memakai role tersebut.</li>
+                <li>Klik delete jika tombol tersedia.</li>
+                <li>Konfirmasi penghapusan.</li>
+                <li>Periksa daftar role setelah penghapusan.</li>
+            </ol>
+            <div class="danger"><strong>Berbahaya:</strong> menghapus role yang masih dipakai bisa membuat user kehilangan akses kerja. Jangan hapus <code>super_admin</code>, <code>owner_approver</code>, <code>kepala_gudang</code>, <code>kasir</code>, atau <code>langganan_owner</code> tanpa rencana migrasi.</div>
+
+            <h3>2.6 Setup gudang</h3>
+            <ol class="steps">
+                <li>Buka <code>/admin/warehouses</code>.</li>
+                <li>Klik tambah gudang.</li>
+                <li>Isi kode gudang, nama, alamat, kota, telepon, kapasitas, dan area layanan.</li>
+                <li>Aktifkan gudang jika siap dipakai transaksi.</li>
+                <li>Simpan.</li>
+                <li>Buka detail gudang dan pastikan work location tersinkron.</li>
+                <li>Assign kepala gudang/staff ke lokasi gudang melalui menu user location.</li>
+            </ol>
+
+            <h3>2.7 Setup cabang/toko</h3>
+            <ol class="steps">
+                <li>Buka <code>/admin/branches</code>.</li>
+                <li>Klik tambah cabang/toko.</li>
+                <li>Pilih gudang pemasok utama.</li>
+                <li>Isi kode cabang, nama toko, alamat, telepon, target penjualan.</li>
+                <li>Pilih konfigurasi harga dan closing.</li>
+                <li>Aktifkan cabang.</li>
+                <li>Simpan.</li>
+                <li>Buka tab operasional untuk memantau user, stok, shift, performa, dan histori.</li>
+                <li>Assign kepala toko/kasir ke lokasi cabang.</li>
+            </ol>
+
+            <h3>2.8 Setup master produk</h3>
+            <ol class="steps">
+                <li>Buka <code>/admin/units</code>, buat satuan dasar seperti PCS, PACK, DUS.</li>
+                <li>Buka <code>/admin/product-categories</code>, buat kategori.</li>
+                <li>Buka <code>/admin/product-brands</code>, buat brand.</li>
+                <li>Buka <code>/admin/products/create</code>.</li>
+                <li>Isi SKU, nama produk, kategori, brand, base unit, status.</li>
+                <li>Isi minimum stock dan safety stock.</li>
+                <li>Isi HPP awal dan minimum price jika form tersedia.</li>
+                <li>Tambahkan satuan konversi jika produk dibeli/dijual bukan hanya base unit.</li>
+                <li>Simpan.</li>
+                <li>Buka <code>/admin/products/barcodes</code> untuk cetak label barcode/QR.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> transaksi stok selalu memakai base unit. Unit pembelian/penjualan disimpan sebagai snapshot dengan conversion factor.</div>
+
+            <h3>2.9 Setup supplier dan pelanggan B2B</h3>
+            <ol class="steps">
+                <li>Buka <code>/admin/suppliers</code> untuk membuat supplier.</li>
+                <li>Isi kontak, WhatsApp, email, alamat, termin pembayaran, dan status.</li>
+                <li>Buka <code>/admin/customers</code> untuk membuat pelanggan.</li>
+                <li>Pilih tipe customer, misalnya B2B.</li>
+                <li>Isi profil usaha, PIC, alamat, kategori harga, minimum order, termin, dan credit limit.</li>
+                <li>Buka menu access pelanggan untuk menghubungkan user B2B.</li>
+                <li>Buka menu settings pelanggan untuk verifikasi, dokumen, harga khusus, dan limit.</li>
+            </ol>
+
+            <h3>2.10 Health check dan backup</h3>
+            <ol class="steps">
+                <li>Buka <code>/admin/system/health</code>.</li>
+                <li>Pastikan database OK.</li>
+                <li>Pastikan storage link OK.</li>
+                <li>Pastikan queue dan scheduler sesuai kebutuhan.</li>
+                <li>Buka <code>/admin/system/backups</code>.</li>
+                <li>Jalankan backup manual sebelum import besar atau go-live.</li>
+                <li>Unduh backup dan simpan di tempat aman.</li>
+                <li>Buka <code>/admin/system/logs</code> untuk memeriksa error dan failed jobs.</li>
+            </ol>
+        </section>
+
+        <section id="gudang" class="page-break">
+            <h2>3. Guide Step-by-Step Gudang</h2>
+
+            <h3>3.1 Membaca dashboard gudang</h3>
+            <ol class="steps">
+                <li>Login melalui <code>/login</code>.</li>
+                <li>Buka <code>/warehouse/dashboard</code>.</li>
+                <li>Periksa stok tersedia, reserved, rusak, dan nilai persediaan.</li>
+                <li>Periksa stok kritis/kosong.</li>
+                <li>Periksa barang masuk/keluar 30 hari.</li>
+                <li>Periksa order pending, transfer tertunda, dan mutasi besar.</li>
+                <li>Klik quick action sesuai masalah yang ditemukan.</li>
+            </ol>
+
+            <h3>3.2 Membuat lokasi zona/rak/bin</h3>
+            <ol class="steps">
+                <li>Buka <code>/warehouse/locations</code>.</li>
+                <li>Klik tambah lokasi.</li>
+                <li>Pilih warehouse.</li>
+                <li>Pilih tipe lokasi: zone, rack, atau bin.</li>
+                <li>Jika membuat rack/bin, pilih parent location yang benar.</li>
+                <li>Isi kode lokasi, nama, kapasitas, jenis barang, dan status.</li>
+                <li>Simpan.</li>
+                <li>Cetak/lihat barcode lokasi jika tersedia.</li>
+            </ol>
+
+            <h3>3.3 Melihat saldo stok</h3>
+            <ol class="steps">
+                <li>Buka <code>/warehouse/stocks</code>.</li>
+                <li>Filter warehouse/cabang/lokasi/kategori/status.</li>
+                <li>Periksa on hand, reserved, damaged, available, minimum stock, safety stock, dan nilai HPP.</li>
+                <li>Jika available rendah, buat purchase request atau restock/transfer sesuai kebutuhan.</li>
+                <li>Jika damaged tinggi, buat laporan loss atau retur.</li>
+                <li>Klik kartu stok untuk investigasi riwayat.</li>
+            </ol>
+
+            <h3>3.4 Membaca kartu stok</h3>
+            <ol class="steps">
+                <li>Buka <code>/warehouse/stock-card</code>.</li>
+                <li>Pilih produk.</li>
+                <li>Pilih lokasi.</li>
+                <li>Pilih periode tanggal.</li>
+                <li>Filter jenis mutasi jika perlu.</li>
+                <li>Baca mutasi dari awal ke akhir: before, change, after.</li>
+                <li>Klik referensi dokumen untuk melihat sumber transaksi.</li>
+                <li>Jika ada selisih fisik, jangan edit stok langsung; buat opname/loss/koreksi.</li>
+            </ol>
+
+            <h3>3.5 Membuat purchase request</h3>
+            <ol class="steps">
+                <li>Buka <code>/purchasing/requests</code>.</li>
+                <li>Lihat rekomendasi reorder dari stok minimum.</li>
+                <li>Klik buat request manual jika barang belum ada di rekomendasi.</li>
+                <li>Pilih gudang.</li>
+                <li>Pilih produk.</li>
+                <li>Isi qty yang diminta.</li>
+                <li>Isi alasan dan prioritas.</li>
+                <li>Submit.</li>
+                <li>Kepala gudang/purchasing approve, reject, atau convert to PO.</li>
+            </ol>
+
+            <h3>3.6 Membuat dan memproses Purchase Order</h3>
+            <ol class="steps">
+                <li>Buka <code>/purchasing/purchase-orders/create</code>.</li>
+                <li>Pilih gudang tujuan.</li>
+                <li>Pilih supplier.</li>
+                <li>Isi tanggal order dan estimasi datang.</li>
+                <li>Isi termin pembayaran dan catatan.</li>
+                <li>Tambahkan item produk.</li>
+                <li>Pilih unit beli dan pastikan conversion factor benar.</li>
+                <li>Isi qty, harga, diskon, dan pajak bila ada.</li>
+                <li>Isi ongkir/biaya tambahan header.</li>
+                <li>Periksa subtotal dan grand total.</li>
+                <li>Simpan draft atau submit.</li>
+                <li>Approver membuka detail PO dan klik approve.</li>
+                <li>Jika PO sudah dikirim ke supplier, klik send.</li>
+                <li>Cetak PO melalui <code>/purchasing/purchase-orders/{id}/print</code>.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> PO belum menambah stok. PO hanya komitmen pembelian. Stok bertambah nanti saat goods receipt diposting.</div>
+
+            <h3>3.7 Menerima barang dan QC</h3>
+            <ol class="steps">
+                <li>Buka <code>/warehouse/goods-receipts/create</code>.</li>
+                <li>Pilih PO yang sudah approved/sent.</li>
+                <li>Isi nomor surat jalan.</li>
+                <li>Isi tanggal datang.</li>
+                <li>Periksa item outstanding.</li>
+                <li>Isi qty datang.</li>
+                <li>Isi qty accepted, rejected, dan damaged.</li>
+                <li>Pilih lokasi rak/bin untuk barang accepted.</li>
+                <li>Isi batch/lot jika dipakai.</li>
+                <li>Upload foto/bukti bila perlu.</li>
+                <li>Isi alasan QC untuk rejected/damaged.</li>
+                <li>Simpan draft.</li>
+                <li>Buka detail receipt dan periksa ulang semua angka.</li>
+                <li>Klik posting.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> saat posting, sistem menambah stok accepted, mencatat QC, memperbarui received PO, menghitung HPP moving average, membuat histori HPP, dan menulis stock mutation dalam satu transaksi database.</div>
+
+            <h3>3.8 Transfer stok ke cabang</h3>
+            <ol class="steps">
+                <li>Buka request cabang di <code>/retail/restock-requests</code>.</li>
+                <li>Periksa qty diminta dan stok pusat.</li>
+                <li>Approve atau revisi qty.</li>
+                <li>Convert request menjadi transfer, atau buka <code>/warehouse/stock-transfers/create</code>.</li>
+                <li>Pilih source warehouse/location.</li>
+                <li>Pilih destination branch/location.</li>
+                <li>Isi item dan qty approved.</li>
+                <li>Submit dan approve transfer.</li>
+                <li>Buka halaman packing.</li>
+                <li>Pick barang dari lokasi yang ditentukan.</li>
+                <li>Isi qty picked dan short jika ada.</li>
+                <li>Buka halaman ship.</li>
+                <li>Isi kurir/kendaraan/resi, tanggal, biaya, dan bukti.</li>
+                <li>Klik kirim.</li>
+                <li>Tunggu cabang mengonfirmasi penerimaan.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> approved/packing melakukan reserve stok sumber. Shipped mengeluarkan stok sumber. Receive menambah stok tujuan sesuai qty diterima. Selisih dicatat sebagai discrepancy.</div>
+
+            <h3>3.9 Memproses order B2B dari gudang</h3>
+            <ol class="steps">
+                <li>Buka <code>/warehouse/b2b-orders</code>.</li>
+                <li>Pilih order submitted/pending review.</li>
+                <li>Buka review.</li>
+                <li>Cek customer, alamat, item, stok available, harga, dan limit kredit.</li>
+                <li>Jika valid, klik reserve.</li>
+                <li>Jika stok tidak cukup, komunikasikan shortage atau reject sesuai kebijakan.</li>
+                <li>Setelah reserve, lakukan picking/packing.</li>
+                <li>Klik pack jika barang siap.</li>
+                <li>Buat atau buka shipment.</li>
+                <li>Isi kurir, jadwal kirim, biaya, dan item.</li>
+                <li>Posting shipment saat barang benar-benar dikirim.</li>
+            </ol>
+
+            <h3>3.10 Stok opname</h3>
+            <ol class="steps">
+                <li>Buka <code>/warehouse/stock-opnames</code>.</li>
+                <li>Klik buat opname.</li>
+                <li>Pilih lokasi kerja dan bin jika perlu.</li>
+                <li>Pilih metode, misalnya cycle count.</li>
+                <li>Isi PIC, jadwal, threshold qty/nilai, catatan.</li>
+                <li>Start opname.</li>
+                <li>Buka halaman count.</li>
+                <li>Hitung fisik barang dan isi counted qty.</li>
+                <li>Submit counting.</li>
+                <li>Buka variance.</li>
+                <li>Periksa selisih dan nilai selisih.</li>
+                <li>Ajukan approval jika melewati threshold.</li>
+                <li>Setelah approve, complete opname agar adjustment diposting.</li>
+            </ol>
+
+            <h3>3.11 Retur, barang rusak, dan loss</h3>
+            <ol class="steps">
+                <li>Buka <code>/returns</code> untuk retur atau <code>/warehouse/losses</code> untuk loss.</li>
+                <li>Pilih sumber transaksi jika retur.</li>
+                <li>Pilih produk, lokasi, qty, kondisi barang, dan alasan.</li>
+                <li>Upload bukti foto jika ada.</li>
+                <li>Lakukan inspeksi QC.</li>
+                <li>Pilih settlement: kembali ke stok baik, damaged, replacement, refund, credit note, atau retur supplier.</li>
+                <li>Ajukan approval jika nilai/risiko melewati threshold.</li>
+                <li>Posting settlement setelah disetujui.</li>
+            </ol>
+        </section>
+
+        <section id="toko" class="page-break">
+            <h2>4. Guide Step-by-Step Toko Internal</h2>
+
+            <h3>4.1 Check-in karyawan</h3>
+            <ol class="steps">
+                <li>Login melalui <code>/login</code>.</li>
+                <li>Buka <code>/attendance/check</code>.</li>
+                <li>Pastikan nama dan jadwal tampil benar.</li>
+                <li>Klik check-in saat mulai kerja.</li>
+                <li>Jika terlambat atau lupa, buat pengajuan/koreksi sesuai menu yang tersedia.</li>
+            </ol>
+
+            <h3>4.2 Membuka shift kasir</h3>
+            <ol class="steps">
+                <li>Buka <code>/retail/shifts/open</code>.</li>
+                <li>Pilih cabang/terminal jika diminta.</li>
+                <li>Isi modal awal kas.</li>
+                <li>Isi catatan bila ada serah terima kas.</li>
+                <li>Klik buka shift.</li>
+                <li>Buka <code>/retail/shifts/current</code> untuk memastikan shift aktif.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> POS membutuhkan shift aktif. Semua penjualan, pembayaran, expense, refund, dan closing akan dikaitkan ke shift ini.</div>
+
+            <h3>4.3 Melakukan transaksi POS</h3>
+            <ol class="steps">
+                <li>Buka <code>/retail/pos</code>.</li>
+                <li>Scan barcode atau cari produk.</li>
+                <li>Pastikan produk yang dipilih benar.</li>
+                <li>Isi qty.</li>
+                <li>Periksa harga dan diskon.</li>
+                <li>Jika pelanggan toko dicatat, pilih customer.</li>
+                <li>Klik checkout.</li>
+                <li>Pilih metode pembayaran: cash/non-cash/kredit sesuai opsi.</li>
+                <li>Isi nominal bayar.</li>
+                <li>Periksa kembalian jika tunai.</li>
+                <li>Klik simpan transaksi.</li>
+                <li>Cetak struk jika pelanggan meminta.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> sistem mengecek stok cabang, harga minimum, diskon, HPP snapshot, dan shift aktif. Setelah completed, stok cabang berkurang dan pembayaran masuk ke shift.</div>
+
+            <h3>4.4 Menahan dan melanjutkan transaksi</h3>
+            <ol class="steps">
+                <li>Saat transaksi belum selesai, klik hold/tahan jika tersedia.</li>
+                <li>Isi nama/catatan hold.</li>
+                <li>Untuk membuka kembali, masuk ke <code>/retail/pos/holds</code>.</li>
+                <li>Pilih transaksi hold.</li>
+                <li>Klik resume.</li>
+                <li>Lanjutkan checkout atau cancel jika batal.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> hold belum mengurangi stok. Stok baru berkurang saat transaksi POS completed.</div>
+
+            <h3>4.5 Retur transaksi POS</h3>
+            <ol class="steps">
+                <li>Buka detail transaksi di <code>/retail/sales/{id}</code>.</li>
+                <li>Klik retur.</li>
+                <li>Pilih item yang dikembalikan.</li>
+                <li>Isi qty retur.</li>
+                <li>Pilih kondisi barang: baik/rusak.</li>
+                <li>Isi alasan retur.</li>
+                <li>Pilih settlement jika tersedia.</li>
+                <li>Submit.</li>
+                <li>Jika perlu approval, tunggu supervisor/kepala toko.</li>
+            </ol>
+
+            <h3>4.6 Void transaksi POS</h3>
+            <ol class="steps">
+                <li>Buka detail transaksi POS.</li>
+                <li>Klik void.</li>
+                <li>Baca ringkasan transaksi yang akan dibatalkan.</li>
+                <li>Isi alasan void secara jelas.</li>
+                <li>Submit.</li>
+                <li>Jika sistem meminta approval, tunggu keputusan.</li>
+                <li>Jangan membuat transaksi pengganti sebelum status void jelas jika bisa menyebabkan dobel stok/uang.</li>
+            </ol>
+            <div class="warning"><strong>Void bukan delete.</strong> Sistem menyimpan transaksi awal dan membuat koreksi/reversal agar audit tetap utuh.</div>
+
+            <h3>4.7 Mencatat pengeluaran shift</h3>
+            <ol class="steps">
+                <li>Buka shift aktif.</li>
+                <li>Klik pengeluaran atau buka <code>/retail/shifts/{id}/expenses</code>.</li>
+                <li>Pilih kategori pengeluaran.</li>
+                <li>Isi nominal.</li>
+                <li>Isi catatan.</li>
+                <li>Upload bukti jika ada.</li>
+                <li>Simpan.</li>
+            </ol>
+
+            <h3>4.8 Closing shift</h3>
+            <ol class="steps">
+                <li>Buka <code>/retail/shifts/current</code>.</li>
+                <li>Klik tutup shift.</li>
+                <li>Hitung kas fisik di laci.</li>
+                <li>Isi actual cash.</li>
+                <li>Periksa expected cash dari sistem.</li>
+                <li>Periksa non-cash sales, refund, expense, dan receivable.</li>
+                <li>Jika ada selisih, isi alasan.</li>
+                <li>Upload bukti closing bila perlu.</li>
+                <li>Submit closing.</li>
+                <li>Serahkan kas dan laporan ke supervisor/kepala toko.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> closing mengunci shift. Supervisor akan approve/reject. Selisih besar bisa memicu approval.</div>
+
+            <h3>4.9 Approval closing oleh supervisor/kepala toko</h3>
+            <ol class="steps">
+                <li>Buka <code>/retail/shifts</code>.</li>
+                <li>Filter shift menunggu approval.</li>
+                <li>Buka halaman approval.</li>
+                <li>Cocokkan actual cash dengan kas fisik.</li>
+                <li>Cek transaksi void, retur, expense, dan pembayaran non-cash.</li>
+                <li>Approve jika sesuai.</li>
+                <li>Reject dengan catatan jika kas/angka belum cocok.</li>
+            </ol>
+
+            <h3>4.10 Membuat permintaan restock</h3>
+            <ol class="steps">
+                <li>Buka <code>/retail/restock-requests</code>.</li>
+                <li>Klik buat request.</li>
+                <li>Pilih produk yang stoknya rendah.</li>
+                <li>Isi qty diminta.</li>
+                <li>Pilih prioritas.</li>
+                <li>Isi catatan kebutuhan.</li>
+                <li>Submit.</li>
+                <li>Pantau status sampai gudang approve dan transfer dikirim.</li>
+            </ol>
+
+            <h3>4.11 Menerima transfer dari gudang</h3>
+            <ol class="steps">
+                <li>Buka daftar transfer atau link penerimaan <code>/retail/stock-transfers/{id}/receive</code>.</li>
+                <li>Periksa nomor surat jalan dan item.</li>
+                <li>Hitung fisik barang yang diterima.</li>
+                <li>Isi qty diterima.</li>
+                <li>Isi qty kurang atau rusak jika ada.</li>
+                <li>Upload foto bukti jika ada selisih/rusak.</li>
+                <li>Isi catatan penerimaan.</li>
+                <li>Submit.</li>
+                <li>Periksa saldo stok cabang setelah penerimaan.</li>
+            </ol>
+
+            <h3>4.12 Kehadiran, izin, dan koreksi</h3>
+            <ol class="steps">
+                <li>Buka <code>/attendance/check</code> untuk check-in/out.</li>
+                <li>Buka <code>/attendance/requests</code> untuk izin/sakit/cuti.</li>
+                <li>Pilih jenis pengajuan dan tanggal.</li>
+                <li>Isi alasan dan lampirkan bukti.</li>
+                <li>Submit dan tunggu approval.</li>
+                <li>Jika salah absen, buka koreksi absensi dan ajukan koreksi.</li>
+            </ol>
+        </section>
+
+        <section id="b2b" class="page-break">
+            <h2>5. Guide Step-by-Step Langganan/B2B</h2>
+
+            <h3>5.1 Login portal pelanggan</h3>
+            <ol class="steps">
+                <li>Buka <code>/langganan/login</code>.</li>
+                <li>Masukkan email atau username pelanggan.</li>
+                <li>Masukkan password.</li>
+                <li>Klik login.</li>
+                <li>Jika lupa password, buka <code>/langganan/forgot-password</code>.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> user harus aktif dan terhubung ke customer B2B. User tidak bisa melihat data customer lain.</div>
+
+            <h3>5.2 Melihat dashboard pelanggan</h3>
+            <ol class="steps">
+                <li>Buka <code>/langganan/dashboard</code>.</li>
+                <li>Periksa order aktif.</li>
+                <li>Periksa invoice outstanding.</li>
+                <li>Periksa shipment yang sedang berjalan.</li>
+                <li>Periksa komplain yang belum selesai.</li>
+            </ol>
+
+            <h3>5.3 Melihat katalog dan detail produk</h3>
+            <ol class="steps">
+                <li>Buka <code>/langganan/katalog</code>.</li>
+                <li>Cari produk berdasarkan nama/SKU jika tersedia.</li>
+                <li>Gunakan filter kategori jika tersedia.</li>
+                <li>Klik produk untuk detail.</li>
+                <li>Periksa harga, satuan, minimum order, dan stok tersedia.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> harga B2B bisa berbeda dari harga POS. Portal hanya menampilkan available stock yang boleh dijual, bukan seluruh stok gudang.</div>
+
+            <h3>5.4 Menambahkan produk ke keranjang</h3>
+            <ol class="steps">
+                <li>Dari katalog/detail produk, isi qty.</li>
+                <li>Klik tambah ke keranjang.</li>
+                <li>Buka <code>/langganan/keranjang</code>.</li>
+                <li>Periksa daftar item.</li>
+                <li>Ubah qty jika perlu.</li>
+                <li>Hapus item yang tidak jadi dipesan.</li>
+                <li>Klik lanjut checkout.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> keranjang belum menjamin stok. Validasi stok dan kredit dilakukan ulang saat checkout.</div>
+
+            <h3>5.5 Checkout order B2B</h3>
+            <ol class="steps">
+                <li>Buka <code>/langganan/checkout</code>.</li>
+                <li>Pilih alamat pengiriman.</li>
+                <li>Isi tanggal pengiriman yang diminta.</li>
+                <li>Pilih metode pengiriman.</li>
+                <li>Pilih preferensi pembayaran.</li>
+                <li>Periksa subtotal, diskon, ongkir, pajak, dan total.</li>
+                <li>Baca syarat dan ketentuan.</li>
+                <li>Centang persetujuan.</li>
+                <li>Klik submit order.</li>
+                <li>Simpan nomor order untuk tracking.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> sistem memvalidasi akun customer, stok available, minimum order, harga minimum, limit kredit, overdue, alamat, dan status produk. Jika valid, order dibuat dan dapat masuk proses review/reservation gudang.</div>
+
+            <h3>5.6 Memantau order</h3>
+            <ol class="steps">
+                <li>Buka <code>/langganan/orders</code>.</li>
+                <li>Filter status jika diperlukan.</li>
+                <li>Klik detail order.</li>
+                <li>Periksa timeline status.</li>
+                <li>Periksa item, qty, harga, dan total.</li>
+                <li>Periksa apakah order sudah approved, reserved, packed, shipped, invoice ready, atau completed.</li>
+                <li>Jika order masih bisa dibatalkan, klik cancel dan isi alasan.</li>
+            </ol>
+
+            <h3>5.7 Tracking shipment dan konfirmasi terima</h3>
+            <ol class="steps">
+                <li>Buka detail order.</li>
+                <li>Klik shipment atau buka <code>/langganan/shipments/{id}</code>.</li>
+                <li>Periksa kurir, resi, jadwal, dan status.</li>
+                <li>Saat barang datang, hitung fisik.</li>
+                <li>Jika sesuai, klik konfirmasi terima.</li>
+                <li>Jika kurang/rusak, isi catatan dan lanjutkan komplain jika perlu.</li>
+            </ol>
+
+            <h3>5.8 Melihat invoice dan mencatat pembayaran</h3>
+            <ol class="steps">
+                <li>Buka <code>/invoices</code>.</li>
+                <li>Pilih invoice.</li>
+                <li>Periksa nomor invoice, due date, total, paid amount, dan outstanding.</li>
+                <li>Unduh PDF jika perlu.</li>
+                <li>Jika ingin membayar, buka <code>/payments/create</code>.</li>
+                <li>Isi metode pembayaran, nominal, tanggal, bank, nomor referensi, dan nama pembayar.</li>
+                <li>Upload bukti transfer.</li>
+                <li>Submit.</li>
+                <li>Tunggu verifikasi internal.</li>
+            </ol>
+            <div class="note"><strong>Di belakang layar:</strong> pembayaran awal bisa pending verification. Setelah verified, sistem mengalokasikan payment ke invoice/piutang dan outstanding berkurang.</div>
+
+            <h3>5.9 Reorder cepat</h3>
+            <ol class="steps">
+                <li>Buka <code>/langganan/reorder</code>.</li>
+                <li>Pilih order lama atau item yang sering dibeli.</li>
+                <li>Periksa produk yang akan dipesan ulang.</li>
+                <li>Ubah qty jika perlu.</li>
+                <li>Submit ke keranjang.</li>
+                <li>Lanjut checkout seperti order biasa.</li>
+            </ol>
+
+            <h3>5.10 Mengubah profil usaha</h3>
+            <ol class="steps">
+                <li>Buka <code>/langganan/profil</code>.</li>
+                <li>Periksa nama usaha, owner, PIC, email, WhatsApp, dan alamat.</li>
+                <li>Ubah data yang diizinkan.</li>
+                <li>Simpan.</li>
+                <li>Hubungi internal jika ingin mengubah data yang dikunci seperti limit kredit atau status verifikasi.</li>
+            </ol>
+
+            <h3>5.11 Membuat komplain</h3>
+            <ol class="steps">
+                <li>Buka <code>/langganan/complaints</code>.</li>
+                <li>Klik buat komplain.</li>
+                <li>Pilih order/shipment/item terkait.</li>
+                <li>Pilih tipe komplain.</li>
+                <li>Isi qty bermasalah jika ada.</li>
+                <li>Isi pesan detail.</li>
+                <li>Pilih solusi yang diminta: follow up, retur, replacement, atau lainnya sesuai opsi.</li>
+                <li>Upload foto/bukti.</li>
+                <li>Submit.</li>
+                <li>Pantau status komplain.</li>
+            </ol>
+        </section>
+
+        <section id="status" class="page-break">
+            <h2>Lampiran: Status Dokumen Penting</h2>
+
+            <h3>Purchase Order</h3>
+            <div class="flow"><span>Draft</span><span>Submitted</span><span>Approved</span><span>Sent to Supplier</span><span>Partially Received</span><span>Completed</span><span>Cancelled</span></div>
+
+            <h3>Goods Receipt</h3>
+            <div class="flow"><span>Draft</span><span>Posted</span><span>Corrected/Reversed</span></div>
+
+            <h3>Stock Transfer</h3>
+            <div class="flow"><span>Draft</span><span>Pending Approval</span><span>Approved</span><span>Packing</span><span>Shipped</span><span>Partially Received</span><span>Fully Received</span><span>Completed</span><span>Cancelled</span></div>
+
+            <h3>Cash Shift</h3>
+            <div class="flow"><span>Open</span><span>Closing Submitted</span><span>Approved</span><span>Rejected</span><span>Closed</span></div>
+
+            <h3>B2B Order</h3>
+            <div class="flow"><span>Submitted</span><span>Approved</span><span>Reserved</span><span>Packed</span><span>Shipped</span><span>Invoice Ready</span><span>Completed</span><span>Cancelled/Rejected</span></div>
+        </section>
+
+        <section id="troubleshooting">
+            <h2>Troubleshooting Umum</h2>
+            <table>
+                <thead><tr><th>Masalah</th><th>Kemungkinan penyebab</th><th>Solusi</th></tr></thead>
+                <tbody>
+                <tr><td>Menu tidak muncul</td><td>Role tidak punya permission atau user belum punya lokasi kerja.</td><td>Super Admin cek role di <code>/admin/roles</code> dan lokasi di <code>/admin/users/{id}/locations</code>.</td></tr>
+                <tr><td>User tidak bisa login</td><td>Password salah, akun nonaktif, atau login di portal yang salah.</td><td>Cek status user, reset password, dan pastikan internal memakai <code>/login</code>, B2B memakai <code>/langganan/login</code>.</td></tr>
+                <tr><td>POS menolak transaksi</td><td>Shift belum aktif, stok tidak cukup, harga melanggar minimum, atau permission kurang.</td><td>Buka shift, cek stok, cek harga, atau minta supervisor/owner approve.</td></tr>
+                <tr><td>Transfer tidak bisa dikirim</td><td>Belum approved/packing, stok source tidak cukup, atau qty picked belum valid.</td><td>Cek status transfer, reservation, dan qty packing.</td></tr>
+                <tr><td>Receipt tidak bisa posting</td><td>Qty melebihi outstanding, lokasi/bin tidak valid, atau data QC belum lengkap.</td><td>Perbaiki draft receipt dan pastikan PO masih bisa diterima.</td></tr>
+                <tr><td>Invoice belum lunas padahal sudah bayar</td><td>Payment masih pending verification atau belum dialokasikan.</td><td>Tim internal verifikasi payment dan alokasikan ke piutang.</td></tr>
+                <tr><td>Stok fisik beda dengan sistem</td><td>Ada barang belum diposting, salah lokasi, rusak/loss belum dicatat, atau opname belum selesai.</td><td>Cek kartu stok, dokumen pending, lalu buat opname/koreksi resmi.</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="checklist">
+            <h2>Checklist Training User</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Owner</h3>
+                    <ul>
+                        <li>Bisa membaca dashboard owner.</li>
+                        <li>Bisa approve/reject dengan catatan.</li>
+                        <li>Bisa membaca laporan margin dan piutang.</li>
+                        <li>Bisa meninjau audit/anomali.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Super Admin</h3>
+                    <ul>
+                        <li>Bisa membuat user dan role.</li>
+                        <li>Bisa assign lokasi kerja.</li>
+                        <li>Bisa setup gudang/cabang/master data.</li>
+                        <li>Bisa menjalankan health check dan backup.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Gudang</h3>
+                    <ul>
+                        <li>Bisa membuat PO dan receipt.</li>
+                        <li>Bisa membaca saldo/kartu stok.</li>
+                        <li>Bisa transfer stok dan proses B2B.</li>
+                        <li>Bisa opname, retur, dan loss.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Toko Internal</h3>
+                    <ul>
+                        <li>Bisa buka shift dan transaksi POS.</li>
+                        <li>Bisa closing dan approval shift.</li>
+                        <li>Bisa restock dan terima transfer.</li>
+                        <li>Bisa retur/void sesuai izin.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Langganan/B2B</h3>
+                    <ul>
+                        <li>Bisa order dari katalog.</li>
+                        <li>Bisa checkout dan tracking order.</li>
+                        <li>Bisa melihat invoice dan input pembayaran.</li>
+                        <li>Bisa komplain dan reorder.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

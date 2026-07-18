@@ -4,6 +4,7 @@
 @section('page_title', 'Detail Produk B2B')
 
 @section('content')
+    @php($minimumOrder = qty_input(max(1, (float) $product->minimum_order)))
     <x-metronic.page-title :title="$product->name" :description="$product->sku">
         <a href="{{ route('langganan.katalog.index') }}" class="btn btn-light">Kembali</a>
     </x-metronic.page-title>
@@ -18,7 +19,7 @@
             <div class="row g-3 mb-5">
                 <div class="col-md-6"><div class="text-muted">Kategori</div><div class="fw-bold">{{ $product->category?->name ?: '-' }}</div></div>
                 <div class="col-md-6"><div class="text-muted">Merek</div><div class="fw-bold">{{ $product->brand?->name ?: '-' }}</div></div>
-                <div class="col-md-6"><div class="text-muted">Minimum Qty</div><div class="fw-bold">{{ $product->minimum_order }} {{ $product->baseUnit?->symbol }}</div></div>
+                <div class="col-md-6"><div class="text-muted">Minimum Qty</div><div class="fw-bold">{{ qty($product->minimum_order) }} {{ $product->baseUnit?->symbol }}</div></div>
                 <div class="col-md-6"><div class="text-muted">Stok</div><span class="badge badge-light-{{ $availability === 'available' ? 'success' : ($availability === 'limited' ? 'warning' : 'danger') }}">{{ $availability === 'available' ? 'Tersedia' : ($availability === 'limited' ? 'Terbatas' : 'Kosong') }}</span></div>
                 <div class="col-md-6"><div class="text-muted">Berat</div><div class="fw-bold">{{ $product->weight ?: '-' }}</div></div>
                 <div class="col-md-6"><div class="text-muted">Volume</div><div class="fw-bold">{{ $product->volume ?: '-' }}</div></div>
@@ -29,7 +30,7 @@
                 @csrf
                 <input type="hidden" name="product_id" value="{{ $product->id }}">
                 <div class="col-md-4"><label class="form-label">Satuan</label><select name="unit_id" class="form-select">@forelse($product->units->where('is_active', true)->where('is_sellable', true) as $unit)<option value="{{ $unit->unit_id }}">{{ $unit->unit?->name }} (x{{ $unit->conversion_factor }})</option>@empty<option value="{{ $product->base_unit_id }}">{{ $product->baseUnit?->name }}</option>@endforelse</select></div>
-                <div class="col-md-4"><label class="form-label">Qty</label><input type="number" step="0.0001" min="{{ max(1, (float) $product->minimum_order) }}" name="quantity" value="{{ max(1, (float) $product->minimum_order) }}" class="form-control"></div>
+                <div class="col-md-4"><label class="form-label">Qty</label><input type="number" step="1" min="{{ $minimumOrder }}" name="quantity" value="{{ $minimumOrder }}" class="form-control"></div>
                 <div class="col-md-4 d-flex align-items-end"><button class="btn btn-primary w-100">Tambah Keranjang</button></div>
             </form>
         </x-metronic.card></div>

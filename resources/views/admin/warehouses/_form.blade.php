@@ -44,7 +44,7 @@
             </div>
             <div class="col-md-6">
                 <x-metronic.form-group name="capacity" label="Kapasitas">
-                    <input id="capacity" type="number" step="0.0001" min="0" name="capacity" value="{{ old('capacity', $warehouse->capacity) }}" class="form-control @error('capacity') is-invalid @enderror">
+                    <input id="capacity" type="number" step="1" min="0" name="capacity" value="{{ old('capacity', qty_input($warehouse->capacity)) }}" class="form-control @error('capacity') is-invalid @enderror">
                 </x-metronic.form-group>
             </div>
         </div>

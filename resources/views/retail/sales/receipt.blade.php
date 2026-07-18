@@ -12,7 +12,7 @@
     <div class="line"></div>
     @foreach($sale->items as $item)
         <div>{{ $item->product_name_snapshot }}</div>
-        <div class="row"><span>{{ $item->quantity }} x {{ number_format((float) $item->selected_price, 0, ',', '.') }}</span><span>{{ number_format((float) $item->line_total, 0, ',', '.') }}</span></div>
+        <div class="row"><span>{{ qty($item->quantity) }} x {{ number_format((float) $item->selected_price, 0, ',', '.') }}</span><span>{{ number_format((float) $item->line_total, 0, ',', '.') }}</span></div>
     @endforeach
     <div class="line"></div>
     <div class="row"><strong>Total</strong><strong>{{ number_format((float) $sale->grand_total_amount, 0, ',', '.') }}</strong></div>

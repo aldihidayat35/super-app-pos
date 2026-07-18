@@ -43,7 +43,7 @@
             <x-metronic.card title="Top 10 Produk">
                 <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Produk</th><th>Qty</th><th>Omzet</th></tr></thead><tbody>
                     @forelse($charts['top_products'] as $row)
-                        <tr><td>{{ $row['sku'] }} — {{ $row['product'] }}</td><td>{{ $row['quantity'] }}</td><td>{{ \App\Support\CurrencyFormatter::rupiah($row['revenue']) }}</td></tr>
+                        <tr><td>{{ $row['sku'] }} — {{ $row['product'] }}</td><td>{{ qty($row['quantity']) }}</td><td>{{ \App\Support\CurrencyFormatter::rupiah($row['revenue']) }}</td></tr>
                     @empty
                         <tr><td colspan="3"><x-metronic.empty-state title="Belum ada produk terjual" description="Data top produk akan muncul setelah transaksi selesai." /></td></tr>
                     @endforelse

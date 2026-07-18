@@ -12,9 +12,9 @@
             <div class="col-md-4"><div class="text-muted">Lokasi Kerja</div><div class="fw-bold">{{ $mutation->workLocation?->name }}</div></div>
             <div class="col-md-4"><div class="text-muted">Zona/Rak/Bin</div><div class="fw-bold">{{ $mutation->warehouseLocation?->full_code ?: '-' }}</div></div>
             <div class="col-md-4"><div class="text-muted">Actor</div><div class="fw-bold">{{ $mutation->actor?->name ?: '-' }}</div></div>
-            <div class="col-md-4"><div class="text-muted">On Hand Before / Change / After</div><div class="fw-bold">{{ $mutation->quantity_on_hand_before }} / {{ $mutation->quantity_on_hand_change }} / {{ $mutation->quantity_on_hand_after }}</div></div>
-            <div class="col-md-4"><div class="text-muted">Reserved Before / Change / After</div><div class="fw-bold">{{ $mutation->quantity_reserved_before }} / {{ $mutation->quantity_reserved_change }} / {{ $mutation->quantity_reserved_after }}</div></div>
-            <div class="col-md-4"><div class="text-muted">Damaged Before / Change / After</div><div class="fw-bold">{{ $mutation->quantity_damaged_before }} / {{ $mutation->quantity_damaged_change }} / {{ $mutation->quantity_damaged_after }}</div></div>
+            <div class="col-md-4"><div class="text-muted">On Hand Before / Change / After</div><div class="fw-bold">{{ qty($mutation->quantity_on_hand_before) }} / {{ qty($mutation->quantity_on_hand_change) }} / {{ qty($mutation->quantity_on_hand_after) }}</div></div>
+            <div class="col-md-4"><div class="text-muted">Reserved Before / Change / After</div><div class="fw-bold">{{ qty($mutation->quantity_reserved_before) }} / {{ qty($mutation->quantity_reserved_change) }} / {{ qty($mutation->quantity_reserved_after) }}</div></div>
+            <div class="col-md-4"><div class="text-muted">Damaged Before / Change / After</div><div class="fw-bold">{{ qty($mutation->quantity_damaged_before) }} / {{ qty($mutation->quantity_damaged_change) }} / {{ qty($mutation->quantity_damaged_after) }}</div></div>
             <div class="col-md-4"><div class="text-muted">Referensi</div><div class="fw-bold">{{ $mutation->reference_type ?: '-' }} / {{ $mutation->reference_no ?: '-' }}</div></div>
             <div class="col-md-4"><div class="text-muted">Idempotency Key</div><div class="fw-bold">{{ $mutation->idempotency_key ?: '-' }}</div></div>
             <div class="col-md-4"><div class="text-muted">Catatan</div><div class="fw-bold">{{ $mutation->reason ?: '-' }}</div></div>

@@ -47,7 +47,7 @@
     <x-metronic.card title="Item Order">
         <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Produk</th><th>Satuan</th><th>Qty Request</th><th>Qty Approved</th><th>Reserved</th><th>Issued</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>
             @foreach($order->items as $item)
-                <tr><td><div class="fw-bold">{{ $item->product_name_snapshot }}</div><div class="text-muted">{{ $item->sku_snapshot }}</div></td><td>{{ $item->unit_name_snapshot }}<div class="text-muted">x{{ $item->conversion_factor_snapshot }}</div></td><td>{{ $item->quantity }}</td><td>{{ $item->approved_quantity ?: '-' }}</td><td>{{ $item->reserved_quantity }}</td><td>{{ $item->issued_quantity }}</td><td>{{ App\Support\CurrencyFormatter::rupiah($item->selected_price) }}</td><td class="fw-bold">{{ App\Support\CurrencyFormatter::rupiah($item->line_total) }}</td></tr>
+                <tr><td><div class="fw-bold">{{ $item->product_name_snapshot }}</div><div class="text-muted">{{ $item->sku_snapshot }}</div></td><td>{{ $item->unit_name_snapshot }}<div class="text-muted">x{{ qty($item->conversion_factor_snapshot) }}</div></td><td>{{ qty($item->quantity) }}</td><td>{{ $item->approved_quantity ? qty($item->approved_quantity) : '-' }}</td><td>{{ qty($item->reserved_quantity) }}</td><td>{{ qty($item->issued_quantity) }}</td><td>{{ App\Support\CurrencyFormatter::rupiah($item->selected_price) }}</td><td class="fw-bold">{{ App\Support\CurrencyFormatter::rupiah($item->line_total) }}</td></tr>
             @endforeach
         </tbody></table></div>
     </x-metronic.card>

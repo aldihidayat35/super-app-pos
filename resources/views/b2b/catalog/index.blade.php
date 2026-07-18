@@ -18,6 +18,7 @@
     <div class="row g-5">
         @forelse($cards as $card)
             @php($product = $card['product'])
+            @php($minimumOrder = qty_input(max(1, (float) $product->minimum_order)))
             <div class="col-md-6 col-xl-4">
                 <x-metronic.card>
                     <div class="ratio ratio-16x9 bg-light rounded mb-4 d-flex align-items-center justify-content-center">
@@ -31,7 +32,7 @@
                         @csrf
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                         <input type="hidden" name="unit_id" value="{{ $product->base_unit_id }}">
-                        <div class="col-5"><input type="number" step="0.0001" min="{{ max(1, (float) $product->minimum_order) }}" name="quantity" value="{{ max(1, (float) $product->minimum_order) }}" class="form-control form-control-sm"></div>
+                        <div class="col-5"><input type="number" step="1" min="{{ $minimumOrder }}" name="quantity" value="{{ $minimumOrder }}" class="form-control form-control-sm"></div>
                         <div class="col-7"><button class="btn btn-sm btn-primary w-100">Tambah</button></div>
                     </form>
                 </x-metronic.card>

@@ -59,7 +59,7 @@
                         </select>
                     </x-metronic.form-group>
                     <div class="row">
-                        <div class="col-md-6"><x-metronic.form-group name="threshold_qty" label="Threshold Qty"><input type="number" step="0.0001" min="0" name="threshold_qty" value="{{ old('threshold_qty', '10') }}" class="form-control form-control-solid"></x-metronic.form-group></div>
+                        <div class="col-md-6"><x-metronic.form-group name="threshold_qty" label="Threshold Qty"><input type="number" step="1" min="0" name="threshold_qty" value="{{ old('threshold_qty', '10') }}" class="form-control form-control-solid"></x-metronic.form-group></div>
                         <div class="col-md-6"><x-metronic.form-group name="threshold_value" label="Threshold Nilai"><input type="number" step="0.01" min="0" name="threshold_value" value="{{ old('threshold_value', '1000000') }}" class="form-control form-control-solid"></x-metronic.form-group></div>
                     </div>
                     <label class="form-check form-switch form-check-custom form-check-solid mb-3">
@@ -114,7 +114,7 @@
                                 <td>{{ $opname->workLocation?->name }}<div class="text-muted fs-8">{{ $opname->warehouseLocation?->full_code ?: 'Semua bin' }}</div></td>
                                 <td>{{ $opname->scheduled_at?->format('d/m/Y') ?: '-' }}<div class="text-muted fs-8">{{ $opname->pic?->name ?: '-' }}</div></td>
                                 <td>{{ $opname->countedProgress() }}<div class="text-muted fs-8">{{ $opname->items->whereNotNull('counted_qty')->count() }}/{{ $opname->items->count() }} item</div></td>
-                                <td>{{ number_format((float) $opname->total_difference_qty, 4, ',', '.') }}<div class="text-muted fs-8">{{ \App\Support\CurrencyFormatter::rupiah($opname->total_difference_value) }}</div></td>
+                                <td>{{ qty($opname->total_difference_qty) }}<div class="text-muted fs-8">{{ \App\Support\CurrencyFormatter::rupiah($opname->total_difference_value) }}</div></td>
                                 <td><x-metronic.status-badge :status="$opname->status" /></td>
                                 <td class="text-end">
                                     <a class="btn btn-sm btn-light" href="{{ route('warehouse.stock-opnames.show', $opname) }}">Detail</a>

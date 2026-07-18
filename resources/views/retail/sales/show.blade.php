@@ -32,7 +32,7 @@
                         @foreach($sale->items as $item)
                             <tr>
                                 <td>{{ $item->sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td>
-                                <td>{{ $item->quantity }} {{ $item->unit_name_snapshot }}<div class="text-muted">Base {{ $item->base_quantity }}</div></td>
+                                <td>{{ qty($item->quantity) }} {{ $item->unit_name_snapshot }}<div class="text-muted">Base {{ qty($item->base_quantity) }}</div></td>
                                 @if($canSensitive)<td>HPP Rp {{ number_format((float) $item->hpp_snapshot, 0, ',', '.') }}<div class="text-muted">Margin Rp {{ number_format((float) $item->margin_amount, 0, ',', '.') }}</div></td>@endif
                                 <td>Rp {{ number_format((float) $item->selected_price, 0, ',', '.') }}<div class="text-muted">Diskon {{ $item->discount_percent }}%</div></td>
                                 <td class="fw-bold">Rp {{ number_format((float) $item->line_total, 0, ',', '.') }}</td>
@@ -45,7 +45,7 @@
             <x-metronic.card title="Pembayaran & Mutasi" class="mt-6">
                 <div class="row">
                     <div class="col-md-6"><h6>Pembayaran</h6>@foreach($sale->payments as $payment)<div>{{ $payment->method->label() }} — Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}</div>@endforeach</div>
-                    <div class="col-md-6"><h6>Mutasi Stok</h6>@forelse($sale->stockMutations as $mutation)<div>{{ $mutation->mutation_type->label() }} {{ $mutation->quantity_on_hand_change }} — {{ $mutation->product?->sku }}</div>@empty<div class="text-muted">Belum ada mutasi.</div>@endforelse</div>
+                    <div class="col-md-6"><h6>Mutasi Stok</h6>@forelse($sale->stockMutations as $mutation)<div>{{ $mutation->mutation_type->label() }} {{ qty($mutation->quantity_on_hand_change) }} — {{ $mutation->product?->sku }}</div>@empty<div class="text-muted">Belum ada mutasi.</div>@endforelse</div>
                 </div>
             </x-metronic.card>
         </div>

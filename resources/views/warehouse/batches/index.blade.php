@@ -22,7 +22,7 @@
                         <td>{{ $batch->received_at?->format('d/m/Y') ?: '-' }}</td>
                         <td>{{ $batch->expires_at?->format('d/m/Y') ?: '-' }}</td>
                         <td>Rp {{ number_format((float) $batch->cost_price, 0, ',', '.') }}</td>
-                        <td>{{ $batch->quantity_on_hand }}<div class="text-muted">Reserved: {{ $batch->quantity_reserved }}</div></td>
+                        <td>{{ qty($batch->quantity_on_hand) }}<div class="text-muted">Reserved: {{ qty($batch->quantity_reserved) }}</div></td>
                         <td>{{ $batch->stock?->warehouseLocation?->full_code ?: $batch->stock?->workLocation?->name ?: '-' }}</td>
                         <td><x-metronic.status-badge :status="$batch->status" :label="ucfirst($batch->status)" /></td>
                     </tr>

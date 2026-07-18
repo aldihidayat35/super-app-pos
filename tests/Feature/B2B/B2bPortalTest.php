@@ -94,8 +94,8 @@ class B2bPortalTest extends TestCase
             ->assertOk()
             ->assertSee('Produk Langganan')
             ->assertSee('Rp9.000')
-            ->assertDontSee('HPP')
-            ->assertDontSee('margin');
+            ->assertDontSeeText('HPP')
+            ->assertDontSeeText('Margin');
     }
 
     public function test_moq_cart_price_refresh_and_checkout_create_scoped_order(): void

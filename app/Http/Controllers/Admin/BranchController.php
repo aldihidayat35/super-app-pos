@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreBranchRequest;
 use App\Http\Requests\Admin\UpdateBranchRequest;
 use App\Models\Branch;
+use App\Models\CashShift;
+use App\Models\PosSale;
+use App\Models\Stock;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\Organization\WorkLocationSyncService;
@@ -13,6 +16,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Activity;
 
 class BranchController extends Controller
 {
@@ -77,8 +81,54 @@ class BranchController extends Controller
     {
         $this->authorize('view', $branch);
 
+        $branch->load(['primaryWarehouse', 'manager', 'workLocation.users']);
+        $workLocationId = $branch->work_location_id;
+
+        $stocks = $workLocationId
+            ? Stock::query()
+                ->with('product')
+                ->where('work_location_id', $workLocationId)
+                ->orderByDesc('quantity_on_hand')
+                ->limit(8)
+                ->get()
+            : collect();
+
+        $shifts = CashShift::query()
+            ->with('cashier')
+            ->where('branch_id', $branch->id)
+            ->latest('opened_at')
+            ->limit(8)
+            ->get();
+
+        $salesSummary = PosSale::query()
+            ->where('branch_id', $branch->id)
+            ->selectRaw('COUNT(*) as total_sales')
+            ->selectRaw('COALESCE(SUM(grand_total_amount), 0) as total_revenue')
+            ->selectRaw('COALESCE(SUM(total_margin_amount), 0) as total_margin')
+            ->first();
+
+        $recentSales = PosSale::query()
+            ->with('cashier')
+            ->where('branch_id', $branch->id)
+            ->latest('completed_at')
+            ->limit(5)
+            ->get();
+
+        $histories = Activity::query()
+            ->with('causer')
+            ->where('subject_type', $branch->getMorphClass())
+            ->where('subject_id', $branch->id)
+            ->latest()
+            ->limit(10)
+            ->get();
+
         return view('admin.branches.show', [
-            'branch' => $branch->load(['primaryWarehouse', 'manager', 'workLocation.users']),
+            'branch' => $branch,
+            'stocks' => $stocks,
+            'shifts' => $shifts,
+            'salesSummary' => $salesSummary,
+            'recentSales' => $recentSales,
+            'histories' => $histories,
         ]);
     }
 

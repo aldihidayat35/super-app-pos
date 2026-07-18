@@ -26,7 +26,7 @@
                         <td>{{ strtoupper($return->source_type) }}<div class="text-muted">{{ $return->source_name ?: '-' }}</div></td>
                         <td>{{ $return->reference_no ?: '-' }}</td>
                         <td>{{ $return->return_date?->format('d/m/Y') }}</td>
-                        <td class="text-end">{{ number_format((float) $return->total_quantity, 4, ',', '.') }}<div class="text-muted">{{ \App\Support\CurrencyFormatter::rupiah($return->total_value) }}</div></td>
+                        <td class="text-end">{{ qty($return->total_quantity) }}<div class="text-muted">{{ \App\Support\CurrencyFormatter::rupiah($return->total_value) }}</div></td>
                         <td><x-metronic.status-badge :status="$return->status" /></td>
                         <td class="text-end"><a class="btn btn-sm btn-light" href="{{ route('returns.show', $return) }}">Detail</a>@can('inspect', $return)<a class="btn btn-sm btn-light-primary" href="{{ route('returns.inspection', $return) }}">QC</a>@endcan</td>
                     </tr>

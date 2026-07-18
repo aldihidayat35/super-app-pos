@@ -24,7 +24,7 @@
                             @php($stock = $stocks->get($product->id))
                             <tr>
                                 <td class="fw-semibold">{{ $product->sku }}<div class="text-muted">{{ $product->name }}</div></td>
-                                <td>{{ $stock?->available_quantity ?? '0.0000' }}</td>
+                                <td>{{ qty($stock?->available_quantity ?? 0) }}</td>
                                 <td>{{ $product->baseUnit?->name }}</td>
                                 <td>
                                     @if($stock && (float) $stock->available_quantity <= (float) $product->minimum_stock)
@@ -59,7 +59,7 @@
                             <select name="items[0][product_id]" class="form-select">@foreach($products as $product)<option value="{{ $product->id }}">{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select>
                         </x-metronic.form-group>
                         <div class="row">
-                            <div class="col-md-4"><x-metronic.form-group name="items.0.quantity" label="Qty" required><input type="number" step="0.0001" min="0.0001" name="items[0][quantity]" value="1" class="form-control"></x-metronic.form-group></div>
+                            <div class="col-md-4"><x-metronic.form-group name="items.0.quantity" label="Qty" required><input type="number" step="1" min="1" name="items[0][quantity]" value="1" class="form-control"></x-metronic.form-group></div>
                             <div class="col-md-4"><x-metronic.form-group name="items.0.selected_price" label="Harga"><input type="number" step="0.01" min="0" name="items[0][selected_price]" class="form-control" placeholder="Auto"></x-metronic.form-group></div>
                             <div class="col-md-4"><x-metronic.form-group name="items.0.discount_percent" label="Diskon %"><input type="number" step="0.01" min="0" max="100" name="items[0][discount_percent]" value="0" class="form-control"></x-metronic.form-group></div>
                         </div>

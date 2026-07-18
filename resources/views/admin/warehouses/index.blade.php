@@ -33,7 +33,7 @@
                             <td><a href="{{ route('admin.warehouses.show', $warehouse) }}" class="fw-bold text-gray-900 text-hover-primary">{{ $warehouse->name }}</a></td>
                             <td>{{ $warehouse->city ?: '-' }}</td>
                             <td>{{ $warehouse->manager?->name ?: '-' }}</td>
-                            <td>{{ $warehouse->capacity ?: '-' }}</td>
+                            <td>{{ $warehouse->capacity ? qty($warehouse->capacity) : '-' }}</td>
                             <td>{{ $warehouse->service_area ?: '-' }}</td>
                             <td><x-metronic.status-badge :status="$warehouse->is_active ? 'active' : 'inactive'" :label="$warehouse->is_active ? 'Aktif' : 'Nonaktif'" /></td>
                             <td class="text-end">

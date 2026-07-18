@@ -32,7 +32,7 @@
     </div>
     <div class="col-md-4"><x-metronic.form-group name="code" label="Kode"><input name="code" value="{{ old('code', $location->code) }}" class="form-control form-control-solid" required></x-metronic.form-group></div>
     <div class="col-md-4"><x-metronic.form-group name="name" label="Nama"><input name="name" value="{{ old('name', $location->name) }}" class="form-control form-control-solid" required></x-metronic.form-group></div>
-    <div class="col-md-4"><x-metronic.form-group name="capacity" label="Kapasitas"><input name="capacity" value="{{ old('capacity', $location->capacity) }}" type="number" step="0.0001" min="0" class="form-control form-control-solid"></x-metronic.form-group></div>
+    <div class="col-md-4"><x-metronic.form-group name="capacity" label="Kapasitas"><input name="capacity" value="{{ old('capacity', qty_input($location->capacity)) }}" type="number" step="1" min="0" class="form-control form-control-solid"></x-metronic.form-group></div>
     <div class="col-md-4"><x-metronic.form-group name="item_type" label="Jenis Barang"><input name="item_type" value="{{ old('item_type', $location->item_type) }}" class="form-control form-control-solid" placeholder="Opsional"></x-metronic.form-group></div>
     <div class="col-md-4 d-flex align-items-end"><label class="form-check form-switch form-check-custom form-check-solid mb-4"><input type="checkbox" name="is_active" value="1" class="form-check-input" @checked(old('is_active', $location->is_active ?? true))><span class="form-check-label">Aktif</span></label></div>
 </div>

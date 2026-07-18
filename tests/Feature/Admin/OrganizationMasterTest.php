@@ -90,6 +90,30 @@ class OrganizationMasterTest extends TestCase
     }
 
     #[Test]
+    public function branch_detail_operational_tabs_are_interactive(): void
+    {
+        $admin = $this->adminConfig();
+        $warehouse = Warehouse::factory()->create(['is_active' => true]);
+        app(WorkLocationSyncService::class)->syncWarehouse($warehouse);
+
+        $branch = Branch::factory()->create([
+            'primary_warehouse_id' => $warehouse->id,
+            'is_active' => true,
+        ]);
+        app(WorkLocationSyncService::class)->syncBranch($branch);
+
+        $this->actingAs($admin)
+            ->get(route('admin.branches.show', $branch))
+            ->assertOk()
+            ->assertSee('data-bs-toggle="tab"', false)
+            ->assertSee('branch-users-pane')
+            ->assertSee('branch-stocks-pane')
+            ->assertSee('branch-shifts-pane')
+            ->assertSee('branch-performance-pane')
+            ->assertSee('branch-history-pane');
+    }
+
+    #[Test]
     public function scoped_warehouse_head_only_sees_assigned_warehouse(): void
     {
         $allowed = Warehouse::factory()->create(['name' => 'Gudang Boleh']);

@@ -24,8 +24,8 @@
                     <tr>
                         <td><select name="items[{{ $i }}][product_id]" class="form-select form-select-solid"><option value="">Pilih produk</option>@foreach($products as $product)<option value="{{ $product->id }}">{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select></td>
                         <td><select name="items[{{ $i }}][warehouse_location_id]" class="form-select form-select-solid"><option value="">Tanpa bin</option>@foreach($warehouseLocations as $location)<option value="{{ $location->id }}">{{ $location->full_code }}</option>@endforeach</select></td>
-                        <td><input type="number" step="0.0001" min="0" name="items[{{ $i }}][quantity_requested]" class="form-control form-control-solid"></td>
-                        <td><input type="number" step="0.0001" min="0" name="items[{{ $i }}][source_quantity]" class="form-control form-control-solid"></td>
+                        <td><input type="number" step="1" min="0" name="items[{{ $i }}][quantity_requested]" class="form-control form-control-solid"></td>
+                        <td><input type="number" step="1" min="0" name="items[{{ $i }}][source_quantity]" class="form-control form-control-solid"></td>
                         <td><input type="number" step="0.01" min="0" name="items[{{ $i }}][unit_cost_snapshot]" class="form-control form-control-solid"></td>
                         <td><select name="items[{{ $i }}][condition]" class="form-select form-select-solid">@foreach($conditions as $key=>$label)<option value="{{ $key }}">{{ $label }}</option>@endforeach</select></td>
                         <td><input name="items[{{ $i }}][notes]" class="form-control form-control-solid"></td>

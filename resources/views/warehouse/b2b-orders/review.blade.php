@@ -41,7 +41,7 @@
             @csrf
             <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Produk</th><th>Qty Request</th><th>Qty Approved</th><th>Harga</th><th>Reserved</th><th>Shortage</th></tr></thead><tbody>
                 @foreach($order->items as $item)
-                    <tr><td><div class="fw-bold">{{ $item->product_name_snapshot }}</div><div class="text-muted">{{ $item->sku_snapshot }}</div></td><td>{{ $item->quantity }} {{ $item->unit_name_snapshot }}<div class="text-muted">Base: {{ $item->base_quantity }}</div></td><td><input type="number" step="0.0001" min="0.0001" name="approved_quantities[{{ $item->id }}]" value="{{ old('approved_quantities.'.$item->id, $item->approved_quantity ?: $item->quantity) }}" class="form-control"></td><td>{{ App\Support\CurrencyFormatter::rupiah($item->selected_price) }}</td><td>{{ $item->reserved_quantity }}</td><td>{{ $item->shortage_quantity }}</td></tr>
+                    <tr><td><div class="fw-bold">{{ $item->product_name_snapshot }}</div><div class="text-muted">{{ $item->sku_snapshot }}</div></td><td>{{ qty($item->quantity) }} {{ $item->unit_name_snapshot }}<div class="text-muted">Base: {{ qty($item->base_quantity) }}</div></td><td><input type="number" step="1" min="1" name="approved_quantities[{{ $item->id }}]" value="{{ old('approved_quantities.'.$item->id, qty_input($item->approved_quantity ?: $item->quantity)) }}" class="form-control"></td><td>{{ App\Support\CurrencyFormatter::rupiah($item->selected_price) }}</td><td>{{ qty($item->reserved_quantity) }}</td><td>{{ qty($item->shortage_quantity) }}</td></tr>
                 @endforeach
             </tbody></table></div>
             <div class="row g-3 mt-3">

@@ -18,7 +18,7 @@
                 <div class="mb-4"><div class="text-muted fs-7">Kota</div><div class="fw-semibold">{{ $warehouse->city ?: '-' }}</div></div>
                 <div class="mb-4"><div class="text-muted fs-7">Telepon</div><div class="fw-semibold">{{ $warehouse->phone_number ?: '-' }}</div></div>
                 <div class="mb-4"><div class="text-muted fs-7">Kepala Gudang</div><div class="fw-semibold">{{ $warehouse->manager?->name ?: '-' }}</div></div>
-                <div class="mb-4"><div class="text-muted fs-7">Kapasitas</div><div class="fw-semibold">{{ $warehouse->capacity ?: '-' }}</div></div>
+                <div class="mb-4"><div class="text-muted fs-7">Kapasitas</div><div class="fw-semibold">{{ $warehouse->capacity ? qty($warehouse->capacity) : '-' }}</div></div>
                 <div class="mb-4"><div class="text-muted fs-7">Area Layanan</div><div class="fw-semibold">{{ $warehouse->service_area ?: '-' }}</div></div>
                 <x-metronic.status-badge :status="$warehouse->is_active ? 'active' : 'inactive'" :label="$warehouse->is_active ? 'Aktif' : 'Nonaktif'" />
             </x-metronic.card>

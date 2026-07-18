@@ -29,8 +29,8 @@
                             @csrf
                             <td class="fw-bold">{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div>@if($item->has_transaction_after_snapshot)<span class="badge badge-light-warning mt-1">Ada transaksi setelah snapshot</span>@endif</td>
                             <td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td>
-                            <td class="text-end">{{ $opname->blind_count ? 'Blind' : number_format((float) $item->system_qty_snapshot, 4, ',', '.') }}</td>
-                            <td class="text-end"><input type="number" step="0.0001" min="0" name="counted_qty" value="{{ old('counted_qty', $item->counted_qty) }}" class="form-control form-control-solid text-end" required></td>
+                            <td class="text-end">{{ $opname->blind_count ? 'Blind' : qty($item->system_qty_snapshot) }}</td>
+                            <td class="text-end"><input type="number" step="1" min="0" name="counted_qty" value="{{ old('counted_qty', qty_input($item->counted_qty)) }}" class="form-control form-control-solid text-end" required></td>
                             <td>
                                 <select name="reason" class="form-select form-select-solid mb-2">
                                     <option value="">Tidak ada selisih</option>

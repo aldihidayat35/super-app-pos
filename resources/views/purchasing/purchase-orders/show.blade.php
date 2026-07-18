@@ -29,10 +29,10 @@
                         @foreach($purchaseOrder->items as $item)
                             <tr>
                                 <td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td>
-                                <td>{{ $item->unit_name_snapshot }}<div class="text-muted">x {{ $item->conversion_factor_snapshot }}</div></td>
-                                <td>{{ $item->quantity_ordered }}</td>
-                                <td>{{ $item->quantity_received }}</td>
-                                <td class="fw-bold">{{ $item->outstandingQuantity() }}</td>
+                                <td>{{ $item->unit_name_snapshot }}<div class="text-muted">x {{ qty($item->conversion_factor_snapshot) }}</div></td>
+                                <td>{{ qty($item->quantity_ordered) }}</td>
+                                <td>{{ qty($item->quantity_received) }}</td>
+                                <td class="fw-bold">{{ qty($item->outstandingQuantity()) }}</td>
                                 <td>Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}</td>
                                 <td>Rp {{ number_format((float) $item->discount_amount, 0, ',', '.') }}</td>
                                 <td>Rp {{ number_format((float) $item->tax_amount, 0, ',', '.') }}</td>

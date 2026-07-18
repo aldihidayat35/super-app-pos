@@ -892,6 +892,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/product-prices', [ProductPriceController::class, 'index'])
             ->middleware('permission:prices.view')
             ->name('product-prices.index');
+        Route::get('/product-prices/search-products', [ProductPriceController::class, 'searchProducts'])
+            ->middleware('permission:prices.view')
+            ->name('product-prices.search-products');
         Route::get('/product-prices/export', [ProductPriceController::class, 'export'])
             ->middleware('permission:reports.export|prices.view')
             ->name('product-prices.export');

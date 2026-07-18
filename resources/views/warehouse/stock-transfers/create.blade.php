@@ -24,8 +24,8 @@
                     @for($i = 0; $i < 5; $i++)
                         <tr>
                             <td><select name="items[{{ $i }}][product_id]" class="form-select form-select-sm"><option value="">Pilih produk</option>@foreach($products as $product)<option value="{{ $product->id }}">{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select></td>
-                            <td><input name="items[{{ $i }}][quantity_requested]" type="number" step="0.0001" min="0" value="{{ $i === 0 ? '1' : '' }}" class="form-control form-control-sm"></td>
-                            <td><input name="items[{{ $i }}][quantity_approved]" type="number" step="0.0001" min="0" value="{{ $i === 0 ? '1' : '' }}" class="form-control form-control-sm"></td>
+                            <td><input name="items[{{ $i }}][quantity_requested]" type="number" step="1" min="0" value="{{ $i === 0 ? '1' : '' }}" class="form-control form-control-sm"></td>
+                            <td><input name="items[{{ $i }}][quantity_approved]" type="number" step="1" min="0" value="{{ $i === 0 ? '1' : '' }}" class="form-control form-control-sm"></td>
                             <td><select name="items[{{ $i }}][source_warehouse_location_id]" class="form-select form-select-sm"><option value="">Default</option>@foreach($warehouseLocations as $location)<option value="{{ $location->id }}">{{ $location->full_code }}</option>@endforeach</select></td>
                             <td><select name="items[{{ $i }}][destination_warehouse_location_id]" class="form-select form-select-sm"><option value="">Default</option>@foreach($warehouseLocations as $location)<option value="{{ $location->id }}">{{ $location->full_code }}</option>@endforeach</select></td>
                             <td><input name="items[{{ $i }}][notes]" class="form-control form-control-sm"></td>

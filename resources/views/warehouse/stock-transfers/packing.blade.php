@@ -20,9 +20,9 @@
                         <tr>
                             <td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td>
                             <td>{{ $item->sourceWarehouseLocation?->full_code ?: '-' }}</td>
-                            <td>{{ $item->quantity_approved }}</td>
-                            <td><input type="number" step="0.0001" min="0" max="{{ $item->quantity_approved }}" name="items[{{ $item->id }}][quantity_picked]" value="{{ old("items.$item->id.quantity_picked", $item->quantity_picked ?: $item->quantity_approved) }}" class="form-control form-control-sm"></td>
-                            <td>{{ $item->quantity_short }}</td>
+                            <td>{{ qty($item->quantity_approved) }}</td>
+                            <td><input type="number" step="1" min="0" max="{{ qty_input($item->quantity_approved) }}" name="items[{{ $item->id }}][quantity_picked]" value="{{ old("items.$item->id.quantity_picked", qty_input($item->quantity_picked ?: $item->quantity_approved)) }}" class="form-control form-control-sm"></td>
+                            <td>{{ qty($item->quantity_short) }}</td>
                             <td><input name="items[{{ $item->id }}][notes]" value="{{ $item->notes }}" class="form-control form-control-sm"></td>
                         </tr>
                     @endforeach

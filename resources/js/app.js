@@ -42,6 +42,8 @@ const initializeSelect2 = () => {
         window.$(this).select2({
             dropdownParent: parent ? window.$(parent) : undefined,
             placeholder: this.dataset.placeholder || 'Pilih opsi',
+            allowClear: this.dataset.allowClear === 'true',
+            closeOnSelect: this.dataset.closeOnSelect !== 'false',
             width: '100%',
         });
     });

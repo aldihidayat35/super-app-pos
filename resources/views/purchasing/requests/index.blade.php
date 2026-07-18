@@ -37,7 +37,7 @@
                         </x-metronic.form-group>
                         <input type="hidden" name="items[0][unit_id]" value="">
                         <x-metronic.form-group name="items.0.quantity" label="Qty">
-                            <input name="items[0][quantity]" type="number" step="0.0001" min="0.0001" class="form-control form-control-solid" required>
+                            <input name="items[0][quantity]" type="number" step="1" min="1" class="form-control form-control-solid" required>
                         </x-metronic.form-group>
                         <x-metronic.form-group name="items.0.reason" label="Catatan Item">
                             <input name="items[0][reason]" class="form-control form-control-solid">
@@ -57,8 +57,8 @@
                             <tr>
                                 <td>{{ $stock->product?->sku }}<div class="text-muted">{{ $stock->product?->name }}</div></td>
                                 <td>{{ $stock->workLocation?->name }}<div class="text-muted">{{ $stock->warehouseLocation?->full_code ?: '-' }}</div></td>
-                                <td>{{ $stock->quantity_on_hand }}</td>
-                                <td>{{ $stock->product?->minimum_stock }}</td>
+                                <td>{{ qty($stock->quantity_on_hand) }}</td>
+                                <td>{{ qty($stock->product?->minimum_stock) }}</td>
                                 <td><span class="badge badge-light-warning">Perlu review purchasing</span></td>
                             </tr>
                         @empty

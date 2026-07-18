@@ -31,9 +31,9 @@
                     <tr>
                         <td class="fw-bold">{{ $score->supplier?->name }}</td>
                         <td><a href="{{ route('warehouse.goods-receipts.show', $score->goodsReceipt) }}">{{ $score->goodsReceipt?->number }}</a></td>
-                        <td>{{ $score->quantity_accepted }} / {{ $score->quantity_received }}</td>
+                        <td>{{ qty($score->quantity_accepted) }} / {{ qty($score->quantity_received) }}</td>
                         <td><span class="badge badge-light-success">{{ $score->quality_score }}%</span></td>
-                        <td>{{ $score->quantity_rejected }} rejected · {{ $score->quantity_damaged }} rusak</td>
+                        <td>{{ qty($score->quantity_rejected) }} rejected · {{ qty($score->quantity_damaged) }} rusak</td>
                         <td>Rp {{ number_format((float) ($line?->unit_price ?? 0), 0, ',', '.') }}<div class="text-muted">Skor harga {{ $score->price_score }}%</div></td>
                         <td><span class="badge badge-light-primary">{{ $score->total_score }}%</span></td>
                         <td>{{ $recommendation }}</td>

@@ -24,7 +24,7 @@
                         <td>{{ $location->warehouse?->name }}</td>
                         <td>{{ $location->parent?->full_code ?: '-' }}</td>
                         <td>{{ $location->type->label() }}</td>
-                        <td>{{ $location->capacity ?: '-' }}</td>
+                        <td>{{ $location->capacity ? qty($location->capacity) : '-' }}</td>
                         <td>{{ $location->item_type ?: '-' }}</td>
                         <td><x-metronic.status-badge :status="$location->is_active ? 'active' : 'inactive'" :label="$location->is_active ? 'Aktif' : 'Nonaktif'" /></td>
                         <td class="text-end">

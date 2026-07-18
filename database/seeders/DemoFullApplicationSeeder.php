@@ -65,22 +65,16 @@ class DemoFullApplicationSeeder extends Seeder
 {
     private const PASSWORD = 'password';
 
-    /** @var array<string, array{name: string, username: string, email: string, location: string|null}> */
+    /** @var array<string, array{name: string, username: string, email: string, roles: list<string>, location: string|null}> */
     private array $accounts = [
-        'super_admin' => ['name' => 'Demo Super Admin', 'username' => 'demo-super-admin', 'email' => 'super_admin@gudangtoko.test', 'location' => null],
-        'owner_viewer' => ['name' => 'Demo Owner Viewer', 'username' => 'demo-owner-viewer', 'email' => 'owner_viewer@gudangtoko.test', 'location' => null],
-        'owner_approver' => ['name' => 'Demo Owner Approver', 'username' => 'demo-owner-approver', 'email' => 'owner_approver@gudangtoko.test', 'location' => null],
-        'admin_user' => ['name' => 'Demo Admin User', 'username' => 'demo-admin-user', 'email' => 'admin_user@gudangtoko.test', 'location' => null],
-        'admin_config' => ['name' => 'Demo Admin Config', 'username' => 'demo-admin-config', 'email' => 'admin_config@gudangtoko.test', 'location' => null],
-        'kepala_gudang' => ['name' => 'Demo Kepala Gudang', 'username' => 'demo-kepala-gudang', 'email' => 'kepala_gudang@gudangtoko.test', 'location' => 'warehouse'],
-        'staff_gudang' => ['name' => 'Demo Staff Gudang', 'username' => 'demo-staff-gudang', 'email' => 'staff_gudang@gudangtoko.test', 'location' => 'warehouse'],
-        'picker_packer' => ['name' => 'Demo Picker Packer', 'username' => 'demo-picker-packer', 'email' => 'picker_packer@gudangtoko.test', 'location' => 'warehouse'],
-        'purchasing' => ['name' => 'Demo Purchasing', 'username' => 'demo-purchasing', 'email' => 'purchasing@gudangtoko.test', 'location' => 'warehouse'],
-        'kepala_toko' => ['name' => 'Demo Kepala Toko', 'username' => 'demo-kepala-toko', 'email' => 'kepala_toko@gudangtoko.test', 'location' => 'branch'],
-        'kasir' => ['name' => 'Demo Kasir', 'username' => 'demo-kasir', 'email' => 'kasir@gudangtoko.test', 'location' => 'branch'],
-        'supervisor_shift' => ['name' => 'Demo Supervisor Shift', 'username' => 'demo-supervisor-shift', 'email' => 'supervisor_shift@gudangtoko.test', 'location' => 'branch'],
-        'langganan_owner' => ['name' => 'Demo Langganan Owner', 'username' => 'demo-langganan-owner', 'email' => 'langganan_owner@gudangtoko.test', 'location' => null],
-        'langganan_staff' => ['name' => 'Demo Langganan Staff', 'username' => 'demo-langganan-staff', 'email' => 'langganan_staff@gudangtoko.test', 'location' => null],
+        'owner' => ['name' => 'Owner', 'username' => 'owner', 'email' => 'owner@gudangtoko.test', 'roles' => ['owner_approver'], 'location' => null],
+        'super_admin' => ['name' => 'Super Admin', 'username' => 'superadmin', 'email' => 'superadmin@gudangtoko.test', 'roles' => ['super_admin'], 'location' => null],
+        'manajemen_gudang' => ['name' => 'Manajemen Gudang', 'username' => 'manajemen-gudang', 'email' => 'manajemen-gudang@gudangtoko.test', 'roles' => ['kepala_gudang', 'purchasing'], 'location' => 'warehouse'],
+        'staff_gudang' => ['name' => 'Staff Gudang', 'username' => 'staff-gudang', 'email' => 'staff-gudang@gudangtoko.test', 'roles' => ['staff_gudang'], 'location' => 'warehouse'],
+        'toko_internal' => ['name' => 'Toko Internal', 'username' => 'toko-internal', 'email' => 'toko@gudangtoko.test', 'roles' => ['kepala_toko'], 'location' => 'branch'],
+        'kasir_kepala_toko' => ['name' => 'Kasir / Kepala Toko', 'username' => 'kasir', 'email' => 'kasir@gudangtoko.test', 'roles' => ['kasir', 'kepala_toko'], 'location' => 'branch'],
+        'langganan_b2b' => ['name' => 'Langganan / B2B', 'username' => 'langganan-b2b', 'email' => 'langganan-b2b@gudangtoko.test', 'roles' => ['langganan_owner'], 'location' => null],
+        'akun_pelanggan' => ['name' => 'Akun Pelanggan', 'username' => 'pelanggan', 'email' => 'pelanggan@gudangtoko.test', 'roles' => ['langganan_staff'], 'location' => null],
     ];
 
     public function run(): void
@@ -89,10 +83,6 @@ class DemoFullApplicationSeeder extends Seeder
 
         DB::transaction(function (): void {
             $this->call(RolePermissionSeeder::class);
-
-            if (app()->environment('local')) {
-                $this->call(LocalDatabaseSeeder::class);
-            }
 
             $sync = app(WorkLocationSyncService::class);
             [$warehouse, $warehouseLocation, $branch, $branchLocation] = $this->seedOrganization($sync);
@@ -158,7 +148,7 @@ class DemoFullApplicationSeeder extends Seeder
     {
         $users = [];
 
-        foreach ($this->accounts as $roleName => $account) {
+        foreach ($this->accounts as $accountKey => $account) {
             $user = User::query()->updateOrCreate(
                 ['email' => $account['email']],
                 [
@@ -170,7 +160,10 @@ class DemoFullApplicationSeeder extends Seeder
                     'email_verified_at' => now(),
                 ],
             );
-            $user->syncRoles([Role::findOrCreate($roleName)]);
+            $user->syncRoles(array_map(
+                static fn (string $roleName): Role => Role::findOrCreate($roleName),
+                $account['roles'],
+            ));
 
             if ($account['location'] === 'warehouse') {
                 $user->workLocations()->syncWithoutDetaching([$warehouseLocation->id => ['is_default' => true, 'is_active' => true]]);
@@ -180,18 +173,20 @@ class DemoFullApplicationSeeder extends Seeder
                 $user->workLocations()->syncWithoutDetaching([$branchLocation->id => ['is_default' => true, 'is_active' => true]]);
             }
 
-            $users[$roleName] = $user;
+            $users[$accountKey] = $user;
         }
 
+        $this->deactivateLegacySeedAccounts();
+
         Employee::query()->updateOrCreate(
-            ['user_id' => $users['kasir']->id],
+            ['user_id' => $users['kasir_kepala_toko']->id],
             [
                 'employee_no' => 'EMP-TKO-002',
-                'user_id' => $users['kasir']->id,
+                'user_id' => $users['kasir_kepala_toko']->id,
                 'work_location_id' => $branchLocation->id,
-                'name' => $users['kasir']->name,
+                'name' => $users['kasir_kepala_toko']->name,
                 'position' => 'Kasir Demo',
-                'whatsapp_number' => $users['kasir']->phone_number,
+                'whatsapp_number' => $users['kasir_kepala_toko']->phone_number,
                 'joined_at' => now()->subMonth()->toDateString(),
                 'status' => 'active',
                 'is_active' => true,
@@ -199,6 +194,35 @@ class DemoFullApplicationSeeder extends Seeder
         );
 
         return $users;
+    }
+
+    private function deactivateLegacySeedAccounts(): void
+    {
+        User::query()
+            ->whereIn('email', [
+                'admin@gudangtoko.test',
+                'approver@gudangtoko.test',
+                'gudang@gudangtoko.test',
+                'purchasing@gudangtoko.test',
+                'retail@gudangtoko.test',
+                'adminconfig@gudangtoko.test',
+                'adminuser@gudangtoko.test',
+                'b2bowner@gudangtoko.test',
+                'b2bstaff@gudangtoko.test',
+                'super_admin@gudangtoko.test',
+                'owner_viewer@gudangtoko.test',
+                'owner_approver@gudangtoko.test',
+                'admin_user@gudangtoko.test',
+                'admin_config@gudangtoko.test',
+                'kepala_gudang@gudangtoko.test',
+                'staff_gudang@gudangtoko.test',
+                'picker_packer@gudangtoko.test',
+                'kepala_toko@gudangtoko.test',
+                'supervisor_shift@gudangtoko.test',
+                'langganan_owner@gudangtoko.test',
+                'langganan_staff@gudangtoko.test',
+            ])
+            ->update(['is_active' => false]);
     }
 
     /** @return array{0: Unit, 1: Unit} */
@@ -314,8 +338,8 @@ class DemoFullApplicationSeeder extends Seeder
         $customer->addresses()->updateOrCreate(['label' => 'Gudang Pelanggan'], ['recipient_name' => 'Raka PIC', 'phone_number' => '628122222222', 'address' => 'Jl. Pelanggan Demo No. 7', 'city' => 'Jakarta', 'is_primary' => true, 'primary_scope' => 'primary']);
         $customer->creditLimit()->updateOrCreate(['customer_id' => $customer->id], ['credit_limit' => 10000000, 'payment_term_days' => 14, 'current_balance' => 0, 'status' => 'active', 'effective_from' => now()->toDateString()]);
         $customer->users()->syncWithoutDetaching([
-            $users['langganan_owner']->id => ['role' => 'langganan_owner', 'is_active' => true],
-            $users['langganan_staff']->id => ['role' => 'langganan_staff', 'is_active' => true],
+            $users['langganan_b2b']->id => ['role' => 'langganan_owner', 'is_active' => true],
+            $users['akun_pelanggan']->id => ['role' => 'langganan_staff', 'is_active' => true],
         ]);
 
         return $customer;
@@ -352,10 +376,10 @@ class DemoFullApplicationSeeder extends Seeder
     /** @param array<string, User> $users */
     private function seedPurchasingAndReceipt(Warehouse $warehouse, Supplier $supplier, Product $product, Unit $unit, WarehouseLocation $bin, array $users): void
     {
-        $po = PurchaseOrder::query()->updateOrCreate(['number' => 'PO-DEMO-0001'], ['warehouse_id' => $warehouse->id, 'supplier_id' => $supplier->id, 'order_date' => now()->subDays(8)->toDateString(), 'expected_at' => now()->subDays(1)->toDateString(), 'payment_term_days' => 30, 'notes' => 'PO demo lengkap.', 'status' => 'partially_received', 'created_by' => $users['purchasing']->id, 'submitted_at' => now()->subDays(8), 'approved_at' => now()->subDays(7), 'approved_by' => $users['kepala_gudang']->id, 'items_subtotal' => 700000, 'header_discount' => 0, 'freight_cost' => 25000, 'additional_cost' => 0, 'grand_total' => 725000]);
+        $po = PurchaseOrder::query()->updateOrCreate(['number' => 'PO-DEMO-0001'], ['warehouse_id' => $warehouse->id, 'supplier_id' => $supplier->id, 'order_date' => now()->subDays(8)->toDateString(), 'expected_at' => now()->subDays(1)->toDateString(), 'payment_term_days' => 30, 'notes' => 'PO demo lengkap.', 'status' => 'partially_received', 'created_by' => $users['manajemen_gudang']->id, 'submitted_at' => now()->subDays(8), 'approved_at' => now()->subDays(7), 'approved_by' => $users['manajemen_gudang']->id, 'items_subtotal' => 700000, 'header_discount' => 0, 'freight_cost' => 25000, 'additional_cost' => 0, 'grand_total' => 725000]);
         $poItem = $po->items()->updateOrCreate(['product_id' => $product->id], ['unit_id' => $unit->id, 'product_sku_snapshot' => $product->sku, 'product_name_snapshot' => $product->name, 'unit_name_snapshot' => $unit->name, 'conversion_factor_snapshot' => 1, 'quantity_ordered' => 20, 'quantity_received' => 10, 'unit_price' => $product->cost_price, 'discount_amount' => 0, 'tax_amount' => 0, 'subtotal' => 700000]);
 
-        $receipt = GoodsReceipt::query()->updateOrCreate(['number' => 'RCV-DEMO-0001'], ['purchase_order_id' => $po->id, 'warehouse_id' => $warehouse->id, 'supplier_id' => $supplier->id, 'received_at' => now()->subDays(2)->toDateString(), 'delivery_note_number' => 'SJ-DEMO-0001', 'received_by' => $users['staff_gudang']->id, 'status' => 'posted', 'posted_at' => now()->subDays(2), 'posted_by' => $users['kepala_gudang']->id, 'actual_freight_cost' => 25000, 'actual_additional_cost' => 0, 'notes' => 'Receipt demo parsial.']);
+        $receipt = GoodsReceipt::query()->updateOrCreate(['number' => 'RCV-DEMO-0001'], ['purchase_order_id' => $po->id, 'warehouse_id' => $warehouse->id, 'supplier_id' => $supplier->id, 'received_at' => now()->subDays(2)->toDateString(), 'delivery_note_number' => 'SJ-DEMO-0001', 'received_by' => $users['staff_gudang']->id, 'status' => 'posted', 'posted_at' => now()->subDays(2), 'posted_by' => $users['manajemen_gudang']->id, 'actual_freight_cost' => 25000, 'actual_additional_cost' => 0, 'notes' => 'Receipt demo parsial.']);
         $hppAfter = bcadd((string) $product->cost_price, '500.00', 2);
         $receiptItem = GoodsReceiptItem::query()->updateOrCreate(['goods_receipt_id' => $receipt->id, 'product_id' => $product->id], ['purchase_order_item_id' => $poItem->id, 'unit_id' => $unit->id, 'warehouse_location_id' => $bin->id, 'product_sku_snapshot' => $product->sku, 'product_name_snapshot' => $product->name, 'unit_name_snapshot' => $unit->name, 'conversion_factor_snapshot' => 1, 'quantity_ordered' => 20, 'previously_received' => 0, 'outstanding_before' => 20, 'quantity_received' => 12, 'quantity_accepted' => 10, 'quantity_rejected' => 1, 'quantity_damaged' => 1, 'unit_price' => $product->cost_price, 'landed_cost_allocated' => 12500, 'batch_no' => 'RCV-BATCH-DEMO-001', 'hpp_before' => $product->cost_price, 'incoming_cost' => $product->cost_price, 'hpp_after' => $hppAfter]);
         ReceiptQcResult::query()->updateOrCreate(['goods_receipt_item_id' => $receiptItem->id, 'qc_status' => 'accepted'], ['quantity' => 10, 'reason' => 'Barang sesuai.']);
@@ -366,9 +390,9 @@ class DemoFullApplicationSeeder extends Seeder
     /** @param array<string, User> $users */
     private function seedRestockAndTransfer(Warehouse $warehouse, Branch $branch, WorkLocation $warehouseLocation, WorkLocation $branchLocation, WarehouseLocation $bin, Product $product, Unit $unit, array $users): void
     {
-        $request = RestockRequest::query()->updateOrCreate(['number' => 'RST-DEMO-0001'], ['branch_id' => $branch->id, 'source_warehouse_id' => $warehouse->id, 'requested_by' => $users['kepala_toko']->id, 'approved_by' => $users['kepala_gudang']->id, 'status' => 'approved', 'priority' => 'normal', 'needed_at' => now()->addDays(2)->toDateString(), 'submitted_at' => now()->subDay(), 'approved_at' => now(), 'notes' => 'Restock demo.']);
+        $request = RestockRequest::query()->updateOrCreate(['number' => 'RST-DEMO-0001'], ['branch_id' => $branch->id, 'source_warehouse_id' => $warehouse->id, 'requested_by' => $users['toko_internal']->id, 'approved_by' => $users['manajemen_gudang']->id, 'status' => 'approved', 'priority' => 'normal', 'needed_at' => now()->addDays(2)->toDateString(), 'submitted_at' => now()->subDay(), 'approved_at' => now(), 'notes' => 'Restock demo.']);
         $requestItem = RestockRequestItem::query()->updateOrCreate(['restock_request_id' => $request->id, 'product_id' => $product->id], ['quantity_requested' => 12, 'quantity_approved' => 10, 'priority' => 'normal', 'notes' => 'Top up stok toko.']);
-        $transfer = StockTransfer::query()->updateOrCreate(['number' => 'TRF-DEMO-0001'], ['restock_request_id' => $request->id, 'source_work_location_id' => $warehouseLocation->id, 'source_warehouse_location_id' => $bin->id, 'destination_work_location_id' => $branchLocation->id, 'destination_warehouse_location_id' => null, 'requested_by' => $users['kepala_toko']->id, 'approved_by' => null, 'picker_by' => null, 'shipper_by' => null, 'status' => 'pending_approval', 'transfer_date' => now()->toDateString(), 'submitted_at' => now()->subDay(), 'approved_at' => null, 'packing_started_at' => null, 'notes' => 'Transfer demo menunggu approval agar stok belum berubah sebelum diproses service.']);
+        $transfer = StockTransfer::query()->updateOrCreate(['number' => 'TRF-DEMO-0001'], ['restock_request_id' => $request->id, 'source_work_location_id' => $warehouseLocation->id, 'source_warehouse_location_id' => $bin->id, 'destination_work_location_id' => $branchLocation->id, 'destination_warehouse_location_id' => null, 'requested_by' => $users['toko_internal']->id, 'approved_by' => null, 'picker_by' => null, 'shipper_by' => null, 'status' => 'pending_approval', 'transfer_date' => now()->toDateString(), 'submitted_at' => now()->subDay(), 'approved_at' => null, 'packing_started_at' => null, 'notes' => 'Transfer demo menunggu approval agar stok belum berubah sebelum diproses service.']);
         StockTransferItem::query()->updateOrCreate(['stock_transfer_id' => $transfer->id, 'product_id' => $product->id], ['restock_request_item_id' => $requestItem->id, 'unit_id' => $unit->id, 'source_warehouse_location_id' => $bin->id, 'destination_warehouse_location_id' => null, 'product_sku_snapshot' => $product->sku, 'product_name_snapshot' => $product->name, 'unit_name_snapshot' => $unit->name, 'conversion_factor_snapshot' => 1, 'quantity_requested' => 12, 'quantity_approved' => 10, 'quantity_reserved' => 0, 'quantity_picked' => 0, 'quantity_short' => 0, 'quantity_shipped' => 0, 'quantity_received' => 0, 'quantity_damaged' => 0, 'quantity_discrepancy' => 0, 'notes' => 'Item transfer demo belum mengunci stok.']);
     }
 
@@ -376,7 +400,7 @@ class DemoFullApplicationSeeder extends Seeder
     private function seedStockOpnameAndLoss(WorkLocation $warehouseLocation, WarehouseLocation $bin, Product $product, array $users): void
     {
         $stock = Stock::query()->where('product_id', $product->id)->where('work_location_id', $warehouseLocation->id)->first();
-        $opname = StockOpname::query()->updateOrCreate(['number' => 'OPN-DEMO-0001'], ['work_location_id' => $warehouseLocation->id, 'warehouse_location_id' => $bin->id, 'pic_user_id' => $users['kepala_gudang']->id, 'created_by' => $users['staff_gudang']->id, 'status' => 'counting', 'method' => 'cycle_count', 'freeze_stock' => false, 'blind_count' => false, 'requires_owner_approval' => false, 'scheduled_at' => now()->toDateString(), 'started_at' => now(), 'threshold_qty' => 5, 'threshold_value' => 500000, 'notes' => 'Opname demo.']);
+        $opname = StockOpname::query()->updateOrCreate(['number' => 'OPN-DEMO-0001'], ['work_location_id' => $warehouseLocation->id, 'warehouse_location_id' => $bin->id, 'pic_user_id' => $users['manajemen_gudang']->id, 'created_by' => $users['staff_gudang']->id, 'status' => 'counting', 'method' => 'cycle_count', 'freeze_stock' => false, 'blind_count' => false, 'requires_owner_approval' => false, 'scheduled_at' => now()->toDateString(), 'started_at' => now(), 'threshold_qty' => 5, 'threshold_value' => 500000, 'notes' => 'Opname demo.']);
         if ($stock) {
             StockOpnameItem::query()->updateOrCreate(['stock_opname_id' => $opname->id, 'product_id' => $product->id], ['stock_id' => $stock->id, 'warehouse_location_id' => $bin->id, 'counter_user_id' => $users['staff_gudang']->id, 'product_sku_snapshot' => $product->sku, 'product_name_snapshot' => $product->name, 'system_qty_snapshot' => $stock->quantity_on_hand, 'counted_qty' => null, 'difference_qty' => 0, 'unit_cost' => $product->cost_price, 'estimated_value' => 0, 'reason' => 'other', 'note' => 'Belum dihitung.']);
         }
@@ -386,8 +410,8 @@ class DemoFullApplicationSeeder extends Seeder
     /** @param array<string, User> $users */
     private function seedRetail(Branch $branch, WorkLocation $branchLocation, WarehouseLocation $bin, Product $product, Unit $unit, Customer $customer, array $users): void
     {
-        $shift = CashShift::query()->updateOrCreate(['number' => 'SHIFT-DEMO-0001'], ['branch_id' => $branch->id, 'work_location_id' => $branchLocation->id, 'cashier_user_id' => $users['kasir']->id, 'opened_by' => $users['kasir']->id, 'status' => 'open', 'opening_cash_amount' => 500000, 'expected_cash_amount' => 500000, 'terminal_code' => 'POS-DEMO-01', 'cash_sales_amount' => 0, 'non_cash_sales_amount' => 0, 'refund_amount' => 0, 'expense_amount' => 0, 'receivable_amount' => 0, 'difference_amount' => 0, 'discrepancy_threshold_amount' => 50000, 'opened_at' => now(), 'notes' => 'Shift demo terbuka.']);
-        $sale = PosSale::query()->updateOrCreate(['number' => 'POS-DEMO-0001'], ['branch_id' => $branch->id, 'work_location_id' => $branchLocation->id, 'cash_shift_id' => $shift->id, 'cashier_user_id' => $users['kasir']->id, 'customer_id' => $customer->id, 'status' => 'completed', 'subtotal_amount' => 59000, 'discount_amount' => 0, 'tax_amount' => 0, 'grand_total_amount' => 59000, 'paid_amount' => 60000, 'change_amount' => 1000, 'total_margin_amount' => 24000, 'idempotency_key' => 'demo-pos-sale-0001', 'completed_at' => now(), 'notes' => 'Penjualan demo.']);
+        $shift = CashShift::query()->updateOrCreate(['number' => 'SHIFT-DEMO-0001'], ['branch_id' => $branch->id, 'work_location_id' => $branchLocation->id, 'cashier_user_id' => $users['kasir_kepala_toko']->id, 'opened_by' => $users['kasir_kepala_toko']->id, 'status' => 'open', 'opening_cash_amount' => 500000, 'expected_cash_amount' => 500000, 'terminal_code' => 'POS-DEMO-01', 'cash_sales_amount' => 0, 'non_cash_sales_amount' => 0, 'refund_amount' => 0, 'expense_amount' => 0, 'receivable_amount' => 0, 'difference_amount' => 0, 'discrepancy_threshold_amount' => 50000, 'opened_at' => now(), 'notes' => 'Shift demo terbuka.']);
+        $sale = PosSale::query()->updateOrCreate(['number' => 'POS-DEMO-0001'], ['branch_id' => $branch->id, 'work_location_id' => $branchLocation->id, 'cash_shift_id' => $shift->id, 'cashier_user_id' => $users['kasir_kepala_toko']->id, 'customer_id' => $customer->id, 'status' => 'completed', 'subtotal_amount' => 59000, 'discount_amount' => 0, 'tax_amount' => 0, 'grand_total_amount' => 59000, 'paid_amount' => 60000, 'change_amount' => 1000, 'total_margin_amount' => 24000, 'idempotency_key' => 'demo-pos-sale-0001', 'completed_at' => now(), 'notes' => 'Penjualan demo.']);
         PosSaleItem::query()->updateOrCreate(['pos_sale_id' => $sale->id, 'product_id' => $product->id], ['unit_id' => $unit->id, 'warehouse_location_id' => $bin->id, 'sku_snapshot' => $product->sku, 'product_name_snapshot' => $product->name, 'unit_name_snapshot' => $unit->name, 'conversion_factor_snapshot' => 1, 'quantity' => 1, 'base_quantity' => 1, 'hpp_snapshot' => $product->cost_price, 'minimum_price_snapshot' => $product->minimum_price, 'selected_price' => 59000, 'discount_percent' => 0, 'discount_amount' => 0, 'tax_amount' => 0, 'line_total' => 59000, 'margin_amount' => 24000, 'price_source' => 'demo_seed', 'price_snapshot' => ['source' => 'demo_seed'], 'returned_quantity' => 0]);
         SalePayment::query()->updateOrCreate(['pos_sale_id' => $sale->id, 'method' => 'cash'], ['amount' => 59000, 'reference_no' => 'CASH-DEMO', 'notes' => 'Tunai demo.']);
     }
@@ -396,16 +420,16 @@ class DemoFullApplicationSeeder extends Seeder
     private function seedB2bInvoiceShipmentReceivable(WorkLocation $warehouseLocation, Product $product, Unit $unit, Customer $customer, array $users): void
     {
         $address = $customer->addresses()->first();
-        $order = B2bOrder::query()->updateOrCreate(['number' => 'B2B-DEMO-0001'], ['customer_id' => $customer->id, 'requested_by' => $users['langganan_owner']->id, 'approved_by' => $users['kepala_gudang']->id, 'customer_address_id' => $address?->id, 'status' => 'invoice_ready', 'requested_delivery_date' => now()->addDays(2)->toDateString(), 'delivery_method' => 'courier', 'courier_name' => 'Kurir Demo', 'payment_preference' => 'credit', 'terms_accepted' => true, 'subtotal_amount' => 178000, 'discount_amount' => 0, 'tax_amount' => 0, 'shipping_cost_amount' => 15000, 'grand_total_amount' => 193000, 'credit_limit_snapshot' => 10000000, 'receivable_balance_snapshot' => 0, 'notes' => 'Order B2B demo.', 'submitted_at' => now()->subDay(), 'approved_at' => now()]);
+        $order = B2bOrder::query()->updateOrCreate(['number' => 'B2B-DEMO-0001'], ['customer_id' => $customer->id, 'requested_by' => $users['langganan_b2b']->id, 'approved_by' => $users['manajemen_gudang']->id, 'customer_address_id' => $address?->id, 'status' => 'invoice_ready', 'requested_delivery_date' => now()->addDays(2)->toDateString(), 'delivery_method' => 'courier', 'courier_name' => 'Kurir Demo', 'payment_preference' => 'credit', 'terms_accepted' => true, 'subtotal_amount' => 178000, 'discount_amount' => 0, 'tax_amount' => 0, 'shipping_cost_amount' => 15000, 'grand_total_amount' => 193000, 'credit_limit_snapshot' => 10000000, 'receivable_balance_snapshot' => 0, 'notes' => 'Order B2B demo.', 'submitted_at' => now()->subDay(), 'approved_at' => now()]);
         $orderItem = B2bOrderItem::query()->updateOrCreate(['b2b_order_id' => $order->id, 'product_id' => $product->id], ['unit_id' => $unit->id, 'sku_snapshot' => $product->sku, 'product_name_snapshot' => $product->name, 'unit_name_snapshot' => $unit->name, 'conversion_factor_snapshot' => 1, 'quantity' => 2, 'approved_quantity' => 2, 'base_quantity' => 2, 'reserved_quantity' => 0, 'issued_quantity' => 0, 'shortage_quantity' => 0, 'fulfillment_status' => 'approved', 'minimum_price_snapshot' => $product->minimum_price, 'selected_price' => 89000, 'discount_amount' => 0, 'tax_amount' => 0, 'line_total' => 178000, 'price_source' => 'demo_seed', 'available_stock_snapshot' => 100, 'price_snapshot' => ['source' => 'demo_seed']]);
-        $invoice = Invoice::query()->updateOrCreate(['number' => 'INV-DEMO-0001'], ['source_type' => 'b2b_order', 'b2b_order_id' => $order->id, 'customer_id' => $customer->id, 'status' => 'issued', 'issue_date' => now()->toDateString(), 'due_date' => now()->addDays(14)->toDateString(), 'subtotal_amount' => 178000, 'discount_amount' => 0, 'shipping_amount' => 15000, 'tax_amount' => 0, 'total_amount' => 193000, 'paid_amount' => 0, 'outstanding_amount' => 193000, 'issued_at' => now(), 'created_by' => $users['kepala_gudang']->id, 'issued_by' => $users['kepala_gudang']->id, 'notes' => 'Invoice demo.']);
+        $invoice = Invoice::query()->updateOrCreate(['number' => 'INV-DEMO-0001'], ['source_type' => 'b2b_order', 'b2b_order_id' => $order->id, 'customer_id' => $customer->id, 'status' => 'issued', 'issue_date' => now()->toDateString(), 'due_date' => now()->addDays(14)->toDateString(), 'subtotal_amount' => 178000, 'discount_amount' => 0, 'shipping_amount' => 15000, 'tax_amount' => 0, 'total_amount' => 193000, 'paid_amount' => 0, 'outstanding_amount' => 193000, 'issued_at' => now(), 'created_by' => $users['manajemen_gudang']->id, 'issued_by' => $users['manajemen_gudang']->id, 'notes' => 'Invoice demo.']);
         InvoiceItem::query()->updateOrCreate(['invoice_id' => $invoice->id, 'product_id' => $product->id], ['b2b_order_item_id' => $orderItem->id, 'description' => $product->name, 'unit_name_snapshot' => $unit->name, 'quantity' => 2, 'unit_price' => 89000, 'discount_amount' => 0, 'tax_amount' => 0, 'line_total' => 178000]);
         $receivable = Receivable::query()->updateOrCreate(['number' => 'AR-DEMO-0001'], ['customer_id' => $customer->id, 'work_location_id' => $warehouseLocation->id, 'invoice_id' => $invoice->id, 'source_type' => 'invoice', 'source_id' => $invoice->id, 'source_no' => $invoice->number, 'channel' => 'warehouse', 'issue_date' => now()->toDateString(), 'due_date' => now()->addDays(14)->toDateString(), 'principal_amount' => 193000, 'adjustment_amount' => 0, 'paid_amount' => 0, 'outstanding_amount' => 193000, 'aging_bucket' => 'not_due', 'status' => 'open']);
-        ReceivableEntry::query()->updateOrCreate(['receivable_id' => $receivable->id, 'entry_type' => 'invoice'], ['customer_id' => $customer->id, 'amount' => 193000, 'balance_before' => 0, 'balance_after' => 193000, 'source_type' => 'invoice', 'source_id' => $invoice->id, 'source_no' => $invoice->number, 'actor_user_id' => $users['kepala_gudang']->id, 'notes' => 'Piutang demo.', 'occurred_at' => now()]);
+        ReceivableEntry::query()->updateOrCreate(['receivable_id' => $receivable->id, 'entry_type' => 'invoice'], ['customer_id' => $customer->id, 'amount' => 193000, 'balance_before' => 0, 'balance_after' => 193000, 'source_type' => 'invoice', 'source_id' => $invoice->id, 'source_no' => $invoice->number, 'actor_user_id' => $users['manajemen_gudang']->id, 'notes' => 'Piutang demo.', 'occurred_at' => now()]);
         Payment::query()->updateOrCreate(['number' => 'PAY-DEMO-0001'], ['customer_id' => $customer->id, 'method' => 'bank_transfer', 'status' => 'pending_verification', 'amount' => 100000, 'payment_date' => now()->toDateString(), 'bank_name' => 'BCA', 'reference_no' => 'TRX-DEMO-0001', 'payer_name' => $customer->business_name, 'received_by' => $users['staff_gudang']->id, 'notes' => 'Pembayaran demo menunggu verifikasi.']);
         $shipment = Shipment::query()->updateOrCreate(['number' => 'SHP-DEMO-0001'], ['b2b_order_id' => $order->id, 'customer_id' => $customer->id, 'origin_work_location_id' => $warehouseLocation->id, 'destination_address_id' => $address?->id, 'status' => 'packing', 'delivery_method' => 'courier', 'courier_name' => 'Kurir Demo', 'scheduled_date' => now()->addDay()->toDateString(), 'shipping_cost_amount' => 15000, 'created_by' => $users['staff_gudang']->id]);
         ShipmentItem::query()->updateOrCreate(['shipment_id' => $shipment->id, 'product_id' => $product->id], ['b2b_order_item_id' => $orderItem->id, 'quantity_planned' => 2, 'quantity_shipped' => 0, 'quantity_delivered' => 0, 'quantity_failed' => 0, 'status' => 'packing']);
-        B2bComplaint::query()->updateOrCreate(['number' => 'CMP-DEMO-0001'], ['customer_id' => $customer->id, 'b2b_order_id' => $order->id, 'shipment_id' => $shipment->id, 'b2b_order_item_id' => $orderItem->id, 'type' => 'informasi', 'requested_solution' => 'follow_up', 'quantity' => 1, 'status' => 'submitted', 'message' => 'Komplain demo untuk latihan follow up.', 'created_by' => $users['langganan_owner']->id]);
+        B2bComplaint::query()->updateOrCreate(['number' => 'CMP-DEMO-0001'], ['customer_id' => $customer->id, 'b2b_order_id' => $order->id, 'shipment_id' => $shipment->id, 'b2b_order_item_id' => $orderItem->id, 'type' => 'informasi', 'requested_solution' => 'follow_up', 'quantity' => 1, 'status' => 'submitted', 'message' => 'Komplain demo untuk latihan follow up.', 'created_by' => $users['akun_pelanggan']->id]);
     }
 
     /** @param array<string, User> $users */
@@ -414,7 +438,7 @@ class DemoFullApplicationSeeder extends Seeder
         $approval = app(ApprovalWorkflowService::class)->create($users['staff_gudang'], 'demo_sensitive_action', 'demo', $users['staff_gudang'], '250000.00', 'Approval demo untuk latihan owner.', ['status' => 'draft'], ['status' => 'approved']);
         AnomalyAlert::query()->updateOrCreate(['rule_key' => 'demo-large-discount', 'subject_type' => ApprovalRequest::class, 'subject_id' => $approval->id], ['title' => 'Diskon demo perlu review', 'description' => 'Contoh alert anomali untuk dashboard audit.', 'severity' => 'medium', 'risk_value' => 250000, 'evidence' => ['source' => 'demo_seed'], 'status' => 'open', 'detected_at' => now()]);
         AuditLog::query()->updateOrCreate(['event' => 'demo.seed.generated', 'module' => 'demo'], ['actor_user_id' => $users['super_admin']->id, 'new_values' => ['message' => 'Seeder demo lengkap dijalankan.'], 'severity' => 'info', 'occurred_at' => now()]);
-        ReportExport::query()->updateOrCreate(['report_type' => 'daily', 'format' => 'xlsx', 'requested_by' => $users['owner_approver']->id], ['status' => 'completed', 'filters' => ['period' => 'today'], 'progress' => 100, 'row_count' => 10, 'disk' => 'local', 'file_path' => 'private/reports/demo-daily.xlsx', 'started_at' => now()->subMinutes(5), 'finished_at' => now(), 'expires_at' => now()->addDays(7), 'correlation_id' => 'demo-report']);
-        DailyReport::query()->updateOrCreate(['idempotency_key' => 'demo-daily-report'], ['report_date' => now()->toDateString(), 'period_start' => now()->toDateString(), 'period_end' => now()->toDateString(), 'status' => 'generated', 'filters' => ['scope' => 'demo'], 'summary' => ['revenue' => 59000, 'gross_margin' => 24000], 'rows' => [], 'definitions' => [], 'generated_at' => now(), 'generated_by' => $users['owner_approver']->id]);
+        ReportExport::query()->updateOrCreate(['report_type' => 'daily', 'format' => 'xlsx', 'requested_by' => $users['owner']->id], ['status' => 'completed', 'filters' => ['period' => 'today'], 'progress' => 100, 'row_count' => 10, 'disk' => 'local', 'file_path' => 'private/reports/demo-daily.xlsx', 'started_at' => now()->subMinutes(5), 'finished_at' => now(), 'expires_at' => now()->addDays(7), 'correlation_id' => 'demo-report']);
+        DailyReport::query()->updateOrCreate(['idempotency_key' => 'demo-daily-report'], ['report_date' => now()->toDateString(), 'period_start' => now()->toDateString(), 'period_end' => now()->toDateString(), 'status' => 'generated', 'filters' => ['scope' => 'demo'], 'summary' => ['revenue' => 59000, 'gross_margin' => 24000], 'rows' => [], 'definitions' => [], 'generated_at' => now(), 'generated_by' => $users['owner']->id]);
     }
 }

@@ -39,8 +39,8 @@
         @foreach($purchaseOrder->items as $item)
             <tr>
                 <td>{{ $item->product_sku_snapshot }} - {{ $item->product_name_snapshot }}</td>
-                <td>{{ $item->unit_name_snapshot }} / x {{ $item->conversion_factor_snapshot }}</td>
-                <td class="right">{{ $item->quantity_ordered }}</td>
+                <td>{{ $item->unit_name_snapshot }} / x {{ qty($item->conversion_factor_snapshot) }}</td>
+                <td class="right">{{ qty($item->quantity_ordered) }}</td>
                 <td class="right">Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}</td>
                 <td class="right">Rp {{ number_format((float) $item->discount_amount, 0, ',', '.') }}</td>
                 <td class="right">Rp {{ number_format((float) $item->tax_amount, 0, ',', '.') }}</td>

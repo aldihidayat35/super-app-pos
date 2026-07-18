@@ -29,13 +29,13 @@
                         <tbody>
                         @foreach($receipt->items as $item)
                             <tr>
-                                <td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }} · {{ $item->unit_name_snapshot }} x {{ $item->conversion_factor_snapshot }}</div></td>
+                                <td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }} · {{ $item->unit_name_snapshot }} x {{ qty($item->conversion_factor_snapshot) }}</div></td>
                                 <td>
-                                    <div>Datang: {{ $item->quantity_received }}</div>
-                                    <div class="text-success">Accepted: {{ $item->quantity_accepted }}</div>
-                                    <div class="text-danger">Rejected: {{ $item->quantity_rejected }}</div>
-                                    <div class="text-warning">Damaged: {{ $item->quantity_damaged }}</div>
-                                    <div>Retur Supplier: {{ $item->quantity_returned_to_supplier }}</div>
+                                    <div>Datang: {{ qty($item->quantity_received) }}</div>
+                                    <div class="text-success">Accepted: {{ qty($item->quantity_accepted) }}</div>
+                                    <div class="text-danger">Rejected: {{ qty($item->quantity_rejected) }}</div>
+                                    <div class="text-warning">Damaged: {{ qty($item->quantity_damaged) }}</div>
+                                    <div>Retur Supplier: {{ qty($item->quantity_returned_to_supplier) }}</div>
                                 </td>
                                 <td>{{ $item->warehouseLocation?->full_code ?: 'Default gudang' }}<div class="text-muted">{{ $item->batch_no ?: '-' }}</div><div>{{ $item->qc_notes ?: '-' }}</div></td>
                                 <td>Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}<div class="text-muted">Landed Rp {{ number_format((float) $item->landed_cost_allocated, 0, ',', '.') }}</div></td>
@@ -53,7 +53,7 @@
                         <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Waktu</th><th>Produk</th><th>Jenis</th><th>Before</th><th>Change</th><th>After</th><th>Actor</th></tr></thead>
                         <tbody>
                         @forelse($receipt->stockMutations as $mutation)
-                            <tr><td>{{ $mutation->created_at->format('d/m/Y H:i') }}</td><td>{{ $mutation->product?->name }}</td><td>{{ $mutation->mutation_type }}</td><td>{{ $mutation->quantity_before }}</td><td>{{ $mutation->quantity_change }}</td><td>{{ $mutation->quantity_after }}</td><td>{{ $mutation->actor?->name }}</td></tr>
+                            <tr><td>{{ $mutation->created_at->format('d/m/Y H:i') }}</td><td>{{ $mutation->product?->name }}</td><td>{{ $mutation->mutation_type }}</td><td>{{ qty($mutation->quantity_before) }}</td><td>{{ qty($mutation->quantity_change) }}</td><td>{{ qty($mutation->quantity_after) }}</td><td>{{ $mutation->actor?->name }}</td></tr>
                         @empty
                             <tr><td colspan="7"><x-metronic.empty-state title="Belum ada mutasi" description="Mutasi muncul setelah receipt di-posting." /></td></tr>
                         @endforelse
@@ -77,7 +77,7 @@
                     <div class="mb-4">
                         <div class="fw-bold">{{ $history->product?->name }}</div>
                         <div>{{ $history->hpp_before }} → {{ $history->hpp_after }}</div>
-                        <div class="text-muted">Qty {{ $history->qty_before }} + {{ $history->qty_incoming }} = {{ $history->qty_after }}</div>
+                        <div class="text-muted">Qty {{ qty($history->qty_before) }} + {{ qty($history->qty_incoming) }} = {{ qty($history->qty_after) }}</div>
                     </div>
                 @empty
                     <x-metronic.empty-state title="Belum ada HPP" description="Histori HPP dibuat untuk item accepted saat posting." />
@@ -88,7 +88,7 @@
                 <x-metronic.status-badge :status="$receipt->purchaseOrder->status" />
                 <div class="separator my-4"></div>
                 @foreach($receipt->purchaseOrder->items as $item)
-                    <div class="d-flex justify-content-between mb-2"><span>{{ $item->product_sku_snapshot }}</span><span>{{ $item->quantity_received }} / {{ $item->quantity_ordered }}</span></div>
+                    <div class="d-flex justify-content-between mb-2"><span>{{ $item->product_sku_snapshot }}</span><span>{{ qty($item->quantity_received) }} / {{ qty($item->quantity_ordered) }}</span></div>
                 @endforeach
             </x-metronic.card>
         </div>

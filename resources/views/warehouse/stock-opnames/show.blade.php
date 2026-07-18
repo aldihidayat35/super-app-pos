@@ -30,7 +30,7 @@
             <div class="row g-4 mb-6">
                 <div class="col-md-3"><x-metronic.card title="Item"><div class="fs-2 fw-bold">{{ $opname->items->count() }}</div></x-metronic.card></div>
                 <div class="col-md-3"><x-metronic.card title="Progress"><div class="fs-2 fw-bold">{{ $opname->countedProgress() }}</div></x-metronic.card></div>
-                <div class="col-md-3"><x-metronic.card title="Selisih Qty"><div class="fs-2 fw-bold">{{ number_format((float) $opname->total_difference_qty, 4, ',', '.') }}</div></x-metronic.card></div>
+                <div class="col-md-3"><x-metronic.card title="Selisih Qty"><div class="fs-2 fw-bold">{{ qty($opname->total_difference_qty) }}</div></x-metronic.card></div>
                 <div class="col-md-3"><x-metronic.card title="Nilai Selisih"><div class="fs-5 fw-bold">{{ \App\Support\CurrencyFormatter::rupiah($opname->total_difference_value) }}</div></x-metronic.card></div>
             </div>
             <x-metronic.card title="Timeline Status">

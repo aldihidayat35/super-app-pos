@@ -11,7 +11,7 @@
             <div class="col-md-4"><label class="form-label">Order</label><select name="b2b_order_id" class="form-select"><option value="">Pilih order</option>@foreach($orders as $order)<option value="{{ $order->id }}">{{ $order->number }}</option>@endforeach</select></div>
             <div class="col-md-4"><label class="form-label">Shipment</label><select name="shipment_id" class="form-select"><option value="">Pilih shipment</option>@foreach($shipments as $shipment)<option value="{{ $shipment->id }}">{{ $shipment->number }}</option>@endforeach</select></div>
             <div class="col-md-2"><label class="form-label">Tipe</label><select name="type" class="form-select"><option value="kurang">Kurang</option><option value="pecah">Pecah</option><option value="salah_barang">Salah Barang</option><option value="lainnya">Lainnya</option></select></div>
-            <div class="col-md-2"><label class="form-label">Qty</label><input name="quantity" type="number" step="0.0001" min="0" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label">Qty</label><input name="quantity" type="number" step="1" min="0" class="form-control"></div>
             <div class="col-md-4"><label class="form-label">Solusi</label><select name="requested_solution" class="form-select"><option value="diskusi">Diskusi</option><option value="kirim_pengganti">Kirim Pengganti</option><option value="refund">Refund</option><option value="credit_note">Credit Note</option></select></div>
             <div class="col-md-4"><label class="form-label">Bukti</label><input name="evidence" type="file" class="form-control"></div>
             <div class="col-12"><label class="form-label">Pesan</label><textarea name="message" class="form-control" required></textarea></div>

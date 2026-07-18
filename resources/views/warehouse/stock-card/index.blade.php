@@ -31,10 +31,10 @@
                         <td>{{ $mutation->product?->sku }}<div class="text-muted">{{ $mutation->product?->name }}</div></td>
                         <td>{{ $mutation->warehouseLocation?->full_code ?: $mutation->workLocation?->name }}</td>
                         <td>{{ $mutation->mutation_type->label() }}</td>
-                        <td class="text-success">{{ (float) $mutation->quantity_on_hand_change > 0 ? $mutation->quantity_on_hand_change : '-' }}</td>
-                        <td class="text-danger">{{ (float) $mutation->quantity_on_hand_change < 0 ? ltrim($mutation->quantity_on_hand_change, '-') : '-' }}</td>
-                        <td>{{ $mutation->quantity_on_hand_before }}</td>
-                        <td class="fw-bold">{{ $mutation->quantity_on_hand_after }}</td>
+                        <td class="text-success">{{ (float) $mutation->quantity_on_hand_change > 0 ? qty($mutation->quantity_on_hand_change) : '-' }}</td>
+                        <td class="text-danger">{{ (float) $mutation->quantity_on_hand_change < 0 ? qty(abs((float) $mutation->quantity_on_hand_change)) : '-' }}</td>
+                        <td>{{ qty($mutation->quantity_on_hand_before) }}</td>
+                        <td class="fw-bold">{{ qty($mutation->quantity_on_hand_after) }}</td>
                         <td>{{ $mutation->reference_no ?: '-' }}</td>
                         <td>{{ $mutation->actor?->name ?: '-' }}</td>
                         <td class="text-end"><a href="{{ route('warehouse.stock-mutations.show', $mutation) }}" class="btn btn-sm btn-light">Detail</a></td>

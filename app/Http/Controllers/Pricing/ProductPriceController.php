@@ -7,10 +7,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Pricing\StoreProductPriceRequest;
 use App\Models\Branch;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\ProductPrice;
 use App\Services\Pricing\PriceManagementService;
 use App\Services\Pricing\PriceResolverService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -56,6 +58,46 @@ class ProductPriceController extends Controller
             : count($productIds).' harga produk berhasil disimpan.';
 
         return back()->with('notification', ['type' => 'success', 'message' => $message]);
+    }
+
+    public function searchProducts(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', ProductPrice::class);
+
+        $query = $request->input('q', '');
+        $exclude = $request->input('exclude', []);
+        if (is_array($exclude)) {
+            $exclude = array_map('intval', $exclude);
+        } else {
+            $exclude = array_filter(array_map('intval', explode(',', (string) $exclude)));
+        }
+
+        $results = Product::query()
+            ->where('status', 'active')
+            ->with('category')
+            ->when($query !== '', function ($q) use ($query) {
+                $q->where(function ($w) use ($query) {
+                    $w->where('sku', 'like', "%{$query}%")
+                      ->orWhere('name', 'like', "%{$query}%");
+                    if (preg_match('/^[\p{L}0-9\s\-_]+$/u', $query)) {
+                        $w->orWhere('description', 'like', "%{$query}%");
+                    }
+                });
+            })
+            ->when(!empty($exclude), fn ($q) => $q->whereNotIn('id', $exclude))
+            ->orderBy('name')
+            ->limit(50)
+            ->get(['id', 'sku', 'name', 'category_id']);
+
+        return response()->json([
+            'products' => $results->map(fn ($p) => [
+                'id' => $p->id,
+                'sku' => $p->sku,
+                'name' => $p->name,
+                'category' => $p->category?->name,
+            ]),
+            'total' => $results->count(),
+        ]);
     }
 
     public function export(Request $request): StreamedResponse

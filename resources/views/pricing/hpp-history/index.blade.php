@@ -48,7 +48,7 @@
                         <td>{{ $history->supplier?->name }}</td>
                         <td><a href="{{ route('warehouse.goods-receipts.show', $history->goodsReceipt) }}">{{ $history->goodsReceipt?->number }}</a></td>
                         <td>{{ str_replace('_', ' ', $history->method) }}</td>
-                        <td>{{ $history->qty_before }} + {{ $history->qty_incoming }} = <span class="fw-bold">{{ $history->qty_after }}</span></td>
+                        <td>{{ qty($history->qty_before) }} + {{ qty($history->qty_incoming) }} = <span class="fw-bold">{{ qty($history->qty_after) }}</span></td>
                         <td>Incoming Rp {{ number_format((float) $history->incoming_cost, 0, ',', '.') }}<div class="text-muted">Landed Rp {{ number_format((float) $history->landed_cost_allocated, 0, ',', '.') }}</div></td>
                         <td>{{ $history->hpp_before }} → <span class="fw-bold">{{ $history->hpp_after }}</span></td>
                         <td>{{ $history->effective_at?->format('d/m/Y H:i') }}</td>

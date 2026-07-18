@@ -12,7 +12,11 @@ class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         $permissions = $this->permissions();
+
+        $permissionModels = collect();
 
         foreach ($permissions as $name => $metadata) {
             $permission = Permission::findOrCreate($name);
@@ -23,6 +27,7 @@ class RolePermissionSeeder extends Seeder
                 'description' => $metadata['description'],
                 'is_system' => true,
             ])->save();
+            $permissionModels->put($name, $permission);
         }
 
         foreach ($this->roles() as $name => $metadata) {
@@ -33,7 +38,7 @@ class RolePermissionSeeder extends Seeder
                 'is_system' => true,
             ])->save();
 
-            $role->syncPermissions($this->expandPermissions($metadata['permissions'], $permissions));
+            $role->syncPermissions($this->expandPermissions($metadata['permissions'], $permissionModels));
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -57,13 +62,13 @@ class RolePermissionSeeder extends Seeder
 
     /**
      * @param  list<string>  $patterns
-     * @param  Collection<string, array{label: string, module: string, action: string, description: string}>  $permissions
-     * @return list<string>
+     * @param  Collection<string, Permission>  $permissions
+     * @return Collection<int, Permission>
      */
-    private function expandPermissions(array $patterns, Collection $permissions): array
+    private function expandPermissions(array $patterns, Collection $permissions): Collection
     {
         if (in_array('*', $patterns, true)) {
-            return $permissions->keys()->values()->all();
+            return $permissions->values();
         }
 
         $expanded = [];
@@ -96,6 +101,6 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
-        return array_values(array_unique($expanded));
+        return $permissions->only(array_values(array_unique($expanded)))->values();
     }
 }

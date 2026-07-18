@@ -16,7 +16,7 @@
                 <div class="col-md-8"><label class="form-label">Bukti/Surat Jalan</label><input type="file" name="proof" class="form-control" accept=".jpg,.jpeg,.png,.pdf"></div>
             </div>
             <div class="table-responsive mt-6">
-                <table class="table table-row-dashed align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Approved</th><th>Picked</th><th>Akan Dikirim</th></tr></thead><tbody>@foreach($transfer->items as $item)<tr><td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td><td>{{ $item->quantity_approved }}</td><td>{{ $item->quantity_picked }}</td><td class="fw-bold">{{ (float) $item->quantity_picked > 0 ? $item->quantity_picked : $item->quantity_approved }}</td></tr>@endforeach</tbody></table>
+                <table class="table table-row-dashed align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Approved</th><th>Picked</th><th>Akan Dikirim</th></tr></thead><tbody>@foreach($transfer->items as $item)<tr><td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td><td>{{ qty($item->quantity_approved) }}</td><td>{{ qty($item->quantity_picked) }}</td><td class="fw-bold">{{ (float) $item->quantity_picked > 0 ? $item->quantity_picked : $item->quantity_approved }}</td></tr>@endforeach</tbody></table>
             </div>
             <div class="d-flex justify-content-end"><button class="btn btn-primary" data-confirm="Kirim transfer dan keluarkan stok sumber?">Kirim Transfer</button></div>
         </form>

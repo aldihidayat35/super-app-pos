@@ -27,20 +27,20 @@
                 <div class="table-responsive">
                     <table class="table table-row-dashed align-middle">
                         <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Request</th><th>Approved</th><th>Picked/Short</th><th>Shipped</th><th>Received</th><th>Rusak</th><th>Discrepancy</th><th>In Transit</th></tr></thead>
-                        <tbody>@foreach($transfer->items as $item)<tr><td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td><td>{{ $item->quantity_requested }}</td><td>{{ $item->quantity_approved }}</td><td>{{ $item->quantity_picked }} / {{ $item->quantity_short }}</td><td>{{ $item->quantity_shipped }}</td><td>{{ $item->quantity_received }}</td><td>{{ $item->quantity_damaged }}</td><td>{{ $item->quantity_discrepancy }}</td><td class="fw-bold">{{ $item->inTransitQuantity() }}</td></tr>@endforeach</tbody>
+                        <tbody>@foreach($transfer->items as $item)<tr><td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td><td>{{ qty($item->quantity_requested) }}</td><td>{{ qty($item->quantity_approved) }}</td><td>{{ qty($item->quantity_picked) }} / {{ qty($item->quantity_short) }}</td><td>{{ qty($item->quantity_shipped) }}</td><td>{{ qty($item->quantity_received) }}</td><td>{{ qty($item->quantity_damaged) }}</td><td>{{ qty($item->quantity_discrepancy) }}</td><td class="fw-bold">{{ qty($item->inTransitQuantity()) }}</td></tr>@endforeach</tbody>
                     </table>
                 </div>
             </x-metronic.card>
 
             <x-metronic.card title="Mutasi Stok" class="mt-5">
-                <div class="table-responsive"><table class="table align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Waktu</th><th>Produk</th><th>Jenis</th><th>On Hand</th><th>Reserved</th><th>Lokasi</th></tr></thead><tbody>@forelse($transfer->stockMutations as $mutation)<tr><td>{{ $mutation->occurred_at?->format('d/m/Y H:i') }}</td><td>{{ $mutation->product?->sku }}</td><td>{{ $mutation->mutation_type->label() }}</td><td>{{ $mutation->quantity_on_hand_change }}</td><td>{{ $mutation->quantity_reserved_change }}</td><td>{{ $mutation->workLocation?->name }}</td></tr>@empty<tr><td colspan="6"><x-metronic.empty-state title="Belum ada mutasi" description="Reserve, ship, dan receive akan membuat mutasi stok." /></td></tr>@endforelse</tbody></table></div>
+                <div class="table-responsive"><table class="table align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Waktu</th><th>Produk</th><th>Jenis</th><th>On Hand</th><th>Reserved</th><th>Lokasi</th></tr></thead><tbody>@forelse($transfer->stockMutations as $mutation)<tr><td>{{ $mutation->occurred_at?->format('d/m/Y H:i') }}</td><td>{{ $mutation->product?->sku }}</td><td>{{ $mutation->mutation_type->label() }}</td><td>{{ qty($mutation->quantity_on_hand_change) }}</td><td>{{ qty($mutation->quantity_reserved_change) }}</td><td>{{ $mutation->workLocation?->name }}</td></tr>@empty<tr><td colspan="6"><x-metronic.empty-state title="Belum ada mutasi" description="Reserve, ship, dan receive akan membuat mutasi stok." /></td></tr>@endforelse</tbody></table></div>
             </x-metronic.card>
         </div>
         <div class="col-lg-4">
             <x-metronic.card title="Aksi Dokumen">
                 <div class="d-grid gap-3">
                     @can('approve', $transfer)
-                        <form method="POST" action="{{ route('warehouse.stock-transfers.approve', $transfer) }}">@csrf @foreach($transfer->items as $item)<input type="hidden" name="items[{{ $item->id }}][quantity_approved]" value="{{ $item->quantity_approved }}">@endforeach<button class="btn btn-success">Approve & Reserve</button></form>
+                        <form method="POST" action="{{ route('warehouse.stock-transfers.approve', $transfer) }}">@csrf @foreach($transfer->items as $item)<input type="hidden" name="items[{{ $item->id }}][quantity_approved]" value="{{ qty_input($item->quantity_approved) }}">@endforeach<button class="btn btn-success">Approve & Reserve</button></form>
                     @endcan
                     @can('complete', $transfer)<form method="POST" action="{{ route('warehouse.stock-transfers.complete', $transfer) }}">@csrf<button class="btn btn-primary">Selesaikan Transfer</button></form>@endcan
                     @can('cancel', $transfer)<form method="POST" action="{{ route('warehouse.stock-transfers.cancel', $transfer) }}">@csrf<input name="reason" class="form-control mb-2" placeholder="Alasan batal" required><button class="btn btn-light-danger">Cancel Transfer</button></form>@endcan

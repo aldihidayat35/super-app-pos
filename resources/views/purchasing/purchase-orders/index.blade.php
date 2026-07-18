@@ -28,7 +28,7 @@
                         <td>{{ $po->warehouse?->name }}</td>
                         <td>{{ $po->order_date?->format('d/m/Y') }}<div class="text-muted">ETA: {{ $po->expected_at?->format('d/m/Y') ?: '-' }}</div></td>
                         <td>Rp {{ number_format((float) $po->grand_total, 0, ',', '.') }}</td>
-                        <td>{{ $po->receivedQuantity() }} / {{ $po->outstandingQuantity() }}</td>
+                        <td>{{ qty($po->receivedQuantity()) }} / {{ qty($po->outstandingQuantity()) }}</td>
                         <td><x-metronic.status-badge :status="$po->status" /></td>
                         <td class="text-end">
                             <a href="{{ route('purchasing.purchase-orders.show', $po) }}" class="btn btn-sm btn-light">Detail</a>
