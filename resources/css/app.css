@@ -73,3 +73,22 @@
         padding: 1.75rem !important;
     }
 }
+.page-guide-trigger {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+}
+
+.page-guide-content ul,
+.page-guide-content ol {
+    margin-bottom: 0;
+    padding-left: 1.25rem;
+}
+
+.page-guide-content li + li {
+    margin-top: .45rem;
+}
+
+.page-guide-content p:last-child {
+    margin-bottom: 0;
+}

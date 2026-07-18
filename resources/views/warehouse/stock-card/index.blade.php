@@ -3,6 +3,33 @@
 @section('title', 'Kartu Stok - ' . config('app.name'))
 @section('page_title', 'Kartu Stok Produk')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-stock-card" title="Panduan Halaman Kartu Stok Produk">
+        <x-slot:function>
+            <p>Halaman baca-saja ini menampilkan ledger mutasi stok secara kronologis. Gudang dan Owner menggunakannya untuk menelusuri mengapa saldo produk berubah, dokumen asalnya, lokasi, serta pengguna yang menjalankan proses.</p>
+            <p>Mutasi bersifat append-only: histori tidak diedit dari halaman ini. Koreksi harus dilakukan melalui dokumen koreksi, reversal, retur, atau opname yang sesuai.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Pilih produk dan lokasi yang diperiksa.</li><li>Batasi jenis mutasi, periode, nomor referensi, atau pengguna.</li><li>Sistem mengambil mutasi sesuai scope lokasi akun.</li><li>Data diurutkan berdasarkan waktu kejadian lalu ID sehingga saldo dapat ditelusuri berurutan.</li><li>Buka <strong>Detail</strong> untuk melihat alasan, metadata, dan identitas mutasi lengkap.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Produk/Lokasi/Zona-Rak-Bin:</strong> menentukan ruang lingkup kartu stok.</li><li><strong>Jenis Mutasi:</strong> menyaring receive, issue, transfer, reservation, damage, retur, atau adjustment.</li><li><strong>Tanggal Dari/Sampai:</strong> membatasi waktu berdasarkan occurred_at.</li><li><strong>No referensi:</strong> mencari nomor dokumen asal.</li><li><strong>Semua user:</strong> mencari actor yang memproses perubahan.</li><li><strong>Masuk/Keluar:</strong> arah perubahan on hand.</li><li><strong>Before/After:</strong> saldo sebelum dan sesudah mutasi.</li><li><strong>Detail:</strong> membuka rekaman mutasi read-only.</li><li><strong>Export CSV:</strong> mengunduh ledger sesuai filter.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Membuka, memfilter, melihat detail, dan mengekspor kartu stok tidak mengubah saldo. Setiap baris merupakan bukti perubahan dari modul sumber. Karena histori append-only, koreksi menghasilkan mutasi baru sehingga jejak before dan after tetap dapat diaudit.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Pilih satu produk agar penelusuran lebih jelas.</li><li>Pilih lokasi kerja dan bin bila produk tersimpan di beberapa tempat.</li><li>Tentukan rentang tanggal yang relevan.</li><li>Tambahkan jenis, referensi, atau user bila diperlukan.</li><li>Klik <strong>Filter</strong> dan cocokkan After satu baris dengan Before baris berikutnya pada scope yang sama.</li><li>Buka Detail untuk memeriksa dokumen dan alasan.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Jangan mencampur lokasi berbeda saat merekonsiliasi saldo berjalan.</li><li>Masuk/Keluar pada tabel menunjukkan perubahan on hand; reservation dan damage juga memiliki rincian pada detail mutasi.</li><li>Periksa tanggal dan zona waktu sebelum menyimpulkan transaksi hilang.</li><li>Jangan menghapus histori untuk memperbaiki saldo.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Saldo awal Beras adalah 20 unit. Receipt menambah 10 sehingga After menjadi 30. Transfer keluar 4 unit berikutnya memiliki Before 30 dan After 26. Nomor referensi menghubungkan kedua mutasi ke dokumen sumber masing-masing.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     <a href="{{ route('warehouse.stock-card.export', request()->query()) }}" class="btn btn-light-primary"><i class="ki-outline ki-file-down"></i> Export CSV</a>
 @endsection
