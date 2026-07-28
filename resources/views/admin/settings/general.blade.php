@@ -3,7 +3,16 @@
 @section('title', 'Konfigurasi Umum Sistem - ' . config('app.name'))
 @section('page_title', 'Konfigurasi Umum')
 
-@section('content')
+@section('page_guide')
+    <x-metronic.page-guide id="admin-settings-general" title="Panduan Konfigurasi Umum Sistem">
+        <x-slot:function><p>Form mengelola identitas perusahaan dan preferensi sistem seperti mata uang, zona waktu, dan tax rate default.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Nama Perusahaan:</strong> identitas legal bisnis (wajib).</li><li><strong>Alamat/Telepon/Email:</strong> kontak perusahaan.</li><li><strong>Logo:</strong> gambar logo perusahaan (max 2MB).</li><li><strong>Setting Tambahan:</strong> mata uang, zona waktu, tax rate, dll.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Perubahan identitas mempengaruhi header invoice, report, dan branding sistem.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Periksa identitas perusahaan.</li><li>Ubah preferensi sistem.</li><li>Simpan perubahan.</li></ol></x-slot:operation>
+        <x-slot:warnings><div class="alert alert-warning mb-0"><ul><li>Perubahan mata uang default tidak mengubah transaksi yang sudah ada.</li></ul></div></x-slot:warnings>
+        <x-slot:example><p>PT SuperApp POS Indonesia, Jakarta, mata uang IDR, timezone WIB, tax 10%.</p></x-slot:example>
+    </x-metronic.page-guide>
+@endsection
     <form method="POST" action="{{ route('admin.settings.general.update') }}" enctype="multipart/form-data" novalidate>
         @csrf
         @method('PUT')

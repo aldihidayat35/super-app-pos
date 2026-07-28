@@ -1,6 +1,31 @@
 @section('title', 'Variance Stok Opname - ' . config('app.name'))
 @section('page_title', 'Variance Stok Opname')
-@extends('layouts.metronic.app')
+
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-stock-opname-variance" title="Panduan Halaman Variance Stok Opname">
+        <x-slot:function>
+            <p>Halaman ini menampilkan perbandingan antara saldo sistem dan hasil fisik per item. Variance membantu approver menentukan apakah selisih masuk akal dan perlu approval tambahan.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Halaman menampilkan kartu ringkasan dan tabel daftar selisih.</li><li>Setiap item menampilkan sistem, fisik, selisih, nilai, alasan, dan tingkat risiko.</li><li>Ekspor CSV tersedia untuk analisis offline.</li><li>Approval navigasi mengarah ke halaman approval.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Total Selisih Qty:</strong> jumlah total selisih.</li><li><strong>Nilai Selisih:</strong> total selisih moneter.</li><li><strong>Threshold Qty/Nilai:</strong> batas flagging.</li><li><strong>Approval Owner:</strong> apakah perlu approval.</li><li><strong>Peringatan Transaksi:</strong> item berubah setelah snapshot.</li><li><strong>Produk:</strong> SKU dan nama item.</li><li><strong>Lokasi:</strong> bin penyimpanan.</li><li><strong>Sistem/Fisik/Selisih:</strong> perbandingan qty.</li><li><strong>Nilai:</strong> estimasi nilai selisih.</li><li><strong>Alasan:</strong> kategori selisih dan catatan.</li><li><strong>Risiko:</strong> Normal, Approval tinggi, atau Review transaksi.</li><li><strong>Export CSV:</strong> mengunduh laporan variance.</li><li><strong>Approval:</strong> navigasi ke halaman approval.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Halaman ini hanya untuk review. Filter dan export tidak mengubah data. Keputusan approval ada di halaman approval terpisah.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Periksa ringkasan selisih dan threshold.</li><li>Scroll tabel untuk review per item.</li><li>Perhatikan kolom Risiko untuk item yang perlu perhatian.</li><li>Klik <strong>Export CSV</strong> untuk analisis offline.</li><li>Klik <strong>Approval</strong> untuk melanjutkan.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Item dengan badge "Ada transaksi setelah snapshot" perlu review manual.</li><li>Risiko "Approval tinggi" berarti selisih melewati threshold.</li><li>Periksa sebelum lanjut ke approval.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Terlihat Kopi Arabika sistem 100, fisik 97, selisih -3, nilai Rp 150.000. Risiko Normal. Namun Kopi Robusta sistem 50, fisik 40, selisih -10, nilai Rp 500.000. Risiko "Approval tinggi".</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
 
 @section('content')
     <x-metronic.page-title :title="'Variance ' . $opname->number" description="Perbandingan saldo sistem dengan hasil fisik dan estimasi nilai selisih.">

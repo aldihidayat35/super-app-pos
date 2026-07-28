@@ -3,6 +3,32 @@
 @section('title', 'Buat Transfer Stok - ' . config('app.name'))
 @section('page_title', 'Form dan Approval Transfer')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-stock-transfer-create" title="Panduan Form Buat Transfer Stok">
+        <x-slot:function>
+            <p>Form ini digunakan untuk membuat transfer stok baru antar lokasi. Pengguna mengisi sumber, tujuan, dan item yang akan dipindahkan. Transfer dapat disimpan sebagai draft atau langsung submitted untuk proses approval.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Pilih sumber, tujuan, dan lokasi default bin.</li><li>Tentukan tanggal dan catatan opsional.</li><li>Tambahkan item produk dan qty diminta/approved.</li><li>Simpan sebagai Draft untuk review atau Submit untuk approval.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Sumber:</strong> lokasi kerja asal (wajib).</li><li><strong>Tujuan:</strong> lokasi kerja tujuan (wajib).</li><li><strong>Lokasi Ambil Default:</strong> bin asal default jika item tidak spesifik.</li><li><strong>Lokasi Tujuan Default:</strong> bin tujuan default untuk semua item.</li><li><strong>Tanggal:</strong> tanggal pelaksanaan transfer (wajib).</li><li><strong>Catatan:</strong> informasi tambahan transfer.</li><li><strong>Produk:</strong> memilih produk untuk tiap baris item.</li><li><strong>Qty Diminta:</strong> jumlah yang diminta pengaju.</li><li><strong>Qty Approved:</strong> jumlah yang disetujui approver.</li><li><strong>Lokasi Ambil/Tujuan:</strong> bin spesifik per item.</li><li><strong>Catatan Item:</strong> informasi khusus item.</li><li><strong>Simpan Draft:</strong> menyimpan tanpa submit approval.</li><li><strong>Submit Approval:</strong> mengirim ke approver.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Transfer draft belum menambah stok masuk/keluar. Setelah di-approve, sistem melakukan reserve stok sumber sesuai qty approved. Pengiriman akan mengeluarkan stok sumber.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Pilih lokasi sumber dan tujuan.</li><li>Tentukan tanggal dan tambahkan catatan jika perlu.</li><li>Untuk setiap produk yang akan dipindahkan, isi qty diminta dan qty approved.</li><li>Pilih bin spesifik jika berbeda dari default.</li><li>Klik <strong>Simpan Draft</strong> untuk menyimpan atau <strong>Submit Approval</strong> untuk melanjutkan proses.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Minimal harus ada satu item dengan qty lebih dari nol.</li><li>Sumber dan tujuan harus berbeda.</li><li>Lokasi harus sesuai scope akun Anda.</li><li>Qty diminta dan qty approved mempengaruhi stok di proses berikutnya.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Transfer 20 unit Kopi dari Gudang Pusat ke Cabang Bogor pada 18/07/2025. Simpan Draft dulu untuk review, lalu Submit Approval agar Kepala Gudang dapat menyetujui qty.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('content')
     <x-metronic.card title="Transfer Baru">
         <form method="POST" action="{{ route('warehouse.stock-transfers.store') }}">

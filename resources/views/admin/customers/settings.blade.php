@@ -1,6 +1,14 @@
 @extends('layouts.metronic.app')
 @section('title', 'Verifikasi, Dokumen, Harga dan Kredit')
 @section('page_title', 'Verifikasi, Dokumen, Harga dan Kredit')
+
+@section('page_guide')
+    <x-metronic.page-guide id="admin-customer-settings" title="Panduan Verifikasi, Dokumen, Harga & Kredit">
+        <x-slot:function><p>Form untuk mengelola verifikasi, dokumen, limit kredit, dan harga khusus per pelanggan.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Status Verifikasi/Akun:</strong> status verifikasi dan akun.</li><li><strong>Ring/Termin/Min Order:</strong> pengaturan harga dan pembayaran.</li><li><strong>Limit Kredit:</strong> batas kredit pelanggan.</li><li><strong>Dokumen Usaha:</strong> upload KTP/NIB/NPWP.</li><li><strong>Harga Khusus:</strong> override harga per produk.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Verifikasi dan limit kredit memengaruhi kemampuan pelanggan membuat order B2B.</p></x-slot:impacts>
+    </x-metronic.page-guide>
+@endsection
 @section('content')
 <form method="POST" enctype="multipart/form-data" action="{{ route('admin.customers.settings.update', $customer) }}">@csrf @method('PUT')
 <x-metronic.card title="Status, Ring, dan Kredit">

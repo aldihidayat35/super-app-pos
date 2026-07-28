@@ -1,7 +1,18 @@
 @extends('layouts.metronic.app')
 @section('title', 'Merek Produk')
 @section('page_title', 'Merek Produk')
-@section('toolbar_actions')
+
+@section('page_guide')
+    <x-metronic.page-guide id="admin-product-brands-index" title="Panduan Merek Produk">
+        <x-slot:function><p>Halaman mengelola merek/brand produk yang menjadi atribut identitas produk.</p></x-slot:function>
+        <x-slot:workflow><ol><li>Cari merek berdasarkan nama.</li><li>Tambah merek baru.</li><li>Edit atau nonaktifkan merek.</li></ol></x-slot:workflow>
+        <x-slot:parts><ul><li><strong>Kode/Nama:</strong> identitas merek.</li><li><strong>Deskripsi:</strong> keterangan merek.</li><li><strong>Logo:</strong> gambar logo merek.</li><li><strong>Produk:</strong> jumlah produk merek ini.</li><li><strong>Status:</strong> Aktif/Nonaktif.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Merek menjadi atribut produk dan tampil pada halaman detail produk.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Cari merek.</li><li>Tambah/edit merek.</li></ol></x-slot:operation>
+        <x-slot:warnings><div class="alert alert-warning mb-0"><ul><li>Merek dengan produk tidak dapat dihapus, hanya nonaktifkan.</li></ul></div></x-slot:warnings>
+        <x-slot:example><p>Merek Premium, deskripsi "Premium Quality Coffee", logo ada, 15 produk.</p></x-slot:example>
+    </x-metronic.page-guide>
+@endsection
     <x-metronic.permission-button permission="products.create" :href="route('admin.product-brands.create')" icon="ki-outline ki-plus">Tambah Merek</x-metronic.permission-button>
 @endsection
 @section('content')

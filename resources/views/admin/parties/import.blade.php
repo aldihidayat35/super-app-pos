@@ -1,6 +1,17 @@
 @extends('layouts.metronic.app')
 @section('title', $type === 'suppliers' ? 'Import Supplier' : 'Import Pelanggan')
 @section('page_title', $type === 'suppliers' ? 'Import Supplier' : 'Import Pelanggan')
+
+@section('page_guide')
+    <x-metronic.page-guide id="admin-parties-import" title="Panduan Import Massal Supplier/Pelanggan">
+        <x-slot:function><p>Halaman untuk import massal data pelanggan atau supplier melalui file XLSX/CSV.</p></x-slot:function>
+        <x-slot:workflow><ol><li>Unduh template Excel.</li><li>Isi data sesuai template.</li><li>Upload file XLSX/CSV.</li><li>Pratinjau hasil validasi.</li><li>Commit import jika semua valid.</li></ol></x-slot:workflow>
+        <x-slot:parts><ul><li><strong>Template:</strong> struktur kolom standar untuk import.</li><li><strong>Upload File:</strong> file XLSX/CSV.</li><li><strong>Preview:</strong> hasil validasi sebelum commit.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Data diimport dalam satu transaksi database. Error validasi ditampilkan sebelum commit.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Unduh template.</li><li>Isi dan upload.</li><li>Preview lalu commit.</li></ol></x-slot:operation>
+        <x-slot:warnings><div class="alert alert-warning mb-0"><ul><li>Jangan mengubah format kolom template.</li><li>Pastikan tidak ada duplikasi kode pelanggan/supplier.</li></ul></div></x-slot:warnings>
+    </x-metronic.page-guide>
+@endsection
 @section('toolbar_actions')
     <a href="{{ route('admin.parties.import.template', $type) }}" class="btn btn-light">Download Template</a>
 @endsection

@@ -4,6 +4,15 @@
 @section('toolbar_actions')
     @can('update', $supplier)<a href="{{ route('admin.suppliers.edit', $supplier) }}" class="btn btn-primary">Edit Supplier</a>@endcan
 @endsection
+
+@section('page_guide')
+    <x-metronic.page-guide id="admin-supplier-show" title="Panduan Detail Supplier">
+        <x-slot:function><p>Halaman menampilkan rincian profil supplier, produk yang disupply, harga terakhir, dan tab performa.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Profil:</strong> nama, kode, PIC, WA, email, kota, termin, NPWP, status.</li><li><strong>Tab Produk:</strong> daftar produk yang disupply dan harga terakhir.</li><li><strong>Tab PO/Penerimaan/Retur:</strong> histori (fitur fase berikutnya).</li><li><strong>Tab Performa:</strong> skor dan evaluasi supplier.</li><li><strong>Tab Dokumen:</strong> dokumen supplier.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Supplier aktif dapat dipilih saat membuat PO.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Periksa profil supplier.</li><li>Lihat produk dan harga terakhir.</li><li>Review performa tab.</li></ol></x-slot:operation>
+    </x-metronic.page-guide>
+@endsection
 @section('content')
 <div class="row g-6">
     <div class="col-lg-4"><x-metronic.card title="Profil Supplier"><div class="fw-bold fs-4">{{ $supplier->name }}</div><div class="text-muted mb-4">{{ $supplier->code }}</div><div>PIC: {{ $supplier->contact_name ?: '-' }}</div><div>WA: {{ $supplier->whatsapp_number ?: '-' }}</div><div>Email: {{ $supplier->email ?: '-' }}</div><div>Kota: {{ $supplier->city ?: '-' }}</div><div>Termin: {{ $supplier->payment_term_days }} hari</div><div>NPWP: {{ $supplier->tax_number ?: '-' }}</div><div class="mt-3"><x-metronic.status-badge :status="$supplier->is_active ? 'active' : 'inactive'" :label="$supplier->is_active ? 'Aktif' : 'Nonaktif'" /></div></x-metronic.card></div>

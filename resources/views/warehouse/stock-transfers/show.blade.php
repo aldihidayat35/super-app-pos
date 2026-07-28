@@ -3,6 +3,32 @@
 @section('title', 'Detail Transfer - ' . config('app.name'))
 @section('page_title', 'Detail Transfer dan Timeline')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-stock-transfer-show" title="Panduan Halaman Detail Transfer">
+        <x-slot:function>
+            <p>Halaman ini menampilkan rincian lengkap satu transfer stok beserta timeline, mutasi, paket, dan aksi yang tersedia. Informasi mencakup sumber, tujuan, item, status, dan progres per tahap (reserve, pick, ship, receive).</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Halaman menampilkan ringkasan transfer dan tabel item dengan setiap tahap qty.</li><li>Mutasi stok terdaftar untuk audit perubahan saldo.</li><li>Timeline mencatat setiap perubahan status transfer.</li><li>Aksi tersedia sesuai role dan status transfer.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Sumber/Tujuan:</strong> gudang asal dan tujuan.</li><li><strong>Tanggal:</strong> tanggal pelaksanaan transfer.</li><li><strong>Status:</strong> progress proses transfer.</li><li><strong>Request Asal:</strong> nomor restock request jika ada.</li><li><strong>Pengirim/Penerima:</strong> user yang menangani.</li><li><strong>Resi/Kendaraan:</strong> info pengiriman.</li><li><strong>Request/Approved/Picked/Short/Shipped/Received/Damaged/Discrepancy:</strong> qty per tahap item.</li><li><strong>In Transit:</strong> qty masih dalam perjalanan.</li><li><strong>Mutasi Stok:</strong> daftar perubahan saldo akibat transfer.</li><li><strong>Aksi Dokumen:</strong> Approve, Selesaikan, Cancel.</li><li><strong>Timeline:</strong> histori perubahan status.</li><li><strong>Paket dan Bukti:</strong> daftar paket packing.</li><li><strong>Surat Jalan:</strong> cetak bukti pengiriman.</li><li><strong>Packing:</strong> halaman picking/packing.</li><li><strong>Kirim:</strong> halaman konfirmasi pengiriman.</li><li><strong>Terima di Cabang:</strong> halaman penerimaan tujuan.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Setiap aksi mengubah status transfer dan memengaruhi stok. Approve melakukan reserve, Ship mengeluarkan stok sumber, Receive menambah stok tujuan. Cancel memerlukan alasan.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Periksa ringkasan sumber, tujuan, dan tanggal.</li><li>Lihat tabel item untuk qty per tahap.</li><li>Periksa mutasi stok yang terbentuk.</li><li>Gunakan aksi yang tersedia sesuai role Anda.</li><li>Catat timeline perubahan status.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Cancel memerlukan alasan yang wajib diisi.</li><li>Ship hanya tersedia setelah Packing selesai.</li><li>Aksi ditampilkan sesuai permission dan status transfer.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>TRF-001 status Shipped. Sumber Gudang Pusat, Tujuan Cabang Bogor. Item: Kopi 20 unit approved, 18 picked, 18 shipped. Timeline: Created → Approved → Packed → Shipped. Klik Terima di Cabang setelah barang tiba.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     <a href="{{ route('warehouse.stock-transfers.print', $transfer) }}" class="btn btn-light-success"><i class="ki-outline ki-printer"></i> Surat Jalan</a>
     @can('pack', $transfer)<a href="{{ route('warehouse.stock-transfers.packing', $transfer) }}" class="btn btn-light-primary">Packing</a>@endcan

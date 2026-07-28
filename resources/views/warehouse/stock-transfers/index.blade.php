@@ -3,6 +3,32 @@
 @section('title', 'Transfer Stok - ' . config('app.name'))
 @section('page_title', 'Daftar Transfer Stok')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-stock-transfers" title="Panduan Halaman Daftar Transfer Stok">
+        <x-slot:function>
+            <p>Halaman ini memonitor semua transfer stok antar lokasi yang dibuat pengguna. Transfer stok memiliki alur kerja lengkap: pembuatan, approval, packing, shipping, dan penerimaan. Kepala Gudang dan Staff Gudang menggunakannya untuk memantau progress dan melanjutkan proses berikutnya.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Klik <strong>Buat Transfer</strong> untuk membuat transfer baru.</li><li>Isi sumber, tujuan, item, dan tanggal pada form.</li><li>Simpan draft atau submit untuk approval.</li><li>Setelah approved, lanjutkan ke Packing lalu Shipping.</li><li>Destinasi menerima transfer melalui halaman terima di cabang.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Sumber/Tujuan:</strong> menyaring berdasarkan gudang asal atau tujuan.</li><li><strong>Status:</strong> menyaring Draft, Approved, Packing, Shipped, Received, Cancelled.</li><li><strong>No:</strong> nomor dokumen transfer.</li><li><strong>Tanggal:</strong> tanggal transfer dibuat.</li><li><strong>Item:</strong> jumlah baris produk dalam transfer.</li><li><strong>Pengirim/Penerima:</strong> user yang menangani transfer.</li><li><strong>Detail:</strong> melihat rincian item, status, dan timeline.</li><li><strong>Print:</strong> mencetak surat jalan transfer.</li><li><strong>Buat Transfer:</strong> membuka form pembuatan transfer baru.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Transfer yang sudah shipping secara resmi mengeluarkan stok sumber dan memasukkan in-transit ke tujuan. Penerimaan di cabang mengubah status menjadi Received dan menambah stok tujuan.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Gunakan filter sumber, tujuan, atau status.</li><li>Klik <strong>Filter</strong> untuk menerapkan filter.</li><li>Klik <strong>Detail</strong> untuk melihat rincian transfer.</li><li>Gunakan <strong>Print</strong> untuk mencetak surat jalan.</li><li>Klik <strong>Buat Transfer</strong> untuk memulai transfer baru.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Pastikan sumber dan tujuan berbeda.</li><li>Jangan kirim transfer sebelum proses packing selesai.</li><li>Status transfer yang sudah Received tidak dapat diubah.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Transfer TRF-001 dari Gudang Pusat ke Cabang Bogor dengan status Approved. Klik Detail untuk melihat item, kemudian lanjutkan ke Packing untuk mengisi qty yang diambil.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     <x-metronic.permission-button permission="stock_transfers.create" :href="route('warehouse.stock-transfers.create')" icon="ki-outline ki-plus">Buat Transfer</x-metronic.permission-button>
 @endsection

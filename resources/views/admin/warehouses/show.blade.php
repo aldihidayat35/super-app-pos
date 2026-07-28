@@ -3,6 +3,15 @@
 @section('title', 'Detail Gudang - ' . config('app.name'))
 @section('page_title', 'Detail Gudang')
 
+@section('page_guide')
+    <x-metronic.page-guide id="admin-warehouse-show" title="Panduan Detail Gudang">
+        <x-slot:function><p>Halaman menampilkan rincian profil gudang, alamat, dan tab operasional yang berisi histori transaksi dan statistik stok.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Kode/Nama/Kota:</strong> info profil gudang.</li><li><strong>Telepon/Kepala Gudang/Kapasitas:</strong> kontak dan kapasitas.</li><li><strong>Area Layanan/Status:</strong> wilayah dan aktif/nonaktif.</li><li><strong>Alamat:</strong> alamat lengkap gudang.</li><li><strong>Tab Operasional:</strong> statistik dan histori transaksi gudang.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Halaman ini read-only. Aksi Edit tersedia untuk mengubah data gudang.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Periksa info profil gudang.</li><li>Buka tab operasional untuk statistik.</li><li>Klik Edit jika perlu mengubah data.</li></ol></x-slot:operation>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     @can('update', $warehouse)
         <a href="{{ route('admin.warehouses.edit', $warehouse) }}" class="btn btn-primary"><i class="ki-outline ki-pencil"></i> Edit</a>

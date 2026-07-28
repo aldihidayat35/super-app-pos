@@ -1,6 +1,31 @@
 @section('title', 'Approval Stok Opname - ' . config('app.name'))
 @section('page_title', 'Approval Stok Opname')
-@extends('layouts.metronic.app')
+
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-stock-opname-approval" title="Panduan Halaman Approval Stok Opname">
+        <x-slot:function>
+            <p>Halaman ini digunakan untuk approve atau reject hasil opname sebelum adjustment mutation dibuat. Approver (biasanya Kepala Gudang atau Owner) meninjau selisih dan keputusan approval.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Ringkasan approval ditampilkan termasuk nilai selisih dan threshold.</li><li>Approver meninjau variance detail.</li><li>Approve atau reject opname dengan catatan.</li><li>Setelah approved, selesaikan untuk membuat adjustment mutation.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Status:</strong> status approval opname.</li><li><strong>Nilai Selisih:</strong> total selisih nilai moneter.</li><li><strong>Threshold Nilai:</strong> batas yang memicu approval owner.</li><li><strong>Approval Owner:</strong> apakah butuh persetujuan Owner.</li><li><strong>Peringatan Transaksi:</strong> item berubah setelah snapshot.</li><li><strong>Catatan Approval:</strong> keterangan approve (wajib).</li><li><strong>Approve Opname:</strong> menyetujui opname.</li><li><strong>Alasan Reject:</strong> keterangan reject (wajib).</li><li><strong>Reject Opname:</strong> menolak opname.</li><li><strong>Selesaikan & Buat Adjustment:</strong> finalize adjustment.</li><li><strong>Riwayat Approval:</strong> histori keputusan approval.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Approve mengizinkan adjustment mutation dibuat. Reject mengembalikan opname untuk review ulang. Adjustment hanya membuat mutasi append-only, tidak mengubah histori lama.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Periksa ringkasan: selisih, threshold, dan approval owner.</li><li>Review variance detail jika diperlukan.</li><li>Beri catatan approval.</li><li>Klik <strong>Approve Opname</strong> atau <strong>Reject Opname</strong>.</li><li>Setelah approved, klik <strong>Selesaikan & Buat Adjustment</strong>.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Approval wajib dicatat alasannya.</li><li>Nilai selisih tinggi mungkin perlu approval Owner.</li><li>Item dengan transaksi setelah snapshot perlu review khusus.</li><li>Reject mengembalikan opname ke status sebelumnya.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Selisih Rp 500.000, threshold Rp 1.000.000. Tidak butuh Owner. Approve dengan catatan "Selisih wajar, sudah diverifikasi counter".</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
 
 @section('content')
     <x-metronic.page-title :title="'Approval ' . $opname->number" description="Approve/reject hasil opname sebelum adjustment mutation dibuat.">

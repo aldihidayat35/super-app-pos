@@ -3,6 +3,32 @@
 @section('title', 'Daftar Cabang/Toko - ' . config('app.name'))
 @section('page_title', 'Daftar Cabang/Toko')
 
+@section('page_guide')
+    <x-metronic.page-guide id="admin-branches" title="Panduan Halaman Daftar Cabang/Toko">
+        <x-slot:function>
+            <p>Halaman ini mengelola daftar cabang atau toko yang melayani pelanggan. Super Admin dan Owner menggunakannya untuk menambah cabang, menunjuk kepala toko, mengatur target penjualan, dan menentukan konfigurasi closing.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Pengguna dapat mencari cabang berdasarkan gudang pemasok atau memfilter status.</li><li>Klik Tambah Cabang untuk membuat cabang baru.</li><li>Gudang Pemasok menentukan asal barang saat transfer.</li><li>Closing Configuration mengatur proses akhir hari.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Kode:</strong> identitas unik cabang.</li><li><strong>Nama Toko:</strong> nama cabang atau toko.</li><li><strong>Gudang Pemasok:</strong> gudang yang memasok barang.</li><li><strong>Kepala Toko:</strong> user yang mengelola cabang.</li><li><strong>Target:</strong> target penjualan periode.</li><li><strong>Status Closing:</strong> Wajib/Opsional dan konfigurasi.</li><li><strong>Status:</strong> Aktif atau Nonaktif.</li><li><strong>Detail/Edit/Nonaktifkan:</strong> aksi pengelolaan.</li><li><strong>Tambah Cabang:</strong> membuka form cabang baru.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Cabang menentukan lokasi pelayanan pada Customer. Gudang Pemasok memengaruhi source transfer. Target penjualan dipakai modul reporting.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Pilih gudang atau filter status.</li><li>Klik Filter.</li><li>Klik Tambah Cabang.</li><li>Detail/Edit/Nonaktifkan sesuai kebutuhan.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Cabang dengan histori tidak dapat dihapus.</li><li>Closing Wajib akan membatasi operasional tanpa closing.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Cabang CAB-BDG di Bandung, pemasok Gudang Pusat. Target Rp 50 juta/bulan, closing wajib. Kepala toko Ani.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     <x-metronic.permission-button permission="admin.branches.create" :href="route('admin.branches.create')" icon="ki-outline ki-plus">
         Tambah Cabang

@@ -1,6 +1,14 @@
 @extends('layouts.metronic.app')
 @section('title', 'Alamat dan Pengguna B2B')
 @section('page_title', 'Alamat dan Pengguna B2B')
+
+@section('page_guide')
+    <x-metronic.page-guide id="admin-customer-access" title="Panduan Alamat & Pengguna B2B">
+        <x-slot:function><p>Form mengelola alamat kirim pelanggan dan user B2B yang mewakili pelanggan ini.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Alamat Kirim:</strong> label, PIC, telepon, alamat lengkap, kota, kode pos, petunjuk.</li><li><strong>User Langganan:</strong> nama, username, role, status aktif.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>User B2B dapat login portal langganan dan membuat order.</p></x-slot:impacts>
+    </x-metronic.page-guide>
+@endsection
 @section('content')
 @php
     $addressRows = old('addresses', $customer->addresses->map(fn($address) => $address->only(['id','label','recipient_name','phone_number','address','city','postal_code','directions','is_primary']))->values()->all() ?: [['label'=>'Utama','address'=>$customer->business_address,'is_primary'=>true]]);

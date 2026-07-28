@@ -3,6 +3,32 @@
 @section('title', 'Daftar Role - ' . config('app.name'))
 @section('page_title', 'Daftar Role')
 
+@section('page_guide')
+    <x-metronic.page-guide id="admin-roles" title="Panduan Halaman Daftar Role">
+        <x-slot:function>
+            <p>Halaman ini mengelola role pengguna untuk sistem RBAC. Super Admin menggunakan halaman ini untuk menambah, mengedit, dan menyalin role beserta permission-nya.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Cari role berdasarkan nama atau label.</li><li>Role sistem tidak dapat diedit atau dihapus.</li><li>Role kustom dapat disalin untuk membuat role baru mirip.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Cari role:</strong> kolom pencarian.</li><li><strong>Role/Label:</strong> nama tampilan dan internal role.</li><li><strong>Guard:</strong> guard authentication role.</li><li><strong>Status:</strong> Sistem (readonly) atau Kustom.</li><li><strong>Pengguna:</strong> jumlah user dengan role ini.</li><li><strong>Permission:</strong> jumlah permission role ini.</li><li><strong>Detail:</strong> membuka halaman rincian role.</li><li><strong>Edit:</strong> mengubah role kustom.</li><li><strong>Salin:</strong> membuat role baru dari role ini.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Role ditentukan saat assign user. Permission role memengaruhi akses halaman dan tombol.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Cari role.</li><li>Klik Detail untuk melihat permission.</li><li>Klik Salin untuk duplikasi role kustom.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Role sistem tidak dapat diedit atau dihapus.</li><li>Duplikasi role menyalin semua permission.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Role "Staff Gudang" kustom dengan 10 permission. Disalin jadi "Staff Gudang Cabang B".</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     <x-metronic.permission-button permission="admin.roles.create" :href="route('admin.roles.create')" icon="ki-outline ki-plus">
         Tambah Role

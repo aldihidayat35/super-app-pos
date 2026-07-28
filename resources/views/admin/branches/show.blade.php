@@ -3,7 +3,14 @@
 @section('title', 'Detail Cabang - ' . config('app.name'))
 @section('page_title', 'Detail Cabang')
 
-@section('toolbar_actions')
+@section('page_guide')
+    <x-metronic.page-guide id="admin-branch-show" title="Panduan Detail Cabang">
+        <x-slot:function><p>Halaman menampilkan rincian profil cabang, konfigurasi harga/closing, dan tab operasional.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Kode/Nama/Gudang Pemasok:</strong> info profil.</li><li><strong>Kepala Toko/Target/Konfigurasi:</strong> pengaturan cabang.</li><li><strong>Status:</strong> Aktif/Nonaktif.</li><li><strong>Tab Operasional:</strong> histori transaksi cabang.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Halaman ini read-only. Aksi Edit tersedia dari toolbar.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Periksa info profil cabang.</li><li>Buka tab operasional.</li></ol></x-slot:operation>
+    </x-metronic.page-guide>
+@endsection
     @can('update', $branch)
         <a href="{{ route('admin.branches.edit', $branch) }}" class="btn btn-primary"><i class="ki-outline ki-pencil"></i> Edit</a>
     @endcan

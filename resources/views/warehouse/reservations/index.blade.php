@@ -3,6 +3,32 @@
 @section('title', 'Monitor Reserved Stock')
 @section('page_title', 'Monitor Reserved Stock')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-reservations" title="Panduan Halaman Monitor Reserved Stock">
+        <x-slot:function>
+            <p>Halaman ini memonitor stok yang sudah dialokasikan untuk order B2B. Reserved stock tidak dapat digunakan untuk kebutuhan lain hingga dirilis atau dikonversi menjadi shipped. Kepala Gudang dan Owner menggunakannya untuk memantau alokasi dan expiry reservation.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Sistem menampilkan daftar reservation aktif dengan order, produk, lokasi, qty, expiry, dan status.</li><li>Pengguna dapat mencari, memfilter, dan releasing reservation yang sudah expired atau tidak diperlukan.</li><li>Tombol Proses Expired membulkankan processing reservation yang waktunya sudah lewat.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Cari order/produk:</strong> mencari berdasarkan nomor order atau nama produk.</li><li><strong>Filter Status:</strong> menyaring berdasarkan status reservation.</li><li><strong>Order:</strong> nomor dan customer order.</li><li><strong>Produk:</strong> SKU dan nama produk yang di-reserve.</li><li><strong>Lokasi:</strong> gudang dan bin penyimpanan.</li><li><strong>Qty:</strong> reserved, released, dan issued.</li><li><strong>Expiry:</strong> waktu kadaluarsa reservation.</li><li><strong>Status:</strong> status reservation saat ini.</li><li><strong>Release:</strong> form untuk melepaskan reservation aktif.</li><li><strong>Proses Expired:</strong> memproses bulk reservation yang expired.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Releasing reservation mengembalikan stok reserved menjadi available untuk dialokasikan ke order lain. Proses Expired mengubah status reservation yang waktunya sudah lewat. Filter dan pencarian tidak mengubah data.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Gunakan pencarian atau filter status untuk menemukan reservation.</li><li>Periksa Expiry untuk reservation yang mendekati kadaluarsa.</li><li>Untuk reservation aktif, masukkan alasan release pada kolom yang tersedia.</li><li>Klik tombol <strong>Release</strong> untuk mengembalikan stok.</li><li>Atau klik <strong>Proses Expired</strong> untuk memproses reservation yang sudah melewati expiry.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Jangan release reservation tanpa alasan yang jelas.</li><li>Reserved stock tidak tersedia untuk order lain sampai dirilis.</li><li>Reservation expired otomatis mengurangi ketersediaan setelah diproses.</li><li>Periksa qty released dan issued untuk memastikan tracking akurat.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Order ORD-001 memesan 20 unit Kopi Arabika pada Bin A-01. Status ACTIVE, expiry 20/07/2025. Jika tidak dikerjakan, klik Release dengan alasan "Customer batalkan order" untuk mengembalikan 20 unit ke available.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('content')
     <x-metronic.page-title title="Monitor Reserved Stock" description="Pantau stok yang dialokasikan untuk order B2B, expiry, release manual, dan konversi shipment.">
         <form method="POST" action="{{ route('warehouse.reservations.expire') }}">@csrf<button class="btn btn-light-warning">Proses Expired</button></form>

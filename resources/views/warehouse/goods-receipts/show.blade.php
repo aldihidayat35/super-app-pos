@@ -3,6 +3,32 @@
 @section('title', 'Detail Penerimaan - ' . config('app.name'))
 @section('page_title', 'Detail Penerimaan Barang')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-goods-receipt-show" title="Panduan Detail Penerimaan Barang">
+        <x-slot:function>
+            <p>Halaman ini menampilkan rincian lengkap penerimaan barang. Info mencakup header, item dengan QC result, mutasi stok, histori HPP, dan status PO.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Ringkasan header dan item ditampilkan.</li><li>Mutasi stok menampilkan perubahan saldo akibat receipt.</li><li>Histori HPP menunjukkan perubahan harga sebelum dan sesudah posting.</li><li>Status PO diperbarui sesuai penerimaan.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>PO/Supplier/Gudang:</strong> info dokumen asal.</li><li><strong>Tanggal Datang:</strong> hari barang diterima.</li><li><strong>Surat Jalan:</strong> nomor dokumen pengiriman.</li><li><strong>Status:</strong> Draft atau Posted.</li><li><strong>Penerima:</strong> user penerima.</li><li><strong>Posted:</strong> waktu receipt diposting.</li><li><strong>Bukti:</strong> file bukti penerimaan.</li><li><strong>Produk:</strong> SKU dan nama item.</li><li><strong>QC:</strong> qty datang, accepted, rejected, damaged, retur.</li><li><strong>Lokasi/Batch:</strong> bin dan batch per item.</li><li><strong>Harga:</strong> unit price dan landed cost.</li><li><strong>HPP:</strong> perubahan HPP sebelum dan sesudah.</li><li><strong>Mutasi Stok:</strong> daftar mutasi akibat posting.</li><li><strong>Posting Receipt:</strong> aksi untuk mengunci receipt.</li><li><strong>Histori HPP:</strong> riwayat perubahan harga.</li><li><strong>Status PO Setelah Receipt:</strong> update outstanding PO.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Posted receipt mengunci dokumen. Koreksi dilakukan lewat dokumen reversal. Mutasi stok tercatat append-only.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Periksa header dan item receipt.</li><li>Verifikasi QC result dan lokasi.</li><li>Periksa mutasi stok yang terbentuk.</li><li>Lihat histori HPP jika diperlukan.</li><li>Cek status PO untuk outstanding yang tersisa.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Receipt posted tidak dapat diedit atau dihapus.</li><li>Koreksi via dokumen reversal/correction resmi.</li><li>Histori HPP mempengaruhi laporan keuangan.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>RCPT-001 status Posted. Item: Kopi 100 accepted, 2 rejected. HPP berubah Rp 20.000 → Rp 21.500. PO masih partially received.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     <a href="{{ route('warehouse.goods-receipts.print', $receipt) }}" class="btn btn-light-success"><i class="ki-outline ki-printer"></i> Cetak</a>
     @can('update', $receipt)<a href="{{ route('warehouse.goods-receipts.edit', $receipt) }}" class="btn btn-light-primary">Edit Draft</a>@endcan

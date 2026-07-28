@@ -1,6 +1,32 @@
 @section('title', 'Laporan Stok Opname - ' . config('app.name'))
 @extends('layouts.metronic.app')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-stock-opname-report" title="Panduan Halaman Laporan Stok Opname">
+        <x-slot:function>
+            <p>Halaman ini menampilkan berita acara stok opname sebagai laporan resmi yang bisa dicetak. Memuat informasi scope, progress, selisih, detail item, dan area tanda tangan PIC, approver, dan Owner/Audit.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Laporan otomatis terbuat setelah opname selesai.</li><li>Informasi disajikan dalam format berita acara resmi.</li><li>Klik Print untuk mencetak atau menyimpan PDF.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Status Badge:</strong> status opname.</li><li><strong>Gudang/Cabang:</strong> lokasi opname.</li><li><strong>Scope:</strong> zona/bin/kategori.</li><li><strong>Periode:</strong> tanggal dan snapshot.</li><li><strong>Item:</strong> jumlah item dalam opname.</li><li><strong>Progress:</strong> item sudah di-counting.</li><li><strong>Selisih Qty/Nilai:</strong> total selisih.</li><li><strong>Tabel Item:</strong> sistem vs fisik, selisih, alasan.</li><li><strong>Tanda Tangan:</strong> area tanda tangan PIC, Approver, Owner.</li><li><strong>Print:</strong> mencetak laporan.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Laporan tidak mengubah data. Ini adalah dokumen resmi yang dapat digunakan untuk arsip dan audit.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Periksa seluruh informasi pada laporan.</li><li>Verifikasi tabel item dan selisih.</li><li>Klik <strong>Print</strong> untuk mencetak.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Print hanya menampilkan konten laporan tanpa layout aplikasi.</li><li>Pastikan opname sudah approved sebelum mencetak.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>SNAP-001 opname Gudang Pusat, 150 item, progress 100%. Selisih qty -5, nilai Rp 250.000. Tanda tangan PIC Budi, Approver Kepala Gudang.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('content')
     <style>@media print {.aside,.header,.toolbar,.btn{display:none!important}.card{border:0!important;box-shadow:none!important}}</style>
     <x-metronic.page-title :title="'Laporan ' . $opname->number" description="Berita acara stok opname dan koreksi stok.">

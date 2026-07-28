@@ -3,7 +3,14 @@
 @section('title', 'Detail Role - ' . config('app.name'))
 @section('page_title', 'Detail Role')
 
-@section('toolbar_actions')
+@section('page_guide')
+    <x-metronic.page-guide id="admin-role-show" title="Panduan Detail Role">
+        <x-slot:function><p>Halaman menampilkan rincian role, permission lengkap, dan daftar user yang menggunakan role ini.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Role/Label/Guard:</strong> metadata role.</li><li><strong>Status:</strong> Sistem atau Kustom.</li><li><strong>Pengguna:</strong> jumlah user dengan role ini.</li><li><strong>Permission:</strong> daftar hak akses.</li><li><strong>Salin/Salin Role:</strong> duplikasi role.</li><li><strong>Edit Role:</strong> mengubah role kustom.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Role dapat disalin. Role sistem tidak dapat diedit atau dihapus.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Periksa metadata role.</li><li>Lihat daftar permission.</li><li>Salin role jika perlu role mirip baru.</li></ol></x-slot:operation>
+    </x-metronic.page-guide>
+@endsection
     @php($canDeleteRole = auth()->user()?->hasRole('super_admin') && ! (bool) $role->is_system && $role->users->count() === 0)
 
     @can('create', \Spatie\Permission\Models\Role::class)

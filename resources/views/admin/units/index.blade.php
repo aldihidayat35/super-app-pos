@@ -1,6 +1,19 @@
 @extends('layouts.metronic.app')
 @section('title', 'Satuan Produk')
 @section('page_title', 'Satuan dan Konversi')
+
+@section('page_guide')
+    <x-metronic.page-guide id="admin-units-index" title="Panduan Halaman Satuan & Konversi">
+        <x-slot:function><p>Halaman mengelola satuan produk (pcs, pack, dus, lusin, dll) yang digunakan dalam transaksi.</p></x-slot:function>
+        <x-slot:workflow><ol><li>Cari satuan berdasarkan kode atau nama.</li><li>Tambah satuan baru melalui tombol toolbar.</li><li>Konversi antar satuan diatur per produk di halaman produk.</li></ol></x-slot:workflow>
+        <x-slot:parts><ul><li><strong>Kode/Nama/Simbol:</strong> identitas satuan.</li><li><strong>Presisi:</strong> jumlah desimal.</li><li><strong>Dipakai Produk:</strong> jumlah produk yang menggunakan satuan ini.</li><li><strong>Status:</strong> Aktif/Nonaktif.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Stok selalu disimpan dalam satuan dasar. Konversi ke satuan lain diatur per produk.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Cari satuan.</li><li>Tambah atau edit satuan.</li></ol></x-slot:operation>
+        <x-slot:warnings><div class="alert alert-warning mb-0"><ul><li>Nonaktifkan satuan yang memiliki produk tidak dapat menghapus secara langsung.</li></ul></div></x-slot:warnings>
+        <x-slot:example><p>Satuan pcs/kemasan/dos, presisi 0, dipakai 5 produk, aktif.</p></x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     <x-metronic.permission-button permission="products.create" :href="route('admin.units.create')" icon="ki-outline ki-plus">Tambah Satuan</x-metronic.permission-button>
 @endsection

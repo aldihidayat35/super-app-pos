@@ -3,7 +3,14 @@
 @section('title', 'Konfigurasi Nomor Dokumen - ' . config('app.name'))
 @section('page_title', 'Nomor Dokumen')
 
-@section('content')
+@section('page_guide')
+    <x-metronic.page-guide id="admin-settings-docnum" title="Panduan Nomor Dokumen">
+        <x-slot:function><p>Form mengonfigurasi prefix, format, dan sequence nomor dokumen untuk PO, SO, GR, Invoice, Transfer, Mutasi, Retur, dll.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Dokumen:</strong> tipe dokumen (PO, SO, GR, IN, TRF, dll).</li><li><strong>Prefix:</strong> awalan nomor dokumen.</li><li><strong>Sequence Berikutnya:</strong> nomor mulai berikutnya.</li><li><strong>Padding:</strong> jumlah digit.</li><li><strong>Reset Tahunan:</strong> auto reset tiap tahun.</li><li><strong>Format:</strong> template format (bulan/hari).</li><li><strong>Preview:</strong> contoh nomor berikutnya.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Perubahan format prefix dan sequence berlaku untuk dokumen yang dibuat ke depannya.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Periksa konfigurasi setiap dokumen.</li><li>Ubah prefix, padding, atau sequence jika diperlukan.</li><li>Simpan.</li></ol></x-slot:operation>
+    </x-metronic.page-guide>
+@endsection
     <x-metronic.card title="Konfigurasi Nomor Dokumen">
         <form method="POST" action="{{ route('admin.settings.document-numbers.update') }}">
             @csrf

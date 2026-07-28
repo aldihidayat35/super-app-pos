@@ -3,6 +3,32 @@
 @section('title', 'Review Order B2B')
 @section('page_title', 'Review Order B2B')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-b2b-order-review" title="Panduan Halaman Review Order B2B">
+        <x-slot:function>
+            <p>Halaman ini digunakan untuk mereview, memvalidasi stok, menyesuaikan qty, reserve, packing, dan kirim order B2B. Ini adalah halaman pusat pengelolaan order gudang.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Review informasi pelanggan, pengiriman, dan total order.</li><li>Atur qty approved untuk tiap item.</li><li>Atur expiry reservation dan biaya kirim.</li><li>Reserve stok, mulai packing, atau kirim order.</li><li>Reject order jika diperlukan dengan alasan.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Pelanggan:</strong> info customer, limit kredit, piutang, dan status.</li><li><strong>Pengiriman:</strong> metode, kurir, harapan, alamat.</li><li><strong>Total:</strong> subtotal, ongkir, grand total, payment.</li><li><strong>Qty Request:</strong> qty yang diminta customer.</li><li><strong>Qty Approved:</strong> qty yang disetujui gudang (editable).</li><li><strong>Harga:</strong> harga per item.</li><li><strong>Reserved:</strong> qty yang sudah dialokasikan.</li><li><strong>Shortage:</strong> qty yang tidak bisa dipenuhi.</li><li><strong>Expiry Reservation:</strong> batas waktu reservation.</li><li><strong>Biaya Kirim:</strong> ongkir aktual.</li><li><strong>Izinkan Partial:</strong> izinkan pengajuan parsial.</li><li><strong>Catatan Internal:</strong> keterangan khusus.</li><li><strong>Reserve Stock:</strong> mengalokasikan stok.</li><li><strong>Mulai Packing:</strong> memulai proses packing.</li><li><strong>Kirim Order:</strong> mengirimkan order.</li><li><strong>Terbitkan Invoice:</strong> membuat invoice order.</li><li><strong>Reject:</strong> menolak order dengan alasan.</li><li><strong>Timeline:</strong> histori perubahan status order.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Reserve mengurangi stok available. Packing dan mengubah status. Kirim mencatat shipped. Reject mengembalikan stok reserved. Invoice tercatat untuk keuangan.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Periksa info pelanggan, total, dan pengiriman.</li><li>Sesuaikan qty approved per item jika perlu.</li><li>Atur expiry reservation dan biaya kirim.</li><li>Klik <strong>Reserve Stock</strong> untuk mengalokasikan.</li><li>Setelah reserved, klik <strong>Mulai Packing</strong>.</li><li>Setelah packed, klik <strong>Kirim Order</strong>.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Qty approved tidak boleh melebihi qty request.</li><li>Pastikan stok cukup sebelum reserve.</li><li>Reject membutuhkan alasan yang jelas.</li><li>Periksa expiry reservation agar tidak terlalu lama.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Order butuh 50 unit tapi stok cuma 45. Setting qty approved jadi 45, reserve, lalu mulai packing. Jika stok tidak cukup sepenuhnya, pilih allow partial/backorder.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('content')
     <x-metronic.page-title :title="$order->number" description="Review, revisi qty, reserve stock, packing, dan shipment order B2B.">
         <a href="{{ route('warehouse.b2b-orders.index') }}" class="btn btn-light">Kembali</a>

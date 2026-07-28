@@ -3,6 +3,18 @@
 @section('title', 'Kategori Produk - ' . config('app.name'))
 @section('page_title', 'Kategori dan Subkategori')
 
+@section('page_guide')
+    <x-metronic.page-guide id="admin-product-categories-index" title="Panduan Kategori Produk">
+        <x-slot:function><p>Halaman mengelola kategori dan subkategori produk untuk pengelompokan dan pelaporan.</p></x-slot:function>
+        <x-slot:workflow><ol><li>Cari kategori berdasarkan kode atau nama.</li><li>Tambah kategori/subkategori baru.</li><li>Atur parent untuk kategori berjenjang.</li><li>Nonaktifkan kategori yang sudah tidak digunakan.</li></ol></x-slot:workflow>
+        <x-slot:parts><ul><li><strong>Kode/Nama:</strong> identitas kategori.</li><li><strong>Parent:</strong> kategori induk jika subkategori.</li><li><strong>Urutan:</strong> urutan tampil.</li><li><strong>Ikon:</strong> ikon visual.</li><li><strong>Produk:</strong> jumlah produk yang menggunakan.</li><li><strong>Status:</strong> Aktif/Nonaktif.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Kategori menentukan pelaporan penjualan dan pelacakan stok per kelompok produk.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Cari kategori.</li><li>Tambah/edit kategori.</li><li>Atur parent.</li></ol></x-slot:operation>
+        <x-slot:warnings><div class="alert alert-warning mb-0"><ul><li>Kategori dengan produk tidak dapat dihapus, hanya dapat dinonaktifkan.</li></ul></div></x-slot:warnings>
+        <x-slot:example><p>Kategori "Kopi", subkategori "Arabica" & "Robusta", urutan 1.</p></x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     <x-metronic.permission-button permission="products.create" :href="route('admin.product-categories.create')" icon="ki-outline ki-plus">Tambah Kategori</x-metronic.permission-button>
 @endsection

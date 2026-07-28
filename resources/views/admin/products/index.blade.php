@@ -6,6 +6,31 @@
     <x-metronic.permission-button permission="products.export" :href="route('admin.products.export')" class="btn-light" icon="ki-outline ki-file-down">Export</x-metronic.permission-button>
     <x-metronic.permission-button permission="products.create" :href="route('admin.products.create')" icon="ki-outline ki-plus">Tambah Produk</x-metronic.permission-button>
 @endsection
+@section('page_guide')
+    <x-metronic.page-guide id="admin-products" title="Panduan Halaman Daftar Produk">
+        <x-slot:function>
+            <p>Halaman ini mengelola master produk yang menjadi dasar seluruh transaksi gudang dan retail. Owner, Purchasing, dan Warehouse Manager menggunakannya untuk menambah, mengedit, dan memfilter produk berdasarkan kategori, merek, status, dan stok.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Filter produk berdasarkan pencarian SKU/nama, kategori, merek, status, dan stok di bawah minimum.</li><li>Tambah produk baru atau import dari file.</li><li>Status Produk menentukan apakah produk dapat dibeli atau dikirim.</li><li>HPP dan Margin dilihat oleh user dengan permission khusus.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Cari SKU/nama:</strong> kolom pencarian produk.</li><li><strong>Filter Kategori/Merek/Status/Stok Minimum:</strong> filter produk.</li><li><strong>Import/Export:</strong> upload/download data produk.</li><li><strong>Kode (SKU):</strong> identitas unik produk.</li><li><strong>Nama:</strong> nama produk.</li><li><strong>Kategori/Merek/Satuan:</strong> atribut produk.</li><li><strong>Status:</strong> status produk aktif/nonaktif/draft.</li><li><strong>Stok Total:</strong> total on hand semua lokasi.</li><li><strong>HPP:</strong> harga per unit.</li><li><strong>Harga Minimum:</strong> batas harga jual minimum.</li><li><strong>Detail/Edit:</strong> aksi pengelolaan produk.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Produk nonaktif tidak tampil pada halaman penjualan. HPP berubah saat penerimaan barang baru. Stok total dipengaruhi mutasi stok.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Filter produk.</li><li>Klik Tambah Produk atau Import.</li><li>Detail/Edit produk.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Produk dengan histori transaksi tidak dapat dihapus.</li><li>SKU harus unik.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Produk SKU KOF-ARA Arabika, Kategori Kopi, Merek Premium, status Aktif, stok 100, HPP Rp 25.000.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
 @section('content')
 <x-metronic.card>
     <form method="GET" class="d-flex flex-wrap justify-content-between gap-3 mb-5">

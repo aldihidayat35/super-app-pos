@@ -3,7 +3,14 @@
 @section('title', 'Lokasi Kerja Pengguna - ' . config('app.name'))
 @section('page_title', 'Lokasi Kerja Pengguna')
 
-@section('content')
+@section('page_guide')
+    <x-metronic.page-guide id="admin-user-locations" title="Panduan Lokasi Kerja Pengguna">
+        <x-slot:function><p>Halaman menentukan gudang/cabang mana yang dapat diakses oleh pengguna untuk operasi sehari-hari.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Dipilih:</strong> checkbox lokasi kerja user.</li><li><strong>Lokasi/Tipe:</strong> nama dan tipe gudang/cabang.</li><li><strong>Default:</strong> radio button lokasi default.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Lokasi kerja menentukan scope data dan akses operasi user.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Centang lokasi yang boleh diakses user.</li><li>Pilih satu sebagai lokasi default.</li><li>Simpan.</li></ol></x-slot:operation>
+    </x-metronic.page-guide>
+@endsection
     <x-metronic.page-title title="Penugasan Lokasi Kerja" description="Tentukan gudang atau cabang/toko yang dapat digunakan oleh pengguna." />
 
     <x-metronic.card title="{{ $user->name }}">

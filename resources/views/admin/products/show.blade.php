@@ -5,6 +5,15 @@
     @can('printBarcode', App\Models\Product::class)<a href="{{ route('admin.products.barcodes.index', ['product_id' => $product->id]) }}" class="btn btn-light">Cetak Barcode</a>@endcan
     @can('update', $product)<a href="{{ route('admin.products.edit', $product) }}" class="btn btn-primary">Edit Produk</a>@endcan
 @endsection
+
+@section('page_guide')
+    <x-metronic.page-guide id="admin-product-show" title="Panduan Detail Produk">
+        <x-slot:function><p>Halaman menampilkan rincian produk dengan tab: info, foto, satuan, barcode, stok per lokasi, kartu stok, batch, HPP, harga/ring, supplier, penjualan, retur, dan audit.</p></x-slot:function>
+        <x-slot:parts><ul><li><strong>Ringkasan:</strong> nama, SKU, kategori, merek, satuan, lokasi default, status.</li><li><strong>Tab Info:</strong> model, ukuran, warna, material, deskripsi.</li><li><strong>Tab Foto:</strong> gambar produk.</li><li><strong>Tab Stok:</strong> saldo per lokasi.</li><li><strong>Tab Barcode:</strong> daftar barcode.</li><li><strong>Tab Batch:</strong> batch products.</li><li><strong>Tab HPP:</strong> histori harga.</li><li><strong>Tab Supplier:</strong> supplier produk.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Halaman ini read-only. Edit produk dari tombol toolbar.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Periksa ringkasan produk.</li><li>Buka tab sesuai kebutuhan.</li></ol></x-slot:operation>
+    </x-metronic.page-guide>
+@endsection
 @section('content')
 <div class="row g-6">
     <div class="col-lg-4">

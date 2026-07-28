@@ -3,6 +3,32 @@
 @section('title', 'Batch/Lot Stok - ' . config('app.name'))
 @section('page_title', 'Batch/Lot Stok')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-batches" title="Panduan Halaman Batch/Lot Stok">
+        <x-slot:function>
+            <p>Halaman ini menampilkan daftar batch atau lot stok yang tercatat. Batch mengidentifikasi kelompok produk dengan nomor produksi, tanggal masuk, dan tanggal kadaluarsa yang sama. Kepala Gudang dan Owner menggunakannya untuk melacak kedaluwarsa dan biaya per batch.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Gunakan kolom pencarian atau filter status untuk menemukan batch.</li><li>Sistem menampilkan detail batch meliputi produk, supplier, tanggal, HPP, qty, lokasi, dan status.</li><li>Status menentukan apakah batch masih aktif, expired, atau ditutup.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Cari batch/lot:</strong> mencari berdasarkan nomor batch.</li><li><strong>Filter Status:</strong> menyaring berdasarkan Aktif, Expired, atau Ditutup.</li><li><strong>Batch:</strong> nomor identifikasi batch.</li><li><strong>Produk:</strong> SKU dan nama produk.</li><li><strong>Supplier:</strong> pemasok batch.</li><li><strong>Tanggal Masuk:</strong> hari barang diterima.</li><li><strong>Expired:</strong> tanggal kadaluarsa.</li><li><strong>HPP Batch:</strong> harga per unit batch.</li><li><strong>Qty:</strong> on hand dan reserved per batch.</li><li><strong>Lokasi:</strong> penyimpanan batch.</li><li><strong>Status:</strong> Aktif, Expired, atau Ditutup.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Halaman ini hanya untuk monitoring. Filter dan pencarian tidak mengubah data batch. Batch diisi oleh proses penerimaan barang.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Masukkan nomor batch atau gunakan filter status.</li><li>Klik <strong>Filter</strong>.</li><li>Periksa tanggal expired untuk batch yang mendekati kadaluarsa.</li><li>Perhatikan qty yang masih ada dan lokasi penyimpanannya.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Batch Expired tidak boleh dikeluarkan untuk penjualan.</li><li>Qty per batch dapat berbeda jika produk tersebar di banyak lokasi.</li><li>Jangan menganggap HPP batch sebagai satu-satunya acuan; sistem menggunakan moving weighted average.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Batch BTH-001 memiliki 200 unit pada 15/06/2025 dan expired 15/06/2026. HPP per unit Rp 25.000. Tersisa 50 unit pada Rak A-01 dengan status Aktif.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('content')
     <x-metronic.card>
         <form method="GET" class="row g-3 mb-5">

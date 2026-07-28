@@ -3,6 +3,32 @@
 @section('title', 'Transfer Lokasi - ' . config('app.name'))
 @section('page_title', 'Transfer Antar Lokasi Internal')
 
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-location-transfers" title="Panduan Halaman Transfer Lokasi">
+        <x-slot:function>
+            <p>Halaman ini melakukan transfer stok internal antar lokasi atau gudang. Staff dan Kepala Gudang menggunakannya untuk memindahkan produk secara cepat dengan pencatatan mutasi otomatis. Di sisi kanan terdapat histori transfer yang mencatat semua perpindahan sebelumnya.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Pilih produk, lokasi sumber, lokasi tujuan, dan qty yang akan dipindahkan.</li><li>Sistem memvalidasi ketersediaan dan scope lokasi.</li><li>Setelah diproses, sistem mencatat mutasi keluar dari sumber dan masuk ke tujuan.</li><li>Histori transfer diperbarui secara realtime.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Produk:</strong> produk yang akan dipindahkan.</li><li><strong>Lokasi Kerja Sumber:</strong> gudang asal pemindahan.</li><li><strong>Zona/Rak/Bin Sumber:</strong> lokasi fisik asal.</li><li><strong>Lokasi Kerja Tujuan:</strong> gudang tujuan pemindahan.</li><li><strong>Zona/Rak/Bin Tujuan:</strong> lokasi fisik tujuan.</li><li><strong>Qty:</strong> jumlah yang dipindahkan.</li><li><strong>Alasan:</strong> keterangan atau alasan transfer.</li><li><strong>Proses Transfer:</strong> menjalankan dan mencatat mutasi.</li><li><strong>Histori Transfer:</strong> daftar riwayat perpindahan.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Transfer lokasi mengurangi on hand sumber dan menambah on hand tujuan. Kedua perubahan dicatat sebagai mutasi terpisah. Histori transfer tampil pada tabel di sebelah kanan.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Pilih produk yang akan dipindahkan.</li><li>Pilih lokasi kerja sumber dan tujuan.</li><li>Pilih bin sumber dan tujuan jika tersedia.</li><li>Masukkan qty dan alasan transfer.</li><li>Klik <strong>Proses Transfer</strong>.</li><li>Verifikasi mutasi tampil pada histori transfer.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Pastikan lokasi tujuan sesuai scope akun Anda.</li><li>Jangan memasukkan qty melebihi stok tersedia di sumber.</li><li>Reason wajib diisi untuk keperluan audit.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Pindahkan 10 unit Kopi Robusta dari Gudang Pusat Bin A-01 ke Cabang Bogor Bin B-02. Alasan: "Restock cabang". Sistem mencatat mutasi keluar -10 pada sumber dan +10 pada tujuan.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('content')
     <div class="row g-5">
         <div class="col-lg-4">

@@ -1,6 +1,31 @@
 @section('title', 'Counting Stok Opname - ' . config('app.name'))
 @section('page_title', 'Counting Stok Opname')
-@extends('layouts.metronic.app')
+
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-stock-opname-count" title="Panduan Halaman Counting Stok Opname">
+        <x-slot:function>
+            <p>Halaman ini digunakan untuk melakukan counting fisik stok opname. Counter memasukkan qty fisik, alasan selisih, catatan, dan bukti foto. Proses ini bisa dilakukan manual per item atau via import CSV.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Halaman menampilkan daftar item dengan qty sistem (kecuali blind count).</li><li>Counter menghitung fisik dan memasukkan qty pada form.</li><li>Pilih alasan selisih, isi catatan, dan unggah bukti.</li><li>Simpan per item.</li><li>Setelah semua item tercounting, submit ke approval.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Import Count CSV:</strong> upload file CSV hasil counting.</li><li><strong>SKU:</strong> produk yang di-counting.</li><li><strong>Lokasi:</strong> bin/zak penyimpanan.</li><li><strong>Sistem:</strong> qty tercatat (atau Blind jika blind count aktif).</li><li><strong>Fisik:</strong> qty hasil counting fisik (wajib).</li><li><strong>Alasan:</strong> kategori selisih.</li><li><strong>Catatan Counter:</strong> keterangan tambahan.</li><li><strong>Bukti:</strong> foto bukti counting.</li><li><strong>Counter:</strong> user dan waktu counting.</li><li><strong>Ada Transaksi Setelah Snapshot:</strong> peringatan item berubah setelah snapshot.</li><li><strong>Simpan:</strong> menyimpan hasil counting per item.</li><li><strong>Submit ke Approval:</strong> mengirim hasil ke approval.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Counting disimpan untuk setiap item. Setelah submit, opname masuk ke pipeline approval. Selisih dihitung antara sistem dan fisik.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Untuk item yang sama, periksa qty sistem (jika tidak blind count).</li><li>Masukkan qty fisik hasil penghitungan.</li><li>Pilih alasan jika ada selisih.</li><li>Isi catatan dan unggah bukti foto.</li><li>Klik <strong>Simpan</strong> per item.</li><li>Setelah semua item, klik <strong>Submit ke Approval</strong>.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Qty fisik wajib diisi untuk setiap item.</li><li>Perhatikan item dengan badge "Ada transaksi setelah snapshot".</li><li>Alasan harus diisi jika ada selisih signifikan.</li><li>Bukti foto memudahkan verifikasi.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Kopi Robusta sistem 100, fisik dihitung 97. Selisih -3. Alasan: "Penjualan belum diposting". Catatan: "Stok di lantai 2 belum terhitung". Foto diunggah. Simpan.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
 
 @section('content')
     <x-metronic.page-title :title="'Counting ' . $opname->number" :description="'Progress ' . $opname->countedProgress() . ' — ' . ($opname->blind_count ? 'Blind count aktif' : 'Qty sistem ditampilkan')">

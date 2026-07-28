@@ -1,6 +1,32 @@
 @section('title', 'Stok Opname - ' . config('app.name'))
 @section('page_title', 'Stok Opname')
-@extends('layouts.metronic.app')
+
+@section('page_guide')
+    <x-metronic.page-guide id="warehouse-stock-opnames" title="Panduan Halaman Stok Opname">
+        <x-slot:function>
+            <p>Halaman ini digunakan untuk menjadwalkan, memulai, dan memantau proses stok opname. Kepala Gudang menjadwalkan opname, menetapkan PIC, memilih metode (manual/scan/import), dan memantau progress counting.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Buat jadwal opname: pilih gudang, lokasi, kategori, metode, dan PIC.</li><li>Klik Buat Snapshot untuk mengambil snapshot stok saat itu.</li><li>Counter melakukan counting fisik.</li><li>Hasil counting dibandingkan dengan snapshot.</li><li>Opname disubmit ke approval jika perlu.</li><li>Variance dan laporan dihasilkan setelah approval.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <x-slot:parts>
+            <ul><li><strong>Gudang/Cabang:</strong> lokasi opname (wajib).</li><li><strong>Zona/Rak/Bin:</strong> scope lokasi detail.</li><li><strong>Kategori Produk:</strong> filter produk berdasarkan kategori.</li><li><strong>Metode:</strong> Manual, Scan, atau Import.</li><li><strong>Tanggal:</strong> jadwal opname.</li><li><strong>PIC:</strong> person in charge counting.</li><li><strong>Threshold Qty:</strong> batas selisih qty untuk flagging.</li><li><strong>Threshold Nilai:</strong> batas selisih nilai untuk approval.</li><li><strong>Blind Count:</strong> counter tidak melihat qty sistem.</li><li><strong>Freeze Stock:</strong> mencegah transaksi saat counting.</li><li><strong>Catatan:</strong> keterangan opname.</li><li><strong>Simpan Draft:</strong> simpan tanpa snapshot.</li><li><strong>Buat Snapshot:</strong> simpan dan ambil snapshot.</li><li><strong>No:</strong> nomor opname.</li><li><strong>Scope:</strong> gudang dan lokasi detail.</li><li><strong>Jadwal/PIC:</strong> tanggal dan person in charge.</li><li><strong>Progress:</strong> persentase item sudah counted.</li><li><strong>Selisih:</strong> total qty dan nilai selisih.</li><li><strong>Status:</strong> progress status opname.</li><li><strong>Detail/Counting/Variance:</strong> aksi navigasi.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Snapshot menghasilkan qty sistem sebagai acuan counting. Hasil counting dibanding dengan snapshot. Approval diperlukan jika selisih melebihi threshold. Adjustment dibuat setelah approved untuk koreksi saldo.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Pilih gudang/cabang dan lokasi detail (opsional).</li><li>Pilih kategori produk jika ingin membatasi scope.</li><li>Pilih metode: Manual untuk input fisik, Scan untuk barcode, Import untuk CSV.</li><li>Atur tanggal, PIC, threshold, blind count, freeze stock.</li><li>Klik <strong>Buat Snapshot</strong> untuk memulai.</li><li>Monitor progress dari daftar opname di sebelah kanan.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Blind count membuat counter tidak tahu qty sistem.</li><li>Freeze stock menghentikan transaksi saat counting.</li><li>Threshold nilai memicu approval owner jika dilewati.</li><li>Jangan ubah snapshot setelah counting dimulai.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Opname Manual di Gudang Pusat pada 18/07/2025. PIC: Budi. Threshold qty: 10, threshold nilai: Rp 1.000.000. Blind count aktif. Snapshot diambil dan counter mulai menghitung fisik.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
 
 @section('content')
     <x-metronic.page-title title="Stok Opname" description="Jadwalkan, snapshot, hitung fisik, dan koreksi saldo stok melalui approval." />

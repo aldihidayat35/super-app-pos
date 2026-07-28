@@ -3,6 +3,32 @@
 @section('title', 'Daftar Gudang - ' . config('app.name'))
 @section('page_title', 'Daftar Gudang')
 
+@section('page_guide')
+    <x-metronic.page-guide id="admin-warehouses" title="Panduan Halaman Daftar Gudang">
+        <x-slot:function>
+            <p>Halaman ini mengelola daftar gudang utama dalam sistem. Owner dan Super Admin menggunakannya untuk menambah, mengedit, dan memantau status gudang yang berfungsi sebagai lokasi penyimpanan stok pusat.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Pengguna dapat mencari gudang berdasarkan kota atau memfilter status.</li><li>Klik Tambah Gudang untuk membuat gudang baru.</li><li>Gudang yang aktif dapat diedit atau dinonaktifkan.</li><li>Gudang nonaktif tidak dapat dipilih untuk transaksi baru.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Kode:</strong> identitas unik gudang.</li><li><strong>Nama:</strong> nama lengkap gudang.</li><li><strong>Kota:</strong> lokasi geografis gudang.</li><li><strong>Kepala Gudang:</strong> user yang menjabat sebagai manajer gudang.</li><li><strong>Kapasitas:</strong> batas muatan maksimum gudang.</li><li><strong>Area Layanan:</strong> wilayah distribusi gudang.</li><li><strong>Status:</strong> Aktif atau Nonaktif.</li><li><strong>Detail:</strong> membuka halaman rincian gudang.</li><li><strong>Edit:</strong> mengubah data gudang.</li><li><strong>Nonaktifkan:</strong> menonaktifkan gudang tanpa menghapus.</li><li><strong>Tambah Gudang:</strong> membuka form pembuatan gudang baru.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Menonaktifkan gudang mencegah pemilihan untuk transaksi baru namun tidak menghapus histori. Kapasitas dan area layanan memengaruhi perencanaan logistik. Gudang yang dibuat menjadi pilihan pada form penerimaan barang dan transfer stok.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Gunakan kolom pencarian kota atau filter status.</li><li>Klik tombol Filter untuk menerapkan.</li><li>Klik Tambah Gudang untuk membuat gudang baru.</li><li>Klik Detail untuk melihat informasi lengkap.</li><li>Klik Edit untuk mengubah data gudang.</li><li>Klik Nonaktifkan untuk menonaktifkan gudang tanpa menghapus.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Jangan mengaktifkan kembali gudang yang memiliki saldo stok belum direkonsiliasi.</li><li>Gudang dengan histori transaksi tidak dapat dihapus.</li><li>Pastikan kepala gudang ditunjuk sebelum gudang aktif.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Gudang GDG-PUSAT di Jakarta aktif dengan kapasitas 10000 unit dan kepala gudang Budi. Area layanan Jabodetabek. Gudang dinonaktifkan karena pindah lokasi. Data histori tetap tercatat.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
+@endsection
+
 @section('toolbar_actions')
     <x-metronic.permission-button permission="admin.warehouses.create" :href="route('admin.warehouses.create')" icon="ki-outline ki-plus">
         Tambah Gudang
