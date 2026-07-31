@@ -1,0 +1,338 @@
+/* ========================================
+   GudangToko Login — Custom Animations & Styles
+   ======================================== */
+
+/* --- Brand Panel (Kiri) --- */
+.gt-login-brand {
+    position: relative;
+    overflow: hidden;
+}
+
+.gt-login-brand::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #6e45e2 0%, #88d3ce 100%);
+    z-index: 0;
+    animation: brandGradientShift 8s ease infinite alternate;
+}
+
+@keyframes brandGradientShift {
+    0%   { background: linear-gradient(135deg, #6e45e2 0%, #88d3ce 100%); }
+    50%  { background: linear-gradient(135deg, #1a9fff 0%, #6e45e2 100%); }
+    100% { background: linear-gradient(135deg, #88d3ce 0%, #1a9fff 100%); }
+}
+
+.gt-login-brand .brand-content {
+    position: relative;
+    z-index: 2;
+}
+
+/* Floating shapes */
+.gt-float-shape {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.15;
+    background: white;
+    z-index: 1;
+}
+
+.gt-float-shape--1 {
+    width: 200px; height: 200px;
+    top: -40px; left: -30px;
+    animation: floatA 7s ease-in-out infinite;
+}
+
+.gt-float-shape--2 {
+    width: 120px; height: 120px;
+    bottom: 60px; right: -20px;
+    animation: floatB 9s ease-in-out infinite;
+}
+
+.gt-float-shape--3 {
+    width: 80px; height: 80px;
+    top: 40%; left: 70%;
+    animation: floatC 6s ease-in-out infinite;
+}
+
+@keyframes floatA {
+    0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+    50%      { transform: translateY(-30px) rotate(45deg) scale(1.1); }
+}
+
+@keyframes floatB {
+    0%, 100% { transform: translateY(0) translateX(0) scale(1); }
+    50%      { transform: translateY(-25px) translateX(15px) scale(1.15); }
+}
+
+@keyframes floatC {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    33%      { transform: translateY(-18px) rotate(60deg); }
+    66%      { transform: translateY(12px) rotate(-40deg); }
+}
+
+/* Brand logo pulse */
+.gt-brand-logo-wrapper {
+    animation: logoPulse 3s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
+    50%      { transform: scale(1.06); filter: drop-shadow(0 8px 24px rgba(255,255,255,0.3)); }
+}
+
+/* Brand text fade-in */
+.gt-brand-title {
+    animation: titleReveal 1s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes titleReveal {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.gt-brand-subtitle {
+    animation: subtitleFadeIn 1s ease-out 0.4s forwards;
+    opacity: 0;
+}
+
+@keyframes subtitleFadeIn {
+    to { opacity: 0.85; }
+}
+
+/* --- Form Panel (Kanan) --- */
+.gt-login-form-card {
+    position: relative;
+    background: var(--bs-body-bg);
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+    animation: cardSlideUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+@keyframes cardSlideUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Glowing border effect */
+.gt-login-form-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: calc(1rem + 2px);
+    background: linear-gradient(135deg, #6e45e2, #88d3ce, #1a9fff);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.gt-login-form-card:hover::before {
+    opacity: 1;
+}
+
+/* Header animations */
+.gt-login-header {
+    animation: headerReveal 0.7s ease-out 0.2s forwards;
+    opacity: 0;
+    transform: translateY(15px);
+}
+
+@keyframes headerReveal {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.gt-login-header .gt-logo-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6e45e2, #88d3ce);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    animation: iconSpinIn 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0.4s forwards;
+    opacity: 0;
+    transform: scale(0) rotate(-90deg);
+}
+
+@keyframes iconSpinIn {
+    to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.gt-login-header .gt-logo-icon svg,
+.gt-login-header .gt-logo-icon img {
+    width: 28px; height: 28px;
+    filter: brightness(0) invert(1);
+}
+
+/* Input group focus animation */
+.gt-form-group {
+    position: relative;
+    transition: transform 0.3s ease, margin 0.3s ease;
+}
+
+.gt-form-group:focus-within {
+    transform: translateX(4px);
+}
+
+.gt-form-group .form-control {
+    border-radius: 0.6rem;
+    padding-left: 2.8rem;
+    transition: all 0.3s ease;
+    background: var(--bs-body-bg);
+}
+
+.gt-form-group .form-control:focus {
+    box-shadow: 0 0 0 3px rgba(110, 69, 226, 0.15);
+    border-color: #6e45e2;
+}
+
+/* Input icon */
+.gt-input-icon {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--bs-secondary-color);
+    transition: color 0.3s ease;
+    pointer-events: none;
+}
+
+.gt-form-group:focus-within .gt-input-icon {
+    color: #6e45e2;
+}
+
+/* Password toggle */
+.gt-password-toggle {
+    position: absolute;
+    right: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.3s ease;
+}
+
+.gt-password-toggle:hover {
+    color: #6e45e2;
+}
+
+/* Remember me & forgot password row */
+.gt-login-actions {
+    animation: actionsReveal 0.6s ease-out 0.6s forwards;
+    opacity: 0;
+}
+
+@keyframes actionsReveal {
+    to { opacity: 1; }
+}
+
+/* Login button with gradient + ripple */
+.gt-btn-login {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #6e45e2, #88d3ce);
+    border: none;
+    border-radius: 0.6rem;
+    padding: 0.85rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: btnReveal 0.6s ease-out 0.8s forwards;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+@keyframes btnReveal {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.gt-btn-login:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(110, 69, 226, 0.35);
+    color: white;
+}
+
+.gt-btn-login:active {
+    transform: translateY(0) !important;
+}
+
+/* Ripple effect */
+.gt-btn-login::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255,255,255,0.3) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.gt-btn-login:hover::after {
+    opacity: 1;
+}
+
+/* Loading spinner on button */
+.gt-btn-login .spinner-border {
+    width: 1rem; height: 1rem;
+    border-width: 2px;
+    margin-right: 0.5rem;
+}
+
+/* Divider */
+.gt-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.85rem;
+}
+
+.gt-divider::before,
+.gt-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--bs-border-color);
+}
+
+/* Footer */
+.gt-login-footer {
+    animation: footerFadeIn 0.6s ease-out 1s forwards;
+    opacity: 0;
+}
+
+@keyframes footerFadeIn {
+    to { opacity: 1; }
+}
+
+/* --- Mobile responsive tweaks --- */
+@media (max-width: 991.98px) {
+    .gt-login-form-card {
+        padding: 2rem !important;
+    }
+}
+
+/* --- Dark mode support --- */
+[data-bs-theme='dark'] .gt-login-form-card {
+    background: var(--bs-tertiary-bg);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+[data-bs-theme='dark'] .gt-login-form-card::before {
+    background: linear-gradient(135deg, #8b6cf7, #a7f0e0, #5ab8ff);
+}
+
+/* --- Accessibility: respect reduced motion preferences --- */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

@@ -19,7 +19,15 @@
         <label class="form-label">Status</label>
         <input name="status" value="{{ request('status') }}" class="form-control" placeholder="Status">
     </div>
-    <div class="col-md-2 d-flex align-items-end">
+    <div class="col-md-1">
+        <label class="form-label">Range Grafik</label>
+        <select name="range" class="form-select">
+            <option value="daily" @selected(request('range', $filters['range'] ?? 'daily') === 'daily')>Harian</option>
+            <option value="monthly" @selected(request('range', $filters['range'] ?? 'daily') === 'monthly')>Bulanan</option>
+            <option value="yearly" @selected(request('range', $filters['range'] ?? 'daily') === 'yearly')>Tahunan</option>
+        </select>
+    </div>
+    <div class="col-md-1 d-flex align-items-end">
         <button class="btn btn-light-primary w-100">Terapkan Filter</button>
     </div>
 </form>

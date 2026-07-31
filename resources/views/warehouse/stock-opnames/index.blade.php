@@ -1,3 +1,5 @@
+@extends('layouts.metronic.app')
+
 @section('title', 'Stok Opname - ' . config('app.name'))
 @section('page_title', 'Stok Opname')
 
@@ -10,12 +12,11 @@
             <ol><li>Buat jadwal opname: pilih gudang, lokasi, kategori, metode, dan PIC.</li><li>Klik Buat Snapshot untuk mengambil snapshot stok saat itu.</li><li>Counter melakukan counting fisik.</li><li>Hasil counting dibandingkan dengan snapshot.</li><li>Opname disubmit ke approval jika perlu.</li><li>Variance dan laporan dihasilkan setelah approval.</li></ol>
         </x-slot:workflow>
         <x-slot:parts>
-            <x-slot:parts>
-            <ul><li><strong>Gudang/Cabang:</strong> lokasi opname (wajib).</li><li><strong>Zona/Rak/Bin:</strong> scope lokasi detail.</li><li><strong>Kategori Produk:</strong> filter produk berdasarkan kategori.</li><li><strong>Metode:</strong> Manual, Scan, atau Import.</li><li><strong>Tanggal:</strong> jadwal opname.</li><li><strong>PIC:</strong> person in charge counting.</li><li><strong>Threshold Qty:</strong> batas selisih qty untuk flagging.</li><li><strong>Threshold Nilai:</strong> batas selisih nilai untuk approval.</li><li><strong>Blind Count:</strong> counter tidak melihat qty sistem.</li><li><strong>Freeze Stock:</strong> mencegah transaksi saat counting.</li><li><strong>Catatan:</strong> keterangan opname.</li><li><strong>Simpan Draft:</strong> simpan tanpa snapshot.</li><li><strong>Buat Snapshot:</strong> simpan dan ambil snapshot.</li><li><strong>No:</strong> nomor opname.</li><li><strong>Scope:</strong> gudang dan lokasi detail.</li><li><strong>Jadwal/PIC:</strong> tanggal dan person in charge.</li><li><strong>Progress:</strong> persentase item sudah counted.</li><li><strong>Selisih:</strong> total qty dan nilai selisih.</li><li><strong>Status:</strong> progress status opname.</li><li><strong>Detail/Counting/Variance:</strong> aksi navigasi.</li></ul>
+              <ul><li><strong>Gudang/Cabang:</strong> lokasi opname (wajib).</li><li><strong>Zona/Rak/Bin:</strong> scope lokasi detail.</li><li><strong>Kategori Produk:</strong> filter produk berdasarkan kategori.</li><li><strong>Metode:</strong> Manual, Scan, atau Import.</li><li><strong>Tanggal:</strong> jadwal opname.</li><li><strong>PIC:</strong> person in charge counting.</li><li><strong>Threshold Qty:</strong> batas selisih qty untuk flagging.</li><li><strong>Threshold Nilai:</strong> batas selisih nilai untuk approval.</li><li><strong>Blind Count:</strong> counter tidak melihat qty sistem.</li><li><strong>Freeze Stock:</strong> mencegah transaksi saat counting.</li><li><strong>Catatan:</strong> keterangan opname.</li><li><strong>Simpan Draft:</strong> simpan tanpa snapshot.</li><li><strong>Buat Snapshot:</strong> simpan dan ambil snapshot.</li><li><strong>No:</strong> nomor opname.</li><li><strong>Scope:</strong> gudang dan lokasi detail.</li><li><strong>Jadwal/PIC:</strong> tanggal dan person in charge.</li><li><strong>Progress:</strong> persentase item sudah counted.</li><li><strong>Selisih:</strong> total qty dan nilai selisih.</li><li><strong>Status:</strong> progress status opname.</li><li><strong>Detail/Counting/Variance:</strong> aksi navigasi.</li></ul>
         </x-slot:parts>
         <x-slot:impacts>
             <p>Snapshot menghasilkan qty sistem sebagai acuan counting. Hasil counting dibanding dengan snapshot. Approval diperlukan jika selisih melebihi threshold. Adjustment dibuat setelah approved untuk koreksi saldo.</p>
-        </x-slot:impacts>
+           </x-slot:impacts>
         <x-slot:operation>
             <ol><li>Pilih gudang/cabang dan lokasi detail (opsional).</li><li>Pilih kategori produk jika ingin membatasi scope.</li><li>Pilih metode: Manual untuk input fisik, Scan untuk barcode, Import untuk CSV.</li><li>Atur tanggal, PIC, threshold, blind count, freeze stock.</li><li>Klik <strong>Buat Snapshot</strong> untuk memulai.</li><li>Monitor progress dari daftar opname di sebelah kanan.</li></ol>
         </x-slot:operation>
@@ -37,7 +38,13 @@
                 <form method="POST" action="{{ route('warehouse.stock-opnames.store') }}">
                     @csrf
                     <x-metronic.form-group name="work_location_id" label="Gudang/Cabang" required>
-                        <select name="work_location_id" class="form-select form-select-solid" required>
+                        <select id="work_location_id"
+                                name="work_location_id"
+                                class="form-select form-select-solid"
+                                data-control="select2"
+                                data-searchable-fallback="true"
+                                data-placeholder="Cari dan pilih gudang/cabang"
+                                required>
                             <option value="">Pilih lokasi kerja</option>
                             @foreach($workLocations as $location)
                                 <option value="{{ $location->id }}" @selected(old('work_location_id') == $location->id)>{{ $location->code }} — {{ $location->name }}</option>
@@ -45,7 +52,13 @@
                         </select>
                     </x-metronic.form-group>
                     <x-metronic.form-group name="warehouse_location_id" label="Zona/Rak/Bin">
-                        <select name="warehouse_location_id" class="form-select form-select-solid">
+                        <select id="warehouse_location_id"
+                                name="warehouse_location_id"
+                                class="form-select form-select-solid"
+                                data-control="select2"
+                                data-searchable-fallback="true"
+                                data-placeholder="Cari zona, rak, atau bin"
+                                data-allow-clear="true">
                             <option value="">Semua lokasi detail</option>
                             @foreach($warehouseLocations as $location)
                                 <option value="{{ $location->id }}" @selected(old('warehouse_location_id') == $location->id)>{{ $location->full_code }} — {{ $location->name }}</option>
@@ -53,7 +66,13 @@
                         </select>
                     </x-metronic.form-group>
                     <x-metronic.form-group name="category_id" label="Kategori Produk">
-                        <select name="category_id" class="form-select form-select-solid">
+                        <select id="category_id"
+                                name="category_id"
+                                class="form-select form-select-solid"
+                                data-control="select2"
+                                data-searchable-fallback="true"
+                                data-placeholder="Cari kategori produk"
+                                data-allow-clear="true">
                             <option value="">Semua kategori</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}" @selected(old('category_id') == $category->id)>{{ $category->name }}</option>
@@ -77,7 +96,13 @@
                         </div>
                     </div>
                     <x-metronic.form-group name="pic_user_id" label="PIC">
-                        <select name="pic_user_id" class="form-select form-select-solid">
+                        <select id="pic_user_id"
+                                name="pic_user_id"
+                                class="form-select form-select-solid"
+                                data-control="select2"
+                                data-searchable-fallback="true"
+                                data-placeholder="Cari dan pilih PIC"
+                                data-allow-clear="true">
                             <option value="">Gunakan pembuat</option>
                             @foreach($users as $user)
                                 <option value="{{ $user->id }}" @selected(old('pic_user_id') == $user->id)>{{ $user->name }}</option>
@@ -113,7 +138,13 @@
             <x-metronic.card title="Daftar Opname">
                 <form class="row g-3 mb-5">
                     <div class="col-md-5">
-                        <select name="work_location_id" class="form-select form-select-solid">
+                        <select id="filter_work_location_id"
+                                name="work_location_id"
+                                class="form-select form-select-solid"
+                                data-control="select2"
+                                data-searchable-fallback="true"
+                                data-placeholder="Cari gudang/cabang"
+                                data-allow-clear="true">
                             <option value="">Semua gudang/cabang</option>
                             @foreach($workLocations as $location)
                                 <option value="{{ $location->id }}" @selected(($filters['work_location_id'] ?? '') == $location->id)>{{ $location->name }}</option>
@@ -159,4 +190,3 @@
         </div>
     </div>
 @endsection
-

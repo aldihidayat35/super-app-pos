@@ -1,3 +1,5 @@
+@extends('layouts.metronic.app')
+
 @section('title', 'Detail Stok Opname - ' . config('app.name'))
 @section('page_title', 'Detail Stok Opname')
 
@@ -78,4 +80,3 @@
         </div>
     </div>
 @endsection
-

@@ -11,6 +11,8 @@
         <x-slot:operation><ol><li>Periksa metadata role.</li><li>Lihat daftar permission.</li><li>Salin role jika perlu role mirip baru.</li></ol></x-slot:operation>
     </x-metronic.page-guide>
 @endsection
+
+@section('toolbar_actions')
     @php($canDeleteRole = auth()->user()?->hasRole('super_admin') && ! (bool) $role->is_system && $role->users->count() === 0)
 
     @can('create', \Spatie\Permission\Models\Role::class)

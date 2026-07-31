@@ -44,6 +44,11 @@ class ReportMetricService
         $permitted = $user->permittedWorkLocationIds();
         $requestedLocation = isset($input['work_location_id']) && $input['work_location_id'] !== '' ? (int) $input['work_location_id'] : null;
         $locationIds = $requestedLocation !== null ? array_values(array_intersect($permitted, [$requestedLocation])) : $permitted;
+        $allowedRanges = ['daily', 'monthly', 'yearly'];
+        $range = $input['range'] ?? 'daily';
+        if (! in_array($range, $allowedRanges, true)) {
+            $range = 'daily';
+        }
 
         return [
             'start' => $start,
@@ -61,6 +66,7 @@ class ReportMetricService
             'supplier_id' => $input['supplier_id'] ?? null,
             'customer_id' => $input['customer_id'] ?? null,
             'user_id' => $input['user_id'] ?? null,
+            'range' => $range,
             'last_updated_at' => now('Asia/Jakarta'),
         ];
     }
@@ -141,7 +147,11 @@ class ReportMetricService
                     'open_opname' => $this->locationScopedCount('stock_opnames', 'work_location_id', $filters, [StockOpnameStatus::DRAFT->value, StockOpnameStatus::COUNTING->value, StockOpnameStatus::PENDING_APPROVAL->value]),
                 ],
                 'large_mutations' => $this->largeMutations($filters),
-                'charts' => ['daily_movement' => $this->dailyStockMovement($filters)],
+                'charts' => [
+                    'daily_movement' => $this->dailyStockMovement($filters),
+                    'monthly_movement' => $this->monthlyStockMovement($filters),
+                    'yearly_movement' => $this->yearlyStockMovement($filters),
+                ],
                 'last_updated_at' => $filters['last_updated_at'],
             ];
         });
@@ -174,6 +184,11 @@ class ReportMetricService
                 ],
                 'charts' => [
                     'daily_revenue' => $this->dailyRevenue($filters, 'retail'),
+                    'monthly_revenue' => $this->monthlyRevenue($filters, 'retail'),
+                    'yearly_revenue' => $this->yearlyRevenue($filters, 'retail'),
+                    'daily_transactions' => $this->dailyTransactionCount($filters),
+                    'monthly_transactions' => $this->monthlyTransactionCount($filters),
+                    'yearly_transactions' => $this->yearlyTransactionCount($filters),
                     'payment_methods' => $this->paymentMethods($filters),
                     'top_products' => $this->topProducts($filters)->take(10)->values()->all(),
                     'slow_products' => $this->slowMovingProducts($filters)->take(10)->values()->all(),
@@ -527,17 +542,69 @@ class ReportMetricService
      */
     private function dailyRevenue(array $filters, ?string $channel = null): array
     {
+        return $this->revenueByGranularity($filters, 'daily', $channel);
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function monthlyRevenue(array $filters, ?string $channel = null): array
+    {
+        return $this->revenueByGranularity($filters, 'monthly', $channel);
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function yearlyRevenue(array $filters, ?string $channel = null): array
+    {
+        return $this->revenueByGranularity($filters, 'yearly', $channel);
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function revenueByGranularity(array $filters, string $granularity, ?string $channel): array
+    {
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'mysql') {
+            $posSelect = match ($granularity) {
+                'monthly' => "DATE_FORMAT(completed_at, '%Y-%m') as date",
+                'yearly' => "DATE_FORMAT(completed_at, '%Y') as date",
+                default => 'DATE(completed_at) as date',
+            };
+            $b2bSelect = match ($granularity) {
+                'monthly' => "DATE_FORMAT(submitted_at, '%Y-%m') as date",
+                'yearly' => "DATE_FORMAT(submitted_at, '%Y') as date",
+                default => 'DATE(submitted_at) as date',
+            };
+        } else {
+            $posSelect = match ($granularity) {
+                'monthly' => "strftime('%Y-%m', completed_at) as date",
+                'yearly' => "CAST(strftime('%Y', completed_at) AS INTEGER) as date",
+                default => 'DATE(completed_at) as date',
+            };
+            $b2bSelect = match ($granularity) {
+                'monthly' => "strftime('%Y-%m', submitted_at) as date",
+                'yearly' => "CAST(strftime('%Y', submitted_at) AS INTEGER) as date",
+                default => 'DATE(submitted_at) as date',
+            };
+        }
+
         $pos = DB::table('pos_sales')
             ->whereIn('work_location_id', $filters['location_ids'])
             ->whereBetween('completed_at', [$filters['start'], $filters['end']])
             ->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value])
-            ->selectRaw('DATE(completed_at) as date, COALESCE(SUM(grand_total_amount),0) as retail, 0 as b2b')
+            ->selectRaw($posSelect.", COALESCE(SUM(grand_total_amount),0) as retail, 0 as b2b")
             ->groupBy('date')
             ->get();
         $b2b = $channel === 'retail' ? collect() : DB::table('b2b_orders')
             ->whereBetween('submitted_at', [$filters['start'], $filters['end']])
             ->whereNotIn('status', [B2bOrderStatus::CANCELLED->value, B2bOrderStatus::REJECTED->value])
-            ->selectRaw('DATE(submitted_at) as date, 0 as retail, COALESCE(SUM(grand_total_amount),0) as b2b')
+            ->selectRaw($b2bSelect.", 0 as retail, COALESCE(SUM(grand_total_amount),0) as b2b")
             ->groupBy('date')
             ->get();
 
@@ -630,6 +697,67 @@ class ReportMetricService
 
     /**
      * @param  ReportFilters  $filters
+     * @return list<array{date: string, count: int}>
+     */
+    private function dailyTransactionCount(array $filters): array
+    {
+        return $this->transactionCountBy($filters, 'daily');
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<array{date: string, count: int}>
+     */
+    private function monthlyTransactionCount(array $filters): array
+    {
+        return $this->transactionCountBy($filters, 'monthly');
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<array{date: string, count: int}>
+     */
+    private function yearlyTransactionCount(array $filters): array
+    {
+        return $this->transactionCountBy($filters, 'yearly');
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<array{date: string, count: int}>
+     */
+    private function transactionCountBy(array $filters, string $granularity): array
+    {
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'mysql') {
+            $select = match ($granularity) {
+                'monthly' => "DATE_FORMAT(completed_at, '%Y-%m') as date",
+                'yearly' => "DATE_FORMAT(completed_at, '%Y') as date",
+                default => 'DATE(completed_at) as date',
+            };
+        } else {
+            $select = match ($granularity) {
+                'monthly' => "strftime('%Y-%m', completed_at) as date",
+                'yearly' => "CAST(strftime('%Y', completed_at) AS INTEGER) as date",
+                default => 'DATE(completed_at) as date',
+            };
+        }
+
+        $query = DB::table('pos_sales')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+            ->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value])
+            ->selectRaw($select.', COUNT(*) as count')
+            ->groupBy('date')
+            ->orderBy('date');
+
+        return $query->get()
+            ->map(fn ($row): array => ['date' => (string) $row->date, 'count' => (int) $row->count])
+            ->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
      * @return list<ReportRow>
      */
     private function paymentMethods(array $filters): array
@@ -660,6 +788,40 @@ class ReportMetricService
             ->orderBy('date')
             ->get()
             ->map(fn ($row): array => ['date' => $row->date, 'incoming' => $this->quantity($row->incoming), 'outgoing' => $this->quantity($row->outgoing)])
+            ->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function monthlyStockMovement(array $filters): array
+    {
+        return DB::table('stock_mutations')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
+                ->selectRaw("strftime('%Y-%m', occurred_at) as date, SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing")
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row): array => ['date' => $row->date, 'incoming' => $this->quantity($row->incoming), 'outgoing' => $this->quantity($row->outgoing)])
+            ->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function yearlyStockMovement(array $filters): array
+    {
+        return DB::table('stock_mutations')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
+                ->selectRaw("CAST(strftime('%Y', occurred_at) AS INTEGER) as date, SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing")
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row): array => ['date' => (string) $row->date, 'incoming' => $this->quantity($row->incoming), 'outgoing' => $this->quantity($row->outgoing)])
             ->all();
     }
 
@@ -885,6 +1047,7 @@ class ReportMetricService
             $filters['work_location_id'],
             $filters['location_ids'],
             $filters['channel'],
+            $filters['range'] ?? null,
         ], JSON_THROW_ON_ERROR));
     }
 }

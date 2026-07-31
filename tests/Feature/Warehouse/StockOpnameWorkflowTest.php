@@ -69,6 +69,26 @@ class StockOpnameWorkflowTest extends TestCase
         $this->get(route('warehouse.stock-opnames.report', $opname))->assertOk()->assertSee('Berita Acara Stok Opname');
     }
 
+    public function test_stock_opname_main_comboboxes_use_searchable_select2(): void
+    {
+        [, $workLocation] = $this->fixture('PRD-OPN-SELECT2');
+        $this->assignScope($workLocation);
+
+        $response = $this->actingAs($this->warehouseHead)
+            ->get(route('warehouse.stock-opnames.index'))
+            ->assertOk();
+
+        $content = $response->getContent();
+
+        $this->assertStringContainsString('id="work_location_id"', $content);
+        $this->assertStringContainsString('id="warehouse_location_id"', $content);
+        $this->assertStringContainsString('id="category_id"', $content);
+        $this->assertStringContainsString('id="pic_user_id"', $content);
+        $this->assertStringContainsString('id="filter_work_location_id"', $content);
+        $this->assertSame(5, substr_count($content, 'data-control="select2"'));
+        $this->assertSame(5, substr_count($content, 'data-searchable-fallback="true"'));
+    }
+
     public function test_opname_completion_adjusts_stock_once_and_writes_append_only_mutation(): void
     {
         [$product, $workLocation, $bin] = $this->fixture('PRD-OPN-ADJ');

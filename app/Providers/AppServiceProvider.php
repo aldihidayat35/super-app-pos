@@ -81,6 +81,7 @@ use App\Policies\WarehouseLocationPolicy;
 use App\Policies\WarehousePolicy;
 use App\Policies\WorkLocationPolicy;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Permission;
@@ -145,5 +146,15 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(WorkLocation::class, WorkLocationPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(Permission::class, PermissionPolicy::class);
+
+        // Register Metronic Blade components with namespace
+        Blade::component('metronic.card', 'components.metronic.card');
+        Blade::component('metronic.page-guide', 'components.metronic.page-guide');
+        Blade::component('metronic.page-title', 'components.metronic.page-title');
+        Blade::component('metronic.empty-state', 'components.metronic.empty-state');
+        Blade::component('metronic.permission-button', 'components.metronic.permission-button');
+        Blade::component('metronic.status-badge', 'components.metronic.status-badge');
+        Blade::component('metronic.filter-drawer', 'components.metronic.filter-drawer');
+        Blade::component('metronic.form-group', 'components.metronic.form-group');
     }
 }

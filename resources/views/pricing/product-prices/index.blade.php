@@ -256,10 +256,10 @@
             if (!listEl) return;
             const q = (query || '').trim().toLowerCase();
             let filtered = allProducts;
-            
+
             if (q) {
                 filtered = allProducts.filter(p => {
-                    return p.name.toLowerCase().includes(q) || 
+                    return p.name.toLowerCase().includes(q) ||
                            p.sku.toLowerCase().includes(q) ||
                            (p.category && p.category.toLowerCase().includes(q));
                 });
@@ -452,8 +452,8 @@
                             class="pp-native-select @error('product_ids') is-invalid @enderror"
                             multiple required>
                             @foreach($products as $product)
-                                <option value="{{ $product->id }}" 
-                                    data-sku="{{ $product->sku }}" 
+                                <option value="{{ $product->id }}"
+                                    data-sku="{{ $product->sku }}"
                                     data-name="{{ $product->name }}"
                                     data-category="{{ $product->category?->name ?? '' }}"
                                     @selected(in_array((string) $product->id, array_map('strval', old('product_ids', [])), true))>

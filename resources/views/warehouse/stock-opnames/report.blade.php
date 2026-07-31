@@ -1,6 +1,6 @@
-@section('title', 'Laporan Stok Opname - ' . config('app.name'))
 @extends('layouts.metronic.app')
 
+@section('title', 'Laporan Stok Opname - ' . config('app.name'))
 @section('page_guide')
     <x-metronic.page-guide id="warehouse-stock-opname-report" title="Panduan Halaman Laporan Stok Opname">
         <x-slot:function>
@@ -64,4 +64,3 @@
         </div>
     </x-metronic.card>
 @endsection
-

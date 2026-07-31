@@ -38,7 +38,9 @@
 
 @section('content')
     <x-metronic.page-title title="Dashboard Gudang" description="DASH-02 stok, nilai, receipt/issue, PO/transfer/order pending, damaged, opname, dan workload.">
-        <a href="{{ route('reports.warehouse.index', request()->query()) }}" class="btn btn-light-primary">Laporan Gudang</a>
+        <x-slot:actions>
+            <a href="{{ route('reports.warehouse.index', request()->query()) }}" class="btn btn-light-primary">Laporan Gudang</a>
+        </x-slot:actions>
     </x-metronic.page-title>
 
     @include('reports.partials.filter', ['filters' => $filters])
@@ -63,7 +65,32 @@
             </x-metronic.card>
         </div>
         <div class="col-lg-8">
-            @include('reports.partials.definitions', ['definitions' => $definitions])
+            <x-metronic.card title="Definisi KPI">
+                <ul class="mb-0">
+                    @foreach($definitions as $definition)
+                        <li>{{ $definition }}</li>
+                    @endforeach
+                </ul>
+            </x-metronic.card>
+        </div>
+    </div>
+    <div class="row g-5 mb-5">
+        <div class="col-lg-7">
+            <x-metronic.card title="Gerakan Stok" subtitle="Perbandingan masuk &amp; keluar sepanjang periode dipilih">
+                <x-slot:toolbar>
+                    <div class="btn-group btn-group-sm" role="group" id="warehouse-movement-period" aria-label="Periode gerakan stok">
+                        <button type="button" class="btn btn-light-primary active" data-period="daily">Harian</button>
+                        <button type="button" class="btn btn-light-primary" data-period="monthly">Bulanan</button>
+                        <button type="button" class="btn btn-light-primary" data-period="yearly">Tahunan</button>
+                    </div>
+                </x-slot:toolbar>
+                <div id="warehouse-daily-movement" style="min-height: 340px; height: 340px;"></div>
+            </x-metronic.card>
+        </div>
+        <div class="col-lg-5">
+            <x-metronic.card title="Distribusi Stok" subtitle="Komposisi kondisi stok saat ini">
+                <div id="warehouse-stock-distribution" style="min-height: 340px; height: 340px;"></div>
+            </x-metronic.card>
         </div>
     </div>
 
@@ -88,4 +115,132 @@
             </table>
         </div>
     </x-metronic.card>
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const movementEl = document.getElementById('warehouse-daily-movement');
+        const distributionEl = document.getElementById('warehouse-stock-distribution');
+
+        @php($dailyMovement = $dashboard['charts']['daily_movement'] ?? [])
+        @php($monthlyMovement = $dashboard['charts']['monthly_movement'] ?? [])
+        @php($yearlyMovement = $dashboard['charts']['yearly_movement'] ?? [])
+
+        if (movementEl) {
+            const datasets = {
+                daily: @json($dailyMovement),
+                monthly: @json($monthlyMovement),
+                yearly: @json($yearlyMovement),
+            };
+
+            const formatDates = (rows, period) => rows.map(row => {
+                if (period === 'monthly' && row.date) {
+                    const [y, m] = row.date.split('-');
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+                    return monthNames[parseInt(m, 10) - 1] + ' ' + y;
+                }
+                return row.date;
+            });
+
+            const baseOptions = {
+                series: [],
+                chart: {
+                    type: 'area',
+                    height: 320,
+                    toolbar: { show: false },
+                    fontFamily: 'Inter, sans-serif',
+                },
+                colors: ['#4f46e5', '#ef4444'],
+                stroke: { curve: 'smooth', width: 2 },
+                fill: { type: 'gradient', gradient: { opacityFrom: 0.45, opacityTo: 0.05 } },
+                dataLabels: { enabled: false },
+                xaxis: { categories: [], labels: { style: { colors: '#94a3b8' } } },
+                yaxis: { labels: { style: { colors: '#94a3b8' } } },
+                grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+                legend: { position: 'top' },
+                tooltip: { theme: 'light' },
+            };
+
+            const renderMovementChart = (period) => {
+                const rows = datasets[period] || [];
+                const dates = formatDates(rows, period);
+                const incoming = rows.map(row => parseFloat(row.incoming || 0));
+                const outgoing = rows.map(row => parseFloat(row.outgoing || 0));
+
+                if (movementEl._apexChart) {
+                    movementEl._apexChart.destroy();
+                }
+
+                movementEl.innerHTML = '';
+
+                if (dates.length === 0) {
+                    movementEl.innerHTML = '<div class="text-center text-muted py-10">Belum ada gerakan stok pada periode ini</div>';
+                    return;
+                }
+
+                baseOptions.series = [
+                    { name: 'Masuk', data: incoming },
+                    { name: 'Keluar', data: outgoing },
+                ];
+                baseOptions.xaxis.categories = dates;
+
+                const chart = new ApexCharts(movementEl, baseOptions);
+                chart.render();
+                movementEl._apexChart = chart;
+            };
+
+            renderMovementChart('daily');
+
+            const periodButtons = document.querySelectorAll('#warehouse-movement-period button[data-period]');
+            periodButtons.forEach((button) => {
+                button.addEventListener('click', function () {
+                    periodButtons.forEach((b) => b.classList.remove('active'));
+                    this.classList.add('active');
+                    renderMovementChart(this.dataset.period);
+                });
+            });
+        }
+
+        if (distributionEl) {
+            const available = {{ (float) ($kpis['available_quantity'] ?? 0) }};
+            const reserved = {{ (float) ($kpis['reserved_quantity'] ?? 0) }};
+            const damaged = {{ (float) ($kpis['damaged_quantity'] ?? 0) }};
+
+            if ((available + reserved + damaged) === 0) {
+                distributionEl.innerHTML = '<div class="text-center text-muted py-10">Belum ada data stok</div>';
+            } else {
+                const options = {
+                    series: [available, reserved, damaged],
+                    chart: { type: 'donut', height: 320, fontFamily: 'Inter, sans-serif' },
+                    labels: ['Tersedia', 'Reserved', 'Rusak'],
+                    colors: ['#10b981', '#f59e0b', '#ef4444'],
+                    legend: { position: 'bottom' },
+                    dataLabels: {
+                        enabled: true,
+                        formatter: function (val) {
+                            return val.toFixed(1) + '%';
+                        },
+                    },
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                labels: {
+                                    show: true,
+                                    total: {
+                                        show: true,
+                                        label: 'Total Unit',
+                                        formatter: function () {
+                                            return (available + reserved + damaged).toLocaleString('id-ID');
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                };
+                new ApexCharts(distributionEl, options).render();
+            }
+        }
+    });
+    </script>
+    @endpush
 @endsection

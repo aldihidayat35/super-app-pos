@@ -11,6 +11,8 @@
         <x-slot:operation><ol><li>Centang lokasi yang boleh diakses user.</li><li>Pilih satu sebagai lokasi default.</li><li>Simpan.</li></ol></x-slot:operation>
     </x-metronic.page-guide>
 @endsection
+
+@section('content')
     <x-metronic.page-title title="Penugasan Lokasi Kerja" description="Tentukan gudang atau cabang/toko yang dapat digunakan oleh pengguna." />
 
     <x-metronic.card title="{{ $user->name }}">

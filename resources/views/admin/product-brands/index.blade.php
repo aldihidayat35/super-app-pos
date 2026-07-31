@@ -13,6 +13,8 @@
         <x-slot:example><p>Merek Premium, deskripsi "Premium Quality Coffee", logo ada, 15 produk.</p></x-slot:example>
     </x-metronic.page-guide>
 @endsection
+
+@section('toolbar_actions')
     <x-metronic.permission-button permission="products.create" :href="route('admin.product-brands.create')" icon="ki-outline ki-plus">Tambah Merek</x-metronic.permission-button>
 @endsection
 @section('content')

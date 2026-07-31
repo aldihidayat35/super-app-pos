@@ -14,6 +14,8 @@
         <x-slot:example><p>Budi, username "budi", email budi@email.com, role "Staff Gudang", lokasi "Gudang Pusat".</p></x-slot:example>
     </x-metronic.page-guide>
 @endsection
+
+@section('content')
     <x-metronic.page-title title="Tambah Pengguna" description="Buat akun internal dan tentukan role awal melalui RBAC." />
     @include('admin.users._form')
 @endsection

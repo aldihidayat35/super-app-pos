@@ -25,6 +25,7 @@ class ReportFilterRequest extends FormRequest
             'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'range' => ['nullable', 'string', 'in:daily,monthly,yearly'],
         ];
     }
 }

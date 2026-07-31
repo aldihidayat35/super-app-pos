@@ -1,3 +1,5 @@
+@extends('layouts.metronic.app')
+
 @section('title', 'Approval Stok Opname - ' . config('app.name'))
 @section('page_title', 'Approval Stok Opname')
 

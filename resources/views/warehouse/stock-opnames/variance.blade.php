@@ -1,3 +1,5 @@
+@extends('layouts.metronic.app')
+
 @section('title', 'Variance Stok Opname - ' . config('app.name'))
 @section('page_title', 'Variance Stok Opname')
 

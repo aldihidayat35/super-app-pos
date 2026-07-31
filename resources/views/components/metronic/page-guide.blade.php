@@ -38,25 +38,28 @@
             </div>
             <div class="modal-body bg-light">
                 <div class="accordion" id="{{ $accordionId }}">
+                    @php($renderedSectionCount = 0)
                     @foreach ($sections as $index => $section)
-                        @php($slot = ${$section['key']})
+                        @php($sectionContent = ${$section['key']} ?? null)
+                        @continue(blank((string) $sectionContent))
+                        @php($isFirstSection = $renderedSectionCount++ === 0)
                         <div class="accordion-item border border-gray-300 mb-3 rounded overflow-hidden">
                             <h3 class="accordion-header" id="{{ $modalId }}-heading-{{ $section['key'] }}">
-                                <button class="accordion-button fw-semibold {{ $index === 0 ? '' : 'collapsed' }}"
+                                <button class="accordion-button fw-semibold {{ $isFirstSection ? '' : 'collapsed' }}"
                                         type="button"
                                         data-bs-toggle="collapse"
                                         data-bs-target="#{{ $modalId }}-section-{{ $section['key'] }}"
-                                        aria-expanded="{{ $index === 0 ? 'true' : 'false' }}"
+                                        aria-expanded="{{ $isFirstSection ? 'true' : 'false' }}"
                                         aria-controls="{{ $modalId }}-section-{{ $section['key'] }}">
                                     <i class="ki-outline {{ $section['icon'] }} fs-3 text-primary me-3" aria-hidden="true"></i>
                                     {{ $section['title'] }}
                                 </button>
                             </h3>
                             <div id="{{ $modalId }}-section-{{ $section['key'] }}"
-                                 class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}"
+                                 class="accordion-collapse collapse {{ $isFirstSection ? 'show' : '' }}"
                                  aria-labelledby="{{ $modalId }}-heading-{{ $section['key'] }}"
                                  data-bs-parent="#{{ $accordionId }}">
-                                <div class="accordion-body text-gray-700 lh-lg page-guide-content">{{ $slot }}</div>
+                                <div class="accordion-body text-gray-700 lh-lg page-guide-content">{{ $sectionContent }}</div>
                             </div>
                         </div>
                     @endforeach

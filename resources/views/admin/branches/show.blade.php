@@ -11,6 +11,8 @@
         <x-slot:operation><ol><li>Periksa info profil cabang.</li><li>Buka tab operasional.</li></ol></x-slot:operation>
     </x-metronic.page-guide>
 @endsection
+
+@section('toolbar_actions')
     @can('update', $branch)
         <a href="{{ route('admin.branches.edit', $branch) }}" class="btn btn-primary"><i class="ki-outline ki-pencil"></i> Edit</a>
     @endcan

@@ -37,16 +37,160 @@ const initializeTheme = () => {
 };
 
 const initializeSelect2 = () => {
+    if (typeof window.$?.fn?.select2 !== 'function') return;
+
     window.$('[data-control="select2"]').each(function () {
-        const parent = this.closest('.modal, .offcanvas');
-        window.$(this).select2({
+        const select = window.$(this);
+
+        if (select.hasClass('select2-hidden-accessible')) return;
+
+        const configuredParent = this.dataset.dropdownParent
+            ? document.querySelector(this.dataset.dropdownParent)
+            : null;
+        const parent = configuredParent || this.closest('.modal, .offcanvas');
+
+        select.select2({
+            theme: 'bootstrap5',
+            selectionCssClass: ':all:',
             dropdownParent: parent ? window.$(parent) : undefined,
             placeholder: this.dataset.placeholder || 'Pilih opsi',
             allowClear: this.dataset.allowClear === 'true',
             closeOnSelect: this.dataset.closeOnSelect !== 'false',
+            minimumResultsForSearch: 0,
             width: '100%',
         });
+        this.setAttribute('data-kt-initialized', '1');
     });
+};
+
+const closeSearchableSelect = (wrapper) => {
+    wrapper.classList.remove('is-open');
+    wrapper.querySelector('.searchable-select-toggle')?.setAttribute('aria-expanded', 'false');
+};
+
+const initializeSearchableSelectFallbacks = () => {
+    document.querySelectorAll('select[data-searchable-fallback="true"]').forEach((select) => {
+        if (select.classList.contains('select2-hidden-accessible') || select.dataset.searchableInitialized === 'true') return;
+
+        select.dataset.searchableInitialized = 'true';
+        select.classList.add('searchable-select-native');
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'searchable-select';
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'searchable-select-toggle form-select form-select-solid text-start';
+        toggle.setAttribute('aria-haspopup', 'listbox');
+        toggle.setAttribute('aria-expanded', 'false');
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'searchable-select-dropdown';
+
+        const searchWrapper = document.createElement('div');
+        searchWrapper.className = 'searchable-select-search';
+
+        const search = document.createElement('input');
+        search.type = 'search';
+        search.className = 'form-control form-control-solid';
+        search.placeholder = 'Ketik untuk mencari...';
+        search.autocomplete = 'off';
+        search.setAttribute('aria-label', `Cari ${select.dataset.placeholder || 'pilihan'}`);
+
+        const options = document.createElement('div');
+        options.className = 'searchable-select-options';
+        options.setAttribute('role', 'listbox');
+
+        const empty = document.createElement('div');
+        empty.className = 'searchable-select-empty text-muted';
+        empty.textContent = 'Data tidak ditemukan.';
+
+        const optionButtons = Array.from(select.options).map((option) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'searchable-select-option';
+            button.dataset.value = option.value;
+            button.dataset.search = option.text.toLocaleLowerCase('id-ID');
+            button.textContent = option.text;
+            button.disabled = option.disabled;
+            button.setAttribute('role', 'option');
+
+            button.addEventListener('click', () => {
+                select.value = option.value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                updateSelection();
+                closeSearchableSelect(wrapper);
+                toggle.focus();
+            });
+
+            options.appendChild(button);
+            return button;
+        });
+
+        const updateSelection = () => {
+            const selected = select.options[select.selectedIndex];
+            const placeholder = select.dataset.placeholder || 'Pilih opsi';
+            toggle.textContent = selected?.value ? selected.text : placeholder;
+            toggle.classList.toggle('text-muted', !selected?.value);
+
+            optionButtons.forEach((button) => {
+                const selectedOption = button.dataset.value === select.value;
+                button.classList.toggle('is-selected', selectedOption);
+                button.setAttribute('aria-selected', selectedOption ? 'true' : 'false');
+            });
+        };
+
+        const filterOptions = () => {
+            const keyword = search.value.trim().toLocaleLowerCase('id-ID');
+            let visibleCount = 0;
+
+            optionButtons.forEach((button) => {
+                const visible = button.dataset.search.includes(keyword);
+                button.hidden = !visible;
+                if (visible) visibleCount += 1;
+            });
+
+            empty.classList.toggle('d-none', visibleCount > 0);
+        };
+
+        toggle.addEventListener('click', () => {
+            const willOpen = !wrapper.classList.contains('is-open');
+            document.querySelectorAll('.searchable-select.is-open').forEach(closeSearchableSelect);
+            wrapper.classList.toggle('is-open', willOpen);
+            toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+            if (willOpen) {
+                search.value = '';
+                filterOptions();
+                window.requestAnimationFrame(() => search.focus());
+            }
+        });
+
+        search.addEventListener('input', filterOptions);
+        search.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeSearchableSelect(wrapper);
+                toggle.focus();
+            }
+        });
+
+        searchWrapper.appendChild(search);
+        dropdown.append(searchWrapper, options, empty);
+        wrapper.append(toggle, dropdown);
+        select.insertAdjacentElement('afterend', wrapper);
+        select.addEventListener('change', updateSelection);
+        updateSelection();
+        filterOptions();
+    });
+
+    if (document.body.dataset.searchableSelectListener !== 'true') {
+        document.body.dataset.searchableSelectListener = 'true';
+        document.addEventListener('click', (event) => {
+            document.querySelectorAll('.searchable-select.is-open').forEach((wrapper) => {
+                if (!wrapper.contains(event.target)) closeSearchableSelect(wrapper);
+            });
+        });
+    }
 };
 
 const initializeDatePickers = () => {
@@ -148,9 +292,10 @@ const initializeSidebarToggle = () => {
     toggle?.addEventListener('click', () => sidebar?.classList.toggle('drawer-on'));
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+const initializeApplication = () => {
     initializeTheme();
     initializeSelect2();
+    initializeSearchableSelectFallbacks();
     initializeDatePickers();
     initializeCurrencyInputs();
     initializeDataTables();
@@ -158,7 +303,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeModalSubmissions();
     initializeConfirmations();
     initializeSidebarToggle();
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApplication, { once: true });
+} else {
+    initializeApplication();
+}
 
 window.addEventListener('pageshow', () => window.AppLoading.hide());
 document.addEventListener('submit', (event) => {
