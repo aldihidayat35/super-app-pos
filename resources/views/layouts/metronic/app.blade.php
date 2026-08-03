@@ -26,11 +26,11 @@
             <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
                 @include('layouts.metronic.partials.sidebar')
 
-                <main class="app-main flex-column flex-row-fluid" id="kt_app_main">
-                    <div class="d-flex flex-column flex-column-fluid">
+                <main class="app-main flex-column flex-row-fluid mt-8 " id="kt_app_main" >
+                    <div class="d-flex flex-column flex-column-fluid mt-8">
                         @include('layouts.metronic.partials.toolbar')
                         <div id="kt_app_content" class="app-content flex-column-fluid">
-                            <div id="kt_app_content_container" class="app-container container-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid mt-6">
                                 @include('layouts.metronic.partials.notification-area')
                                 @yield('content')
                             </div>

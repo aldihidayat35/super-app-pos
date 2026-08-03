@@ -13,6 +13,7 @@
         <div class="col-xl-7">
             <x-metronic.card title="Scan / Cari Produk">
                 <form method="GET" class="row g-3 mb-6">
+                    <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
                     <div class="col-md-9"><input name="q" value="{{ $filters['q'] ?? '' }}" class="form-control form-control-lg" placeholder="Scan barcode, SKU, nama produk, atau kategori favorit"></div>
                     <div class="col-md-3"><button class="btn btn-primary btn-lg w-100">Cari</button></div>
                 </form>
@@ -48,7 +49,7 @@
                     @csrf
                     <input type="hidden" name="idempotency_key" value="{{ (string) str()->uuid() }}">
                     <x-metronic.form-group name="branch_id" label="Cabang/Toko" required>
-                        <select name="branch_id" class="form-select">@foreach($branches as $branch)<option value="{{ $branch->id }}">{{ $branch->name }}</option>@endforeach</select>
+                        <select name="branch_id" class="form-select">@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((int) old('branch_id', $selectedBranchId) === $branch->id)>{{ $branch->name }}</option>@endforeach</select>
                     </x-metronic.form-group>
                     <x-metronic.form-group name="customer_id" label="Pelanggan Opsional">
                         <select name="customer_id" class="form-select"><option value="">Umum</option>@foreach($customers as $customer)<option value="{{ $customer->id }}">{{ $customer->business_name }}</option>@endforeach</select>
@@ -80,7 +81,7 @@
                 </form>
                 <form method="POST" action="{{ route('retail.pos.holds.store') }}" class="mt-3">
                     @csrf
-                    <input type="hidden" name="branch_id" value="{{ $branches->first()?->id }}">
+                    <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
                     <input type="hidden" name="estimated_total" value="0">
                     <input type="hidden" name="cart_snapshot[manual]" value="Keranjang ditahan dari POS cepat">
                     <button class="btn btn-light-warning w-100">Hold Keranjang</button>

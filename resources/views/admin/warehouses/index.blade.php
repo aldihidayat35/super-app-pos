@@ -58,7 +58,19 @@
                             <td class="fw-bold">{{ $warehouse->code }}</td>
                             <td><a href="{{ route('admin.warehouses.show', $warehouse) }}" class="fw-bold text-gray-900 text-hover-primary">{{ $warehouse->name }}</a></td>
                             <td>{{ $warehouse->city ?: '-' }}</td>
-                            <td>{{ $warehouse->manager?->name ?: '-' }}</td>
+                            <td>
+                                @php
+                                    $heads = \App\Models\User::whereHas('workLocations', function($q) use ($warehouse) {
+                                        $q->where('work_locations.id', $warehouse->work_location_id);
+                                    })
+                                    ->whereHas('roles', function($q) {
+                                        $q->where('name', 'kepala_gudang');
+                                    })
+                                    ->where('is_active', true)
+                                    ->pluck('name');
+                                    echo $heads->count() > 0 ? $heads->join(', ') : ($warehouse->manager?->name ?? '-');
+                                @endphp
+                            </td>
                             <td>{{ $warehouse->capacity ? qty($warehouse->capacity) : '-' }}</td>
                             <td>{{ $warehouse->service_area ?: '-' }}</td>
                             <td><x-metronic.status-badge :status="$warehouse->is_active ? 'active' : 'inactive'" :label="$warehouse->is_active ? 'Aktif' : 'Nonaktif'" /></td>

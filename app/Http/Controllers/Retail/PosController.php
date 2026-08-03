@@ -26,6 +26,14 @@ class PosController extends Controller
         abort_unless($request->user()->can('pos.view'), 403);
 
         $locationIds = $request->user()->permittedWorkLocationIds();
+        $branches = Branch::query()
+            ->where('is_active', true)
+            ->whereIn('work_location_id', $locationIds)
+            ->orderBy('name')
+            ->get();
+        $requestedBranchId = $request->integer('branch_id');
+        $selectedBranch = $branches->firstWhere('id', $requestedBranchId) ?? $branches->first();
+        $stockLocationIds = $selectedBranch ? [(int) $selectedBranch->work_location_id] : $locationIds;
         $products = Product::query()
             ->with(['baseUnit', 'barcodes'])
             ->where('status', 'active')
@@ -37,18 +45,19 @@ class PosController extends Controller
                         ->orWhereHas('barcodes', fn ($barcode) => $barcode->where('code', 'like', $term));
                 });
             })
-            ->whereHas('stocks', fn ($query) => $query->whereIn('work_location_id', $locationIds))
+            ->whereHas('stocks', fn ($query) => $query->whereIn('work_location_id', $stockLocationIds))
             ->orderBy('name')
             ->limit(80)
             ->get();
 
         return view('retail.pos.index', [
-            'branches' => Branch::query()->where('is_active', true)->whereIn('work_location_id', $locationIds)->orderBy('name')->get(),
+            'branches' => $branches,
+            'selectedBranchId' => $selectedBranch?->id,
             'customers' => Customer::query()->where('is_active', true)->orderBy('business_name')->limit(200)->get(),
             'products' => $products,
-            'stocks' => Stock::query()->whereIn('work_location_id', $locationIds)->get()->keyBy('product_id'),
+            'stocks' => Stock::query()->whereIn('work_location_id', $stockLocationIds)->get()->keyBy('product_id'),
             'paymentMethods' => PaymentMethod::options(),
-            'filters' => $request->only(['q']),
+            'filters' => $request->only(['q', 'branch_id']),
         ]);
     }
 

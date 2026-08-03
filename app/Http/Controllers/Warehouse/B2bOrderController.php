@@ -20,7 +20,11 @@ class B2bOrderController extends Controller
     public function index(Request $request): View
     {
         abort_unless($request->user()->can('b2b_orders.view'), 403);
-        $filters = ['status' => $request->query('status'), 'q' => trim((string) $request->query('q'))];
+        $filters = [
+            'status' => $request->query('status'),
+            'q' => trim((string) $request->query('q')),
+            'customer_id' => $request->integer('customer_id') ?: null,
+        ];
 
         return view('warehouse.b2b-orders.index', [
             'filters' => $filters,
@@ -28,6 +32,7 @@ class B2bOrderController extends Controller
             'orders' => B2bOrder::query()
                 ->with(['customer', 'requester'])
                 ->withCount('items')
+                ->when($filters['customer_id'], fn ($query, $customerId) => $query->where('customer_id', $customerId))
                 ->when($filters['status'], fn ($query, $status) => $query->where('status', $status))
                 ->when($filters['q'], function ($query, string $term): void {
                     $like = '%'.$term.'%';

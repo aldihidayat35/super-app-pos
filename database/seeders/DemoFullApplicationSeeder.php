@@ -87,6 +87,9 @@ class DemoFullApplicationSeeder extends Seeder
             $sync = app(WorkLocationSyncService::class);
             [$warehouse, $warehouseLocation, $branch, $branchLocation] = $this->seedOrganization($sync);
             $users = $this->seedUsers($warehouseLocation, $branchLocation);
+
+            // Set warehouse manager after users are created
+            $warehouse->update(['manager_user_id' => $users['manajemen_gudang']->id]);
             [$unitPcs, $unitPack] = $this->seedUnits();
             [$category, $brand] = $this->seedProductTaxonomy();
             $supplier = $this->seedSupplier();

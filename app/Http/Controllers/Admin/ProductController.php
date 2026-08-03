@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\ProductBrand;
 use App\Models\ProductCategory;
+use App\Models\Stock;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Services\Product\ProductSkuService;
@@ -19,6 +20,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -78,14 +80,10 @@ class ProductController extends Controller
                 $data['sku'] = $data['sku'] ?: $skuService->generate();
                 $conversion->assertValidUnitPayload($request->validated('units'), (int) $data['base_unit_id']);
 
-                if ($request->hasFile('main_image')) {
-                    $data['main_image_path'] = $request->file('main_image')?->store('products', 'public');
-                }
-
                 $product = Product::query()->create($data);
                 $conversion->syncProductUnits($product, $request->validated('units'));
                 $this->syncBarcodes($product, $request->validated('barcodes', []));
-                $this->syncPrimaryImage($product, $data['main_image_path'] ?? null);
+                $this->syncPhotos($product, $request);
                 activity()->causedBy($request->user())->performedOn($product)->log('product.created');
 
                 return $product;
@@ -101,9 +99,29 @@ class ProductController extends Controller
     {
         $this->authorize('view', $product);
 
-        return view('admin.products.show', [
-            'product' => $product->load(['category', 'subcategory', 'brand', 'baseUnit', 'defaultWarehouse', 'units.unit', 'barcodes.productUnit.unit', 'images']),
+        $product = $product->load([
+            'category', 'subcategory', 'brand', 'baseUnit', 'defaultWarehouse',
+            'units.unit',
+            'barcodes.productUnit.unit',
+            'images' => fn ($q) => $q->orderBy('sort_order'),
+            'stocks' => fn ($q) => $q->with('warehouseLocation.warehouse'),
+            'prices' => fn ($q) => $q->where('status', 'active')->orderBy('priority'),
+            'supplierProducts' => fn ($q) => $q->with('supplier'),
+            'stockMutations' => fn ($q) => $q->with(['product', 'warehouseLocation', 'actor'])->orderBy('occurred_at', 'desc')->limit(20),
         ]);
+
+        $stockSummary = Stock::query()
+            ->where('product_id', $product->id)
+            ->selectRaw('
+                COUNT(*) as total_locations,
+                SUM(quantity_on_hand) as total_on_hand,
+                SUM(quantity_reserved) as total_reserved,
+                SUM(quantity_damaged) as total_damaged,
+                SUM(cost_value) as total_value
+            ')
+            ->first();
+
+        return view('admin.products.show', compact('product', 'stockSummary'));
     }
 
     public function edit(Product $product): View
@@ -124,14 +142,10 @@ class ProductController extends Controller
                     throw ValidationException::withMessages(['sku' => 'SKU produk yang sudah dipakai transaksi tidak boleh diubah.']);
                 }
 
-                if ($request->hasFile('main_image')) {
-                    $data['main_image_path'] = $request->file('main_image')?->store('products', 'public');
-                }
-
                 $product->fill($data)->save();
                 $conversion->syncProductUnits($product, $request->validated('units'));
                 $this->syncBarcodes($product, $request->validated('barcodes', []));
-                $this->syncPrimaryImage($product, $data['main_image_path'] ?? null);
+                $this->syncPhotos($product, $request);
                 activity()->causedBy($request->user())->performedOn($product)->log('product.updated');
             });
         } catch (ServiceException $exception) {
@@ -240,6 +254,72 @@ class ProductController extends Controller
         }
 
         ProductBarcode::query()->where('product_id', $product->id)->whereNotIn('id', $keptIds)->delete();
+    }
+
+    private function syncPhotos(Product $product, Request $request): void
+    {
+        if ($request->hasFile('main_image') && $request->file('main_image')?->isValid()) {
+            $path = $request->file('main_image')?->store('products', 'public');
+
+            if ($path) {
+                $product->forceFill(['main_image_path' => $path])->save();
+                $this->syncPrimaryImage($product, $path);
+            }
+        }
+
+        // Remove photos by path
+        if ($request->input('remove_photos')) {
+            $paths = array_filter(array_map('trim', explode(',', $request->input('remove_photos'))));
+            foreach ($paths as $path) {
+                if (empty($path)) {
+                    continue;
+                }
+
+                // Try to find and delete from product_images
+                $image = $product->images()->where('path', $path)->first();
+                if ($image) {
+                    $image->delete();
+                    Storage::disk('public')->delete($path);
+                }
+
+                // Also check main_image_path
+                if ($product->main_image_path === $path) {
+                    $product->main_image_path = null;
+                    $product->save();
+                }
+            }
+        }
+
+        // Upload new photos
+        if ($request->hasFile('photos')) {
+            $files = $request->file('photos');
+            $existingCount = $product->images()->count();
+            $maxPhotos = 10;
+
+            foreach ($files as $index => $file) {
+                if ($existingCount + $index >= $maxPhotos) {
+                    break;
+                }
+
+                if (! $file->isValid()) {
+                    continue;
+                }
+
+                $path = $file->store('products', 'public');
+                $product->images()->create([
+                    'path' => $path,
+                    'alt_text' => $product->name,
+                    'sort_order' => $product->images()->max('sort_order') ?? 0 + $index + 1,
+                    'is_primary' => $index === 0 && $product->images->count() === 0,
+                ]);
+            }
+
+            // Ensure at least one primary image exists
+            $hasPrimary = $product->images()->where('is_primary', true)->exists();
+            if (! $hasPrimary && $product->images()->count() > 0) {
+                $product->images()->orderBy('sort_order')->first()->update(['is_primary' => true]);
+            }
+        }
     }
 
     private function syncPrimaryImage(Product $product, ?string $path): void

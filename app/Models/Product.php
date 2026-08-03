@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -110,9 +111,38 @@ class Product extends Model
         return $this->hasMany(Stock::class);
     }
 
+    /** @return HasMany<ProductPrice, $this> */
+    public function prices(): HasMany
+    {
+        return $this->hasMany(ProductPrice::class);
+    }
+
     /** @return HasMany<StockMutation, $this> */
     public function stockMutations(): HasMany
     {
         return $this->hasMany(StockMutation::class);
+    }
+
+    /** @return HasMany<PriceHistory, $this> */
+    public function priceHistories(): HasMany
+    {
+        return $this->hasMany(PriceHistory::class);
+    }
+
+    /** @return HasMany<SupplierProduct, $this> */
+    public function supplierProducts(): HasMany
+    {
+        return $this->hasMany(SupplierProduct::class);
+    }
+
+    /**
+     * Get the full URL for the main image.
+     */
+    public function getMainImageUrlAttribute(): ?string
+    {
+        if (!$this->main_image_path) {
+            return null;
+        }
+        return Storage::url($this->main_image_path);
     }
 }

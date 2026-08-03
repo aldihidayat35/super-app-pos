@@ -659,7 +659,10 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         ->name('audit.security.index');
 
     Route::prefix('warehouse')->name('warehouse.')->group(function (): void {
-        Route::get('/dashboard', WarehouseDashboardController::class)
+        Route::get('/dashboard/data', [WarehouseDashboardController::class, 'data'])
+            ->middleware('permission:stock.view')
+            ->name('dashboard.data');
+        Route::get('/dashboard', [WarehouseDashboardController::class, 'index'])
             ->middleware('permission:stock.view')
             ->name('dashboard');
 
@@ -746,6 +749,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/location-transfers', [LocationTransferController::class, 'index'])
             ->middleware('permission:stock_transfers.view|stock.view')
             ->name('location-transfers.index');
+        Route::get('/location-transfers/options', [LocationTransferController::class, 'options'])
+            ->middleware('permission:stock_transfers.create|stock.create')
+            ->name('location-transfers.options');
         Route::post('/location-transfers', [LocationTransferController::class, 'store'])
             ->middleware('permission:stock_transfers.create|stock.create')
             ->name('location-transfers.store');

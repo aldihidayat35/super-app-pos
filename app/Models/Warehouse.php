@@ -50,6 +50,24 @@ class Warehouse extends Model
         return $this->belongsTo(User::class, 'manager_user_id');
     }
 
+    /**
+     * Get all users with kepala_gudang role assigned to this warehouse's work location.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function warehouseHeads(): BelongsToMany
+    {
+        return $this->workLocation()->users()
+            ->whereHasPivot('is_active', true)
+            ->whereHas('roles', fn ($q) => $q->where('name', 'kepala_gudang'));
+    }
+
+    /** @return HasMany<WarehouseLocation, $this> */
+    public function warehouseLocations(): HasMany
+    {
+        return $this->hasMany(WarehouseLocation::class);
+    }
+
     /** @return HasMany<Branch, $this> */
     public function branches(): HasMany
     {

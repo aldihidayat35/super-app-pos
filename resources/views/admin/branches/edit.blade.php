@@ -10,7 +10,9 @@
         <x-slot:operation><ol><li>Periksa data.</li><li>Ubah field.</li><li>Simpan.</li></ol></x-slot:operation>
         <x-slot:warnings><div class="alert alert-warning mb-0"><ul><li>Kode tidak dapat diubah jika ada transaksi.</li></ul></div></x-slot:warnings>
     </x-metronic.page-guide>
-@endsection@section('content')
+@endsection
+
+@section('content')
     <x-metronic.page-title title="Edit Cabang/Toko" description="Perbarui cabang/toko. Kode dikunci setelah dipakai transaksi." />
     @include('admin.branches._form')
 @endsection

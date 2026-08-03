@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\ApprovalRequest;
 use App\Models\User;
 use App\Models\WorkLocation;
 use Database\Seeders\RolePermissionSeeder;
@@ -44,6 +45,95 @@ class UserRbacManagementTest extends TestCase
         $this->actingAs($admin)->get(route('admin.roles.index'))->assertOk()->assertSee('Daftar Role');
         $this->actingAs($admin)->get(route('admin.roles.show', $role))->assertOk()->assertSee('Matriks Permission');
         $this->actingAs($admin)->get(route('admin.permissions.index'))->assertOk()->assertSee('Daftar Permission');
+    }
+
+    #[Test]
+    public function user_dashboard_has_interactive_tabs_contextual_actions_and_employee_prefill(): void
+    {
+        $admin = $this->createAdmin();
+        $target = User::factory()->create([
+            'name' => 'Pengguna Dashboard',
+            'phone_number' => '628123456789',
+        ]);
+        $target->assignRole(Role::findByName('kepala_toko'));
+        $location = WorkLocation::factory()->create(['type' => 'branch', 'name' => 'Cabang Dashboard']);
+        $target->workLocations()->sync([
+            $location->id => ['is_default' => true, 'is_active' => true],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.show', $target))
+            ->assertOk()
+            ->assertSee('data-bs-toggle="tab"', false)
+            ->assertSee('user-summary-pane')
+            ->assertSee('user-roles-pane')
+            ->assertSee('user-locations-pane')
+            ->assertSee('user-relations-pane')
+            ->assertSee('user-approvals-pane')
+            ->assertSee('user-activities-pane')
+            ->assertSee('user-security-pane')
+            ->assertSee(route('admin.users.locations.edit', $target), false)
+            ->assertSee(route('attendance.employees.create', ['user_id' => $target->id, 'work_location_id' => $location->id]))
+            ->assertSee(route('approvals.index', ['requester_user_id' => $target->id]), false)
+            ->assertSee(route('audit-logs.index', ['actor_user_id' => $target->id]), false);
+
+        $this->actingAs($admin)
+            ->get(route('attendance.employees.create', ['user_id' => $target->id, 'work_location_id' => $location->id]))
+            ->assertOk()
+            ->assertSee('value="'.$target->id.'" selected', false)
+            ->assertSee('value="'.$location->id.'" selected', false)
+            ->assertSee('value="Pengguna Dashboard"', false)
+            ->assertSee('value="628123456789"', false);
+    }
+
+    #[Test]
+    public function approval_inbox_can_be_filtered_from_user_dashboard(): void
+    {
+        $admin = $this->createAdmin();
+        $target = User::factory()->create();
+        $other = User::factory()->create();
+
+        ApprovalRequest::query()->create([
+            'subject_type' => User::class,
+            'subject_id' => $target->id,
+            'approval_type' => 'target_action',
+            'module' => 'target_module',
+            'requester_user_id' => $target->id,
+            'reason' => 'Pengajuan target',
+        ]);
+        ApprovalRequest::query()->create([
+            'subject_type' => User::class,
+            'subject_id' => $other->id,
+            'approval_type' => 'other_action',
+            'module' => 'other_module',
+            'requester_user_id' => $other->id,
+            'reason' => 'Pengajuan lain',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('approvals.index', ['requester_user_id' => $target->id]))
+            ->assertOk()
+            ->assertSee('target action')
+            ->assertDontSee('other action')
+            ->assertSee('Menampilkan approval yang diajukan oleh pengguna terpilih.');
+    }
+
+    #[Test]
+    public function admin_user_sees_locked_states_instead_of_rbac_and_audit_details(): void
+    {
+        $adminUser = User::factory()->create();
+        $adminUser->assignRole(Role::findByName('admin_user'));
+        $target = User::factory()->create();
+        $target->assignRole(Role::findByName('kasir'));
+
+        $this->actingAs($adminUser)
+            ->get(route('admin.users.show', $target))
+            ->assertOk()
+            ->assertSee('Detail permission dibatasi')
+            ->assertSee('Akses approval dibatasi')
+            ->assertSee('Akses aktivitas dibatasi')
+            ->assertDontSee(route('admin.roles.index'), false)
+            ->assertDontSee(route('audit-logs.index', ['actor_user_id' => $target->id]), false);
     }
 
     #[Test]

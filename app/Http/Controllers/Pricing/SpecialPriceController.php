@@ -20,10 +20,16 @@ class SpecialPriceController extends Controller
         abort_unless($request->user()?->can('prices.view'), 403);
 
         return view('pricing.special-prices.index', [
-            'overrides' => CustomerPriceOverride::query()->with(['customer', 'product', 'branch'])->latest('id')->paginate(15),
+            'overrides' => CustomerPriceOverride::query()
+                ->with(['customer', 'product', 'branch'])
+                ->when($request->filled('customer_id'), fn ($query) => $query->where('customer_id', $request->integer('customer_id')))
+                ->latest('id')
+                ->paginate(15)
+                ->withQueryString(),
             'customers' => Customer::query()->where('is_active', true)->orderBy('business_name')->limit(500)->get(),
             'products' => Product::query()->where('status', 'active')->orderBy('name')->limit(500)->get(),
             'branches' => Branch::query()->where('is_active', true)->orderBy('name')->get(),
+            'selectedCustomerId' => $request->integer('customer_id') ?: null,
         ]);
     }
 

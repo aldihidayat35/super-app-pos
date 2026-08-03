@@ -6,7 +6,7 @@
             @include('layout.partials._sidebar')
 
             <main class="app-main flex-column flex-row-fluid" id="kt_app_main">
-                <div class="d-flex flex-column flex-column-fluid">
+                <div class="d-flex flex-column flex-column-fluid mt-8">
                     @yield('content')
                 </div>
 

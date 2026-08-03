@@ -3,9 +3,12 @@
 @section('title', 'Masuk - ' . config('app.name'))
 
 @section('content')
+    @php
+        $companyName = \App\Models\SystemSetting::getCompanyName();
+    @endphp
     <form method="POST" action="{{ route('login.store') }}" class="card shadow-sm p-10" novalidate>
         @csrf
-        <div class="text-center mb-10"><h1 class="text-gray-900 fw-bold mb-3">Masuk ke GudangToko</h1><div class="text-muted">Gunakan email atau username yang diberikan administrator.</div></div>
+        <div class="text-center mb-10"><h1 class="text-gray-900 fw-bold mb-3">Masuk ke {{ $companyName }}</h1><div class="text-muted">Gunakan email atau username yang diberikan administrator.</div></div>
         @if (session('status'))<div class="alert alert-success">{{ session('status') }}</div>@endif
         @if ($errors->any())<div class="alert alert-danger">{{ $errors->first() }}</div>@endif
         <x-metronic.form-group name="login" label="Email atau Username" required>

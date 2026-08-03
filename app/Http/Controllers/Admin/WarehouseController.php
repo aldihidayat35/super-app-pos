@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreWarehouseRequest;
 use App\Http\Requests\Admin\UpdateWarehouseRequest;
+use App\Models\Stock;
+use App\Models\StockMutation;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Models\WarehouseLocation;
 use App\Services\Organization\WorkLocationSyncService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -69,9 +72,53 @@ class WarehouseController extends Controller
     {
         $this->authorize('view', $warehouse);
 
-        return view('admin.warehouses.show', [
-            'warehouse' => $warehouse->load(['manager', 'branches', 'workLocation.users']),
+        $warehouse->load([
+            'manager',
+            'branches' => fn ($q) => $q->with('workLocation'),
+            'workLocation.users',
+            'warehouseLocations' => fn ($q) => $q->with('parent')->orderBy('full_code'),
         ]);
+
+        // 统计仓库的库存数据
+        $stockSummary = Stock::query()
+            ->whereHas('warehouseLocation', fn ($q) => $q->where('warehouse_id', $warehouse->id))
+            ->selectRaw('
+                COUNT(*) as total_products,
+                SUM(quantity_on_hand) as total_on_hand,
+                SUM(quantity_reserved) as total_reserved,
+                SUM(quantity_damaged) as total_damaged,
+                SUM(cost_value) as total_value
+            ')
+            ->first();
+
+        // 获取最近的库存变动
+        $recentMutations = StockMutation::query()
+            ->where('work_location_id', $warehouse->work_location_id)
+            ->where('warehouse_location_id', function ($q) use ($warehouse) {
+                $q->select('id')->from('warehouse_locations')->where('warehouse_id', $warehouse->id);
+            })
+            ->with(['product', 'warehouseLocation', 'actor'])
+            ->orderBy('occurred_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        // 获取仓库的所有用户
+        $warehouseUsers = $warehouse->workLocation?->users ?? collect();
+
+        // 统计各类型仓库位置数量
+        $locationStats = WarehouseLocation::query()
+            ->where('warehouse_id', $warehouse->id)
+            ->selectRaw('type, COUNT(*) as count')
+            ->groupBy('type')
+            ->get();
+
+        return view('admin.warehouses.show', compact(
+            'warehouse',
+            'stockSummary',
+            'recentMutations',
+            'warehouseUsers',
+            'locationStats'
+        ));
     }
 
     public function edit(Warehouse $warehouse): View

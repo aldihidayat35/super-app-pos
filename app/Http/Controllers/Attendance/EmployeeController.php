@@ -78,11 +78,25 @@ class EmployeeController extends Controller
     /** @return array<string, mixed> */
     private function formData(Request $request, ?Employee $employee = null): array
     {
+        $locations = WorkLocation::query()->whereIn('id', $request->user()->permittedWorkLocationIds())->orderBy('name')->get();
+        $users = User::query()->where('is_active', true)->orderBy('name')->limit(200)->get();
+        $requestedUserId = $request->integer('user_id');
+        $selectedUserId = $employee !== null
+            ? $employee->user_id
+            : ($users->contains('id', $requestedUserId) ? $requestedUserId : null);
+        $requestedLocationId = $request->integer('work_location_id');
+        $selectedWorkLocationId = $employee !== null
+            ? $employee->work_location_id
+            : ($locations->contains('id', $requestedLocationId) ? $requestedLocationId : null);
+
         return [
             'employee' => $employee,
-            'locations' => WorkLocation::query()->whereIn('id', $request->user()->permittedWorkLocationIds())->orderBy('name')->get(),
-            'users' => User::query()->where('is_active', true)->orderBy('name')->limit(200)->get(),
+            'locations' => $locations,
+            'users' => $users,
             'statuses' => EmployeeStatus::cases(),
+            'selectedUserId' => $selectedUserId,
+            'selectedWorkLocationId' => $selectedWorkLocationId,
+            'selectedUser' => $selectedUserId ? $users->firstWhere('id', $selectedUserId) : null,
         ];
     }
 }

@@ -69,7 +69,9 @@ class StockOpnameService
             $stocks = $this->snapshotQuery($opname)->lockForUpdate()->get();
 
             if ($stocks->isEmpty()) {
-                throw ServiceException::validation('Tidak ada saldo stok untuk scope opname ini.');
+                throw ServiceException::validation(
+                    'Scope yang dipilih belum memiliki saldo stok. Simpan sebagai draft, pilih scope lain, atau masukkan stok melalui penerimaan barang/transfer stok sebelum membuat snapshot.',
+                );
             }
 
             $opname->items()->delete();

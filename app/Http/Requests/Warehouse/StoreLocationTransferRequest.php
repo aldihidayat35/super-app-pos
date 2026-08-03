@@ -20,7 +20,7 @@ class StoreLocationTransferRequest extends FormRequest
         return [
             'product_id' => ['required', Rule::exists('products', 'id')->where('status', 'active')],
             'source_work_location_id' => ['required', Rule::exists('work_locations', 'id')->where('is_active', true)],
-            'source_warehouse_location_id' => ['nullable', Rule::exists('warehouse_locations', 'id')->where('is_active', true)],
+            'source_warehouse_location_id' => ['required', Rule::exists('warehouse_locations', 'id')->where('is_active', true)],
             'destination_work_location_id' => ['required', Rule::exists('work_locations', 'id')->where('is_active', true)],
             'destination_warehouse_location_id' => ['nullable', 'different:source_warehouse_location_id', Rule::exists('warehouse_locations', 'id')->where('is_active', true)],
             'quantity' => ['required', 'numeric', 'gt:0'],
@@ -46,6 +46,20 @@ class StoreLocationTransferRequest extends FormRequest
                 label: 'Zona/Rak/Bin Tujuan',
             );
         });
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'product_id' => 'produk',
+            'source_work_location_id' => 'lokasi kerja sumber',
+            'source_warehouse_location_id' => 'zona/rak/bin sumber',
+            'destination_work_location_id' => 'lokasi kerja tujuan',
+            'destination_warehouse_location_id' => 'zona/rak/bin tujuan',
+            'quantity' => 'qty',
+            'reason' => 'alasan transfer',
+        ];
     }
 
     private function validateWarehouseLocationBelongsToWorkLocation(

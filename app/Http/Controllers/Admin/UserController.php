@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\UsersDataTable;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
+use App\Models\ApprovalRequest;
 use App\Models\User;
 use App\Models\WorkLocation;
 use DateTimeInterface;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use App\DataTables\UsersDataTable;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Spatie\Activitylog\Models\Activity;
@@ -65,7 +65,7 @@ class UserController extends Controller
     }
 
     /** Server-side DataTable endpoint for AJAX requests */
-    public function dataTable(UsersDataTable $dataTable): \Illuminate\Http\JsonResponse
+    public function dataTable(UsersDataTable $dataTable): JsonResponse
     {
         $this->authorize('viewAny', User::class);
 
@@ -74,17 +74,21 @@ class UserController extends Controller
         return response()->json($response);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorize('create', User::class);
+
+        $locations = WorkLocation::query()->where('is_active', true)->orderBy('type')->orderBy('name')->get();
+        $requestedLocationId = $request->integer('location');
+        $selectedLocationId = $locations->contains('id', $requestedLocationId) ? $requestedLocationId : null;
 
         return view('admin.users.create', [
             'user' => new User(['is_active' => true]),
             'roles' => Role::query()->orderBy('name')->get(),
             'selectedRoles' => collect(),
-            'locations' => WorkLocation::query()->where('is_active', true)->orderBy('type')->orderBy('name')->get(),
-            'selectedLocations' => collect(),
-            'defaultLocationId' => null,
+            'locations' => $locations,
+            'selectedLocations' => $selectedLocationId ? collect([$selectedLocationId]) : collect(),
+            'defaultLocationId' => $selectedLocationId,
             'locationEffectiveFrom' => now()->toDateString(),
             'locationEffectiveUntil' => null,
             'locationIsActive' => true,
@@ -121,18 +125,74 @@ class UserController extends Controller
         ]);
     }
 
-    public function show(User $user): View
+    public function show(Request $request, User $user): View
     {
         $this->authorize('view', $user);
 
-        return view('admin.users.show', [
-            'user' => $user->load(['roles.permissions', 'workLocations']),
-            'recentActivities' => Activity::query()
+        $actor = $request->user();
+        $access = [
+            'roles' => (bool) $actor?->can('admin.roles.view'),
+            'permissions' => (bool) $actor?->can('admin.permissions.view'),
+            'locations_manage' => (bool) $actor?->can('admin.users.assign_locations'),
+            'security_manage' => (bool) $actor?->can('admin.users.reset_password'),
+            'attendance' => (bool) ($actor?->can('attendance.view') || $actor?->can('attendance.update')),
+            'attendance_manage' => (bool) $actor?->can('attendance.update'),
+            'customers' => (bool) $actor?->can('customers.view'),
+            'approvals' => (bool) $actor?->can('approvals.view'),
+            'audit' => (bool) $actor?->can('audit.view'),
+        ];
+
+        $relations = ['roles', 'workLocations'];
+        if ($access['permissions']) {
+            $relations[] = 'roles.permissions';
+        }
+        if ($access['customers']) {
+            $relations[] = 'customers';
+        }
+        $user->load($relations);
+
+        $employee = $access['attendance']
+            ? $user->employee()
+                ->with('workLocation')
+                ->whereIn('work_location_id', $actor?->permittedWorkLocationIds() ?? [])
+                ->first()
+            : null;
+
+        $effectivePermissions = $access['permissions']
+            ? $user->getAllPermissions()->sortBy('name')->values()
+            : collect();
+        $recentActivities = $access['audit']
+            ? Activity::query()
                 ->where('causer_type', User::class)
                 ->where('causer_id', $user->id)
                 ->latest()
                 ->limit(10)
-                ->get(),
+                ->get()
+            : collect();
+        $approvalRequests = $access['approvals']
+            ? ApprovalRequest::query()
+                ->with('workLocation')
+                ->where('requester_user_id', $user->id)
+                ->latest('id')
+                ->limit(8)
+                ->get()
+            : collect();
+        $defaultLocation = $user->workLocations()->wherePivot('is_default', true)->first();
+
+        return view('admin.users.show', [
+            'user' => $user,
+            'access' => $access,
+            'effectivePermissions' => $effectivePermissions,
+            'recentActivities' => $recentActivities,
+            'approvalRequests' => $approvalRequests,
+            'employee' => $employee,
+            'defaultLocation' => $defaultLocation,
+            'metrics' => [
+                'roles' => $user->roles->count(),
+                'permissions' => $access['permissions'] ? $effectivePermissions->count() : null,
+                'active_locations' => $user->workLocations()->wherePivot('is_active', true)->count(),
+                'approvals' => $access['approvals'] ? ApprovalRequest::query()->where('requester_user_id', $user->id)->count() : null,
+            ],
         ]);
     }
 

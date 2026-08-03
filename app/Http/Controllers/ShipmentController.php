@@ -23,8 +23,15 @@ class ShipmentController extends Controller
             'statuses' => ShipmentStatus::options(),
             'shipments' => Shipment::query()
                 ->with(['order', 'customer'])
+                ->when($request->filled('customer_id'), fn ($query) => $query->where('customer_id', $request->integer('customer_id')))
                 ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
-                ->when($request->filled('q'), fn ($query) => $query->where('number', 'like', '%'.$request->string('q').'%'))
+                ->when($request->filled('q'), function ($query) use ($request): void {
+                    $term = '%'.$request->string('q').'%';
+                    $query->where(fn ($search) => $search
+                        ->where('number', 'like', $term)
+                        ->orWhere('tracking_no', 'like', $term)
+                        ->orWhereHas('customer', fn ($customer) => $customer->where('business_name', 'like', $term)));
+                })
                 ->latest('id')
                 ->paginate(15)
                 ->withQueryString(),

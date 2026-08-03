@@ -450,13 +450,14 @@
                         <!-- Hidden native select (form-bound) -->
                         <select id="product_ids" name="product_ids[]"
                             class="pp-native-select @error('product_ids') is-invalid @enderror"
+                            data-control="native"
                             multiple required>
                             @foreach($products as $product)
                                 <option value="{{ $product->id }}"
                                     data-sku="{{ $product->sku }}"
                                     data-name="{{ $product->name }}"
                                     data-category="{{ $product->category?->name ?? '' }}"
-                                    @selected(in_array((string) $product->id, array_map('strval', old('product_ids', [])), true))>
+                                    @selected(in_array((string) $product->id, array_map('strval', old('product_ids', request('product_id') ? [(string) request('product_id')] : [])), true))>
                                     {{ $product->sku }} — {{ $product->name }}
                                 </option>
                             @endforeach

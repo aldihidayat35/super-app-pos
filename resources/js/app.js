@@ -36,31 +36,89 @@ const initializeTheme = () => {
     });
 };
 
-const initializeSelect2 = () => {
+const searchableSelectSelector = [
+    'select[data-control="select2"]',
+    'select[data-kt-select2="true"]',
+    'select.form-select:not([data-control="native"]):not([data-searchable="false"])',
+].join(', ');
+
+const select2Language = {
+    errorLoading: () => 'Data tidak dapat dimuat.',
+    inputTooLong: () => 'Kata pencarian terlalu panjang.',
+    inputTooShort: () => 'Ketik kata untuk mencari.',
+    loadingMore: () => 'Memuat data berikutnya...',
+    maximumSelected: () => 'Pilihan sudah mencapai batas maksimum.',
+    noResults: () => 'Data tidak ditemukan.',
+    searching: () => 'Mencari data...',
+};
+
+const select2ElementsWithin = (root) => {
+    const elements = [];
+
+    if (root instanceof Element && root.matches(searchableSelectSelector)) {
+        elements.push(root);
+    }
+
+    if (typeof root?.querySelectorAll === 'function') {
+        elements.push(...root.querySelectorAll(searchableSelectSelector));
+    }
+
+    return [...new Set(elements)];
+};
+
+const initializeSelect2 = (root = document) => {
     if (typeof window.$?.fn?.select2 !== 'function') return;
 
-    window.$('[data-control="select2"]').each(function () {
-        const select = window.$(this);
+    select2ElementsWithin(root).forEach((element) => {
+        const select = window.$(element);
 
         if (select.hasClass('select2-hidden-accessible')) return;
 
-        const configuredParent = this.dataset.dropdownParent
-            ? document.querySelector(this.dataset.dropdownParent)
+        const configuredParent = element.dataset.dropdownParent
+            ? document.querySelector(element.dataset.dropdownParent)
             : null;
-        const parent = configuredParent || this.closest('.modal, .offcanvas');
+        const parent = configuredParent || element.closest('.modal, .offcanvas');
+        const emptyOption = Array.from(element.options).find((option) => option.value === '');
+        const fixedWidthClass = Array.from(element.classList)
+            .find((className) => /^w-(?:auto|\d+(?:px)?)$/.test(className) && className !== 'w-100');
+        const width = element.dataset.select2Width
+            || (fixedWidthClass ? window.getComputedStyle(element).width : '100%');
 
         select.select2({
             theme: 'bootstrap5',
             selectionCssClass: ':all:',
             dropdownParent: parent ? window.$(parent) : undefined,
-            placeholder: this.dataset.placeholder || 'Pilih opsi',
-            allowClear: this.dataset.allowClear === 'true',
-            closeOnSelect: this.dataset.closeOnSelect !== 'false',
+            placeholder: element.dataset.placeholder || emptyOption?.text?.trim() || 'Pilih opsi',
+            allowClear: element.dataset.allowClear === 'true',
+            closeOnSelect: element.dataset.closeOnSelect !== 'false',
             minimumResultsForSearch: 0,
-            width: '100%',
+            language: select2Language,
+            width,
         });
-        this.setAttribute('data-kt-initialized', '1');
+        element.setAttribute('data-kt-initialized', '1');
+        element.setAttribute('data-searchable-initialized', 'true');
     });
+};
+
+let select2Observer;
+
+const observeDynamicSelect2 = () => {
+    if (!document.body || select2Observer) return;
+
+    select2Observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node instanceof Element) initializeSelect2(node);
+            });
+        });
+    });
+
+    select2Observer.observe(document.body, { childList: true, subtree: true });
+};
+
+window.GudangTokoSelect2 = {
+    initialize: initializeSelect2,
+    selector: searchableSelectSelector,
 };
 
 const closeSearchableSelect = (wrapper) => {
@@ -295,6 +353,7 @@ const initializeSidebarToggle = () => {
 const initializeApplication = () => {
     initializeTheme();
     initializeSelect2();
+    observeDynamicSelect2();
     initializeSearchableSelectFallbacks();
     initializeDatePickers();
     initializeCurrencyInputs();

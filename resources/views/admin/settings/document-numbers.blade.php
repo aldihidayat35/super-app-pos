@@ -11,6 +11,8 @@
         <x-slot:operation><ol><li>Periksa konfigurasi setiap dokumen.</li><li>Ubah prefix, padding, atau sequence jika diperlukan.</li><li>Simpan.</li></ol></x-slot:operation>
     </x-metronic.page-guide>
 @endsection
+
+@section('content')
     <x-metronic.card title="Konfigurasi Nomor Dokumen">
         <form method="POST" action="{{ route('admin.settings.document-numbers.update') }}">
             @csrf

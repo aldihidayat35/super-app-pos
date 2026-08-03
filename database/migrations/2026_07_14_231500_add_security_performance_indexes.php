@@ -8,36 +8,34 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('audit_logs', function (Blueprint $table): void {
-            $table->index(['actor_user_id', 'occurred_at'], 'audit_logs_actor_time_idx');
-            $table->index(['ip_address', 'occurred_at'], 'audit_logs_ip_time_idx');
-            $table->index(['severity', 'occurred_at'], 'audit_logs_severity_time_idx');
-        });
+        $indexes = [
+            ['audit_logs', ['actor_user_id', 'occurred_at'], 'audit_logs_actor_time_idx'],
+            ['audit_logs', ['ip_address', 'occurred_at'], 'audit_logs_ip_time_idx'],
+            ['audit_logs', ['severity', 'occurred_at'], 'audit_logs_severity_time_idx'],
+            ['stock_mutations', ['work_location_id', 'occurred_at', 'mutation_type'], 'stock_mutations_location_time_type_idx'],
+            ['stock_mutations', ['mutation_type', 'occurred_at'], 'stock_mutations_type_time_idx'],
+            ['pos_sales', ['work_location_id', 'status', 'completed_at'], 'pos_sales_location_status_time_idx'],
+            ['pos_sales', ['cash_shift_id', 'status'], 'pos_sales_shift_status_idx'],
+            ['b2b_orders', ['status', 'submitted_at'], 'b2b_orders_status_submitted_idx'],
+            ['b2b_orders', ['reservation_expires_at', 'status'], 'b2b_orders_reservation_status_idx'],
+            ['receivables', ['work_location_id', 'status', 'due_date'], 'receivables_location_status_due_idx'],
+            ['receivables', ['aging_bucket', 'status', 'due_date'], 'receivables_aging_status_due_idx'],
+            ['approval_requests', ['module', 'current_status', 'created_at'], 'approval_requests_module_status_created_idx'],
+            ['approval_requests', ['requester_user_id', 'current_status'], 'approval_requests_requester_status_idx'],
+        ];
 
-        Schema::table('stock_mutations', function (Blueprint $table): void {
-            $table->index(['work_location_id', 'occurred_at', 'mutation_type'], 'stock_mutations_location_time_type_idx');
-            $table->index(['mutation_type', 'occurred_at'], 'stock_mutations_type_time_idx');
-        });
-
-        Schema::table('pos_sales', function (Blueprint $table): void {
-            $table->index(['work_location_id', 'status', 'completed_at'], 'pos_sales_location_status_time_idx');
-            $table->index(['cash_shift_id', 'status'], 'pos_sales_shift_status_idx');
-        });
-
-        Schema::table('b2b_orders', function (Blueprint $table): void {
-            $table->index(['status', 'submitted_at'], 'b2b_orders_status_submitted_idx');
-            $table->index(['reservation_expires_at', 'status'], 'b2b_orders_reservation_status_idx');
-        });
-
-        Schema::table('receivables', function (Blueprint $table): void {
-            $table->index(['work_location_id', 'status', 'due_date'], 'receivables_location_status_due_idx');
-            $table->index(['aging_bucket', 'status', 'due_date'], 'receivables_aging_status_due_idx');
-        });
-
-        Schema::table('approval_requests', function (Blueprint $table): void {
-            $table->index(['module', 'current_status', 'created_at'], 'approval_requests_module_status_created_idx');
-            $table->index(['requester_user_id', 'current_status'], 'approval_requests_requester_status_idx');
-        });
+        foreach ($indexes as [$table, $columns, $indexName]) {
+            if (!Schema::hasTable($table)) {
+                continue;
+            }
+            $connection = Schema::getConnection();
+            $existing = $connection->select("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='{$table}' AND name='{$indexName}'");
+            if (empty($existing)) {
+                Schema::table($table, function (Blueprint $table) use ($columns, $indexName): void {
+                    $table->index($columns, $indexName);
+                });
+            }
+        }
     }
 
     public function down(): void

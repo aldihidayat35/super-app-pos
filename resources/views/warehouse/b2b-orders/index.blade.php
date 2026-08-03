@@ -30,6 +30,7 @@
 @section('content')
     <x-metronic.page-title title="Antrian Order Gudang" description="Validasi order pelanggan, stok, limit, pembayaran, dan prioritas fulfillment." />
     <form method="GET" class="card card-body mb-5">
+        @if($filters['customer_id'])<input type="hidden" name="customer_id" value="{{ $filters['customer_id'] }}">@endif
         <div class="row g-3">
             <div class="col-md-4"><input name="q" value="{{ $filters['q'] }}" class="form-control form-control-solid" placeholder="Cari nomor/customer"></div>
             <div class="col-md-4"><select name="status" class="form-select form-select-solid"><option value="">Semua status</option>@foreach($statuses as $value => $label)<option value="{{ $value }}" @selected($filters['status'] === $value)>{{ $label }}</option>@endforeach</select></div>

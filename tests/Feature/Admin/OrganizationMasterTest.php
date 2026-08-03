@@ -114,6 +114,73 @@ class OrganizationMasterTest extends TestCase
     }
 
     #[Test]
+    public function branch_dashboard_provides_contextual_actions_and_prefills_destination_forms(): void
+    {
+        $admin = $this->superAdmin();
+        $warehouse = Warehouse::factory()->create(['is_active' => true]);
+        app(WorkLocationSyncService::class)->syncWarehouse($warehouse);
+        $branch = Branch::factory()->create([
+            'primary_warehouse_id' => $warehouse->id,
+            'is_active' => true,
+        ]);
+        $location = app(WorkLocationSyncService::class)->syncBranch($branch);
+
+        $this->actingAs($admin)
+            ->get(route('admin.branches.show', $branch))
+            ->assertOk()
+            ->assertSee('Profil & Konfigurasi Cabang', false)
+            ->assertSee(route('admin.users.create', ['location' => $location->id]), false)
+            ->assertSee(route('warehouse.stocks.index', ['work_location_id' => $location->id]), false)
+            ->assertSee(route('retail.restock-requests.index', ['branch_id' => $branch->id]), false)
+            ->assertSee(route('retail.shifts.open', ['branch_id' => $branch->id]), false)
+            ->assertSee(route('retail.pos.index', ['branch_id' => $branch->id]), false)
+            ->assertSee(route('reports.retail.index', ['work_location_id' => $location->id]), false);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.create', ['location' => $location->id]))
+            ->assertOk()
+            ->assertSee('value="'.$location->id.'" checked', false)
+            ->assertSee('value="'.$location->id.'" selected', false);
+
+        $this->actingAs($admin)
+            ->get(route('retail.shifts.open', ['branch_id' => $branch->id]))
+            ->assertOk()
+            ->assertSee('value="'.$branch->id.'" selected', false);
+
+        $this->actingAs($admin)
+            ->get(route('retail.restock-requests.index', ['branch_id' => $branch->id]))
+            ->assertOk()
+            ->assertSee('value="'.$branch->id.'" selected', false);
+
+        $this->actingAs($admin)
+            ->get(route('retail.pos.index', ['branch_id' => $branch->id]))
+            ->assertOk()
+            ->assertSee('name="branch_id" value="'.$branch->id.'"', false)
+            ->assertSee('value="'.$branch->id.'" selected', false);
+    }
+
+    #[Test]
+    public function branch_dashboard_hides_sensitive_margin_without_permission(): void
+    {
+        $warehouse = Warehouse::factory()->create(['is_active' => true]);
+        app(WorkLocationSyncService::class)->syncWarehouse($warehouse);
+        $branch = Branch::factory()->create([
+            'primary_warehouse_id' => $warehouse->id,
+            'is_active' => true,
+        ]);
+        $location = app(WorkLocationSyncService::class)->syncBranch($branch);
+        $head = User::factory()->create();
+        $head->assignRole(Role::findByName('kepala_toko'));
+        $head->workLocations()->sync([$location->id => ['is_default' => true, 'is_active' => true]]);
+
+        $this->actingAs($head)
+            ->get(route('admin.branches.show', $branch))
+            ->assertOk()
+            ->assertSee('Data sensitif')
+            ->assertDontSee('Tambah User Cabang');
+    }
+
+    #[Test]
     public function scoped_warehouse_head_only_sees_assigned_warehouse(): void
     {
         $allowed = Warehouse::factory()->create(['name' => 'Gudang Boleh']);
@@ -188,6 +255,14 @@ class OrganizationMasterTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole(Role::findByName('admin_config'));
+
+        return $user;
+    }
+
+    private function superAdmin(): User
+    {
+        $user = User::factory()->create();
+        $user->assignRole(Role::findByName('super_admin'));
 
         return $user;
     }

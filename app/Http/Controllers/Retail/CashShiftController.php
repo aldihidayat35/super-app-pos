@@ -65,8 +65,16 @@ class CashShiftController extends Controller
     {
         abort_unless($request->user()->can('cash_shifts.create'), 403);
 
+        $branches = Branch::query()
+            ->where('is_active', true)
+            ->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())
+            ->orderBy('name')
+            ->get();
+        $requestedBranchId = $request->integer('branch_id');
+
         return view('retail.shifts.open', [
-            'branches' => Branch::query()->where('is_active', true)->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())->orderBy('name')->get(),
+            'branches' => $branches,
+            'selectedBranchId' => $branches->contains('id', $requestedBranchId) ? $requestedBranchId : null,
         ]);
     }
 

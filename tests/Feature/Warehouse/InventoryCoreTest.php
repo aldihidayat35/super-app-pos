@@ -67,6 +67,127 @@ class InventoryCoreTest extends TestCase
         $this->get(route('warehouse.batches.index'))->assertOk()->assertSee('Batch/Lot Stok');
     }
 
+    public function test_location_transfer_uses_sequential_searchable_source_flow(): void
+    {
+        $this->inventoryFixture();
+
+        $content = $this->actingAs($this->admin)
+            ->get(route('warehouse.location-transfers.index'))
+            ->assertOk()
+            ->getContent();
+
+        $sourceWorkLocationPosition = strpos($content, 'id="source_work_location_id"');
+        $sourceWarehouseLocationPosition = strpos($content, 'id="source_warehouse_location_id"');
+        $productPosition = strpos($content, 'id="product_id"');
+
+        $this->assertNotFalse($sourceWorkLocationPosition);
+        $this->assertNotFalse($sourceWarehouseLocationPosition);
+        $this->assertNotFalse($productPosition);
+        $this->assertLessThan($sourceWarehouseLocationPosition, $sourceWorkLocationPosition);
+        $this->assertLessThan($productPosition, $sourceWarehouseLocationPosition);
+        $this->assertGreaterThanOrEqual(5, substr_count($content, 'data-control="select2"'));
+        $this->assertStringContainsString('warehouse\\/location-transfers\\/options', $content);
+        $this->assertStringContainsString('fetchAllLocations', $content);
+        $this->assertStringContainsString('loadWarehouseLocations', $content);
+        $this->assertStringContainsString('fetchAllProducts', $content);
+        $this->assertStringContainsString('loadProducts', $content);
+        $this->assertStringNotContainsString("type === 'locations' ? 0", $content);
+        $this->assertStringNotContainsString('transport:', $content);
+        $this->assertStringNotContainsString('ajax:', $content);
+    }
+
+    public function test_location_transfer_options_filter_bins_and_available_products_by_source(): void
+    {
+        [$visibleProduct, $visibleWorkLocation, $visibleBin] = $this->inventoryFixture('GDG-VISIBLE', 'PRD-VISIBLE');
+        [$hiddenProduct, $hiddenWorkLocation, $hiddenBin] = $this->inventoryFixture('GDG-HIDDEN', 'PRD-HIDDEN');
+        $this->inventory->receive($visibleProduct, $visibleWorkLocation, $visibleBin, '10', $this->admin);
+        $this->inventory->receive($hiddenProduct, $hiddenWorkLocation, $hiddenBin, '10', $this->admin);
+
+        $this->actingAs($this->admin)
+            ->getJson(route('warehouse.location-transfers.options', [
+                'type' => 'locations',
+                'work_location_id' => $visibleWorkLocation->id,
+            ]))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $visibleBin->id])
+            ->assertJsonMissing(['id' => $hiddenBin->id]);
+
+        $this->actingAs($this->admin)
+            ->getJson(route('warehouse.location-transfers.options', [
+                'type' => 'products',
+                'work_location_id' => $visibleWorkLocation->id,
+                'warehouse_location_id' => $visibleBin->id,
+            ]))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $visibleProduct->id])
+            ->assertJsonMissing(['id' => $hiddenProduct->id]);
+    }
+
+    public function test_location_transfer_product_options_exclude_fully_reserved_stock(): void
+    {
+        [$product, $workLocation, $bin] = $this->inventoryFixture();
+        $this->inventory->receive($product, $workLocation, $bin, '5', $this->admin);
+        $this->inventory->reserve($product, $workLocation, $bin, '5', $this->admin);
+
+        $this->actingAs($this->admin)
+            ->getJson(route('warehouse.location-transfers.options', [
+                'type' => 'products',
+                'work_location_id' => $workLocation->id,
+                'warehouse_location_id' => $bin->id,
+            ]))
+            ->assertOk()
+            ->assertJsonMissing(['id' => $product->id]);
+    }
+
+    public function test_location_transfer_form_completes_transfer_and_reconciles_both_stocks(): void
+    {
+        [$product, $sourceWorkLocation, $sourceBin] = $this->inventoryFixture('GDG-FORM-SRC', 'PRD-FORM');
+        [$destinationWorkLocation, $destinationBin] = $this->locationFixture('GDG-FORM-DST');
+        $this->inventory->receive($product, $sourceWorkLocation, $sourceBin, '10', $this->admin);
+
+        $this->actingAs($this->admin)
+            ->post(route('warehouse.location-transfers.store'), [
+                'product_id' => $product->id,
+                'source_work_location_id' => $sourceWorkLocation->id,
+                'source_warehouse_location_id' => $sourceBin->id,
+                'destination_work_location_id' => $destinationWorkLocation->id,
+                'destination_warehouse_location_id' => $destinationBin->id,
+                'quantity' => 4,
+                'reason' => 'Verifikasi alur transfer dari form.',
+                'idempotency_key' => 'location-transfer-form-success',
+            ])
+            ->assertRedirect(route('warehouse.location-transfers.index'))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('notification');
+
+        $this->assertSame('6.0000', Stock::query()
+            ->where('product_id', $product->id)
+            ->where('work_location_id', $sourceWorkLocation->id)
+            ->where('warehouse_location_id', $sourceBin->id)
+            ->firstOrFail()
+            ->quantity_on_hand);
+        $this->assertSame('4.0000', Stock::query()
+            ->where('product_id', $product->id)
+            ->where('work_location_id', $destinationWorkLocation->id)
+            ->where('warehouse_location_id', $destinationBin->id)
+            ->firstOrFail()
+            ->quantity_on_hand);
+        $this->assertDatabaseHas('stock_mutations', [
+            'product_id' => $product->id,
+            'work_location_id' => $sourceWorkLocation->id,
+            'warehouse_location_id' => $sourceBin->id,
+            'mutation_type' => 'transfer_out',
+            'quantity_on_hand_change' => '-4.0000',
+        ]);
+        $this->assertDatabaseHas('stock_mutations', [
+            'product_id' => $product->id,
+            'work_location_id' => $destinationWorkLocation->id,
+            'warehouse_location_id' => $destinationBin->id,
+            'mutation_type' => 'transfer_in',
+            'quantity_on_hand_change' => '4.0000',
+        ]);
+    }
+
     public function test_negative_stock_and_over_reservation_are_rejected_without_mutation(): void
     {
         [$product, $workLocation, $bin] = $this->inventoryFixture();

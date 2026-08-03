@@ -25,6 +25,7 @@ class ApprovalInboxController extends Controller
                 ->when($request->filled('status'), fn ($query) => $query->where('current_status', $request->query('status')))
                 ->when($request->filled('module'), fn ($query) => $query->where('module', $request->query('module')))
                 ->when($request->filled('risk_level'), fn ($query) => $query->where('risk_level', $request->query('risk_level')))
+                ->when($request->integer('requester_user_id') > 0, fn ($query) => $query->where('requester_user_id', $request->integer('requester_user_id')))
                 ->latest('id')
                 ->paginate(15)
                 ->withQueryString(),

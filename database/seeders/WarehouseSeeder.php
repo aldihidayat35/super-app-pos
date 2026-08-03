@@ -88,6 +88,9 @@ class WarehouseSeeder extends Seeder
             // 2) User khusus gudang (terhubung ke work location gudang)
             $users = $this->seedWarehouseUsers($warehouseLocation);
 
+            // Set kepala gudang sebagai manager warehouse
+            $warehouse->update(['manager_user_id' => $users['kepala_gudang']->id]);
+
             // 3) Master data pendukung (unit, kategori, brand, supplier)
             [$unitPcs, $unitPack] = $this->seedUnits();
             [$category, $brand] = $this->seedTaxonomy();

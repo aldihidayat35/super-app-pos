@@ -13,6 +13,8 @@
         <x-slot:example><p>PT SuperApp POS Indonesia, Jakarta, mata uang IDR, timezone WIB, tax 10%.</p></x-slot:example>
     </x-metronic.page-guide>
 @endsection
+
+@section('content')
     <form method="POST" action="{{ route('admin.settings.general.update') }}" enctype="multipart/form-data" novalidate>
         @csrf
         @method('PUT')

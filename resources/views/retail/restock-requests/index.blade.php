@@ -10,7 +10,7 @@
                 <x-metronic.card title="Buat Request Restock">
                     <form method="POST" action="{{ route('retail.restock-requests.store') }}">
                         @csrf
-                        <x-metronic.form-group name="branch_id" label="Cabang" required><select name="branch_id" class="form-select form-select-solid" required>@foreach($branches as $branch)<option value="{{ $branch->id }}">{{ $branch->name }}</option>@endforeach</select></x-metronic.form-group>
+                        <x-metronic.form-group name="branch_id" label="Cabang" required><select name="branch_id" class="form-select form-select-solid" required>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((int) old('branch_id', $filters['branch_id'] ?? 0) === $branch->id)>{{ $branch->name }}</option>@endforeach</select></x-metronic.form-group>
                         <x-metronic.form-group name="source_warehouse_id" label="Gudang Sumber"><select name="source_warehouse_id" class="form-select form-select-solid"><option value="">Gudang utama cabang</option>@foreach($warehouses as $warehouse)<option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>@endforeach</select></x-metronic.form-group>
                         <x-metronic.form-group name="priority" label="Prioritas"><select name="priority" class="form-select form-select-solid"><option value="normal">Normal</option><option value="high">Tinggi</option><option value="urgent">Urgent</option><option value="low">Rendah</option></select></x-metronic.form-group>
                         <x-metronic.form-group name="needed_at" label="Tanggal Dibutuhkan"><input type="date" name="needed_at" class="form-control form-control-solid"></x-metronic.form-group>

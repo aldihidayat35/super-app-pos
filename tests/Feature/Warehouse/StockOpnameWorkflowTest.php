@@ -85,8 +85,71 @@ class StockOpnameWorkflowTest extends TestCase
         $this->assertStringContainsString('id="category_id"', $content);
         $this->assertStringContainsString('id="pic_user_id"', $content);
         $this->assertStringContainsString('id="filter_work_location_id"', $content);
+        $this->assertStringContainsString('data-work-location-id="'.$workLocation->id.'"', $content);
         $this->assertSame(5, substr_count($content, 'data-control="select2"'));
         $this->assertSame(5, substr_count($content, 'data-searchable-fallback="true"'));
+    }
+
+    public function test_location_combobox_only_preloads_bins_from_permitted_work_locations(): void
+    {
+        [, $workLocation, $bin] = $this->fixture('PRD-OPN-OPTION');
+        [, , $otherBin] = $this->fixture('PRD-OPN-HIDDEN');
+        $this->assignScope($workLocation);
+
+        $response = $this->actingAs($this->warehouseHead)
+            ->get(route('warehouse.stock-opnames.index'))
+            ->assertOk();
+
+        $response->assertSee($bin->full_code);
+        $response->assertSee('data-work-location-id="'.$workLocation->id.'"', false);
+        $response->assertDontSee($otherBin->full_code);
+    }
+
+    public function test_start_snapshot_without_stock_returns_validation_error_instead_of_server_error(): void
+    {
+        [, $workLocation, $bin] = $this->fixture('PRD-OPN-EMPTY');
+        $this->assignScope($workLocation);
+
+        $response = $this->actingAs($this->warehouseHead)
+            ->from(route('warehouse.stock-opnames.index'))
+            ->post(route('warehouse.stock-opnames.store'), [
+                'work_location_id' => $workLocation->id,
+                'warehouse_location_id' => $bin->id,
+                'method' => 'manual',
+                'action' => 'start',
+            ]);
+
+        $response
+            ->assertRedirect(route('warehouse.stock-opnames.index'))
+            ->assertSessionHasErrors([
+                'work_location_id' => 'Scope yang dipilih belum memiliki saldo stok. Simpan sebagai draft, pilih scope lain, atau masukkan stok melalui penerimaan barang/transfer stok sebelum membuat snapshot.',
+            ]);
+        $this->assertDatabaseCount('stock_opnames', 0);
+        $this->assertDatabaseCount('stock_opname_items', 0);
+    }
+
+    public function test_snapshot_rejects_bin_from_another_work_location(): void
+    {
+        [, $workLocation] = $this->fixture('PRD-OPN-SOURCE');
+        [, $otherWorkLocation, $otherBin] = $this->fixture('PRD-OPN-OTHER');
+        $this->assignScope($workLocation);
+        $this->assignScope($otherWorkLocation);
+
+        $response = $this->actingAs($this->warehouseHead)
+            ->from(route('warehouse.stock-opnames.index'))
+            ->post(route('warehouse.stock-opnames.store'), [
+                'work_location_id' => $workLocation->id,
+                'warehouse_location_id' => $otherBin->id,
+                'method' => 'manual',
+                'action' => 'start',
+            ]);
+
+        $response
+            ->assertRedirect(route('warehouse.stock-opnames.index'))
+            ->assertSessionHasErrors([
+                'warehouse_location_id' => 'Zona/Rak/Bin tidak sesuai dengan gudang/cabang yang dipilih.',
+            ]);
+        $this->assertDatabaseCount('stock_opnames', 0);
     }
 
     public function test_opname_completion_adjusts_stock_once_and_writes_append_only_mutation(): void

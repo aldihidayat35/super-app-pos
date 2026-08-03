@@ -90,6 +90,110 @@ class ProductMasterTest extends TestCase
         ])->assertSessionHasErrors('barcodes.0.code');
     }
 
+    public function test_product_unit_tab_uses_native_metronic_dropdown_with_complete_active_unit_options(): void
+    {
+        ProductCategory::factory()->create();
+        Unit::factory()->create([
+            'code' => 'PCS-UI',
+            'name' => 'Pieces',
+            'symbol' => 'pcs',
+            'is_active' => true,
+        ]);
+        Unit::factory()->create([
+            'code' => 'BOX-UI',
+            'name' => 'Box',
+            'symbol' => 'box',
+            'is_active' => true,
+        ]);
+        Unit::factory()->create([
+            'code' => 'OLD-UI',
+            'name' => 'Satuan Nonaktif',
+            'symbol' => 'old',
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.products.create'));
+
+        $response->assertOk()
+            ->assertSee('Pilih Satuan')
+            ->assertSee('Pieces (pcs)')
+            ->assertSee('Box (box)')
+            ->assertDontSee('Satuan Nonaktif')
+            ->assertSee('data-control="native"', false)
+            ->assertSee('data-unit-select', false)
+            ->assertSee('product-unit-row', false)
+            ->assertSee('ki-outline ki-trash fs-2', false);
+
+        $content = $response->getContent();
+
+        $this->assertStringContainsString('const availableUnits =', $content);
+        $this->assertStringNotContainsString('firstSelect', $content);
+        $this->assertStringContainsString('availableUnits.forEach', $content);
+        $this->assertStringContainsString('rows.length === 1', $content);
+    }
+
+    public function test_stock_fields_are_saved_on_product_creation(): void
+    {
+        $category = ProductCategory::factory()->create();
+        $pcs = Unit::factory()->create();
+
+        $form = $this->actingAs($this->admin)->get(route('admin.products.create'));
+        $form->assertOk()->assertSee('Harga Dasar')->assertSee('Pengaturan Stok');
+
+        foreach (['minimum_order', 'minimum_stock', 'safety_stock', 'weight', 'volume', 'cost_price', 'minimum_price'] as $field) {
+            $this->assertSame(1, substr_count($form->getContent(), 'name="'.$field.'"'), "Field {$field} tidak boleh diduplikasi.");
+        }
+
+        $this->assertStringNotContainsString('hidden_minimum_stock', $form->getContent());
+        $this->assertStringNotContainsString('STOCK FIELDS SYNC', $form->getContent());
+
+        $response = $this->actingAs($this->admin)->post(route('admin.products.store'), [
+            'sku' => 'PRD-STOCK-001',
+            'name' => 'Produk Tes Stok',
+            'category_id' => $category->id,
+            'base_unit_id' => $pcs->id,
+            'status' => 'active',
+            'minimum_order' => 5,
+            'minimum_stock' => 100,
+            'safety_stock' => 20,
+            'weight' => 1.5,
+            'volume' => 2.5,
+            'cost_price' => 50000,
+            'minimum_price' => 75000,
+            'units' => [
+                ['unit_id' => $pcs->id, 'conversion_factor' => 1, 'is_sellable' => 1, 'is_active' => 1],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $product = Product::query()->where('sku', 'PRD-STOCK-001')->firstOrFail();
+
+        $this->assertSame('5.0000', $product->fresh()->minimum_order);
+        $this->assertSame('100.0000', $product->fresh()->minimum_stock);
+        $this->assertSame('20.0000', $product->fresh()->safety_stock);
+        $this->assertSame('1.5000', $product->fresh()->weight);
+        $this->assertSame('2.5000', $product->fresh()->volume);
+        $this->assertSame('50000.00', $product->fresh()->cost_price);
+        $this->assertSame('75000.00', $product->fresh()->minimum_price);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.products.show', $product))
+            ->assertOk()
+            ->assertSee('Pengaturan Stok Master')
+            ->assertSee('Minimum Order')
+            ->assertSee('Minimum Stock')
+            ->assertSee('Safety Stock')
+            ->assertSee('HPP Saat Ini')
+            ->assertSee('Min. Harga Jual')
+            ->assertSee('Harga jual belum dibuat')
+            ->assertSee('Belum ada saldo stok')
+            ->assertSee('Belum ada mutasi');
+
+        $this->assertDatabaseMissing('product_prices', ['product_id' => $product->id]);
+        $this->assertDatabaseMissing('stocks', ['product_id' => $product->id]);
+        $this->assertDatabaseMissing('stock_mutations', ['product_id' => $product->id]);
+    }
+
     public function test_unit_conversion_and_locked_factor_are_enforced(): void
     {
         $product = Product::factory()->create();

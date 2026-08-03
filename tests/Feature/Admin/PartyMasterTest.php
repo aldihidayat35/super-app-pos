@@ -2,9 +2,14 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\B2bOrder;
 use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\Receivable;
+use App\Models\Shipment;
 use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\User;
@@ -40,6 +45,125 @@ class PartyMasterTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.customers.show', $customer))->assertOk()->assertSee($customer->business_name);
         $this->actingAs($this->admin)->get(route('admin.customers.access.edit', $customer))->assertOk()->assertSee('Alamat Kirim');
         $this->actingAs($this->admin)->get(route('admin.customers.settings.edit', $customer))->assertOk()->assertSee('Status, Ring, dan Kredit');
+    }
+
+    public function test_super_admin_sees_customer_dashboard_data_and_prefilled_actions(): void
+    {
+        $superAdmin = User::factory()->create(['is_active' => true]);
+        $superAdmin->assignRole(Role::findOrCreate('super_admin'));
+        $customer = Customer::factory()->create([
+            'business_name' => 'PT Pelanggan Dashboard',
+            'credit_limit' => 10000000,
+            'receivable_balance' => 2500000,
+        ]);
+        $order = B2bOrder::query()->create([
+            'number' => 'B2B-DASH-001',
+            'customer_id' => $customer->id,
+            'requested_by' => $superAdmin->id,
+            'status' => 'approved_credit',
+            'grand_total_amount' => 4000000,
+            'submitted_at' => now(),
+        ]);
+        Invoice::query()->create([
+            'number' => 'INV-DASH-001',
+            'b2b_order_id' => $order->id,
+            'customer_id' => $customer->id,
+            'status' => 'issued',
+            'issue_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'total_amount' => 4000000,
+            'outstanding_amount' => 2500000,
+        ]);
+        Payment::query()->create([
+            'number' => 'PAY-DASH-001',
+            'customer_id' => $customer->id,
+            'method' => 'bank_transfer',
+            'status' => 'verified',
+            'amount' => 1500000,
+            'payment_date' => now()->toDateString(),
+        ]);
+        Receivable::query()->create([
+            'number' => 'AR-DASH-001',
+            'customer_id' => $customer->id,
+            'source_type' => 'invoice',
+            'source_id' => 1,
+            'source_no' => 'INV-DASH-001',
+            'issue_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'principal_amount' => 4000000,
+            'paid_amount' => 1500000,
+            'outstanding_amount' => 2500000,
+            'status' => 'open',
+        ]);
+
+        $response = $this->actingAs($superAdmin)->get(route('admin.customers.show', $customer));
+
+        $response->assertOk()
+            ->assertSee('PT Pelanggan Dashboard')
+            ->assertSee('Ringkasan Pelanggan')
+            ->assertSee('Pesanan B2B Terbaru')
+            ->assertSee('Invoice & Piutang', false)
+            ->assertSee('Pembayaran Terbaru')
+            ->assertSee('B2B-DASH-001')
+            ->assertSee('INV-DASH-001')
+            ->assertSee('PAY-DASH-001')
+            ->assertSee('AR-DASH-001')
+            ->assertSee(route('warehouse.b2b-orders.index', ['customer_id' => $customer->id]))
+            ->assertSee(route('shipments.index', ['customer_id' => $customer->id]))
+            ->assertSee(route('shipments.create', ['order_id' => $order->id, 'customer_id' => $customer->id]))
+            ->assertSee(route('receivables.payments.create', ['customer_id' => $customer->id]))
+            ->assertSee(route('pricing.special-prices.index', ['customer_id' => $customer->id]))
+            ->assertDontSee('fase berikutnya');
+    }
+
+    public function test_customer_dashboard_related_lists_respect_customer_filter(): void
+    {
+        $superAdmin = User::factory()->create(['is_active' => true]);
+        $superAdmin->assignRole(Role::findOrCreate('super_admin'));
+        $selectedCustomer = Customer::factory()->create(['business_name' => 'Pelanggan Terpilih']);
+        $otherCustomer = Customer::factory()->create(['business_name' => 'Pelanggan Lain']);
+
+        $selectedOrder = B2bOrder::query()->create([
+            'number' => 'B2B-FILTER-SELECTED',
+            'customer_id' => $selectedCustomer->id,
+            'requested_by' => $superAdmin->id,
+            'status' => 'approved_credit',
+        ]);
+        $otherOrder = B2bOrder::query()->create([
+            'number' => 'B2B-FILTER-OTHER',
+            'customer_id' => $otherCustomer->id,
+            'requested_by' => $superAdmin->id,
+            'status' => 'approved_credit',
+        ]);
+        Shipment::query()->create([
+            'number' => 'SHP-FILTER-SELECTED',
+            'b2b_order_id' => $selectedOrder->id,
+            'customer_id' => $selectedCustomer->id,
+            'status' => 'waiting',
+        ]);
+        Shipment::query()->create([
+            'number' => 'SHP-FILTER-OTHER',
+            'b2b_order_id' => $otherOrder->id,
+            'customer_id' => $otherCustomer->id,
+            'status' => 'waiting',
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('warehouse.b2b-orders.index', ['customer_id' => $selectedCustomer->id]))
+            ->assertOk()
+            ->assertSee('B2B-FILTER-SELECTED')
+            ->assertDontSee('B2B-FILTER-OTHER');
+
+        $this->actingAs($superAdmin)
+            ->get(route('shipments.index', ['customer_id' => $selectedCustomer->id]))
+            ->assertOk()
+            ->assertSee('SHP-FILTER-SELECTED')
+            ->assertDontSee('SHP-FILTER-OTHER');
+
+        $this->actingAs($superAdmin)
+            ->get(route('pricing.special-prices.index', ['customer_id' => $selectedCustomer->id]))
+            ->assertOk()
+            ->assertSee('value="'.$selectedCustomer->id.'" selected', false);
     }
 
     public function test_supplier_and_customer_import_preview_reports_invalid_rows(): void

@@ -171,4 +171,13 @@ i.ki-shop::before { content: "⌂"; }
 i.ki-sun::before { content: "☼"; }
 i.ki-text-align-right::before { content: "≡"; }
 i.ki-tiktok::before { content: "♪"; }
+i.ki-trash::before {
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 3h6l1 2h4v2h-1l-1 14H6L5 7H4V5h4l1-2Zm-1.86 4 .86 12h8l.86-12H7.14ZM10 9h2v8h-2V9Zm4 0h2v8h-2V9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    background-color: currentColor;
+    content: "";
+    display: block;
+    height: 1em;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 3h6l1 2h4v2h-1l-1 14H6L5 7H4V5h4l1-2Zm-1.86 4 .86 12h8l.86-12H7.14ZM10 9h2v8h-2V9Zm4 0h2v8h-2V9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    width: 1em;
+}
 i.ki-wallet::before { content: "▣"; }

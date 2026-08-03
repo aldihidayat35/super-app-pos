@@ -7,11 +7,15 @@
     <x-metronic.page-title title="Kotak Masuk Approval" description="APP-01 approval sensitif lintas modul: harga, stok, void, retur, kredit, absensi, dan tindakan berisiko." />
     <x-metronic.card title="Filter Approval">
         <form method="GET" class="row g-3 mb-5">
+            @if(request()->integer('requester_user_id') > 0)<input type="hidden" name="requester_user_id" value="{{ request()->integer('requester_user_id') }}">@endif
             <div class="col-md-3"><select name="status" class="form-select"><option value="">Semua status</option>@foreach($statuses as $status)<option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>@endforeach</select></div>
             <div class="col-md-3"><input name="module" value="{{ request('module') }}" class="form-control" placeholder="Modul"></div>
             <div class="col-md-3"><select name="risk_level" class="form-select"><option value="">Semua risiko</option>@foreach(['normal','medium','high','critical'] as $risk)<option value="{{ $risk }}" @selected(request('risk_level') === $risk)>{{ ucfirst($risk) }}</option>@endforeach</select></div>
             <div class="col-md-3"><button class="btn btn-light-primary w-100">Filter</button></div>
         </form>
+        @if(request()->integer('requester_user_id') > 0)
+            <div class="alert alert-light-primary py-3">Menampilkan approval yang diajukan oleh pengguna terpilih. <a href="{{ route('approvals.index') }}" class="fw-bold">Hapus filter</a></div>
+        @endif
         <div class="table-responsive"><table class="table table-row-dashed align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Jenis</th><th>Requester</th><th>Nilai Risiko</th><th>Lokasi</th><th>SLA</th><th>Status</th><th class="text-end">Aksi</th></tr></thead><tbody>
             @forelse($approvals as $approval)
                 <tr>

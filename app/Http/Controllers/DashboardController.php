@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Warehouse\WarehouseDashboardController;
 use App\Models\User;
 use App\Services\Reports\ReportMetricService;
 use Illuminate\Contracts\View\View;
@@ -31,11 +32,7 @@ class DashboardController extends Controller
         }
 
         if ($view === 'warehouse.dashboard') {
-            return view($view, [
-                'filters' => $filters,
-                'dashboard' => $reports->warehouseDashboard($user, $filters),
-                'definitions' => $reports->definitions('warehouse'),
-            ]);
+            return app(WarehouseDashboardController::class)->renderForUser($request, $reports);
         }
 
         if ($view === 'dashboards.retail') {

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\B2bOrderStatus;
 use App\Enums\CustomerStatus;
 use App\Enums\CustomerType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreCustomerRequest;
 use App\Http\Requests\Admin\UpdateCustomerRequest;
 use App\Models\Customer;
+use App\Models\Shipment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,11 +58,77 @@ class CustomerController extends Controller
         return redirect()->route('admin.customers.show', $customer)->with('notification', ['type' => 'success', 'message' => 'Pelanggan berhasil dibuat.']);
     }
 
-    public function show(Customer $customer): View
+    public function show(Request $request, Customer $customer): View
     {
         $this->authorize('view', $customer);
 
-        return view('admin.customers.show', ['customer' => $customer->load(['addresses', 'users', 'documents', 'priceOverrides.product', 'creditLimit'])]);
+        $user = $request->user();
+        $access = [
+            'orders' => (bool) $user?->can('b2b_orders.view'),
+            'invoices' => (bool) ($user?->can('invoices.view') || $user?->can('receivables.view')),
+            'payments' => (bool) ($user?->can('payments.verify') || $user?->can('receivables.view')),
+            'receivables' => (bool) $user?->can('receivables.view'),
+            'shipments' => (bool) ($user?->can('shipments.view') || $user?->can('b2b_orders.view')),
+            'pricing' => (bool) ($user?->can('prices.view') || $user?->can('customers.manage_settings')),
+        ];
+
+        $relations = ['addresses', 'users', 'documents', 'creditLimit'];
+
+        if ($access['pricing']) {
+            $relations['priceOverrides'] = fn ($query) => $query->with('product')->latest('id')->limit(10);
+        }
+
+        if ($access['orders']) {
+            $relations['b2bOrders'] = fn ($query) => $query->withCount('items')->latest('id')->limit(10);
+        }
+
+        if ($access['invoices']) {
+            $relations['invoices'] = fn ($query) => $query->with('order')->latest('id')->limit(10);
+        }
+
+        if ($access['payments']) {
+            $relations['payments'] = fn ($query) => $query->latest('id')->limit(10);
+        }
+
+        if ($access['shipments']) {
+            $relations['shipments'] = fn ($query) => $query->with('order')->latest('id')->limit(10);
+        }
+
+        if ($access['receivables']) {
+            $workLocationIds = $user?->permittedWorkLocationIds() ?? [];
+            $unrestrictedLocationScope = (bool) $user?->hasUnrestrictedLocationScope();
+            $relations['receivables'] = fn ($query) => $query
+                ->with('workLocation')
+                ->when(! $unrestrictedLocationScope, fn ($scope) => $scope->where(
+                    fn ($location) => $location->whereNull('work_location_id')->orWhereIn('work_location_id', $workLocationIds)
+                ))
+                ->latest('id')
+                ->limit(10);
+        }
+
+        $customer->load($relations);
+
+        $availableCredit = bcsub((string) $customer->credit_limit, (string) $customer->receivable_balance, 2);
+        if (bccomp($availableCredit, '0', 2) < 0) {
+            $availableCredit = '0.00';
+        }
+
+        $metrics = [
+            'orders' => $access['orders'] ? $customer->b2bOrders()->count() : null,
+            'open_invoices' => $access['invoices'] ? $customer->invoices()->whereNotIn('status', ['paid', 'cancelled'])->count() : null,
+            'receivable_balance' => $access['receivables'] ? (string) $customer->receivable_balance : null,
+            'available_credit' => $access['receivables'] ? $availableCredit : null,
+        ];
+
+        $shippableOrder = null;
+        if ($access['orders'] && $user?->can('create', Shipment::class)) {
+            $shippableOrder = $customer->b2bOrders()
+                ->whereIn('status', [B2bOrderStatus::APPROVED_CREDIT->value, B2bOrderStatus::PACKING->value])
+                ->latest('id')
+                ->first();
+        }
+
+        return view('admin.customers.show', compact('customer', 'access', 'metrics', 'shippableOrder'));
     }
 
     public function edit(Customer $customer): View

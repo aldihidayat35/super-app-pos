@@ -129,9 +129,12 @@ class ReportMetricService
     {
         return Cache::remember($this->cacheKey('warehouse', $user, $filters), 60, function () use ($filters): array {
             $stock = $this->stockSummary($filters);
+            $warehouseIds = $this->warehouseIds($filters);
 
             return [
                 'kpis' => [
+                    'total_products' => DB::table('stocks')->whereIn('work_location_id', $filters['location_ids'])->distinct()->count('product_id'),
+                    'on_hand_quantity' => $stock['on_hand_quantity'],
                     'available_quantity' => $stock['available_quantity'],
                     'reserved_quantity' => $stock['reserved_quantity'],
                     'damaged_quantity' => $stock['damaged_quantity'],
@@ -140,12 +143,18 @@ class ReportMetricService
                     'empty_count' => $stock['empty_count'],
                     'incoming_count' => $this->mutationCount($filters, [StockMutationType::RECEIVE->value, StockMutationType::RETURN_IN->value, StockMutationType::TRANSFER_IN->value]),
                     'outgoing_count' => $this->mutationCount($filters, [StockMutationType::ISSUE->value, StockMutationType::RETURN_OUT->value, StockMutationType::TRANSFER_OUT->value]),
-                    'pending_po' => DB::table('purchase_orders')->whereIn('status', [PurchaseOrderStatus::SUBMITTED->value, PurchaseOrderStatus::APPROVED->value, PurchaseOrderStatus::SENT_TO_SUPPLIER->value, PurchaseOrderStatus::PARTIALLY_RECEIVED->value])->count(),
+                    'pending_po' => DB::table('purchase_orders')->whereIn('warehouse_id', $warehouseIds)->whereIn('status', [PurchaseOrderStatus::SUBMITTED->value, PurchaseOrderStatus::APPROVED->value, PurchaseOrderStatus::SENT_TO_SUPPLIER->value, PurchaseOrderStatus::PARTIALLY_RECEIVED->value])->count(),
                     'pending_transfer' => $this->locationScopedCount('stock_transfers', 'source_work_location_id', $filters, [StockTransferStatus::PENDING_APPROVAL->value, StockTransferStatus::APPROVED->value, StockTransferStatus::PACKING->value, StockTransferStatus::SHIPPED->value]),
-                    'pending_order' => DB::table('b2b_orders')->whereIn('status', [B2bOrderStatus::PENDING_CONFIRMATION->value, B2bOrderStatus::WAREHOUSE_VALIDATION->value, B2bOrderStatus::RESERVED->value, B2bOrderStatus::PACKING->value])->count(),
-                    'posted_receipts' => DB::table('goods_receipts')->where('status', GoodsReceiptStatus::POSTED->value)->whereBetween('posted_at', [$filters['start'], $filters['end']])->count(),
+                    'pending_order' => DB::table('b2b_orders')
+                        ->join('stock_reservations', 'stock_reservations.b2b_order_id', '=', 'b2b_orders.id')
+                        ->whereIn('stock_reservations.work_location_id', $filters['location_ids'])
+                        ->whereIn('b2b_orders.status', [B2bOrderStatus::PENDING_CONFIRMATION->value, B2bOrderStatus::WAREHOUSE_VALIDATION->value, B2bOrderStatus::RESERVED->value, B2bOrderStatus::PACKING->value])
+                        ->distinct()
+                        ->count('b2b_orders.id'),
+                    'posted_receipts' => DB::table('goods_receipts')->whereIn('warehouse_id', $warehouseIds)->where('status', GoodsReceiptStatus::POSTED->value)->whereBetween('posted_at', [$filters['start'], $filters['end']])->count(),
                     'open_opname' => $this->locationScopedCount('stock_opnames', 'work_location_id', $filters, [StockOpnameStatus::DRAFT->value, StockOpnameStatus::COUNTING->value, StockOpnameStatus::PENDING_APPROVAL->value]),
                 ],
+                'stock_alerts' => $this->warehouseStockAlerts($filters),
                 'large_mutations' => $this->largeMutations($filters),
                 'charts' => [
                     'daily_movement' => $this->dailyStockMovement($filters),
@@ -513,6 +522,46 @@ class ReportMetricService
 
     /**
      * @param  ReportFilters  $filters
+     * @return list<int>
+     */
+    private function warehouseIds(array $filters): array
+    {
+        return DB::table('warehouses')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->where('is_active', true)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function warehouseStockAlerts(array $filters): array
+    {
+        return DB::table('stocks')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->whereIn('stocks.work_location_id', $filters['location_ids'])
+            ->selectRaw('products.id, products.sku, products.name as product, products.minimum_stock, SUM(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) as available')
+            ->groupBy('products.id', 'products.sku', 'products.name', 'products.minimum_stock')
+            ->havingRaw('SUM(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock')
+            ->orderBy('available')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row): array => [
+                'product_id' => (int) $row->id,
+                'sku' => $row->sku,
+                'product' => $row->product,
+                'available' => $this->quantity($row->available),
+                'minimum_stock' => $this->quantity($row->minimum_stock),
+                'status' => Decimal::compare((string) $row->available, '0', 4) <= 0 ? 'empty' : 'critical',
+            ])
+            ->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
      * @return array{outstanding: string, overdue: string, aging: array<string, string>}
      */
     private function receivableSummary(array $filters, ?int $customerId = null): array
@@ -598,13 +647,13 @@ class ReportMetricService
             ->whereIn('work_location_id', $filters['location_ids'])
             ->whereBetween('completed_at', [$filters['start'], $filters['end']])
             ->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value])
-            ->selectRaw($posSelect.", COALESCE(SUM(grand_total_amount),0) as retail, 0 as b2b")
+            ->selectRaw($posSelect.', COALESCE(SUM(grand_total_amount),0) as retail, 0 as b2b')
             ->groupBy('date')
             ->get();
         $b2b = $channel === 'retail' ? collect() : DB::table('b2b_orders')
             ->whereBetween('submitted_at', [$filters['start'], $filters['end']])
             ->whereNotIn('status', [B2bOrderStatus::CANCELLED->value, B2bOrderStatus::REJECTED->value])
-            ->selectRaw($b2bSelect.", 0 as retail, COALESCE(SUM(grand_total_amount),0) as b2b")
+            ->selectRaw($b2bSelect.', 0 as retail, COALESCE(SUM(grand_total_amount),0) as b2b')
             ->groupBy('date')
             ->get();
 
@@ -800,7 +849,7 @@ class ReportMetricService
         return DB::table('stock_mutations')
             ->whereIn('work_location_id', $filters['location_ids'])
             ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-                ->selectRaw("strftime('%Y-%m', occurred_at) as date, SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing")
+            ->selectRaw("strftime('%Y-%m', occurred_at) as date, SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing")
             ->groupBy('date')
             ->orderBy('date')
             ->get()
@@ -817,7 +866,7 @@ class ReportMetricService
         return DB::table('stock_mutations')
             ->whereIn('work_location_id', $filters['location_ids'])
             ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-                ->selectRaw("CAST(strftime('%Y', occurred_at) AS INTEGER) as date, SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing")
+            ->selectRaw("CAST(strftime('%Y', occurred_at) AS INTEGER) as date, SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing")
             ->groupBy('date')
             ->orderBy('date')
             ->get()

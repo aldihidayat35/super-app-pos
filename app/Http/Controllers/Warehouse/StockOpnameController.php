@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Warehouse;
 
 use App\Enums\StockOpnameReason;
 use App\Enums\StockOpnameStatus;
+use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Warehouse\ApproveStockOpnameRequest;
 use App\Http\Requests\Warehouse\CountStockOpnameItemRequest;
@@ -26,11 +27,17 @@ class StockOpnameController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('viewAny', StockOpname::class);
+        $permittedWorkLocationIds = $request->user()?->permittedWorkLocationIds() ?? [];
 
         return view('warehouse.stock-opnames.index', [
             'opnames' => $this->query($request)->paginate(15)->withQueryString(),
-            'workLocations' => WorkLocation::query()->whereIn('id', $request->user()?->permittedWorkLocationIds() ?? [])->where('is_active', true)->orderBy('name')->get(),
-            'warehouseLocations' => WarehouseLocation::query()->where('is_active', true)->orderBy('full_code')->limit(300)->get(),
+            'workLocations' => WorkLocation::query()->whereIn('id', $permittedWorkLocationIds)->where('is_active', true)->orderBy('name')->get(),
+            'warehouseLocations' => WarehouseLocation::query()
+                ->with('warehouse:id,work_location_id')
+                ->where('is_active', true)
+                ->whereHas('warehouse', fn ($query) => $query->whereIn('work_location_id', $permittedWorkLocationIds))
+                ->orderBy('full_code')
+                ->get(),
             'categories' => ProductCategory::query()->where('is_active', true)->orderBy('name')->get(),
             'users' => User::query()->where('is_active', true)->orderBy('name')->limit(100)->get(),
             'statuses' => StockOpnameStatus::options(),
@@ -42,7 +49,15 @@ class StockOpnameController extends Controller
     {
         $data = $request->validated();
         abort_unless($request->user()?->canAccessWorkLocation((int) $data['work_location_id']), 403);
-        $opname = $service->create($data, $request->user());
+
+        try {
+            $opname = $service->create($data, $request->user());
+        } catch (ServiceException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors(['work_location_id' => $exception->getMessage()])
+                ->with('notification', ['type' => 'warning', 'message' => $exception->getMessage()]);
+        }
 
         return redirect()->route('warehouse.stock-opnames.show', $opname)->with('notification', ['type' => 'success', 'message' => "Opname {$opname->number} berhasil dibuat."]);
     }
@@ -57,7 +72,14 @@ class StockOpnameController extends Controller
     public function start(Request $request, StockOpname $stockOpname, StockOpnameService $service): RedirectResponse
     {
         $this->authorize('start', $stockOpname);
-        $service->start($stockOpname, $request->user());
+
+        try {
+            $service->start($stockOpname, $request->user());
+        } catch (ServiceException $exception) {
+            return back()
+                ->withErrors(['stock_opname' => $exception->getMessage()])
+                ->with('notification', ['type' => 'warning', 'message' => $exception->getMessage()]);
+        }
 
         return redirect()->route('warehouse.stock-opnames.count', $stockOpname)->with('notification', ['type' => 'success', 'message' => 'Snapshot dibuat dan counting dimulai.']);
     }

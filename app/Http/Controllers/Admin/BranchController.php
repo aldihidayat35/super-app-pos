@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CashShiftStatus;
+use App\Enums\PosSaleStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreBranchRequest;
 use App\Http\Requests\Admin\UpdateBranchRequest;
@@ -77,14 +79,34 @@ class BranchController extends Controller
         ]);
     }
 
-    public function show(Branch $branch): View
+    public function show(Request $request, Branch $branch): View
     {
         $this->authorize('view', $branch);
 
-        $branch->load(['primaryWarehouse', 'manager', 'workLocation.users']);
+        $user = $request->user();
+        $access = [
+            'users' => $user->can('admin.users.view'),
+            'users_create' => $user->can('admin.users.create'),
+            'stock' => $user->can('stock.view'),
+            'restock' => $user->can('stock_transfers.view') || $user->can('stock_transfers.create'),
+            'restock_create' => $user->can('stock_transfers.create'),
+            'shifts' => $user->can('cash_shifts.view'),
+            'shifts_create' => $user->can('cash_shifts.create'),
+            'sales' => $user->can('pos.view') || $user->can('reports.view'),
+            'pos_create' => $user->can('pos.create'),
+            'reports' => $user->can('reports.view') || $user->can('pos.view') || $user->can('cash_shifts.view'),
+            'margin' => $user->can('margins.view_sensitive'),
+            'audit' => $user->can('audit.view'),
+        ];
+
+        $branch->load(['primaryWarehouse', 'manager', 'workLocation']);
         $workLocationId = $branch->work_location_id;
 
-        $stocks = $workLocationId
+        $assignedUsers = $access['users'] && $branch->workLocation
+            ? $branch->workLocation->users()->with('roles')->orderBy('name')->get()
+            : collect();
+
+        $stocks = $access['stock'] && $workLocationId
             ? Stock::query()
                 ->with('product')
                 ->where('work_location_id', $workLocationId)
@@ -93,37 +115,77 @@ class BranchController extends Controller
                 ->get()
             : collect();
 
-        $shifts = CashShift::query()
-            ->with('cashier')
-            ->where('branch_id', $branch->id)
-            ->latest('opened_at')
-            ->limit(8)
-            ->get();
+        $shifts = $access['shifts']
+            ? CashShift::query()
+                ->with('cashier')
+                ->where('branch_id', $branch->id)
+                ->latest('opened_at')
+                ->limit(8)
+                ->get()
+            : collect();
 
-        $salesSummary = PosSale::query()
-            ->where('branch_id', $branch->id)
-            ->selectRaw('COUNT(*) as total_sales')
-            ->selectRaw('COALESCE(SUM(grand_total_amount), 0) as total_revenue')
-            ->selectRaw('COALESCE(SUM(total_margin_amount), 0) as total_margin')
-            ->first();
+        $salesSummary = null;
+        if ($access['sales']) {
+            $salesQuery = PosSale::query()
+                ->where('branch_id', $branch->id)
+                ->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value])
+                ->selectRaw('COUNT(*) as total_sales')
+                ->selectRaw('COALESCE(SUM(grand_total_amount), 0) as total_revenue');
 
-        $recentSales = PosSale::query()
-            ->with('cashier')
-            ->where('branch_id', $branch->id)
-            ->latest('completed_at')
-            ->limit(5)
-            ->get();
+            if ($access['margin']) {
+                $salesQuery->selectRaw('COALESCE(SUM(total_margin_amount), 0) as total_margin');
+            }
 
-        $histories = Activity::query()
-            ->with('causer')
-            ->where('subject_type', $branch->getMorphClass())
-            ->where('subject_id', $branch->id)
-            ->latest()
-            ->limit(10)
-            ->get();
+            $summary = $salesQuery->first();
+            $salesSummary = [
+                'total_sales' => (int) ($summary?->getAttribute('total_sales') ?? 0),
+                'total_revenue' => (string) ($summary?->getAttribute('total_revenue') ?? 0),
+                'total_margin' => $access['margin'] ? (string) ($summary?->getAttribute('total_margin') ?? 0) : null,
+            ];
+        }
+
+        $recentSales = $access['sales']
+            ? PosSale::query()
+                ->with('cashier')
+                ->where('branch_id', $branch->id)
+                ->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value])
+                ->latest('completed_at')
+                ->limit(5)
+                ->get()
+            : collect();
+
+        $histories = $access['audit']
+            ? Activity::query()
+                ->with('causer')
+                ->where('subject_type', $branch->getMorphClass())
+                ->where('subject_id', $branch->id)
+                ->latest()
+                ->limit(10)
+                ->get()
+            : collect();
+
+        $metrics = [
+            'active_users' => $access['users'] ? $assignedUsers->where('is_active', true)->count() : null,
+            'stock_products' => $access['stock'] && $workLocationId
+                ? Stock::query()->where('work_location_id', $workLocationId)->where('quantity_on_hand', '>', 0)->count()
+                : null,
+            'available_stock' => $access['stock'] && $workLocationId
+                ? (string) Stock::query()->where('work_location_id', $workLocationId)
+                    ->selectRaw('COALESCE(SUM(quantity_on_hand - quantity_reserved - quantity_damaged), 0) as aggregate')
+                    ->first()?->getAttribute('aggregate')
+                : null,
+            'open_shifts' => $access['shifts']
+                ? CashShift::query()->where('branch_id', $branch->id)->where('status', CashShiftStatus::OPEN->value)->count()
+                : null,
+            'total_sales' => $access['sales'] ? $salesSummary['total_sales'] : null,
+            'total_revenue' => $access['sales'] ? $salesSummary['total_revenue'] : null,
+        ];
 
         return view('admin.branches.show', [
             'branch' => $branch,
+            'access' => $access,
+            'assignedUsers' => $assignedUsers,
+            'metrics' => $metrics,
             'stocks' => $stocks,
             'shifts' => $shifts,
             'salesSummary' => $salesSummary,

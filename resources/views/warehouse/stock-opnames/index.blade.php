@@ -29,6 +29,71 @@
     </x-metronic.page-guide>
 @endsection
 
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const $ = window.jQuery;
+            const workLocation = document.getElementById('work_location_id');
+            const warehouseLocation = document.getElementById('warehouse_location_id');
+
+            if (!$ || typeof $.fn.select2 !== 'function' || !workLocation || !warehouseLocation) {
+                return;
+            }
+
+            const $warehouseLocation = $(warehouseLocation);
+            const warehouseLocationOptions = Array.from(warehouseLocation.options)
+                .filter((option) => option.value !== '')
+                .map((option) => option.cloneNode(true));
+
+            const initializeWarehouseLocation = (preserveSelection = false) => {
+                const workLocationId = workLocation.value;
+                const selectedValue = preserveSelection ? warehouseLocation.value : '';
+
+                if ($warehouseLocation.hasClass('select2-hidden-accessible')) {
+                    $warehouseLocation.select2('destroy');
+                }
+
+                warehouseLocation.replaceChildren();
+                warehouseLocation.add(new Option(
+                    workLocationId ? 'Semua zona/rak/bin' : 'Pilih gudang/cabang terlebih dahulu',
+                    '',
+                    selectedValue === '',
+                    selectedValue === '',
+                ));
+
+                warehouseLocationOptions
+                    .filter((option) => option.dataset.workLocationId === workLocationId)
+                    .forEach((option) => warehouseLocation.add(option.cloneNode(true)));
+
+                warehouseLocation.value = Array.from(warehouseLocation.options)
+                    .some((option) => option.value === selectedValue)
+                    ? selectedValue
+                    : '';
+
+                warehouseLocation.disabled = !workLocationId;
+
+                $warehouseLocation.select2({
+                    theme: 'bootstrap5',
+                    width: '100%',
+                    selectionCssClass: ':all:',
+                    placeholder: workLocationId ? 'Semua zona/rak/bin' : 'Pilih gudang/cabang terlebih dahulu',
+                    allowClear: true,
+                    minimumInputLength: 0,
+                    language: {
+                        errorLoading: () => 'Data tidak dapat dimuat.',
+                        loadingMore: () => 'Memuat data berikutnya...',
+                        noResults: () => 'Zona/Rak/Bin tidak ditemukan.',
+                        searching: () => 'Mencari data...',
+                    },
+                });
+            };
+
+            initializeWarehouseLocation(true);
+            $(workLocation).on('change.stock-opname-location', () => initializeWarehouseLocation(false));
+        });
+    </script>
+@endpush
+
 @section('content')
     <x-metronic.page-title title="Stok Opname" description="Jadwalkan, snapshot, hitung fisik, dan koreksi saldo stok melalui approval." />
 
@@ -57,11 +122,14 @@
                                 class="form-select form-select-solid"
                                 data-control="select2"
                                 data-searchable-fallback="true"
-                                data-placeholder="Cari zona, rak, atau bin"
-                                data-allow-clear="true">
-                            <option value="">Semua lokasi detail</option>
+                                data-placeholder="{{ old('work_location_id') ? 'Semua zona/rak/bin' : 'Pilih gudang/cabang terlebih dahulu' }}"
+                                data-allow-clear="true"
+                                @disabled(! old('work_location_id'))>
+                            <option value="">{{ old('work_location_id') ? 'Semua zona/rak/bin' : 'Pilih gudang/cabang terlebih dahulu' }}</option>
                             @foreach($warehouseLocations as $location)
-                                <option value="{{ $location->id }}" @selected(old('warehouse_location_id') == $location->id)>{{ $location->full_code }} — {{ $location->name }}</option>
+                                <option value="{{ $location->id }}"
+                                        data-work-location-id="{{ $location->warehouse?->work_location_id }}"
+                                        @selected(old('warehouse_location_id') == $location->id)>{{ $location->full_code }} — {{ $location->name }}</option>
                             @endforeach
                         </select>
                     </x-metronic.form-group>

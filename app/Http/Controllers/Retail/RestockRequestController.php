@@ -21,10 +21,12 @@ class RestockRequestController extends Controller
     {
         $this->authorize('viewAny', RestockRequest::class);
 
+        $locationIds = $request->user()->permittedWorkLocationIds();
+
         return view('retail.restock-requests.index', [
             'requests' => $this->query($request)->paginate(15)->withQueryString(),
-            'branches' => Branch::query()->with('workLocation')->where('is_active', true)->orderBy('name')->get(),
-            'warehouses' => Warehouse::query()->with('workLocation')->where('is_active', true)->orderBy('name')->get(),
+            'branches' => Branch::query()->with('workLocation')->where('is_active', true)->whereIn('work_location_id', $locationIds)->orderBy('name')->get(),
+            'warehouses' => Warehouse::query()->with('workLocation')->where('is_active', true)->whereIn('work_location_id', $locationIds)->orderBy('name')->get(),
             'products' => Product::query()->where('status', 'active')->orderBy('name')->limit(200)->get(),
             'statuses' => RestockRequestStatus::options(),
             'filters' => $request->only(['branch_id', 'status']),
