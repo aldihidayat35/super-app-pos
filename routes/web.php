@@ -907,12 +907,28 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/product-prices', [ProductPriceController::class, 'store'])
             ->middleware('permission:prices.update')
             ->name('product-prices.store');
+        Route::get('/product-prices/{productPrice}/edit', [ProductPriceController::class, 'edit'])
+            ->middleware('permission:prices.update')
+            ->name('product-prices.edit');
+        Route::put('/product-prices/{productPrice}', [ProductPriceController::class, 'update'])
+            ->middleware('permission:prices.update')
+            ->name('product-prices.update');
+        Route::post('/product-prices/{productPrice}/revision', [ProductPriceController::class, 'revise'])
+            ->middleware('permission:prices.update')
+            ->name('product-prices.revise');
+        Route::post('/product-prices/{productPrice}/end', [ProductPriceController::class, 'end'])
+            ->middleware('permission:prices.update')
+            ->name('product-prices.end');
+        Route::delete('/product-prices/{productPrice}', [ProductPriceController::class, 'destroy'])
+            ->name('product-prices.destroy');
         Route::get('/special-prices', [SpecialPriceController::class, 'index'])
             ->middleware('permission:prices.view')
             ->name('special-prices.index');
         Route::post('/special-prices', [SpecialPriceController::class, 'store'])
             ->middleware('permission:prices.update')
             ->name('special-prices.store');
+        Route::delete('/special-prices/{customerPriceOverride}', [SpecialPriceController::class, 'destroy'])
+            ->name('special-prices.destroy');
         Route::get('/history', [PriceHistoryController::class, 'index'])
             ->middleware('permission:prices.view')
             ->name('history.index');
@@ -1048,7 +1064,10 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         ->name('shipments.show');
 
     Route::prefix('retail')->name('retail.')->group(function (): void {
-        Route::get('/dashboard', RetailDashboardController::class)
+        Route::get('/dashboard/data', [RetailDashboardController::class, 'data'])
+            ->middleware('permission:dashboard.view|cash_shifts.view|reports.view')
+            ->name('dashboard.data');
+        Route::get('/dashboard', [RetailDashboardController::class, 'index'])
             ->middleware('permission:dashboard.view|cash_shifts.view|reports.view')
             ->name('dashboard');
 

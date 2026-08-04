@@ -156,6 +156,12 @@ class ReportMetricService
                 ],
                 'stock_alerts' => $this->warehouseStockAlerts($filters),
                 'large_mutations' => $this->largeMutations($filters),
+                'top_movers' => $this->topStockMovers($filters),
+                'dead_stock' => $this->deadStock($filters),
+                'top_stocked_products' => $this->topStockedProducts($filters),
+                'restock_needed' => $this->restockNeededProducts($filters),
+                'today_transactions' => $this->stockMutationCount($filters, null),
+                'previous_period_comparison' => $this->previousPeriodComparison($filters),
                 'charts' => [
                     'daily_movement' => $this->dailyStockMovement($filters),
                     'monthly_movement' => $this->monthlyStockMovement($filters),
@@ -175,6 +181,7 @@ class ReportMetricService
         return Cache::remember($this->cacheKey('retail', $user, $filters), 60, function () use ($filters): array {
             $sales = $this->salesSummary($filters);
             $stock = $this->stockSummary($filters);
+            $stockHealth = $this->stockHealth($filters);
 
             return [
                 'kpis' => [
@@ -183,7 +190,10 @@ class ReportMetricService
                     'margin_percent' => $this->percent($sales['margin'], $sales['revenue']),
                     'transaction_count' => $sales['transaction_count'],
                     'average_ticket' => $this->divideMoney($sales['revenue'], max(1, (int) $sales['transaction_count'])),
-                    'critical_stock_count' => $stock['critical_count'],
+                    'available_stock' => $stock['available_quantity'],
+                    'stock_value' => $stock['stock_value'],
+                    'critical_stock_count' => $stockHealth['critical_count'],
+                    'empty_stock_count' => $stockHealth['empty_count'],
                     'active_shift_count' => $this->locationScopedCount('cash_shifts', 'work_location_id', $filters, [CashShiftStatus::OPEN->value, CashShiftStatus::CLOSING_SUBMITTED->value]),
                     'closing_pending_count' => $this->locationScopedCount('cash_shifts', 'work_location_id', $filters, [CashShiftStatus::CLOSING_SUBMITTED->value]),
                     'cash_difference' => $this->cashDifference($filters),
@@ -191,6 +201,9 @@ class ReportMetricService
                     'void_count' => $this->locationScopedCount('pos_sales', 'work_location_id', $filters, [PosSaleStatus::VOID_APPROVED->value]),
                     'return_amount' => $this->returnsValue($filters),
                 ],
+                'stock_alerts' => $stockHealth['alerts'],
+                'recent_sales' => $this->recentRetailSales($filters),
+                'active_shifts' => $this->activeRetailShifts($filters),
                 'charts' => [
                     'daily_revenue' => $this->dailyRevenue($filters, 'retail'),
                     'monthly_revenue' => $this->monthlyRevenue($filters, 'retail'),
@@ -540,22 +553,88 @@ class ReportMetricService
      */
     private function warehouseStockAlerts(array $filters): array
     {
-        return DB::table('stocks')
+        return $this->stockHealth($filters)['alerts'];
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return array{critical_count: int, empty_count: int, alerts: list<ReportRow>}
+     */
+    private function stockHealth(array $filters): array
+    {
+        $rows = DB::table('stocks')
             ->join('products', 'products.id', '=', 'stocks.product_id')
             ->whereIn('stocks.work_location_id', $filters['location_ids'])
             ->selectRaw('products.id, products.sku, products.name as product, products.minimum_stock, SUM(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) as available')
             ->groupBy('products.id', 'products.sku', 'products.name', 'products.minimum_stock')
             ->havingRaw('SUM(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock')
             ->orderBy('available')
+            ->get();
+
+        $alerts = $rows->take(8)->map(fn ($row): array => [
+            'product_id' => (int) $row->id,
+            'sku' => $row->sku,
+            'product' => $row->product,
+            'available' => $this->quantity($row->available),
+            'minimum_stock' => $this->quantity($row->minimum_stock),
+            'status' => Decimal::compare((string) $row->available, '0', 4) <= 0 ? 'empty' : 'critical',
+        ])
+            ->values()
+            ->all();
+
+        return [
+            'critical_count' => $rows->count(),
+            'empty_count' => $rows->filter(fn ($row): bool => Decimal::compare((string) $row->available, '0', 4) <= 0)->count(),
+            'alerts' => $alerts,
+        ];
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function recentRetailSales(array $filters): array
+    {
+        return DB::table('pos_sales')
+            ->leftJoin('users as cashiers', 'cashiers.id', '=', 'pos_sales.cashier_user_id')
+            ->whereIn('pos_sales.work_location_id', $filters['location_ids'])
+            ->whereBetween('pos_sales.completed_at', [$filters['start'], $filters['end']])
+            ->select('pos_sales.id', 'pos_sales.number', 'pos_sales.status', 'pos_sales.grand_total_amount', 'pos_sales.completed_at', 'cashiers.name as cashier')
+            ->latest('pos_sales.completed_at')
             ->limit(8)
             ->get()
             ->map(fn ($row): array => [
-                'product_id' => (int) $row->id,
-                'sku' => $row->sku,
-                'product' => $row->product,
-                'available' => $this->quantity($row->available),
-                'minimum_stock' => $this->quantity($row->minimum_stock),
-                'status' => Decimal::compare((string) $row->available, '0', 4) <= 0 ? 'empty' : 'critical',
+                'id' => (int) $row->id,
+                'number' => $row->number,
+                'status' => $row->status,
+                'amount' => $this->money($row->grand_total_amount),
+                'completed_at' => $row->completed_at,
+                'cashier' => $row->cashier,
+            ])
+            ->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function activeRetailShifts(array $filters): array
+    {
+        return DB::table('cash_shifts')
+            ->leftJoin('users as cashiers', 'cashiers.id', '=', 'cash_shifts.cashier_user_id')
+            ->whereIn('cash_shifts.work_location_id', $filters['location_ids'])
+            ->whereIn('cash_shifts.status', [CashShiftStatus::OPEN->value, CashShiftStatus::CLOSING_SUBMITTED->value])
+            ->select('cash_shifts.id', 'cash_shifts.number', 'cash_shifts.status', 'cash_shifts.opening_cash_amount', 'cash_shifts.opened_at', 'cashiers.name as cashier')
+            ->latest('cash_shifts.opened_at')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row): array => [
+                'id' => (int) $row->id,
+                'number' => $row->number,
+                'status' => $row->status,
+                'opening_cash_amount' => $this->money($row->opening_cash_amount),
+                'opened_at' => $row->opened_at,
+                'cashier' => $row->cashier,
             ])
             ->all();
     }
@@ -1057,6 +1136,165 @@ class ReportMetricService
                 'Last updated menunjukkan waktu query dashboard dibuat dengan cache singkat 60 detik.',
             ],
         };
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function topStockMovers(array $filters): array
+    {
+        return DB::table('stock_mutations')
+            ->join('products', 'products.id', '=', 'stock_mutations.product_id')
+            ->whereIn('stock_mutations.work_location_id', $filters['location_ids'])
+            ->whereBetween('stock_mutations.occurred_at', [$filters['start'], $filters['end']])
+            ->selectRaw('products.id as product_id, products.sku, products.name as product, SUM(ABS(stock_mutations.quantity_on_hand_change)) as total_movement, COUNT(stock_mutations.id) as frequency')
+            ->groupBy('products.id', 'products.sku', 'products.name')
+            ->orderByDesc('total_movement')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row): array => [
+                'product_id' => (int) $row->product_id,
+                'sku' => $row->sku,
+                'product' => $row->product,
+                'total_movement' => $this->quantity($row->total_movement),
+                'frequency' => (int) $row->frequency,
+            ])
+            ->all();
+    }
+
+    /**
+     * Dead stock: produk dengan saldo on_hand tapi tanpa mutasi pada periode filter.
+     *
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function deadStock(array $filters): array
+    {
+        $movedProductIds = DB::table('stock_mutations')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
+            ->pluck('product_id')
+            ->unique()
+            ->all();
+
+        return DB::table('stocks')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->whereIn('stocks.work_location_id', $filters['location_ids'])
+            ->where('stocks.quantity_on_hand', '>', 0)
+            ->when($movedProductIds !== [], fn (Builder $query) => $query->whereNotIn('stocks.product_id', $movedProductIds))
+            ->selectRaw('products.id as product_id, products.sku, products.name as product, SUM(stocks.quantity_on_hand) as quantity, SUM(stocks.cost_value) as stock_value')
+            ->groupBy('products.id', 'products.sku', 'products.name')
+            ->orderByDesc('stock_value')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row): array => [
+                'product_id' => (int) $row->product_id,
+                'sku' => $row->sku,
+                'product' => $row->product,
+                'quantity' => $this->quantity($row->quantity),
+                'stock_value' => $this->money($row->stock_value),
+            ])
+            ->all();
+    }
+
+    /**
+     * Top 5 produk dengan nilai stok terbesar (untuk keperluan display).
+     *
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function topStockedProducts(array $filters): array
+    {
+        return DB::table('stocks')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->whereIn('stocks.work_location_id', $filters['location_ids'])
+            ->selectRaw('products.id as product_id, products.sku, products.name as product, SUM(stocks.quantity_on_hand) as quantity, SUM(stocks.cost_value) as stock_value')
+            ->groupBy('products.id', 'products.sku', 'products.name')
+            ->orderByDesc('stock_value')
+            ->limit(5)
+            ->get()
+            ->map(fn ($row): array => [
+                'product_id' => (int) $row->product_id,
+                'sku' => $row->sku,
+                'product' => $row->product,
+                'quantity' => $this->quantity($row->quantity),
+                'stock_value' => $this->money($row->stock_value),
+            ])
+            ->all();
+    }
+
+    /**
+     * Top 5 produk yang perlu direstock (available <= minimum_stock).
+     *
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function restockNeededProducts(array $filters): array
+    {
+        return DB::table('stocks')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->whereIn('stocks.work_location_id', $filters['location_ids'])
+            ->selectRaw('products.id as product_id, products.sku, products.name as product, products.minimum_stock, SUM(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) as available')
+            ->groupBy('products.id', 'products.sku', 'products.name', 'products.minimum_stock')
+            ->havingRaw('SUM(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock')
+            ->orderBy('available')
+            ->limit(5)
+            ->get()
+            ->map(fn ($row): array => [
+                'product_id' => (int) $row->product_id,
+                'sku' => $row->sku,
+                'product' => $row->product,
+                'available' => $this->quantity($row->available),
+                'minimum_stock' => $this->quantity($row->minimum_stock),
+            ])
+            ->all();
+    }
+
+    /** @param ReportFilters $filters */
+    private function stockMutationCount(array $filters, ?string $type): int
+    {
+        return DB::table('stock_mutations')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereDate('occurred_at', now('Asia/Jakarta')->toDateString())
+            ->when($type !== null, fn (Builder $query) => $query->where('mutation_type', $type))
+            ->count();
+    }
+
+    /**
+     * Membandingkan metrik utama dengan periode sebelumnya.
+     *
+     * @param  ReportFilters  $filters
+     * @return array{incoming: array{current: int, previous: int}, outgoing: array{current: int, previous: int}, stock_value: array{current: string, previous: string}}
+     */
+    private function previousPeriodComparison(array $filters): array
+    {
+        $currentIncoming = DB::table('stock_mutations')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
+            ->where('quantity_on_hand_change', '>', 0)
+            ->count();
+        $previousIncoming = DB::table('stock_mutations')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('occurred_at', [$filters['previous_start'], $filters['previous_end']])
+            ->where('quantity_on_hand_change', '>', 0)
+            ->count();
+
+        $currentOutgoing = DB::table('stock_mutations')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
+            ->where('quantity_on_hand_change', '<', 0)
+            ->count();
+        $previousOutgoing = DB::table('stock_mutations')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('occurred_at', [$filters['previous_start'], $filters['previous_end']])
+            ->where('quantity_on_hand_change', '<', 0)
+            ->count();
+
+        return [
+            'incoming' => ['current' => $currentIncoming, 'previous' => $previousIncoming],
+            'outgoing' => ['current' => $currentOutgoing, 'previous' => $previousOutgoing],
+        ];
     }
 
     private function percent(string $value, string $base): string

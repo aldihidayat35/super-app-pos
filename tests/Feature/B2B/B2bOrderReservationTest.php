@@ -75,8 +75,63 @@ class B2bOrderReservationTest extends TestCase
         $this->actingAs($this->customerUser)->get(route('langganan.orders.index'))->assertOk()->assertSee($order->number);
         $this->actingAs($this->customerUser)->get(route('langganan.orders.show', $order))->assertOk()->assertSee('Timeline Status');
         $this->actingAs($this->warehouseHead)->get(route('warehouse.b2b-orders.index'))->assertOk()->assertSee('Antrian Order Gudang');
-        $this->actingAs($this->warehouseHead)->get(route('warehouse.b2b-orders.review', $order))->assertOk()->assertSee('Review dan Reserve');
+        $reviewResponse = $this->actingAs($this->warehouseHead)->get(route('warehouse.b2b-orders.review', $order));
+        $reviewResponse->assertOk()->assertSee('Review dan Reserve')->assertSee('gt-order-stepper__connector', false);
+        $this->assertSame(5, substr_count($reviewResponse->getContent(), 'data-step-connector='));
         $this->actingAs($this->warehouseHead)->get(route('warehouse.reservations.index'))->assertOk()->assertSee('Monitor Reserved Stock');
+    }
+
+    public function test_review_displays_live_credit_usage_and_customer_detail_action(): void
+    {
+        $order = $this->createOrder(2);
+        $this->customer->creditLimit()->create([
+            'credit_limit' => 1000000,
+            'payment_term_days' => 14,
+            'current_balance' => 650000,
+            'effective_from' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($this->warehouseHead)
+            ->get(route('warehouse.b2b-orders.review', $order))
+            ->assertOk()
+            ->assertSee('Informasi Pelanggan')
+            ->assertSee('Rp650.000')
+            ->assertSee('Rp350.000')
+            ->assertSee('Perlu perhatian')
+            ->assertSee('65% digunakan')
+            ->assertSee(route('admin.customers.show', $this->customer), false);
+    }
+
+    public function test_review_clamps_credit_bar_but_keeps_actual_over_limit_percentage(): void
+    {
+        $order = $this->createOrder(1);
+        $this->customer->creditLimit()->create([
+            'credit_limit' => 1000000,
+            'payment_term_days' => 14,
+            'current_balance' => 1200000,
+            'effective_from' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($this->warehouseHead)
+            ->get(route('warehouse.b2b-orders.review', $order))
+            ->assertOk()
+            ->assertSee('Melebihi limit')
+            ->assertSee('120%')
+            ->assertSee('Melebihi Rp200.000')
+            ->assertSee('aria-valuenow="100.00"', false)
+            ->assertSee('style="width: 100.00%"', false);
+    }
+
+    public function test_review_handles_customer_without_credit_limit_safely(): void
+    {
+        $order = $this->createOrder(1);
+        $this->customer->forceFill(['credit_limit' => 0, 'receivable_balance' => 0])->save();
+
+        $this->actingAs($this->warehouseHead)
+            ->get(route('warehouse.b2b-orders.review', $order))
+            ->assertOk()
+            ->assertSee('Limit belum diatur')
+            ->assertSee('aria-valuenow="0.00"', false);
     }
 
     public function test_reserve_then_customer_cancel_releases_stock(): void

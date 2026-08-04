@@ -16,7 +16,6 @@ class StoreProductPriceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => ['nullable', 'exists:product_prices,id'],
             'product_id' => ['nullable', 'required_without:product_ids', Rule::exists('products', 'id')->where('status', 'active')],
             'product_ids' => ['nullable', 'array', 'required_without:product_id'],
             'product_ids.*' => [Rule::exists('products', 'id')->where('status', 'active')],

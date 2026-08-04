@@ -16,4 +16,9 @@ class ProductPricePolicy
     {
         return $user->can('prices.update');
     }
+
+    public function delete(User $user, ProductPrice $price): bool
+    {
+        return $user->hasRole('super_admin');
+    }
 }

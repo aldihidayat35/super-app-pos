@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\Control\AnomalyDetectionService;
 use App\Services\Control\ApprovalWorkflowService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PriceManagementService
 {
@@ -130,6 +131,28 @@ class PriceManagementService
             }
 
             return $override->fresh(['customer', 'product']);
+        });
+    }
+
+    public function endProductPrice(ProductPrice $productPrice, string $endsAt, User $actor, string $reason): ProductPrice
+    {
+        return DB::transaction(function () use ($productPrice, $endsAt, $actor, $reason): ProductPrice {
+            $price = ProductPrice::query()->lockForUpdate()->findOrFail($productPrice->id);
+            if ($price->status === ProductPriceStatus::DRAFT) {
+                throw ValidationException::withMessages(['ends_at' => 'Draft belum berlaku. Edit draft atau biarkan sampai proses approval selesai.']);
+            }
+
+            $price->forceFill([
+                'ends_at' => $endsAt,
+                'status' => now()->startOfDay()->gte($endsAt)
+                    ? ProductPriceStatus::INACTIVE
+                    : ProductPriceStatus::ACTIVE,
+                'notes' => trim(implode("\n", array_filter([$price->notes, 'Pengakhiran: '.$reason]))),
+            ])->save();
+
+            $this->writeHistory($price, $price->product()->firstOrFail(), (string) $price->recommended_price, (string) $price->recommended_price, $actor, 'Mengakhiri masa berlaku harga: '.$reason);
+
+            return $price->fresh(['product', 'branch']);
         });
     }
 

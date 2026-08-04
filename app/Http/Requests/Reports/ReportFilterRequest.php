@@ -18,6 +18,7 @@ class ReportFilterRequest extends FormRequest
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'work_location_id' => ['nullable', 'integer', 'exists:work_locations,id'],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'channel' => ['nullable', 'string', 'max:40'],
             'status' => ['nullable', 'string', 'max:80'],
             'product_id' => ['nullable', 'integer', 'exists:products,id'],

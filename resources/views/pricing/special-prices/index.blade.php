@@ -26,7 +26,7 @@
     <x-metronic.card title="Daftar Harga Khusus" class="mt-6">
         <div class="table-responsive">
             <table class="table table-row-dashed align-middle">
-                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Pelanggan</th><th>Produk</th><th>Scope</th><th>Harga/Diskon</th><th>Periode</th><th>Status</th><th>Alasan</th></tr></thead>
+                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Pelanggan</th><th>Produk</th><th>Scope</th><th>Harga/Diskon</th><th>Periode</th><th>Status</th><th>Alasan</th><th class="text-end">Aksi</th></tr></thead>
                 <tbody>
                 @forelse($overrides as $override)
                     <tr>
@@ -37,9 +37,19 @@
                         <td>{{ $override->starts_at?->format('d/m/Y') }} - {{ $override->ends_at?->format('d/m/Y') ?? 'Tanpa batas' }}</td>
                         <td><x-metronic.status-badge :status="$override->status ?? 'approved'" /></td>
                         <td>{{ $override->reason ?: $override->notes }}</td>
+                        <td class="text-end">
+                            @can('delete', $override)
+                                <form method="POST" action="{{ route('pricing.special-prices.destroy', $override) }}" id="delete-special-price-{{ $override->id }}" class="d-inline">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-light-danger" data-confirm data-confirm-form="delete-special-price-{{ $override->id }}" data-confirm-title="Hapus harga khusus?" data-confirm-text="Harga khusus tidak lagi digunakan untuk pelanggan ini. Histori audit tetap disimpan." data-confirm-button="Ya, hapus">
+                                        <i class="ki-outline ki-trash fs-5"></i> Hapus
+                                    </button>
+                                </form>
+                            @endcan
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7"><x-metronic.empty-state title="Belum ada harga khusus" description="Harga khusus customer akan tampil di sini dan tetap masuk resolusi harga deterministik." /></td></tr>
+                    <tr><td colspan="8"><x-metronic.empty-state title="Belum ada harga khusus" description="Harga khusus customer akan tampil di sini dan tetap masuk resolusi harga deterministik." /></td></tr>
                 @endforelse
                 </tbody>
             </table>

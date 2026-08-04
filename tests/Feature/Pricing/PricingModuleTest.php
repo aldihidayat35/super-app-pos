@@ -248,6 +248,126 @@ class PricingModuleTest extends TestCase
             ->assertHeader('content-disposition');
     }
 
+    public function test_product_price_list_has_management_action_and_active_price_can_be_revised(): void
+    {
+        $product = $this->product();
+        $this->defaultRule();
+        $price = ProductPrice::query()->create([
+            'product_id' => $product->id,
+            'channel' => 'retail',
+            'price_ring' => 'ring_1',
+            'min_price' => '12000.00',
+            'recommended_price' => '15000.00',
+            'max_price' => '18000.00',
+            'minimum_qty' => '1',
+            'priority' => 100,
+            'status' => ProductPriceStatus::ACTIVE,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('pricing.product-prices.index'))
+            ->assertOk()
+            ->assertSee('Kelola')
+            ->assertSee(route('pricing.product-prices.edit', $price));
+
+        $this->get(route('pricing.product-prices.edit', $price))
+            ->assertOk()
+            ->assertSee('Buat Revisi Harga Baru');
+
+        $this->post(route('pricing.product-prices.revise', $price), [
+            'product_id' => $product->id,
+            'channel' => 'retail',
+            'price_ring' => 'ring_2',
+            'min_price' => '12000.00',
+            'recommended_price' => '16000.00',
+            'max_price' => '18000.00',
+            'minimum_qty' => '1',
+            'priority' => 90,
+            'starts_at' => now()->toDateString(),
+            'notes' => 'Penyesuaian harga pasar.',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('product_prices', [
+            'product_id' => $product->id,
+            'price_ring' => 'ring_2',
+            'recommended_price' => '16000.00',
+        ]);
+        $this->assertSame(2, ProductPrice::query()->count());
+    }
+
+    public function test_active_product_price_can_be_ended_but_not_deleted(): void
+    {
+        $product = $this->product();
+        $price = ProductPrice::query()->create([
+            'product_id' => $product->id,
+            'channel' => 'retail',
+            'price_ring' => 'ring_1',
+            'recommended_price' => '15000.00',
+            'minimum_qty' => '1',
+            'priority' => 100,
+            'status' => ProductPriceStatus::ACTIVE,
+        ]);
+
+        $this->actingAs($this->admin)->post(route('pricing.product-prices.end', $price), [
+            'ends_at' => now()->toDateString(),
+            'reason' => 'Digantikan revisi harga terbaru.',
+        ])->assertRedirect(route('pricing.product-prices.edit', $price));
+
+        $price->refresh();
+        $this->assertSame(ProductPriceStatus::INACTIVE, $price->status);
+        $this->assertNotNull($price->ends_at);
+        $this->assertDatabaseHas('price_histories', [
+            'priceable_type' => ProductPrice::class,
+            'priceable_id' => $price->id,
+            'source' => 'manual',
+        ]);
+    }
+
+    public function test_only_super_admin_can_soft_delete_product_and_special_prices(): void
+    {
+        [$product, $branch, $customer] = $this->pricingFixture();
+        $productPrice = ProductPrice::query()->create([
+            'product_id' => $product->id,
+            'branch_id' => $branch->id,
+            'channel' => 'retail',
+            'price_ring' => 'ring_delete_test',
+            'recommended_price' => '15000.00',
+            'minimum_qty' => '1',
+            'status' => ProductPriceStatus::ACTIVE,
+        ]);
+        $specialPrice = CustomerPriceOverride::query()->create([
+            'customer_id' => $customer->id,
+            'product_id' => $product->id,
+            'branch_id' => $branch->id,
+            'channel' => 'b2b',
+            'price' => '14500.00',
+            'minimum_qty' => '1',
+            'status' => PriceApprovalStatus::APPROVED->value,
+            'starts_at' => now()->toDateString(),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->delete(route('pricing.product-prices.destroy', $productPrice))
+            ->assertForbidden();
+        $this->delete(route('pricing.special-prices.destroy', $specialPrice))
+            ->assertForbidden();
+
+        $superAdmin = User::factory()->create(['is_active' => true]);
+        $superAdmin->assignRole(Role::findOrCreate('super_admin'));
+
+        $this->actingAs($superAdmin)
+            ->delete(route('pricing.product-prices.destroy', $productPrice))
+            ->assertRedirect(route('pricing.product-prices.index'));
+        $this->delete(route('pricing.special-prices.destroy', $specialPrice))
+            ->assertRedirect(route('pricing.special-prices.index'));
+
+        $this->assertSoftDeleted('product_prices', ['id' => $productPrice->id]);
+        $this->assertSoftDeleted('customer_price_overrides', ['id' => $specialPrice->id]);
+        $this->assertDatabaseCount('product_prices', 1);
+        $this->assertDatabaseCount('customer_price_overrides', 1);
+    }
+
     private function product(string $costPrice = '10000.00', ?Unit $baseUnit = null): Product
     {
         return Product::factory()->create([

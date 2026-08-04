@@ -1,262 +1,253 @@
 @extends('layouts.metronic.app')
 
-@php
-    $kpis = $dashboard['kpis'];
-    $charts = $dashboard['charts'];
-    $range = $filters['range'] ?? 'daily';
-
-    $revenueByRange = [
-        'daily' => $charts['daily_revenue'] ?? [],
-        'monthly' => $charts['monthly_revenue'] ?? [],
-        'yearly' => $charts['yearly_revenue'] ?? [],
-    ];
-    $transactionsByRange = [
-        'daily' => $charts['daily_transactions'] ?? [],
-        'monthly' => $charts['monthly_transactions'] ?? [],
-        'yearly' => $charts['yearly_transactions'] ?? [],
-    ];
-
-    $paymentMethods = $charts['payment_methods'] ?? [];
-
-    $rangeLabel = match ($range) {
-        'monthly' => 'Bulanan',
-        'yearly' => 'Tahunan',
-        default => 'Harian',
-    };
-
-    $baseQuery = request()->query();
-@endphp
+@php($branchLocationMap = $branches->mapWithKeys(fn ($branch) => [$branch->id => $branch->work_location_id]))
 
 @section('title', 'Dashboard Retail - ' . config('app.name'))
 @section('page_title', 'Dashboard Retail')
 
-@section('content')
-    <x-metronic.page-title title="Dashboard Retail / Cabang" description="DASH-03 omzet, margin, transaksi, stok kritis, shift, closing, retur, void, dan pembayaran.">
-        <a href="{{ route('reports.retail.index', request()->query()) }}" class="btn btn-light-primary">Laporan Toko</a>
-    </x-metronic.page-title>
-
-    @include('reports.partials.filter', ['filters' => $filters])
-
-    @include('reports.partials.kpi-grid', ['items' => [
-        ['label' => 'Omzet', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['revenue']), 'color' => 'primary'],
-        ['label' => 'Margin', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['margin']).' / '.$kpis['margin_percent'].'%', 'color' => 'success'],
-        ['label' => 'Transaksi', 'value' => $kpis['transaction_count'], 'color' => 'info'],
-        ['label' => 'Rata-rata Nota', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['average_ticket']), 'color' => 'primary'],
-        ['label' => 'Stok Kritis', 'value' => $kpis['critical_stock_count'], 'color' => 'danger'],
-        ['label' => 'Shift Aktif', 'value' => $kpis['active_shift_count'], 'color' => 'warning'],
-        ['label' => 'Closing Pending', 'value' => $kpis['closing_pending_count'], 'color' => 'warning'],
-        ['label' => 'Selisih Kas', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['cash_difference']), 'color' => 'danger'],
-    ]])
-
-    {{-- Baris 1: Grafik Omzet + Distribusi Pembayaran --}}
-    <div class="row g-5 mb-5">
-        <div class="col-lg-8">
-            <x-metronic.card title="Grafik Omzet {{ $rangeLabel }}">
-                <div id="retail-range-buttons" class="btn-group btn-group-sm mb-3" role="group" aria-label="Pilih range waktu">
-                    @foreach (['daily' => 'Harian', 'monthly' => 'Bulanan', 'yearly' => 'Tahunan'] as $key => $label)
-                        @php($query = array_merge($baseQuery, ['range' => $key, 'page' => null]))
-                        <a href="{{ url()->current() . '?' . http_build_query(array_filter($query, fn ($v) => $v !== null)) }}" class="btn btn-light-primary range-btn {{ $range === $key ? 'active' : '' }}" data-range="{{ $key }}">{{ $label }}</a>
-                    @endforeach
-                </div>
-                <div id="retail-revenue-chart" style="height: 320px"></div>
-                <div class="text-muted">Last updated {{ $dashboard['last_updated_at']->format('d/m/Y H:i:s') }}</div>
-            </x-metronic.card>
-        </div>
-        <div class="col-lg-4">
-            <x-metronic.card title="Distribusi Metode Pembayaran">
-                <div id="retail-payment-chart" style="height: 320px"></div>
-            </x-metronic.card>
-        </div>
-    </div>
-
-    {{-- Baris 2: Grafik Jumlah Transaksi + Margin vs Omzet --}}
-    <div class="row g-5 mb-5">
-        <div class="col-lg-6">
-            <x-metronic.card title="Grafik Jumlah Transaksi {{ $rangeLabel }}">
-                <div id="retail-transactions-chart" style="height: 320px"></div>
-                <div class="text-muted">Jumlah transaksi POS berdasarkan range waktu aktif.</div>
-            </x-metronic.card>
-        </div>
-        <div class="col-lg-6">
-            <x-metronic.card title="Grafik Margin vs Omzet {{ $rangeLabel }}">
-                <div id="retail-margin-chart" style="height: 320px"></div>
-                <div class="text-muted">Perbandingan omzet dan estimasi margin berdasarkan range aktif.</div>
-            </x-metronic.card>
-        </div>
-    </div>
-
-    {{-- Baris 3: Tabel Pendukung --}}
-    <div class="row g-5">
-        <div class="col-lg-7">
-            <x-metronic.card title="Metode Pembayaran">
-                <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Metode</th><th>Nilai</th></tr></thead><tbody>
-                    @forelse($paymentMethods as $row)
-                        <tr><td>{{ $row['label'] }}</td><td>{{ \App\Support\CurrencyFormatter::rupiah($row['value']) }}</td></tr>
-                    @empty
-                        <tr><td colspan="2"><x-metronic.empty-state title="Belum ada pembayaran" description="Metode pembayaran muncul setelah transaksi POS." /></td></tr>
-                    @endforelse
-                </tbody></table></div>
-            </x-metronic.card>
-        </div>
-        <div class="col-lg-5">
-            @include('reports.partials.definitions', ['definitions' => $definitions])
-        </div>
-    </div>
+@section('page_guide')
+    <x-metronic.page-guide id="retail-dashboard" title="Panduan Dashboard Retail / Cabang">
+        <x-slot:function>
+            <p>Dashboard ini menjadi pusat pemantauan penjualan, kas, stok, dan pekerjaan operasional pada satu cabang aktif.</p>
+            <p>Pengguna dengan akses beberapa cabang dapat berpindah cabang tanpa memuat ulang halaman. Petugas yang hanya ditugaskan ke satu cabang otomatis memakai cabang tersebut dan tidak dapat menggantinya.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol><li>Sistem membaca role dan penugasan lokasi kerja akun.</li><li>Cabang aktif ditentukan dan divalidasi di server.</li><li>Semua KPI, grafik, stok, shift, dan transaksi dihitung hanya dari cabang aktif.</li><li>Pergantian cabang mengambil data melalui AJAX.</li><li>Tindakan lanjutan dilakukan melalui POS, shift, piutang, stok, atau laporan.</li></ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul><li><strong>Kinerja Cabang:</strong> target dan pencapaian omzet.</li><li><strong>KPI:</strong> omzet, transaksi, stok, shift, closing, piutang, void, dan retur.</li><li><strong>Tren:</strong> grafik omzet serta volume transaksi harian, bulanan, atau tahunan.</li><li><strong>Produk:</strong> produk terlaris, belum bergerak, serta peringatan stok.</li><li><strong>Operasional:</strong> transaksi terbaru dan shift yang masih berjalan.</li><li><strong>Pembayaran:</strong> komposisi dan rincian metode pembayaran.</li></ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Filter hanya mengubah data yang dibaca dan tidak mengubah transaksi. Margin dan nilai stok hanya dikirim kepada pengguna yang memiliki izin melihat margin sensitif.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol><li>Pastikan cabang aktif sudah benar.</li><li>Pilih periode lalu klik <strong>Terapkan</strong>.</li><li>Periksa target, closing pending, selisih kas, dan stok kritis.</li><li>Tinjau produk terlaris serta produk belum bergerak.</li><li>Gunakan aktivitas terbaru dan tombol tindakan untuk membuka proses terkait.</li></ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0"><ul><li>Server menolak cabang di luar cakupan penugasan akun.</li><li>Void dan retur tidak boleh dinilai sebagai penjualan normal.</li><li>Selisih kas harus diperiksa melalui proses closing, bukan diubah dari dashboard.</li><li>Stok kritis perlu ditindaklanjuti melalui restock atau transfer resmi.</li></ul></div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Kepala Toko A hanya melihat Cabang A. Owner memilih Cabang B; omzet, grafik, stok, shift, dan aktivitas langsung berubah ke data Cabang B tanpa refresh halaman.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
 @endsection
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    if (!window.ApexCharts) return;
+@section('toolbar_actions')
+    <x-metronic.permission-button permission="pos.view" :href="route('retail.pos.index')" icon="ki-outline ki-handcart">Buka POS</x-metronic.permission-button>
+@endsection
 
-    const revenueDatasets = @json($revenueByRange);
-    const transactionDatasets = @json($transactionsByRange);
-    const paymentRows = @json($paymentMethods);
-    const marginPercent = {{ (float) ($kpis['margin_percent'] ?? 0) }};
-    const activeRange = @json($range);
+@section('content')
+    <x-metronic.page-title title="Dashboard Retail / Cabang" description="Ringkasan penjualan dan operasional berdasarkan cabang aktif.">
+        <x-slot:actions>
+            <x-metronic.permission-button permission="cash_shifts.view" :href="route('retail.shifts.current')" variant="light-success" icon="ki-outline ki-time">Shift Saat Ini</x-metronic.permission-button>
+            <a id="retail-report-link" href="{{ route('reports.retail.index', ['work_location_id' => $activeBranch?->work_location_id, 'start_date' => $filters['start_date'], 'end_date' => $filters['end_date']]) }}" class="btn btn-light-primary"><i class="ki-outline ki-chart-simple fs-5"></i> Laporan Toko</a>
+        </x-slot:actions>
+    </x-metronic.page-title>
 
-    const formatRupiah = (val) => {
-        const n = Number(val || 0);
-        if (n >= 1_000_000) return 'Rp ' + (n / 1_000_000).toFixed(1) + 'jt';
-        if (n >= 1_000) return 'Rp ' + (n / 1_000).toFixed(0) + 'rb';
-        return 'Rp ' + n.toFixed(0);
-    };
+    <x-metronic.card class="mb-5">
+        <form id="retail-dashboard-filter" method="GET" action="{{ route('retail.dashboard') }}">
+            <input id="retail-dashboard-range" type="hidden" name="range" value="{{ $filters['range'] ?? 'daily' }}">
+            <div class="row g-4 align-items-end">
+                <div class="col-xl-5 col-lg-6">
+                    <label class="form-label fw-semibold">Cabang Aktif</label>
+                    @if ($canSelectBranch)
+                        <select id="retail-dashboard-selector" name="branch_id" class="form-select form-select-solid" data-control="select2" data-placeholder="Pilih Cabang" data-hide-search="false">
+                            @foreach ($branches as $branch)
+                                <option value="{{ $branch->id }}" @selected($activeBranch?->is($branch))>{{ $branch->code }} — {{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Pilihan dibatasi sesuai hak akses akun Anda.</div>
+                    @else
+                        <div class="d-flex align-items-center rounded bg-light-primary px-4 py-3 min-h-45px">
+                            <i class="ki-outline ki-shop fs-2 text-primary me-3"></i>
+                            <div><div class="fw-bold text-gray-800">{{ $activeBranch ? $activeBranch->code.' — '.$activeBranch->name : 'Belum ada cabang' }}</div><div class="text-muted fs-8">Konteks otomatis dari penugasan lokasi kerja</div></div>
+                        </div>
+                        @if ($activeBranch)<input type="hidden" name="branch_id" value="{{ $activeBranch->id }}">@endif
+                    @endif
+                </div>
+                <div class="col-xl-2 col-md-4">
+                    <label for="retail-start-date" class="form-label fw-semibold">Tanggal Mulai</label>
+                    <input id="retail-start-date" type="date" name="start_date" value="{{ $filters['start_date'] }}" class="form-control form-control-solid">
+                </div>
+                <div class="col-xl-2 col-md-4">
+                    <label for="retail-end-date" class="form-label fw-semibold">Tanggal Selesai</label>
+                    <input id="retail-end-date" type="date" name="end_date" value="{{ $filters['end_date'] }}" class="form-control form-control-solid">
+                </div>
+                <div class="col-xl-3 col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1"><i class="ki-outline ki-filter fs-5"></i> Terapkan</button>
+                    <button type="button" id="retail-dashboard-refresh" class="btn btn-icon btn-light-primary" title="Muat ulang data" aria-label="Muat ulang data"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                </div>
+            </div>
+        </form>
+    </x-metronic.card>
 
-    const formatRangeLabel = (raw) => {
-        if (!raw) return '';
-        if (activeRange === 'monthly' && /^\d{4}-\d{2}$/.test(raw)) {
-            const [y, m] = raw.split('-');
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-            return monthNames[parseInt(m, 10) - 1] + ' ' + y;
-        }
-        return raw;
-    };
+    <div id="retail-dashboard-loading" class="alert alert-primary d-none align-items-center mb-5" role="status"><span class="spinner-border spinner-border-sm me-3" aria-hidden="true"></span><span>Mengambil data cabang...</span></div>
 
-    const renderRevenueChart = (rows) => {
-        const el = document.querySelector('#retail-revenue-chart');
-        if (!el) return;
-        el.innerHTML = '';
-        if (!rows || rows.length === 0) {
-            el.innerHTML = '<div class="text-center text-muted py-10">Belum ada data omzet pada range ini</div>';
-            return;
-        }
-        const categories = rows.map(row => formatRangeLabel(row.date));
-        const series = rows.map(row => Number(row.retail || 0));
-        const chart = new ApexCharts(el, {
-            chart: { type: 'area', height: 320, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-            series: [{ name: 'Omzet', data: series }],
-            xaxis: { categories: categories, labels: { style: { colors: '#94a3b8' } } },
-            colors: ['#4f46e5'],
-            stroke: { curve: 'smooth', width: 2 },
-            fill: { type: 'gradient', gradient: { opacityFrom: 0.45, opacityTo: 0.05 } },
-            dataLabels: { enabled: false },
-            yaxis: { labels: { style: { colors: '#94a3b8' }, formatter: formatRupiah } },
-            grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
-            legend: { position: 'top' },
-            tooltip: { theme: 'light', y: { formatter: formatRupiah } },
-        });
-        chart.render();
-        window.__retailRevenueChart = chart;
-    };
+    <div id="retail-dashboard-content">
+        @include('dashboards.partials.retail-content')
+    </div>
 
-    const renderTransactionsChart = (rows) => {
-        const el = document.querySelector('#retail-transactions-chart');
-        if (!el) return;
-        el.innerHTML = '';
-        if (!rows || rows.length === 0) {
-            el.innerHTML = '<div class="text-center text-muted py-10">Belum ada transaksi pada range ini</div>';
-            return;
-        }
-        const categories = rows.map(row => formatRangeLabel(row.date));
-        const series = rows.map(row => Number(row.count || 0));
-        const chart = new ApexCharts(el, {
-            chart: { type: 'bar', height: 320, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-            series: [{ name: 'Jumlah Transaksi', data: series }],
-            xaxis: { categories: categories, labels: { style: { colors: '#94a3b8' } } },
-            colors: ['#10b981'],
-            plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
-            dataLabels: { enabled: false },
-            yaxis: { labels: { style: { colors: '#94a3b8' }, formatter: (val) => val.toFixed(0) } },
-            grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
-            legend: { position: 'top' },
-            tooltip: { y: { formatter: (val) => val.toFixed(0) + ' transaksi' } },
-        });
-        chart.render();
-        window.__retailTransactionsChart = chart;
-    };
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const form = document.getElementById('retail-dashboard-filter');
+                const selector = document.getElementById('retail-dashboard-selector');
+                const rangeInput = document.getElementById('retail-dashboard-range');
+                const content = document.getElementById('retail-dashboard-content');
+                const loading = document.getElementById('retail-dashboard-loading');
+                const refresh = document.getElementById('retail-dashboard-refresh');
+                const reportLink = document.getElementById('retail-report-link');
+                const dataUrl = @json(route('retail.dashboard.data'));
+                const reportUrl = @json(route('reports.retail.index'));
+                const branchLocations = @json($branchLocationMap);
+                const fixedWorkLocationId = @json($activeBranch?->work_location_id);
+                let currentCharts = @json($dashboard['charts']);
+                let currentKpis = @json($dashboard['kpis']);
+                let requestController = null;
+                const chartInstances = { revenue: null, transactions: null, payment: null };
 
-    const renderMarginChart = (rows) => {
-        const el = document.querySelector('#retail-margin-chart');
-        if (!el) return;
-        el.innerHTML = '';
-        if (!rows || rows.length === 0) {
-            el.innerHTML = '<div class="text-center text-muted py-10">Belum ada data margin pada range ini</div>';
-            return;
-        }
-        const categories = rows.map(row => formatRangeLabel(row.date));
-        const revenueSeries = rows.map(row => Number(row.retail || 0));
-        const marginSeries = rows.map((row) => {
-            const rev = Number(row.retail || 0);
-            return rev > 0 ? Number((rev * marginPercent / 100).toFixed(0)) : 0;
-        });
-        const chart = new ApexCharts(el, {
-            chart: { type: 'line', height: 320, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-            series: [
-                { name: 'Omzet', data: revenueSeries },
-                { name: 'Margin (est.)', data: marginSeries },
-            ],
-            xaxis: { categories: categories, labels: { style: { colors: '#94a3b8' } } },
-            colors: ['#4f46e5', '#10b981'],
-            stroke: { curve: 'smooth', width: [3, 3] },
-            dataLabels: { enabled: false },
-            yaxis: { labels: { style: { colors: '#94a3b8' }, formatter: formatRupiah } },
-            grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
-            legend: { position: 'top' },
-            tooltip: { theme: 'light', y: { formatter: formatRupiah } },
-        });
-        chart.render();
-        window.__retailMarginChart = chart;
-    };
+                const numberValue = (value) => Number.parseFloat(value || 0);
+                const formatRupiah = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(numberValue(value));
+                const rangeLabel = (raw, range) => {
+                    if (!raw) return '';
+                    if (range === 'monthly' && /^\d{4}-\d{2}$/.test(raw)) {
+                        const [year, month] = raw.split('-');
+                        return `${['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][Number.parseInt(month, 10) - 1]} ${year}`;
+                    }
+                    return raw;
+                };
 
-    // Distribusi Metode Pembayaran (Donut) - tidak tergantung range
-    const paymentEl = document.querySelector('#retail-payment-chart');
-    if (paymentEl) {
-        if (paymentRows.length === 0) {
-            paymentEl.innerHTML = '<div class="text-center text-muted py-10">Belum ada pembayaran pada periode ini</div>';
-        } else {
-            new ApexCharts(paymentEl, {
-                series: paymentRows.map(row => Number(row.value || 0)),
-                chart: { type: 'donut', height: 320, fontFamily: 'Inter, sans-serif' },
-                labels: paymentRows.map(row => row.label),
-                colors: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'],
-                legend: { position: 'bottom' },
-                dataLabels: { enabled: true, formatter: (val) => val.toFixed(1) + '%' },
-                tooltip: { y: { formatter: formatRupiah } },
-                plotOptions: {
-                    pie: {
-                        donut: {
-                            labels: {
-                                show: true,
-                                total: {
-                                    show: true,
-                                    label: 'Total Pembayaran',
-                                    formatter: (w) => {
-                                        const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-                                        return formatRupiah(total);
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            }).render();
-        }
-    }
+                const destroyCharts = () => {
+                    Object.keys(chartInstances).forEach((key) => {
+                        if (chartInstances[key] && typeof chartInstances[key].destroy === 'function') chartInstances[key].destroy();
+                        chartInstances[key] = null;
+                    });
+                };
 
-    // Initial render untuk grafik yang bergantung range
-    renderRevenueChart(revenueDatasets[activeRange]);
-    renderTransactionsChart(transactionDatasets[activeRange]);
-    renderMarginChart(revenueDatasets[activeRange]);
-});
-</script>
-@endpush
+                const renderCharts = (charts, range) => {
+                    destroyCharts();
+                    const revenueEl = document.getElementById('retail-revenue-chart');
+                    const transactionsEl = document.getElementById('retail-transactions-chart');
+                    const paymentEl = document.getElementById('retail-payment-chart');
+
+                    if (typeof window.ApexCharts === 'undefined') {
+                        [revenueEl, transactionsEl, paymentEl].forEach((element) => {
+                            if (element) element.innerHTML = '<div class="text-center text-muted py-10">Grafik belum dapat dimuat.</div>';
+                        });
+                        return;
+                    }
+
+                    const revenueRows = charts[`${range}_revenue`] || [];
+                    if (revenueEl) {
+                        if (revenueRows.length === 0) {
+                            revenueEl.innerHTML = '<div class="text-center text-muted py-10">Belum ada omzet pada periode ini.</div>';
+                        } else {
+                            chartInstances.revenue = new ApexCharts(revenueEl, {
+                                series: [{ name: 'Omzet', data: revenueRows.map((row) => numberValue(row.retail)) }],
+                                chart: { type: 'area', height: 330, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+                                colors: ['#1b84ff'], stroke: { curve: 'smooth', width: 3 }, dataLabels: { enabled: false },
+                                fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.04 } },
+                                xaxis: { categories: revenueRows.map((row) => rangeLabel(row.date, range)) },
+                                yaxis: { labels: { formatter: formatRupiah } }, grid: { borderColor: '#e4e6ef', strokeDashArray: 4 },
+                                tooltip: { y: { formatter: formatRupiah } },
+                            });
+                            chartInstances.revenue.render();
+                        }
+                    }
+
+                    const transactionRows = charts[`${range}_transactions`] || [];
+                    if (transactionsEl) {
+                        if (transactionRows.length === 0) {
+                            transactionsEl.innerHTML = '<div class="text-center text-muted py-10">Belum ada transaksi pada periode ini.</div>';
+                        } else {
+                            chartInstances.transactions = new ApexCharts(transactionsEl, {
+                                series: [{ name: 'Transaksi', data: transactionRows.map((row) => Number(row.count || 0)) }],
+                                chart: { type: 'bar', height: 305, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+                                colors: ['#17c653'], plotOptions: { bar: { borderRadius: 6, columnWidth: '48%' } }, dataLabels: { enabled: false },
+                                xaxis: { categories: transactionRows.map((row) => rangeLabel(row.date, range)) },
+                                yaxis: { labels: { formatter: (value) => Math.round(value) } }, grid: { borderColor: '#e4e6ef', strokeDashArray: 4 },
+                            });
+                            chartInstances.transactions.render();
+                        }
+                    }
+
+                    const paymentRows = charts.payment_methods || [];
+                    if (paymentEl) {
+                        if (paymentRows.length === 0) {
+                            paymentEl.innerHTML = '<div class="text-center text-muted py-10">Belum ada pembayaran pada periode ini.</div>';
+                        } else {
+                            chartInstances.payment = new ApexCharts(paymentEl, {
+                                series: paymentRows.map((row) => numberValue(row.value)), labels: paymentRows.map((row) => String(row.label).replaceAll('_', ' ')),
+                                chart: { type: 'donut', height: 330, fontFamily: 'Inter, sans-serif' }, colors: ['#1b84ff', '#17c653', '#f6c000', '#f8285a', '#7239ea', '#43ced7'],
+                                legend: { position: 'bottom' }, dataLabels: { enabled: true, formatter: (value) => `${value.toFixed(1)}%` },
+                                tooltip: { y: { formatter: formatRupiah } }, plotOptions: { pie: { donut: { size: '66%' } } },
+                            });
+                            chartInstances.payment.render();
+                        }
+                    }
+
+                };
+
+                const paramsFromForm = () => new URLSearchParams(new FormData(form));
+                const updateLinks = (params) => {
+                    const branchId = params.get('branch_id');
+                    const workLocationId = branchId ? branchLocations[branchId] : fixedWorkLocationId;
+                    const reportParams = new URLSearchParams({ start_date: params.get('start_date') || '', end_date: params.get('end_date') || '' });
+                    if (workLocationId) reportParams.set('work_location_id', workLocationId);
+                    reportLink.href = `${reportUrl}?${reportParams.toString()}`;
+                    window.history.replaceState({}, '', `${form.action}?${params.toString()}`);
+                };
+
+                const loadDashboard = async () => {
+                    const params = paramsFromForm();
+                    if (requestController) requestController.abort();
+                    const controller = new AbortController();
+                    requestController = controller;
+                    loading.classList.remove('d-none');
+                    loading.classList.add('d-flex');
+                    content.classList.add('opacity-50', 'pe-none');
+                    if (selector) selector.disabled = true;
+                    refresh.disabled = true;
+
+                    try {
+                        const response = await fetch(`${dataUrl}?${params.toString()}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, signal: controller.signal });
+                        if (!response.ok) throw new Error(response.status === 403 ? 'Anda tidak memiliki akses ke cabang tersebut.' : 'Data dashboard gagal dimuat.');
+                        const payload = await response.json();
+                        destroyCharts();
+                        content.innerHTML = payload.html;
+                        currentCharts = payload.charts;
+                        currentKpis = payload.kpis;
+                        renderCharts(currentCharts, rangeInput.value || 'daily');
+                        updateLinks(params);
+                    } catch (error) {
+                        if (error.name !== 'AbortError') content.insertAdjacentHTML('afterbegin', `<div class="alert alert-danger">${error.message}</div>`);
+                    } finally {
+                        if (requestController === controller) {
+                            loading.classList.add('d-none');
+                            loading.classList.remove('d-flex');
+                            content.classList.remove('opacity-50', 'pe-none');
+                            if (selector) selector.disabled = false;
+                            refresh.disabled = false;
+                        }
+                    }
+                };
+
+                form.addEventListener('submit', function (event) { event.preventDefault(); loadDashboard(); });
+                refresh.addEventListener('click', loadDashboard);
+                content.addEventListener('click', function (event) {
+                    const button = event.target.closest('#retail-range-buttons [data-range]');
+                    if (!button) return;
+                    document.querySelectorAll('#retail-range-buttons [data-range]').forEach((item) => item.classList.remove('active'));
+                    button.classList.add('active');
+                    rangeInput.value = button.dataset.range;
+                    renderCharts(currentCharts, button.dataset.range);
+                });
+                if (selector) {
+                    if (window.jQuery) window.jQuery(selector).off('change.retailDashboard').on('change.retailDashboard', loadDashboard);
+                    else selector.addEventListener('change', loadDashboard);
+                }
+                renderCharts(currentCharts, rangeInput.value || 'daily');
+            });
+        </script>
+    @endpush
+@endsection

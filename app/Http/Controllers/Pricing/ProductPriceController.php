@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Pricing\StoreProductPriceRequest;
 use App\Models\Branch;
 use App\Models\Product;
-use App\Models\ProductCategory;
 use App\Models\ProductPrice;
 use App\Services\Pricing\PriceManagementService;
 use App\Services\Pricing\PriceResolverService;
@@ -15,6 +14,9 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductPriceController extends Controller
@@ -60,6 +62,66 @@ class ProductPriceController extends Controller
         return back()->with('notification', ['type' => 'success', 'message' => $message]);
     }
 
+    public function edit(ProductPrice $productPrice): View
+    {
+        $this->authorize('update', $productPrice);
+
+        return view('pricing.product-prices.edit', [
+            'price' => $productPrice->load(['product', 'branch']),
+            'branches' => Branch::query()->where('is_active', true)->orderBy('name')->get(),
+        ]);
+    }
+
+    public function update(StoreProductPriceRequest $request, ProductPrice $productPrice, PriceManagementService $service): RedirectResponse
+    {
+        $this->authorize('update', $productPrice);
+        if ($productPrice->status !== ProductPriceStatus::DRAFT) {
+            throw ValidationException::withMessages(['price' => 'Hanya harga berstatus draft yang dapat diedit. Gunakan Buat Revisi untuk harga yang sudah aktif.']);
+        }
+
+        $data = $request->validated();
+        $service->saveProductPrice([...$data, 'id' => $productPrice->id, 'product_id' => $productPrice->product_id], $request->user());
+
+        return redirect()->route('pricing.product-prices.edit', $productPrice)
+            ->with('notification', ['type' => 'success', 'message' => 'Draft harga berhasil diperbarui.']);
+    }
+
+    public function revise(StoreProductPriceRequest $request, ProductPrice $productPrice, PriceManagementService $service): RedirectResponse
+    {
+        $this->authorize('update', $productPrice);
+        $data = $request->validated();
+        $revision = $service->saveProductPrice([...$data, 'product_id' => $productPrice->product_id], $request->user());
+
+        return redirect()->route('pricing.product-prices.edit', $revision)
+            ->with('notification', ['type' => 'success', 'message' => $revision->status === ProductPriceStatus::DRAFT
+                ? 'Revisi dibuat sebagai draft dan menunggu approval. Harga lama tetap aktif.'
+                : 'Revisi harga berhasil dibuat. Akhiri harga lama agar tidak ada periode yang bertumpuk.']);
+    }
+
+    public function end(Request $request, ProductPrice $productPrice, PriceManagementService $service): RedirectResponse
+    {
+        $this->authorize('update', $productPrice);
+        $data = Validator::make($request->all(), [
+            'ends_at' => ['required', 'date'],
+            'reason' => ['required', 'string', 'max:2000'],
+        ], [], ['ends_at' => 'tanggal selesai', 'reason' => 'alasan'])->validate();
+
+        $service->endProductPrice($productPrice, $data['ends_at'], $request->user(), $data['reason']);
+
+        return redirect()->route('pricing.product-prices.edit', $productPrice)
+            ->with('notification', ['type' => 'success', 'message' => 'Masa berlaku harga berhasil diperbarui tanpa menghapus histori.']);
+    }
+
+    public function destroy(ProductPrice $productPrice): RedirectResponse
+    {
+        $this->authorize('delete', $productPrice);
+
+        DB::transaction(fn () => $productPrice->delete());
+
+        return redirect()->route('pricing.product-prices.index')
+            ->with('notification', ['type' => 'success', 'message' => 'Harga produk berhasil dihapus dari daftar. Histori audit tetap disimpan.']);
+    }
+
     public function searchProducts(Request $request): JsonResponse
     {
         $this->authorize('viewAny', ProductPrice::class);
@@ -78,13 +140,13 @@ class ProductPriceController extends Controller
             ->when($query !== '', function ($q) use ($query) {
                 $q->where(function ($w) use ($query) {
                     $w->where('sku', 'like', "%{$query}%")
-                      ->orWhere('name', 'like', "%{$query}%");
+                        ->orWhere('name', 'like', "%{$query}%");
                     if (preg_match('/^[\p{L}0-9\s\-_]+$/u', $query)) {
                         $w->orWhere('description', 'like', "%{$query}%");
                     }
                 });
             })
-            ->when(!empty($exclude), fn ($q) => $q->whereNotIn('id', $exclude))
+            ->when(! empty($exclude), fn ($q) => $q->whereNotIn('id', $exclude))
             ->orderBy('name')
             ->limit(50)
             ->get(['id', 'sku', 'name', 'category_id']);

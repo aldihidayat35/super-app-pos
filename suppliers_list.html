@@ -1,0 +1,1448 @@
+<!doctype html>
+<html lang="id" data-bs-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="SpPIX7i6NBuyF0byLyWFQV1YTURjVu812OpQy2st">
+    <title>Daftar Supplier</title>
+    <link rel="shortcut icon" href="http://127.0.0.1:8000/assets/media/logos/favicon.ico">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/assets/vendor/metronic/css/style.bundle.css">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/assets/css/ki-icons-fallback.css">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/assets/css/sidebar-custom.css">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/assets/css/header-custom.css">
+    <link rel="preload" as="style" href="http://127.0.0.1:8000/build/assets/app-CR2QBfyl.css" /><link rel="modulepreload" as="script" href="http://127.0.0.1:8000/build/assets/vendor-Dp2psJU0.js" /><link rel="modulepreload" as="script" href="http://127.0.0.1:8000/build/assets/app-C3uyNwFm.js" /><link rel="stylesheet" href="http://127.0.0.1:8000/build/assets/app-CR2QBfyl.css" /><script type="module" src="http://127.0.0.1:8000/build/assets/vendor-Dp2psJU0.js"></script><script type="module" src="http://127.0.0.1:8000/build/assets/app-C3uyNwFm.js"></script>        <script>
+        document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('gudangtoko-theme') || 'light');
+        window.hostUrl = "http:\/\/127.0.0.1:8000\/assets\/";
+    </script>
+</head>
+<body id="kt_app_body" class="app-default" data-kt-app-header-fixed="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true">
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            <header id="kt_app_header" class="app-header">
+    <div class="app-container container-fluid d-flex align-items-stretch justify-content-between" id="kt_app_header_container">
+
+        
+        <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-icon btn-active-color-primary w-30px h-30px d-lg-none ms-n3 me-2" id="kt_app_sidebar_mobile_toggle" aria-label="Buka menu">
+                <i class="ki-outline ki-abstract-14 fs-1"></i>
+            </button>
+
+                        <a href="http://127.0.0.1:8000/dashboard" class="d-flex align-items-center gap-2 text-decoration-none">
+                <img alt="PT Kedaung" src="http://127.0.0.1:8000/storage/logos/rxYh34c63YsbhjjplzGQkxLXk0ms2TuRRGPJocdH.png" class="gt-header-logo">
+                <span class="text-gray-900 fw-bold fs-5">PT Kedaung</span>
+            </a>
+        </div>
+
+        
+        <div class="d-flex align-items-stretch flex-shrink-0">
+            <div class="d-flex align-items-center ms-2"><button type="button" class="btn btn-icon btn-active-light-primary position-relative" aria-label="Notifikasi"><i class="ki-outline ki-notification-on fs-2"></i><span class="position-absolute top-25 start-75 translate-middle badge badge-circle badge-light-primary w-15px h-15px fs-9">0</span></button></div>
+            <div class="d-flex align-items-center ms-2">
+                <button type="button" class="btn btn-icon btn-active-light-primary" data-theme-value="light" title="Tema terang" aria-label="Tema terang"><i class="ki-outline ki-sun fs-1"></i></button>
+                <button type="button" class="btn btn-icon btn-active-light-primary" data-theme-value="dark" title="Tema gelap" aria-label="Tema gelap"><i class="ki-outline ki-moon fs-1"></i></button>
+            </div>
+            <style>
+.user-dropdown {
+    position: relative;
+}
+
+/* Menghilangkan ikon panah bawaan Bootstrap */
+.user-dropdown-toggle::after {
+    display: none !important;
+}
+
+.user-dropdown-toggle {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 10px;
+}
+
+.user-dropdown-menu {
+    width: 350px;
+    max-width: calc(100vw - 24px);
+    margin-top: 8px !important;
+    border-radius: 14px;
+    background-color: #ffffff;
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.12),
+        0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    z-index: 1080;
+}
+
+.user-dropdown-header {
+    padding: 20px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(var(--bs-primary-rgb), 0.08),
+            rgba(var(--bs-primary-rgb), 0.02)
+        );
+}
+
+.user-dropdown-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.user-dropdown-actions {
+    padding: 10px;
+}
+
+.user-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 10px;
+    color: inherit;
+    background-color: transparent;
+    text-decoration: none;
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.user-dropdown-item:hover,
+.user-dropdown-item:focus {
+    background-color: var(--bs-gray-100);
+    color: inherit;
+    transform: translateX(2px);
+}
+
+.user-dropdown-logout:hover,
+.user-dropdown-logout:focus {
+    background-color: rgba(var(--bs-danger-rgb), 0.08);
+}
+
+.user-dropdown-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    flex-shrink: 0;
+}
+
+.fs-8 {
+    font-size: 0.75rem;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Mencegah dropdown terpotong oleh container header Metronic
+|--------------------------------------------------------------------------
+*/
+#kt_app_header,
+#kt_app_header_container,
+.app-header,
+.app-header-container,
+.app-navbar {
+    overflow: visible !important;
+}
+
+/* Penyesuaian layar kecil */
+@media (max-width: 576px) {
+    .user-dropdown-menu {
+        width: calc(100vw - 24px);
+        max-width: 350px;
+    }
+
+    .user-dropdown-header {
+        padding: 16px;
+    }
+
+    .user-dropdown-actions {
+        padding: 8px;
+    }
+}
+</style>
+
+<div class="dropdown user-dropdown ms-3 ">
+    
+    <button
+        type="button"
+        class="btn btn-icon btn-active-light-primary user-dropdown-toggle"
+        data-bs-toggle="dropdown"
+        data-bs-boundary="viewport"
+        data-bs-display="dynamic"
+        data-bs-offset="0,12"
+        aria-expanded="false"
+        aria-label="Buka menu pengguna"
+    >
+        <span class="symbol symbol-40px symbol-circle">
+            <span class="symbol-label bg-light-primary text-primary fw-bold fs-5">
+                S
+            </span>
+        </span>
+    </button>
+
+    
+    <div class="dropdown-menu dropdown-menu-end user-dropdown-menu border-0 p-0">
+        
+        <div class="user-dropdown-header">
+            <div class="d-flex align-items-center gap-3">
+                <span class="symbol symbol-55px symbol-circle flex-shrink-0">
+                    <span class="symbol-label bg-primary text-white fw-bold fs-3">
+                        S
+                    </span>
+                </span>
+
+                <div class="user-dropdown-info">
+                    <div
+                        class="fw-bold text-gray-900 fs-5 text-truncate"
+                        title="Super Admin"
+                    >
+                        Super Admin
+                    </div>
+
+                    <div
+                        class="text-muted fs-7 text-truncate mt-1"
+                        title="superadmin@gudangtoko.test"
+                    >
+                        superadmin@gudangtoko.test
+                    </div>
+
+                                            <div class="d-flex flex-wrap gap-1 mt-2">
+                                                            <span class="badge badge-light-primary fw-semibold">
+                                    Super Admin
+                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+        </div>
+
+        <div class="separator"></div>
+
+        
+        <div class="user-dropdown-actions">
+            <a
+                href="http://127.0.0.1:8000/profile"
+                class="user-dropdown-item"
+            >
+                <span class="user-dropdown-icon bg-light-primary text-primary">
+                    <i class="ki-outline ki-user fs-4"></i>
+                </span>
+
+                <span class="flex-grow-1">
+                    <span class="d-block fw-semibold text-gray-800">
+                        Profil Saya
+                    </span>
+                    <span class="d-block text-muted fs-8">
+                        Kelola informasi akun
+                    </span>
+                </span>
+
+                <i class="ki-outline ki-right fs-4 text-muted"></i>
+            </a>
+
+            <form method="POST" action="http://127.0.0.1:8000/logout" class="m-0">
+                <input type="hidden" name="_token" value="SpPIX7i6NBuyF0byLyWFQV1YTURjVu812OpQy2st" autocomplete="off">
+                <button
+                    type="submit"
+                    class="user-dropdown-item user-dropdown-logout w-100 border-0"
+                >
+                    <span class="user-dropdown-icon bg-light-danger text-danger">
+                        <i class="ki-outline ki-exit-right fs-4"></i>
+                    </span>
+
+                    <span class="flex-grow-1 text-start">
+                        <span class="d-block fw-semibold text-danger">
+                            Keluar
+                        </span>
+                        <span class="d-block text-muted fs-8">
+                            Akhiri sesi aplikasi
+                        </span>
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+</header>
+
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                <aside id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar"
+    aria-label="Navigasi utama">
+    <div class="app-sidebar-menu overflow-hidden flex-column-fluid">
+        <div class="app-sidebar-wrapper hover-scroll-overlay-y my-3 px-3" data-kt-scroll="true"
+            data-kt-scroll-height="100%" data-kt-scroll-save-state="true">
+            <div class="menu menu-column menu-rounded menu-sub-indention fw-semibold" data-kt-menu="true">
+                
+                <div class="menu-item menu-accordion show d-flex flex-column"
+                    style="padding: 12px; border-bottom: 2px dashed #e4e6ef; margin-top: 12px; margin-bottom: 12px;">
+                    <div class="d-flex align-items-center"
+                        style="
+            padding: 12px;
+            background: linear-gradient(135deg, #ffffff 0%, #f2fbf6 100%);
+            border: 1px solid #e8f3ec;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        ">
+                        
+                        <div class="position-relative me-3 flex-shrink-0" style="width: 52px; height: 52px;">
+                            <img alt="Avatar Super Admin"
+                                src="http://127.0.0.1:8000/storage/avatars/jU6xThi3we3pTNlZ8yGHiGB0dd1OrRxTbl0rOMDV.png"
+                                class="object-fit-cover"
+                                style="
+                    width: 52px;
+                    height: 52px;
+                    display: block;
+                    object-fit: cover;
+                    border-radius: 10px;
+                    border: 2px solid #ffffff;
+                    box-shadow: 0 0 0 2px #d8f3e3;
+                ">
+
+                            
+                            <span class="position-absolute bg-success border border-2 border-white"
+                                style="
+                    width: 12px;
+                    height: 12px;
+                    right: -3px;
+                    bottom: -3px;
+                    border-radius: 4px;
+                "
+                                title="Online"></span>
+                        </div>
+
+                        
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                <span class="fw-bold fs-6 text-gray-900 text-truncate" title="Super Admin">
+                                    Super Admin
+                                </span>
+
+                                <span class="d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="
+                        width: 24px;
+                        height: 24px;
+                        background-color: #e8fff3;
+                        color: #17c653;
+                        border-radius: 7px;
+                    "
+                                    title="Pengguna aktif">
+                                    <i class="ki-outline ki-shield-tick fs-5"></i>
+                                </span>
+                            </div>
+
+                            
+                            <div class="d-inline-flex align-items-center mb-2"
+                                style="
+                    max-width: 100%;
+                    padding: 3px 8px;
+                    background-color: #e8fff3;
+                    border: 1px solid #d5f5e3;
+                    border-radius: 6px;
+                ">
+                                <i class="ki-outline ki-briefcase fs-7 text-success me-1"></i>
+
+                                <span class="fw-semibold text-success text-truncate" style="font-size: 11px;"
+                                    title="Administrator">
+                                    Administrator
+                                </span>
+                            </div>
+
+                            
+                                                            <div>
+                                    <span class="badge fw-semibold text-gray-700 text-truncate"
+                                        style="
+                            max-width: 100%;
+                            padding: 5px 8px;
+                            background-color: #f5f6f8;
+                            border: 1px solid #e4e6ef;
+                            border-radius: 6px;
+                            font-size: 11px;
+                        "
+                                        title="super_admin">
+                                        <i class="ki-outline ki-profile-user fs-7 me-1"></i>
+                                        super_admin
+                                    </span>
+                                </div>
+                                                    </div>
+                    </div>
+                </div>
+
+                <div class="menu-item pt-4">
+                    <div class="menu-content">
+                        <span class="menu-heading fw-bold text-uppercase fs-7">Menu Utama</span>
+                    </div>
+                </div>
+
+                
+                <div class="p-3"></div>
+
+                                    
+                                            <div class="menu-item">
+                            <a class="menu-link " href="http://127.0.0.1:8000/dashboard">
+                                <span class="menu-icon ki-outline ki-home-2"></span>
+                                <span class="menu-title">Dashboard</span>
+                            </a>
+                        </div>
+                                                        
+                                            <div class="menu-item">
+                            <a class="menu-link " href="http://127.0.0.1:8000/owner/dashboard">
+                                <span class="menu-icon ki-outline ki-chart-line-up"></span>
+                                <span class="menu-title">Dashboard Owner</span>
+                            </a>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-security-user"></span>
+                                <span class="menu-title">Administrasi</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/users">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Pengguna</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/roles">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Role</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/permissions">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Permission</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-setting-2"></span>
+                                <span class="menu-title">Administrasi Sistem</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/warehouses">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Gudang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/branches">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Cabang/Toko</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/settings/general">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Pengaturan Umum</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/settings/document-numbers">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Nomor Dokumen</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/system/health">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Kesehatan Sistem</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/system/backups">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Backup</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/system/logs">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Log &amp; Queue</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/system/imports">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Import Data Awal</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/system/maintenance">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Maintenance &amp; Go-Live</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-parcel"></span>
+                                <span class="menu-title">Master Produk</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/product-categories">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Kategori Produk</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/product-brands">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Merek Produk</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/units">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Satuan</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/products">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Produk</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/products/barcodes">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Cetak Barcode/QR</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/products/import">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Import Produk</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion here show"
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link active">
+                                <span class="menu-icon ki-outline ki-people"></span>
+                                <span class="menu-title">Relasi Bisnis</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion show">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link active"
+                                            href="http://127.0.0.1:8000/admin/suppliers">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Supplier</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/customers">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Pelanggan &amp; B2B</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-delivery-3"></span>
+                                <span class="menu-title">Gudang &amp; Stok</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/dashboard">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Dashboard Gudang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/locations">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Zona, Rak, dan Bin</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/stocks">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Saldo Stok</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/stock-card">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Kartu Stok</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/goods-receipts">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Penerimaan Barang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/b2b-orders">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Order B2B Gudang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/reservations">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Reserved Stock</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/shipments">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Pengiriman B2B</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/location-transfers">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Transfer Lokasi</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/stock-transfers">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Transfer Stok</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/stock-opnames">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Stok Opname</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/losses">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Barang Rusak &amp; Loss</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/batches">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Batch/Lot Stok</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/pricing/hpp-history">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Histori HPP</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-purchase"></span>
+                                <span class="menu-title">Pembelian</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/purchasing/requests">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Permintaan Pembelian</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/purchasing/purchase-orders">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Purchase Order</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/suppliers">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Performa Supplier</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/losses">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Laporan Loss</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-price-tag"></span>
+                                <span class="menu-title">Harga &amp; Margin</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/pricing/rules">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Aturan Harga</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/pricing/product-prices">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Harga Produk</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/pricing/special-prices">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Harga Khusus</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/pricing/history">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Histori Harga</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/pricing/approvals">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Approval Harga</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/pricing/simulator">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Simulasi Margin</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-arrow-left-right"></span>
+                                <span class="menu-title">Retur</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/returns">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Daftar Retur</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-shop"></span>
+                                <span class="menu-title">Toko Internal</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/retail/dashboard">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Dashboard Cabang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/retail/pos">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Kasir POS</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/retail/shifts/current">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Shift Aktif</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/retail/shifts">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Riwayat Shift</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/retail/pos/holds">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Transaksi Ditahan</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/retail/restock-requests">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Permintaan Restock</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/warehouse/stock-transfers">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Terima Transfer</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-calendar-tick"></span>
+                                <span class="menu-title">Kehadiran</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/attendance/employees">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Master Karyawan</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/attendance/work-shifts">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Master Shift</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/attendance/schedules">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Jadwal Shift</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/attendance/check">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Check-in/out</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/attendance/requests">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Izin/Sakit/Cuti</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/attendance/corrections">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Koreksi Absensi</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/attendance">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Laporan Kehadiran</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/shift-productivity">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Produktivitas Shift</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-shield-tick"></span>
+                                <span class="menu-title">Kontrol &amp; Audit</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/approvals">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Kotak Masuk Approval</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/audit-logs">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Audit Log</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/audit/anomalies">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Dashboard Anomali</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/audit/security">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Log Login &amp; Keamanan</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/notifications/channels">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Channel Notifikasi</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/notifications/templates">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Template Pesan</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/notifications/schedules">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Jadwal Notifikasi</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/notifications/recipients">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Penerima Notifikasi</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/notifications/logs">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Log Pengiriman</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/admin/notifications/alerts">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Aturan Alert</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-bill"></span>
+                                <span class="menu-title">Invoice &amp; Pembayaran</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/receivables/dashboard">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Dashboard Piutang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/receivables">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Daftar Piutang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/invoices">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Invoice</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/receivables/payments/create">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Pembayaran Piutang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/receivables/reminders">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Reminder Tagihan</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/receivables/credit-limits">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Limit Kredit</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/retail/receivables">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Piutang Toko</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-chart-pie-4"></span>
+                                <span class="menu-title">Laporan</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/daily">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Harian Owner</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/warehouse">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Gudang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/retail">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Toko</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/b2b">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Langganan/B2B</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/pricing">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Harga &amp; Margin</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/suppliers">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Supplier</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/attendance">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Kehadiran</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/receivables">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Piutang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/audit-notifications">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Audit &amp; Notifikasi</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/reports/exports">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Pusat Export</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                        
+                                            <div class="menu-item menu-accordion "
+                            data-kt-menu-trigger="click">
+                            <span class="menu-link ">
+                                <span class="menu-icon ki-outline ki-basket"></span>
+                                <span class="menu-title">Portal Langganan</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <div class="menu-sub menu-sub-accordion ">
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/langganan/dashboard">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Dashboard Langganan</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/langganan/katalog">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Katalog</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/langganan/keranjang">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Keranjang</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/langganan/checkout">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Checkout</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/langganan/reorder">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Reorder Cepat</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/langganan/orders">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Riwayat Order</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/invoices">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Invoice</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/langganan/complaints">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Komplain</span>
+                                        </a>
+                                    </div>
+                                                                    <div class="menu-item">
+                                        <a class="menu-link "
+                                            href="http://127.0.0.1:8000/langganan/profil">
+                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                            <span class="menu-title">Profil Usaha</span>
+                                        </a>
+                                    </div>
+                                                            </div>
+                        </div>
+                                                </div>
+        </div>
+    </div>
+</aside>
+
+                <main class="app-main flex-column flex-row-fluid mt-8 " id="kt_app_main" >
+                    <div class="d-flex flex-column flex-column-fluid mt-8">
+                        <div id="kt_app_toolbar" class="app-toolbar py-1 py-lg-2">
+    <div id="kt_app_toolbar_container" class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+            <div class="d-flex align-items-center">
+                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">Daftar Supplier</h1>
+                    <button type="button"
+        class="btn btn-icon btn-sm btn-light-primary rounded-circle ms-2 page-guide-trigger"
+        data-bs-toggle="modal"
+        data-bs-target="#page-guide-admin-suppliers"
+        title="Lihat panduan penggunaan halaman"
+        aria-label="Lihat panduan penggunaan halaman Panduan Halaman Daftar Supplier"
+        aria-haspopup="dialog">
+    <i class="ki-outline ki-question-2 fs-6" aria-hidden="true"></i>
+</button>
+
+<div class="modal fade" id="page-guide-admin-suppliers" tabindex="-1" aria-labelledby="page-guide-admin-suppliers-title" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <span class="badge badge-light-primary mb-2">Panduan Halaman</span>
+                    <h2 class="modal-title fw-bold" id="page-guide-admin-suppliers-title">Panduan Halaman Daftar Supplier</h2>
+                </div>
+                <button type="button" class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal" aria-label="Tutup panduan">
+                    <i class="ki-outline ki-cross fs-1" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="modal-body bg-light">
+                <div class="accordion" id="page-guide-admin-suppliers-sections">
+                                                                                                                                        <div class="accordion-item border border-gray-300 mb-3 rounded overflow-hidden">
+                            <h3 class="accordion-header" id="page-guide-admin-suppliers-heading-function">
+                                <button class="accordion-button fw-semibold "
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#page-guide-admin-suppliers-section-function"
+                                        aria-expanded="true"
+                                        aria-controls="page-guide-admin-suppliers-section-function">
+                                    <i class="ki-outline ki-information-5 fs-3 text-primary me-3" aria-hidden="true"></i>
+                                    Fungsi Halaman
+                                </button>
+                            </h3>
+                            <div id="page-guide-admin-suppliers-section-function"
+                                 class="accordion-collapse collapse show"
+                                 aria-labelledby="page-guide-admin-suppliers-heading-function"
+                                 data-bs-parent="#page-guide-admin-suppliers-sections">
+                                <div class="accordion-body text-gray-700 lh-lg page-guide-content"><p>Halaman ini mengelola daftar supplier yang memasok barang ke gudang. Super Admin, Purchasing, dan Owner menggunakannya untuk menambah, mengedit, dan memantau supplier serta performanya.</p></div>
+                            </div>
+                        </div>
+                                                                                                                    <div class="accordion-item border border-gray-300 mb-3 rounded overflow-hidden">
+                            <h3 class="accordion-header" id="page-guide-admin-suppliers-heading-workflow">
+                                <button class="accordion-button fw-semibold collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#page-guide-admin-suppliers-section-workflow"
+                                        aria-expanded="false"
+                                        aria-controls="page-guide-admin-suppliers-section-workflow">
+                                    <i class="ki-outline ki-route fs-3 text-primary me-3" aria-hidden="true"></i>
+                                    Cara Kerja
+                                </button>
+                            </h3>
+                            <div id="page-guide-admin-suppliers-section-workflow"
+                                 class="accordion-collapse collapse "
+                                 aria-labelledby="page-guide-admin-suppliers-heading-workflow"
+                                 data-bs-parent="#page-guide-admin-suppliers-sections">
+                                <div class="accordion-body text-gray-700 lh-lg page-guide-content"><ol><li>Cari supplier berdasarkan kode, nama, atau kontak.</li><li>Filter kota dan status aktif/nonaktif.</li><li>Tambah supplier baru atau import dari file.</li><li>Monitor skor performa supplier.</li></ol></div>
+                            </div>
+                        </div>
+                                                                                                                    <div class="accordion-item border border-gray-300 mb-3 rounded overflow-hidden">
+                            <h3 class="accordion-header" id="page-guide-admin-suppliers-heading-parts">
+                                <button class="accordion-button fw-semibold collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#page-guide-admin-suppliers-section-parts"
+                                        aria-expanded="false"
+                                        aria-controls="page-guide-admin-suppliers-section-parts">
+                                    <i class="ki-outline ki-element-11 fs-3 text-primary me-3" aria-hidden="true"></i>
+                                    Penjelasan Setiap Bagian
+                                </button>
+                            </h3>
+                            <div id="page-guide-admin-suppliers-section-parts"
+                                 class="accordion-collapse collapse "
+                                 aria-labelledby="page-guide-admin-suppliers-heading-parts"
+                                 data-bs-parent="#page-guide-admin-suppliers-sections">
+                                <div class="accordion-body text-gray-700 lh-lg page-guide-content"><ul><li><strong>Cari kode/nama/kontak:</strong> kolom pencarian supplier.</li><li><strong>Kota:</strong> filter berdasarkan kota.</li><li><strong>Filter Status:</strong> aktif/nonaktif.</li><li><strong>Kode/Nama/Kontak:</strong> identitas supplier.</li><li><strong>Termin:</strong> termin pembayaran hari.</li><li><strong>Produk:</strong> jumlah produk yang disupply.</li><li><strong>Harga Terakhir:</strong> harga beli terakhir.</li><li><strong>Skor:</strong> skor performa supplier.</li><li><strong>Status:</strong> aktif/nonaktif supplier.</li><li><strong>Import/Export:</strong> upload/download data supplier.</li><li><strong>Tambah Supplier:</strong> membuat supplier baru.</li></ul></div>
+                            </div>
+                        </div>
+                                                                                                                    <div class="accordion-item border border-gray-300 mb-3 rounded overflow-hidden">
+                            <h3 class="accordion-header" id="page-guide-admin-suppliers-heading-impacts">
+                                <button class="accordion-button fw-semibold collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#page-guide-admin-suppliers-section-impacts"
+                                        aria-expanded="false"
+                                        aria-controls="page-guide-admin-suppliers-section-impacts">
+                                    <i class="ki-outline ki-arrows-circle fs-3 text-primary me-3" aria-hidden="true"></i>
+                                    Dampak terhadap Data atau Halaman Lain
+                                </button>
+                            </h3>
+                            <div id="page-guide-admin-suppliers-section-impacts"
+                                 class="accordion-collapse collapse "
+                                 aria-labelledby="page-guide-admin-suppliers-heading-impacts"
+                                 data-bs-parent="#page-guide-admin-suppliers-sections">
+                                <div class="accordion-body text-gray-700 lh-lg page-guide-content"><p>Supplier yang nonaktif tidak dapat dipilih saat membuat PO. Skor performa dipakai modul evaluasi supplier. Termin memengaruhi jatuh tempo hutang.</p></div>
+                            </div>
+                        </div>
+                                                                                                                    <div class="accordion-item border border-gray-300 mb-3 rounded overflow-hidden">
+                            <h3 class="accordion-header" id="page-guide-admin-suppliers-heading-operation">
+                                <button class="accordion-button fw-semibold collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#page-guide-admin-suppliers-section-operation"
+                                        aria-expanded="false"
+                                        aria-controls="page-guide-admin-suppliers-section-operation">
+                                    <i class="ki-outline ki-check-square fs-3 text-primary me-3" aria-hidden="true"></i>
+                                    Cara Mengoperasikan
+                                </button>
+                            </h3>
+                            <div id="page-guide-admin-suppliers-section-operation"
+                                 class="accordion-collapse collapse "
+                                 aria-labelledby="page-guide-admin-suppliers-heading-operation"
+                                 data-bs-parent="#page-guide-admin-suppliers-sections">
+                                <div class="accordion-body text-gray-700 lh-lg page-guide-content"><ol><li>Cari atau filter supplier.</li><li>Klik Tambah Supplier atau Import.</li><li>Lihat Detail untuk mengevaluasi performa.</li><li>Edit data supplier jika diperlukan.</li></ol></div>
+                            </div>
+                        </div>
+                                                                                                                    <div class="accordion-item border border-gray-300 mb-3 rounded overflow-hidden">
+                            <h3 class="accordion-header" id="page-guide-admin-suppliers-heading-warnings">
+                                <button class="accordion-button fw-semibold collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#page-guide-admin-suppliers-section-warnings"
+                                        aria-expanded="false"
+                                        aria-controls="page-guide-admin-suppliers-section-warnings">
+                                    <i class="ki-outline ki-shield-cross fs-3 text-primary me-3" aria-hidden="true"></i>
+                                    Perhatian dan Kesalahan yang Harus Dihindari
+                                </button>
+                            </h3>
+                            <div id="page-guide-admin-suppliers-section-warnings"
+                                 class="accordion-collapse collapse "
+                                 aria-labelledby="page-guide-admin-suppliers-heading-warnings"
+                                 data-bs-parent="#page-guide-admin-suppliers-sections">
+                                <div class="accordion-body text-gray-700 lh-lg page-guide-content"><div class="alert alert-warning mb-0"><ul><li>Supplier dengan PO aktif tidak dapat dinonaktifkan.</li><li>Pastikan data kontak selalu update.</li></ul></div></div>
+                            </div>
+                        </div>
+                                                                                                                    <div class="accordion-item border border-gray-300 mb-3 rounded overflow-hidden">
+                            <h3 class="accordion-header" id="page-guide-admin-suppliers-heading-example">
+                                <button class="accordion-button fw-semibold collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#page-guide-admin-suppliers-section-example"
+                                        aria-expanded="false"
+                                        aria-controls="page-guide-admin-suppliers-section-example">
+                                    <i class="ki-outline ki-book-open fs-3 text-primary me-3" aria-hidden="true"></i>
+                                    Contoh Penggunaan
+                                </button>
+                            </h3>
+                            <div id="page-guide-admin-suppliers-section-example"
+                                 class="accordion-collapse collapse "
+                                 aria-labelledby="page-guide-admin-suppliers-heading-example"
+                                 data-bs-parent="#page-guide-admin-suppliers-sections">
+                                <div class="accordion-body text-gray-700 lh-lg page-guide-content"><p>Supplier PT Sumber Rezeki, kota Bandung, termin 30 hari, produk 25, skor 90, aktif.</p></div>
+                            </div>
+                        </div>
+                                    </div>
+            </div>
+            <div class="modal-footer">
+                <span class="text-muted fs-7 me-auto">Panduan mengikuti fungsi yang tersedia pada halaman ini.</span>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Saya Mengerti</button>
+            </div>
+        </div>
+    </div>
+</div>
+            </div>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+    <li class="breadcrumb-item text-muted"><a href="http://127.0.0.1:8000/dashboard" class="text-muted text-hover-primary">Beranda</a></li>
+    </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">    <a href="http://127.0.0.1:8000/admin/parties/suppliers/import" class="btn btn-light"><i class="ki-outline ki-file-up"></i>Import</a>
+        <a href="http://127.0.0.1:8000/admin/suppliers/export" class="btn btn-light"><i class="ki-outline ki-file-down"></i>Export</a>
+        <a href="http://127.0.0.1:8000/admin/suppliers/create" class="btn btn-primary"><i class="ki-outline ki-plus"></i>Tambah Supplier</a>
+    </div>
+    </div>
+</div>
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid mt-6">
+                                                                <section class="card">
+        <div class="card-body "><form method="GET" class="d-flex flex-wrap justify-content-between gap-3 mb-5">
+        <div class="d-flex flex-wrap gap-3">
+            <input name="q" value="" class="form-control form-control-solid w-225px" placeholder="Cari kode/nama/kontak">
+            <input name="city" value="" class="form-control form-control-solid w-175px" placeholder="Kota">
+            <select name="status" class="form-select form-select-solid w-175px"><option value="">Semua Status</option><option value="active" >Aktif</option><option value="inactive" >Nonaktif</option></select>
+        </div>
+        <button class="btn btn-light-primary">Filter</button>
+    </form>
+    <div class="table-responsive"><table class="table table-row-dashed align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Kode</th><th>Nama</th><th>Kontak</th><th>Kota</th><th>Termin</th><th>Produk</th><th>Harga Terakhir</th><th>Skor</th><th>Status</th><th class="text-end">Aksi</th></tr></thead><tbody>
+            <tr><td class="fw-bold">SUP-DEMO-FULL</td><td><a href="http://127.0.0.1:8000/admin/suppliers/1" class="fw-bold text-gray-900 text-hover-primary">Supplier Demo Lengkap</a></td><td>Andi Supplier<div class="text-muted">628111111111</div></td><td>Bandung</td><td>30 hari</td><td>3</td><td>Rp25.000</td><td>88.00</td><td><span class="badge badge-light-success">Aktif</span>
+</td><td class="text-end"><a href="http://127.0.0.1:8000/admin/suppliers/1" class="btn btn-sm btn-light">Detail</a> <a href="http://127.0.0.1:8000/admin/suppliers/1/edit" class="btn btn-sm btn-light-primary">Edit</a></td></tr>
+            <tr><td class="fw-bold">SP-0001</td><td><a href="http://127.0.0.1:8000/admin/suppliers/2" class="fw-bold text-gray-900 text-hover-primary">cv andara</a></td><td>6282312341234<div class="text-muted">6282312341234</div></td><td>solok</td><td>0 hari</td><td>0</td><td>Rp0</td><td>0.00</td><td><span class="badge badge-light-success">Aktif</span>
+</td><td class="text-end"><a href="http://127.0.0.1:8000/admin/suppliers/2" class="btn btn-sm btn-light">Detail</a> <a href="http://127.0.0.1:8000/admin/suppliers/2/edit" class="btn btn-sm btn-light-primary">Edit</a></td></tr>
+        </tbody></table></div></div>
+    </section>
+                            </div>
+                        </div>
+                    </div>
+                    <footer id="kt_app_footer" class="app-footer">
+    <div class="app-container container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3">
+        <div class="text-gray-900 order-2 order-md-1"><span class="text-muted fw-semibold me-1">2026 &copy;</span><span class="text-gray-800">GudangToko</span></div>
+        <div class="text-muted fw-semibold order-1 order-md-2">Warehouse-first modular monolith</div>
+    </div>
+</footer>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-loading-overlay" data-app-loading aria-live="polite" aria-label="Memuat"><div class="text-center"><span class="spinner-border text-primary" role="status"></span><div class="text-gray-700 fw-semibold mt-3">Memproses...</div></div></div>
+    <div class="position-fixed top-0 end-0 p-5" style="z-index: 1300">
+        <div class="toast show border-0" role="alert"><div class="toast-header bg-light-success"><strong class="me-auto">GudangToko</strong><button type="button" class="btn-close" data-bs-dismiss="toast"></button></div><div class="toast-body">Selamat datang di GudangToko.</div></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+    </body>
+</html>

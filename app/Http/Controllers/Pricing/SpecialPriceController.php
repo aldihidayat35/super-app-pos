@@ -12,6 +12,7 @@ use App\Services\Pricing\PriceManagementService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SpecialPriceController extends Controller
 {
@@ -41,5 +42,15 @@ class SpecialPriceController extends Controller
             : 'Harga khusus berhasil disimpan.';
 
         return back()->with('notification', ['type' => 'success', 'message' => $message]);
+    }
+
+    public function destroy(CustomerPriceOverride $customerPriceOverride): RedirectResponse
+    {
+        $this->authorize('delete', $customerPriceOverride);
+
+        DB::transaction(fn () => $customerPriceOverride->delete());
+
+        return redirect()->route('pricing.special-prices.index')
+            ->with('notification', ['type' => 'success', 'message' => 'Harga khusus berhasil dihapus dari daftar. Histori audit tetap disimpan.']);
     }
 }

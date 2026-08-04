@@ -512,7 +512,7 @@
         </form>
         <div class="table-responsive">
             <table class="table table-row-dashed align-middle">
-                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th>@if($canSensitive)<th>HPP</th>@endif<th>Scope</th><th>Ring</th><th>Min / Rekomendasi / Maks</th><th>Periode</th><th>Status</th><th>Warning</th></tr></thead>
+                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th>@if($canSensitive)<th>HPP</th>@endif<th>Scope</th><th>Ring</th><th>Min / Rekomendasi / Maks</th><th>Periode</th><th>Status</th><th>Warning</th><th class="text-end">Aksi</th></tr></thead>
                 <tbody>
                 @forelse($prices as $price)
                     @php($resolved = $resolver->resolve($price->product, branch: $price->branch, channel: $price->channel === 'all' ? 'retail' : $price->channel, user: auth()->user(), requestedPrice: $price->recommended_price))
@@ -525,9 +525,24 @@
                         <td>{{ $price->starts_at?->format('d/m/Y') ?? 'Sekarang' }} - {{ $price->ends_at?->format('d/m/Y') ?? 'Tanpa batas' }}</td>
                         <td><x-metronic.status-badge :status="$price->status" /></td>
                         <td>@if($resolved['approval_required'])<span class="badge badge-light-danger">{{ implode(', ', $resolved['approval_reasons']) }}</span>@else<span class="badge badge-light-success">Aman</span>@endif</td>
+                        <td class="text-end">
+                            @can('update', $price)
+                                <a href="{{ route('pricing.product-prices.edit', $price) }}" class="btn btn-sm btn-light-primary" title="Kelola harga">
+                                    <i class="ki-outline ki-notepad-edit fs-5"></i> Kelola
+                                </a>
+                            @endcan
+                            @can('delete', $price)
+                                <form method="POST" action="{{ route('pricing.product-prices.destroy', $price) }}" id="delete-product-price-{{ $price->id }}" class="d-inline">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-light-danger" data-confirm data-confirm-form="delete-product-price-{{ $price->id }}" data-confirm-title="Hapus harga produk?" data-confirm-text="Harga tidak lagi muncul dalam pemilihan harga. Histori audit tetap disimpan." data-confirm-button="Ya, hapus">
+                                        <i class="ki-outline ki-trash fs-5"></i> Hapus
+                                    </button>
+                                </form>
+                            @endcan
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="{{ $canSensitive ? 8 : 7 }}"><x-metronic.empty-state title="Belum ada harga produk" description="Tambahkan ring harga untuk retail, POS, atau B2B." /></td></tr>
+                    <tr><td colspan="{{ $canSensitive ? 9 : 8 }}"><x-metronic.empty-state title="Belum ada harga produk" description="Tambahkan ring harga untuk retail, POS, atau B2B." /></td></tr>
                 @endforelse
                 </tbody>
             </table>

@@ -54,7 +54,21 @@ class SupplierController extends Controller
     {
         $this->authorize('view', $supplier);
 
-        return view('admin.suppliers.show', ['supplier' => $supplier->load(['contacts', 'productsSupplied.product', 'documents'])]);
+        $supplier = $supplier->load([
+            'contacts',
+            'productsSupplied.product',
+            'productsSupplied.product.category',
+            'productsSupplied.product.brand',
+            'documents',
+            'purchaseOrders' => function ($query) {
+                $query->latest()->limit(10)->with(['warehouse', 'creator']);
+            },
+            'goodsReceipts' => function ($query) {
+                $query->latest()->limit(10)->with(['warehouse', 'receiver']);
+            },
+        ]);
+
+        return view('admin.suppliers.show', compact('supplier'));
     }
 
     public function edit(Supplier $supplier): View

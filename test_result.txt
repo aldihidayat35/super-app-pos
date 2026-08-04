@@ -1,0 +1,10 @@
+﻿PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.31
+Configuration: C:\laragon\www\super-app-pos\phpunit.xml
+
+......                                                              6 / 6 (100%)
+
+Time: 00:04.821, Memory: 66.00 MB
+
+OK (6 tests, 57 assertions)

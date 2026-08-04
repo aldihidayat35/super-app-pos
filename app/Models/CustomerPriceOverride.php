@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CustomerPriceOverride extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'customer_id', 'product_id', 'branch_id', 'channel', 'price', 'minimum_qty', 'discount_percent',
         'priority', 'status', 'starts_at', 'ends_at', 'is_active', 'notes', 'reason', 'requested_by',

@@ -5,10 +5,13 @@ namespace App\Models;
 use App\Enums\ProductPriceStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** @property ProductPriceStatus $status */
 class ProductPrice extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'product_id', 'branch_id', 'channel', 'price_ring', 'customer_category', 'min_price',
         'recommended_price', 'max_price', 'minimum_qty', 'priority', 'starts_at', 'ends_at', 'status', 'notes',

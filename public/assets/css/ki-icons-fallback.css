@@ -1,183 +1,327 @@
-/* ==========================================================================
-   Ki Icons Fallback — Emoji (sidebar scoped only)
-   Karena tree-shaking Vite memotong script yang merender SVG ikon Ki,
-   gunakan pseudo-class ::after pada span.menu-icon untuk menampilkan emoji.
-   Tidak mengganggu elemen lain di luar sidebar.
-   ========================================================================== */
+/*
+ * Local KeenIcons-compatible fallback.
+ *
+ * Source Metronic yang tersedia pada proyek ini tidak menyertakan font KeenIcons.
+ * Semua ikon aplikasi karena itu dirender sebagai SVG mask lokal: tajam, mengikuti
+ * currentColor, tidak membutuhkan CDN, dan tidak berubah menjadi bullet saat class
+ * ikon baru belum memiliki pemetaan khusus.
+ */
 
-/* Sembunyikan <i class="ki-outline"> asli */
+/* Sidebar mempertahankan ikon emoji yang sudah familier bagi pengguna. */
 #kt_app_sidebar .menu-icon .ki-outline {
     display: none !important;
 }
 
-/* Style menu-icon container */
 #kt_app_sidebar .menu-icon {
-    position: relative;
-    width: 30px;
-    height: 30px;
-    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    border-radius: 8px;
     background-color: transparent;
+    border-radius: 8px;
     color: var(--bs-gray-500);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    display: inline-flex;
     flex-shrink: 0;
-    margin-right: 8px;
     font-size: 1.35rem;
+    height: 30px;
+    justify-content: center;
     line-height: 1;
+    margin-right: 8px;
+    position: relative;
+    transition: background-color .2s ease, color .2s ease;
+    width: 30px;
 }
 
-/* Base emoji pseudo */
 #kt_app_sidebar .menu-icon::after {
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
     content: "";
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
     font-size: inherit;
     line-height: inherit;
 }
 
-/* Map icon class → emoji unicode */
-#kt_app_sidebar .menu-icon.ki-home-2::after               { content: "\1F3E0"; }
-#kt_app_sidebar .menu-icon.ki-chart-line-up::after         { content: "\1F4C8"; }
-#kt_app_sidebar .menu-icon.ki-security-user::after         { content: "\1F465"; }
-#kt_app_sidebar .menu-icon.ki-setting-2::after             { content: "\2699";  }
-#kt_app_sidebar .menu-icon.ki-parcel::after                { content: "\1F4E6"; }
-#kt_app_sidebar .menu-icon.ki-people::after                { content: "\1F465"; }
-#kt_app_sidebar .menu-icon.ki-delivery-3::after            { content: "\1F69A"; }
-#kt_app_sidebar .menu-icon.ki-purchase::after              { content: "\1F6D2"; }
-#kt_app_sidebar .menu-icon.ki-price-tag::after             { content: "\1F3F7"; }
-#kt_app_sidebar .menu-icon.ki-arrow-left-right::after      { content: "\21C4";  }
-#kt_app_sidebar .menu-icon.ki-shop::after                  { content: "\1F3EA"; }
-#kt_app_sidebar .menu-icon.ki-calendar-tick::after         { content: "\1F4C5"; }
-#kt_app_sidebar .menu-icon.ki-shield-tick::after           { content: "\1F6E1"; }
-#kt_app_sidebar .menu-icon.ki-bill::after                  { content: "\1F4DC"; }
-#kt_app_sidebar .menu-icon.ki-chart-pie-4::after           { content: "\1F967"; }
-#kt_app_sidebar .menu-icon.ki-basket::after                { content: "\1F9D5"; }
+#kt_app_sidebar .menu-icon.ki-home-2::after { content: "\1F3E0"; }
+#kt_app_sidebar .menu-icon.ki-chart-line-up::after { content: "\1F4C8"; }
+#kt_app_sidebar .menu-icon.ki-security-user::after { content: "\1F465"; }
+#kt_app_sidebar .menu-icon.ki-setting-2::after { content: "\2699"; }
+#kt_app_sidebar .menu-icon.ki-parcel::after { content: "\1F4E6"; }
+#kt_app_sidebar .menu-icon.ki-people::after { content: "\1F465"; }
+#kt_app_sidebar .menu-icon.ki-delivery-3::after { content: "\1F69A"; }
+#kt_app_sidebar .menu-icon.ki-purchase::after { content: "\1F6D2"; }
+#kt_app_sidebar .menu-icon.ki-price-tag::after { content: "\1F3F7"; }
+#kt_app_sidebar .menu-icon.ki-arrow-left-right::after { content: "\21C4"; }
+#kt_app_sidebar .menu-icon.ki-shop::after { content: "\1F3EA"; }
+#kt_app_sidebar .menu-icon.ki-calendar-tick::after { content: "\1F4C5"; }
+#kt_app_sidebar .menu-icon.ki-shield-tick::after { content: "\1F6E1"; }
+#kt_app_sidebar .menu-icon.ki-bill::after { content: "\1F4DC"; }
+#kt_app_sidebar .menu-icon.ki-chart-pie-4::after { content: "\1F4CA"; }
+#kt_app_sidebar .menu-icon.ki-basket::after { content: "\1F6D2"; }
 
-/* ==========================================================================
-   Global fallback untuk ikon KeenIcons di luar sidebar.
-   Dipakai karena asset font KeenIcons belum tersedia di public/assets.
-   ========================================================================== */
+:root {
+    --ki-svg-default: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='black'%3E%3Crect x='3' y='3' width='7' height='7' rx='2'/%3E%3Crect x='14' y='3' width='7' height='7' rx='2'/%3E%3Crect x='3' y='14' width='7' height='7' rx='2'/%3E%3Crect x='14' y='14' width='7' height='7' rx='2'/%3E%3C/g%3E%3C/svg%3E");
+    --ki-svg-arrow-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 19V5m-6 6 6-6 6 6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-arrow-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 5v14m-6-6 6 6 6-6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-arrow-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 12H5m6-6-6 6 6 6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-arrow-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14m-6-6 6 6-6 6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-exchange: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 8h14m-4-4 4 4-4 4M20 16H6m4 4-4-4 4-4' fill='none' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-refresh: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 7v5h-5M4 17v-5h5m9.5-3A7.5 7.5 0 0 0 6 6.5L4 9m16 6-2 2.5A7.5 7.5 0 0 1 5.5 15' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-home: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-9Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-chart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 20V10m6 10V4m6 16v-7m4 7H2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-user: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M4 21a8 8 0 0 1 16 0' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-users: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='9' cy='8' r='3' fill='none' stroke='black' stroke-width='2'/%3E%3Ccircle cx='17' cy='9' r='2.5' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M2.5 20a6.5 6.5 0 0 1 13 0m0-5a5 5 0 0 1 6 5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-settings: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='3' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M19 5l-2 2M7 17l-2 2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-package: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 7 8-4 8 4v10l-8 4-8-4V7Zm0 0 8 4 8-4m-8 4v10' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-truck: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 5h11v12H3V5Zm11 5h4l3 3v4h-7v-7Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3Ccircle cx='7' cy='18' r='2'/%3E%3Ccircle cx='18' cy='18' r='2'/%3E%3C/svg%3E");
+    --ki-svg-cart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4h2l2 11h11l2-8H6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='9' cy='19' r='2'/%3E%3Ccircle cx='18' cy='19' r='2'/%3E%3C/svg%3E");
+    --ki-svg-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3Ccircle cx='8' cy='8' r='1.5'/%3E%3C/svg%3E");
+    --ki-svg-calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='16' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M7 3v4m10-4v4M3 10h18' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    --ki-svg-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 7v6l4 2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-shield: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6l-8-3Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-document: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h8l4 4v14H6V3Zm8 0v5h4M9 12h6m-6 4h6' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5' fill='none' stroke='black' stroke-width='2.3'/%3E%3Cpath d='m16 16 5 5' fill='none' stroke='black' stroke-width='2.3' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-plus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4v16M4 12h16' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-minus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 12h16' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-close: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 5 14 14M19 5 5 19' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 12 5 5L20 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 11v6' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='7.5' r='1.2'/%3E%3C/svg%3E");
+    --ki-svg-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 2.5 20h19L12 3Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M12 9v5' stroke='black' stroke-width='2.3' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='17' r='1.1'/%3E%3C/svg%3E");
+    --ki-svg-edit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 16-1 5 5-1L20 8l-4-4L4 16Zm10-10 4 4' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-trash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14m-9-3h4l1 3m2 0-1 14H8L7 7m3 4v6m4-6v6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-eye: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z' fill='none' stroke='black' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+    --ki-svg-printer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 9V3h10v6M7 17H4V9h16v8h-3m-10-4h10v8H7v-8Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-download: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3v12m-5-5 5 5 5-5M4 20h16' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-upload: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 17V5m-5 5 5-5 5 5M4 20h16' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-copy: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='8' width='12' height='12' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    --ki-svg-folder: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 6h7l2 3h9v11H3V6Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='10' width='16' height='11' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3m-4 4v3' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-key: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='8' cy='12' r='5' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M13 12h8m-3 0v3m-3-3v2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-wallet: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='15' rx='3' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M3 9h18m-6 4h6v4h-6a2 2 0 0 1 0-4Z' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    --ki-svg-card: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='14' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M3 10h18M7 15h4' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    --ki-svg-phone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h4l2 5-3 2a16 16 0 0 0 5 5l2-3 5 2v4c0 2-2 3-4 3A17 17 0 0 1 3 7c0-2 1-4 3-4Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-mail: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='14' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='m4 7 8 6 8-6' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='4' width='18' height='16' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m4 18 5-5 4 4 3-3 4 4' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-moon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 15a8 8 0 0 1-11-11 9 9 0 1 0 11 11Z' fill='black'/%3E%3C/svg%3E");
+    --ki-svg-sun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M19 5l-2 2M7 17l-2 2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-screen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='4' width='18' height='14' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M8 22h8m-4-4v4' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    --ki-svg-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m12 2.5 3 6 6.5 1-4.7 4.6 1.1 6.4-5.9-3-5.9 3 1.1-6.4-4.7-4.6 6.5-1 3-6Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-location: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 22s7-6 7-13A7 7 0 1 0 5 9c0 7 7 13 7 13Z' fill='none' stroke='black' stroke-width='2'/%3E%3Ccircle cx='12' cy='9' r='2.5'/%3E%3C/svg%3E");
+    --ki-svg-filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 5h18l-7 8v6l-4 2v-8L3 5Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-menu: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='5' cy='12' r='2'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Ccircle cx='19' cy='12' r='2'/%3E%3C/svg%3E");
+    --ki-svg-send: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m3 11 18-8-7 18-3-7-8-3Zm8 3 10-11' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-book: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 4h6a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4V4Zm16 0h-4a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h4V4Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-bell: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3Zm5 3h4' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-briefcase: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='7' width='18' height='13' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M8 7V4h8v3m-13 5h18' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    --ki-svg-bank: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m3 9 9-6 9 6H3Zm2 3v7m5-7v7m4-7v7m5-7v7M3 21h18' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-rocket: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 4c3-2 6-1 6-1s1 3-1 6l-6 6-5-5 6-6Zm-6 6-4 1-2 4 6 1m5-1 1 7 4-2 1-5M7 17l-3 3' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='7' r='1.5'/%3E%3C/svg%3E");
+    --ki-svg-alert-triangle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3L2.5 20h19L12 3Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M12 9v5' stroke='black' stroke-width='2.3' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='17' r='1.1'/%3E%3C/svg%3E");
+    --ki-svg-archive: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 8V4H3v4l-2 1v11a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V9l-2-1Zm-10 2h-2v2h2v-2Zm-2 6h4v2h-4v-2Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-backward: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 5L5 12l7 7V5Z' fill='none' stroke='black' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-clipboard: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 2h6v3H9V2Zm-3 3h12v16H6V5Zm1 2h10v12H7V7Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-credit-card: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='14' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M3 10h18M7 15h4' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    --ki-svg-disconnect: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18 8A6 6 0 0 0 6 8c0 3-2 5-2 5m18-1a6 6 0 0 1-12 5m-1 3H4M4 8l-2-2m16 14-2-2m-4-6 2-2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-down-square: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 8v8m-3-3 3 3 3-3' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-information-2: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 11v6' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='7.5' r='1.2'/%3E%3C/svg%3E");
+    --ki-svg-location: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 22s7-6 7-13A7 7 0 1 0 5 9c0 7 7 13 7 13Z' fill='none' stroke='black' stroke-width='2'/%3E%3Ccircle cx='12' cy='9' r='2.5'/%3E%3C/svg%3E");
+    --ki-svg-message: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-minus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 12h16' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    --ki-svg-purchase: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Zm3 4h8M10 2v4h4V2' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-up-square: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 16V8m-3 3 3-3 3 3' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Zm1.71 10.14h-4M12 9v4' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --ki-svg-12: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M12 7v5l3 2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
 
 i.ki-outline,
 i.ki-solid,
 i.ki-duotone {
-    display: inline-flex;
     align-items: center;
-    justify-content: center;
+    display: inline-flex;
+    flex: 0 0 auto;
     font-style: normal;
+    justify-content: center;
     line-height: 1;
-    vertical-align: middle;
+    vertical-align: -.125em;
 }
 
 i.ki-outline::before,
 i.ki-solid::before,
 i.ki-duotone::before {
-    content: "•";
-    font-family: "Segoe UI Symbol", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-    font-weight: 600;
-    line-height: 1;
-}
-
-i.ki-abstract-12::before,
-i.ki-abstract-14::before,
-i.ki-abstract-25::before,
-i.ki-abstract-26::before,
-i.ki-abstract-28::before,
-i.ki-abstract-35::before,
-i.ki-abstract-41::before { content: "◈"; }
-i.ki-arrow-down::before { content: "↓"; }
-i.ki-arrow-left-right::before,
-i.ki-arrow-right-left::before { content: "⇄"; }
-i.ki-arrow-right::before { content: "→"; }
-i.ki-arrow-up::before { content: "↑"; }
-i.ki-arrows-circle::before { content: "↻"; }
-i.ki-bank::before { content: "▤"; }
-i.ki-basket::before { content: "🛒"; }
-i.ki-bill::before { content: "▤"; }
-i.ki-box::before,
-i.ki-parcel::before { content: "□"; }
-i.ki-briefcase::before { content: "▣"; }
-i.ki-calendar::before,
-i.ki-calendar-tick::before,
-i.ki-time::before { content: "◷"; }
-i.ki-chart::before,
-i.ki-chart-line-down::before,
-i.ki-chart-line-up::before,
-i.ki-chart-pie-4::before,
-i.ki-chart-simple::before { content: "⌁"; }
-i.ki-check::before,
-i.ki-check-circle::before { content: "✓"; }
-i.ki-cloud-download::before { content: "☁"; }
-i.ki-color-swatch::before,
-i.ki-colors-square::before { content: "▧"; }
-i.ki-copy::before { content: "⧉"; }
-i.ki-cross::before,
-i.ki-cross-circle::before,
-i.ki-cross-square::before { content: "×"; }
-i.ki-delivery-2::before,
-i.ki-delivery-3::before,
-i.ki-truck::before { content: "🚚"; }
-i.ki-dollar::before { content: "$"; }
-i.ki-dots-square::before { content: "⋯"; }
-i.ki-down::before { content: "⌄"; }
-i.ki-exit-right::before { content: "↪"; }
-i.ki-file-down::before { content: "⇩"; }
-i.ki-file-up::before { content: "⇧"; }
-i.ki-filter::before { content: "≡"; }
-i.ki-folder::before { content: "▱"; }
-i.ki-frame::before { content: "▢"; }
-i.ki-geolocation::before { content: "⌖"; }
-i.ki-gift::before { content: "◇"; }
-i.ki-home-2::before { content: "⌂"; }
-i.ki-icon::before { content: "◌"; }
-i.ki-information::before,
-i.ki-information-5::before,
-i.ki-question::before { content: "i"; }
-i.ki-key::before,
-i.ki-lock-2::before { content: "⚿"; }
-i.ki-laptop::before { content: "▭"; }
-i.ki-left::before { content: "‹"; }
-i.ki-like-shapes::before { content: "♡"; }
-i.ki-magnifier::before,
-i.ki-search-list::before { content: "⌕"; }
-i.ki-message-text-2::before,
-i.ki-sms::before { content: "✉"; }
-i.ki-minus-square::before { content: "−"; }
-i.ki-moon::before,
-i.ki-night-day::before { content: "☾"; }
-i.ki-notepad::before { content: "▤"; }
-i.ki-notification-on::before { content: "●"; }
-i.ki-people::before,
-i.ki-profile-circle::before,
-i.ki-profile-user::before,
-i.ki-security-user::before,
-i.ki-user::before { content: "👤"; }
-i.ki-pencil::before { content: "✎"; }
-i.ki-picture::before { content: "▧"; }
-i.ki-plus::before,
-i.ki-plus-square::before { content: "+"; }
-i.ki-price-tag::before { content: "◇"; }
-i.ki-printer::before { content: "⎙"; }
-i.ki-pulse::before { content: "⌁"; }
-i.ki-purchase::before { content: "🛒"; }
-i.ki-right::before { content: "›"; }
-i.ki-rocket::before { content: "↗"; }
-i.ki-screen::before { content: "▭"; }
-i.ki-setting-2::before { content: "⚙"; }
-i.ki-shield-cross::before,
-i.ki-shield-tick::before { content: "⛨"; }
-i.ki-shop::before { content: "⌂"; }
-i.ki-sun::before { content: "☼"; }
-i.ki-text-align-right::before { content: "≡"; }
-i.ki-tiktok::before { content: "♪"; }
-i.ki-trash::before {
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 3h6l1 2h4v2h-1l-1 14H6L5 7H4V5h4l1-2Zm-1.86 4 .86 12h8l.86-12H7.14ZM10 9h2v8h-2V9Zm4 0h2v8h-2V9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    -webkit-mask: var(--ki-mask, var(--ki-svg-default)) center / contain no-repeat;
     background-color: currentColor;
-    content: "";
+    content: "" !important;
     display: block;
     height: 1em;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 3h6l1 2h4v2h-1l-1 14H6L5 7H4V5h4l1-2Zm-1.86 4 .86 12h8l.86-12H7.14ZM10 9h2v8h-2V9Zm4 0h2v8h-2V9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: var(--ki-mask, var(--ki-svg-default)) center / contain no-repeat;
     width: 1em;
 }
-i.ki-wallet::before { content: "▣"; }
+
+/* Navigasi dan arah. */
+i.ki-arrow-up { --ki-mask: var(--ki-svg-arrow-up); }
+i.ki-arrow-down,
+i.ki-down,
+i.ki-square-down { --ki-mask: var(--ki-svg-arrow-down); }
+i.ki-arrow-left,
+i.ki-arrow-circle-left,
+i.ki-left { --ki-mask: var(--ki-svg-arrow-left); }
+i.ki-arrow-right,
+i.ki-right { --ki-mask: var(--ki-svg-arrow-right); }
+i.ki-arrow-left-right,
+i.ki-arrow-right-left,
+i.ki-switch { --ki-mask: var(--ki-svg-exchange); }
+i.ki-arrows-circle,
+i.ki-refresh { --ki-mask: var(--ki-svg-refresh); }
+i.ki-exit-right,
+i.ki-login { --ki-mask: var(--ki-svg-arrow-right); }
+
+/* Dashboard, organisasi, dan inventori. */
+i.ki-home-2,
+i.ki-shop,
+i.ki-warehouse { --ki-mask: var(--ki-svg-home); }
+i.ki-chart,
+i.ki-chart-line,
+i.ki-chart-line-down,
+i.ki-chart-line-up,
+i.ki-chart-line-up-2,
+i.ki-chart-simple,
+i.ki-graph,
+i.ki-graph-up,
+i.ki-pulse { --ki-mask: var(--ki-svg-chart); }
+i.ki-user,
+i.ki-user-tick,
+i.ki-profile-circle,
+i.ki-profile-user { --ki-mask: var(--ki-svg-user); }
+i.ki-people { --ki-mask: var(--ki-svg-users); }
+i.ki-setting-2 { --ki-mask: var(--ki-svg-settings); }
+i.ki-box,
+i.ki-cube-2,
+i.ki-package,
+i.ki-element-11,
+i.ki-element-contents { --ki-mask: var(--ki-svg-package); }
+i.ki-delivery,
+i.ki-delivery-2,
+i.ki-truck { --ki-mask: var(--ki-svg-truck); }
+i.ki-basket,
+i.ki-handcart { --ki-mask: var(--ki-svg-cart); }
+i.ki-tag,
+i.ki-discount,
+i.ki-price-tag,
+i.ki-category { --ki-mask: var(--ki-svg-tag); }
+i.ki-calendar { --ki-mask: var(--ki-svg-calendar); }
+i.ki-clock,
+i.ki-time { --ki-mask: var(--ki-svg-clock); }
+
+/* Keamanan, dokumen, dan tindakan. */
+i.ki-shield,
+i.ki-shield-check,
+i.ki-shield-cross,
+i.ki-shield-tick,
+i.ki-security-check { --ki-mask: var(--ki-svg-shield); }
+i.ki-document,
+i.ki-file,
+i.ki-input,
+i.ki-note,
+i.ki-notepad,
+i.ki-receipt-square,
+i.ki-file-added,
+i.ki-not-found { --ki-mask: var(--ki-svg-document); }
+i.ki-magnifier,
+i.ki-search,
+i.ki-search-list { --ki-mask: var(--ki-svg-search); }
+i.ki-plus,
+i.ki-plus-square { --ki-mask: var(--ki-svg-plus); }
+i.ki-minus-square { --ki-mask: var(--ki-svg-minus); }
+i.ki-close,
+i.ki-close-circle,
+i.ki-cross,
+i.ki-cross-circle,
+i.ki-cross-square { --ki-mask: var(--ki-svg-close); }
+i.ki-check,
+i.ki-checked,
+i.ki-checked-circle,
+i.ki-check-circle,
+i.ki-list-check,
+i.ki-check-square,
+i.ki-verify { --ki-mask: var(--ki-svg-check); }
+i.ki-information,
+i.ki-information-5,
+i.ki-question,
+i.ki-question-2 { --ki-mask: var(--ki-svg-info); }
+i.ki-alert,
+i.ki-error,
+i.ki-exclamation-triangle { --ki-mask: var(--ki-svg-alert); }
+i.ki-pencil { --ki-mask: var(--ki-svg-edit); }
+i.ki-trash { --ki-mask: var(--ki-svg-trash); }
+i.ki-eye { --ki-mask: var(--ki-svg-eye); }
+i.ki-printer { --ki-mask: var(--ki-svg-printer); }
+i.ki-file-down,
+i.ki-cloud-download { --ki-mask: var(--ki-svg-download); }
+i.ki-file-up { --ki-mask: var(--ki-svg-upload); }
+i.ki-copy { --ki-mask: var(--ki-svg-copy); }
+i.ki-folder { --ki-mask: var(--ki-svg-folder); }
+i.ki-lock,
+i.ki-lock-2 { --ki-mask: var(--ki-svg-lock); }
+i.ki-key { --ki-mask: var(--ki-svg-key); }
+i.ki-send,
+i.ki-route { --ki-mask: var(--ki-svg-send); }
+
+/* Keuangan, komunikasi, dan media. */
+i.ki-wallet,
+i.ki-calculator,
+i.ki-coin,
+i.ki-dollar { --ki-mask: var(--ki-svg-wallet); }
+i.ki-credit-cart { --ki-mask: var(--ki-svg-card); }
+i.ki-phone,
+i.ki-whatsapp { --ki-mask: var(--ki-svg-phone); }
+i.ki-sms,
+i.ki-message-text,
+i.ki-message-text-2 { --ki-mask: var(--ki-svg-mail); }
+i.ki-picture,
+i.ki-frame { --ki-mask: var(--ki-svg-image); }
+i.ki-moon,
+i.ki-night-day { --ki-mask: var(--ki-svg-moon); }
+i.ki-sun { --ki-mask: var(--ki-svg-sun); }
+i.ki-screen,
+i.ki-laptop { --ki-mask: var(--ki-svg-screen); }
+i.ki-star,
+i.ki-like-shapes,
+i.ki-gift { --ki-mask: var(--ki-svg-star); }
+i.ki-geolocation { --ki-mask: var(--ki-svg-location); }
+i.ki-filter,
+i.ki-text-align-right { --ki-mask: var(--ki-svg-filter); }
+i.ki-dots-square { --ki-mask: var(--ki-svg-menu); }
+i.ki-book,
+i.ki-book-open { --ki-mask: var(--ki-svg-book); }
+i.ki-notification-on { --ki-mask: var(--ki-svg-bell); }
+i.ki-briefcase,
+i.ki-bag,
+i.ki-business,
+i.ki-badge { --ki-mask: var(--ki-svg-briefcase); }
+i.ki-up-box { --ki-mask: var(--ki-svg-upload); }
+i.ki-bank { --ki-mask: var(--ki-svg-bank); }
+i.ki-rocket { --ki-mask: var(--ki-svg-rocket); }
+
+/* Ikon dekoratif memakai bentuk grid default, bukan bullet. */
+i.ki-alert-triangle { --ki-mask: var(--ki-svg-alert-triangle); }
+i.ki-archive { --ki-mask: var(--ki-svg-archive); }
+i.ki-backward { --ki-mask: var(--ki-svg-backward); }
+i.ki-clipboard { --ki-mask: var(--ki-svg-clipboard); }
+i.ki-credit-card { --ki-mask: var(--ki-svg-credit-card); }
+i.ki-disconnect { --ki-mask: var(--ki-svg-disconnect); }
+i.ki-down-square { --ki-mask: var(--ki-svg-down-square); }
+i.ki-information-2 { --ki-mask: var(--ki-svg-information-2); }
+i.ki-location { --ki-mask: var(--ki-svg-location); }
+i.ki-message { --ki-mask: var(--ki-svg-message); }
+i.ki-minus { --ki-mask: var(--ki-svg-minus); }
+i.ki-purchase { --ki-mask: var(--ki-svg-purchase); }
+i.ki-up-square { --ki-mask: var(--ki-svg-up-square); }
+i.ki-warning { --ki-mask: var(--ki-svg-warning); }
+i.ki-12 { --ki-mask: var(--ki-svg-12); }
+i.ki-abstract-12,
+i.ki-abstract-14,
+i.ki-abstract-25,
+i.ki-abstract-26,
+i.ki-abstract-28,
+i.ki-abstract-35,
+i.ki-abstract-41,
+i.ki-circle,
+i.ki-colors-square,
+i.ki-color-swatch,
+i.ki-flag,
+i.ki-icon,
+i.ki-scheme,
+i.ki-tiktok { --ki-mask: var(--ki-svg-default); }

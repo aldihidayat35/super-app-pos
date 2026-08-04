@@ -8,6 +8,7 @@
     <link rel="shortcut icon" href="{{ asset('assets/media/logos/favicon.ico') }}">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700">
     <link rel="stylesheet" href="{{ asset('assets/vendor/metronic/css/style.bundle.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/ki-icons-fallback.css') }}?v={{ filemtime(public_path('assets/css/ki-icons-fallback.css')) }}">
     @vite(['resources/js/vendor.js', 'resources/css/app.css', 'resources/js/app.js'])
     <script>document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('gudangtoko-theme') || 'light');</script>
 </head>

@@ -60,17 +60,26 @@ class PriceResolverService
         $discountTooHigh = Decimal::compare($discountPercent, (string) $rule->max_discount_percent, 2) > 0;
         $approvalRequired = $belowMinimum || $overpricing || $discountTooHigh;
 
+        $hppUnit = Decimal::mul($hppBase, $factor, 2, 6, 2);
+        $marginAmount = Decimal::sub($discountedUnit, $hppUnit, 2);
+        $marginPercent = $this->marginPercent($discountedUnit, $hppUnit);
+
         return [
             'product_id' => $product->id,
             'hpp_base' => $hppBase,
+            'hpp_unit' => $hppUnit,
             'unit_factor' => $factor,
             'quantity_base' => $baseQuantity,
             'minimum_price' => $minimumUnit,
             'maximum_price' => $maximumUnit,
             'selected_price' => $selectedUnit,
             'discounted_price' => $discountedUnit,
-            'margin_amount' => Decimal::sub($discountedUnit, Decimal::mul($hppBase, $factor, 2, 6, 2), 2),
-            'margin_percent' => $this->marginPercent($discountedUnit, Decimal::mul($hppBase, $factor, 2, 6, 2)),
+            'margin_amount' => $marginAmount,
+            'margin_percent' => $marginPercent,
+            'margin_method' => $rule->margin_method,
+            'margin_percent_value' => Decimal::normalize($rule->minimum_margin_percent, 2),
+            'margin_amount_value' => Decimal::normalize($rule->minimum_margin_amount, 2),
+            'computed_minimum' => $minimumBase,
             'candidates' => $candidates,
             'selected_source' => $selected['source'],
             'reason' => $selected['reason'],
@@ -82,6 +91,10 @@ class PriceResolverService
             ])),
             'can_view_sensitive_margin' => $user?->can('margins.view_sensitive') ?? false,
             'rule_id' => $rule->id,
+            'rule_name' => $rule->name,
+            'rule_priority' => $rule->priority,
+            'max_discount_percent' => Decimal::normalize($rule->max_discount_percent, 2),
+            'overpricing_tolerance_percent' => Decimal::normalize($rule->overpricing_tolerance_percent, 2),
         ];
     }
 

@@ -50,14 +50,17 @@ class SearchableSelectAuditTest extends TestCase
     }
 
     #[Test]
-    public function trash_icon_has_a_visible_local_fallback(): void
+    public function keen_icons_have_a_visible_local_svg_fallback(): void
     {
         $styles = file_get_contents($this->projectPath('public/assets/css/ki-icons-fallback.css'));
 
         self::assertIsString($styles);
-        self::assertStringContainsString('i.ki-trash::before', $styles);
-        self::assertStringContainsString('mask: url(', $styles);
+        self::assertStringContainsString('--ki-svg-default: url(', $styles);
+        self::assertStringContainsString('var(--ki-mask, var(--ki-svg-default))', $styles);
+        self::assertStringContainsString('i.ki-trash { --ki-mask: var(--ki-svg-trash); }', $styles);
         self::assertStringContainsString('background-color: currentColor', $styles);
+        self::assertStringNotContainsString('content: "•"', $styles);
+        self::assertStringNotContainsString('content: "â€¢"', $styles);
     }
 
     /** @return list<SplFileInfo> */
