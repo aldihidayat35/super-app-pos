@@ -11,12 +11,14 @@ use App\Http\Requests\Warehouse\CountStockOpnameItemRequest;
 use App\Http\Requests\Warehouse\ImportStockOpnameCountsRequest;
 use App\Http\Requests\Warehouse\StoreStockOpnameRequest;
 use App\Models\ProductCategory;
+use App\Models\StockMutation;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
 use App\Models\User;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Warehouse\StockOpnameService;
+use App\Support\Decimal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -81,7 +83,7 @@ class StockOpnameController extends Controller
                 ->with('notification', ['type' => 'warning', 'message' => $exception->getMessage()]);
         }
 
-        return redirect()->route('warehouse.stock-opnames.count', $stockOpname)->with('notification', ['type' => 'success', 'message' => 'Snapshot dibuat dan counting dimulai.']);
+        return redirect()->route('warehouse.stock-opnames.count', $stockOpname)->with('notification', ['type' => 'success', 'message' => 'Acuan stok berhasil disimpan dan proses penghitungan dimulai.']);
     }
 
     public function count(StockOpname $stockOpname): View
@@ -102,7 +104,7 @@ class StockOpnameController extends Controller
 
         $service->countItem($item, $data, $request->user());
 
-        return back()->with('notification', ['type' => 'success', 'message' => 'Qty fisik berhasil disimpan.']);
+        return back()->with('notification', ['type' => 'success', 'message' => 'Jumlah fisik berhasil disimpan.']);
     }
 
     public function import(ImportStockOpnameCountsRequest $request, StockOpname $stockOpname, StockOpnameService $service): RedirectResponse
@@ -126,7 +128,23 @@ class StockOpnameController extends Controller
     {
         $this->authorize('view', $stockOpname);
 
-        return view('warehouse.stock-opnames.variance', ['opname' => $this->loadOpname($stockOpname), 'reasons' => StockOpnameReason::options()]);
+        $opname = $this->loadOpname($stockOpname);
+        $lastMutations = StockMutation::query()
+            ->where('work_location_id', $opname->work_location_id)
+            ->whereIn('product_id', $opname->items->pluck('product_id'))
+            ->when($opname->started_at, fn ($query) => $query->where('occurred_at', '>', $opname->started_at))
+            ->latest('occurred_at')
+            ->latest('id')
+            ->get()
+            ->unique(fn (StockMutation $mutation): string => $mutation->product_id.'|'.($mutation->warehouse_location_id ?? 'null'))
+            ->keyBy(fn (StockMutation $mutation): string => $mutation->product_id.'|'.($mutation->warehouse_location_id ?? 'null'));
+
+        return view('warehouse.stock-opnames.variance', [
+            'opname' => $opname,
+            'reasons' => StockOpnameReason::options(),
+            'lastMutations' => $lastMutations,
+            'summary' => $this->opnameReviewSummary($opname),
+        ]);
     }
 
     public function exportVariance(StockOpname $stockOpname): StreamedResponse
@@ -136,7 +154,7 @@ class StockOpnameController extends Controller
 
         return response()->streamDownload(function () use ($stockOpname): void {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['SKU', 'Produk', 'Lokasi', 'Sistem', 'Fisik', 'Selisih', 'Nilai', 'Alasan', 'Transaksi Setelah Snapshot']);
+            fputcsv($handle, ['SKU', 'Produk', 'Lokasi', 'Stok Sistem', 'Jumlah Fisik', 'Selisih', 'Nilai', 'Alasan', 'Transaksi Setelah Acuan Stok']);
             foreach ($stockOpname->items as $item) {
                 fputcsv($handle, [$item->product_sku_snapshot, $item->product_name_snapshot, $item->warehouseLocation?->full_code, $item->system_qty_snapshot, $item->counted_qty, $item->difference_qty, $item->estimated_value, $item->reasonEnum()?->label(), $item->has_transaction_after_snapshot ? 'Ya' : 'Tidak']);
             }
@@ -148,7 +166,12 @@ class StockOpnameController extends Controller
     {
         $this->authorize('view', $stockOpname);
 
-        return view('warehouse.stock-opnames.approval', ['opname' => $this->loadOpname($stockOpname)]);
+        $opname = $this->loadOpname($stockOpname);
+
+        return view('warehouse.stock-opnames.approval', [
+            'opname' => $opname,
+            'summary' => $this->opnameReviewSummary($opname),
+        ]);
     }
 
     public function approve(ApproveStockOpnameRequest $request, StockOpname $stockOpname, StockOpnameService $service): RedirectResponse
@@ -202,6 +225,29 @@ class StockOpnameController extends Controller
             'items.product', 'items.warehouseLocation', 'items.counter', 'items.counts.counter',
             'approvals.approver', 'statusHistories.actor', 'stockMutations.product', 'stockMutations.actor',
         ]);
+    }
+
+    /** @return array<string, int|string> */
+    private function opnameReviewSummary(StockOpname $opname): array
+    {
+        $different = $opname->items->filter(fn (StockOpnameItem $item): bool => Decimal::compare((string) $item->difference_qty, '0') !== 0);
+        $aboveThreshold = $opname->items->filter(function (StockOpnameItem $item) use ($opname): bool {
+            $absoluteQuantity = ltrim((string) $item->difference_qty, '-');
+            $absoluteValue = ltrim((string) $item->estimated_value, '-');
+
+            return Decimal::compare($absoluteQuantity, (string) $opname->threshold_qty) > 0
+                || Decimal::compare($absoluteValue, (string) $opname->threshold_value, 2) > 0;
+        });
+
+        return [
+            'total' => $opname->items->count(),
+            'matching' => $opname->items->count() - $different->count(),
+            'different' => $different->count(),
+            'above_threshold' => $aboveThreshold->count(),
+            'after_reference' => $opname->items->where('has_transaction_after_snapshot', true)->count(),
+            'quantity_difference' => (string) $opname->total_difference_qty,
+            'value_difference' => (string) $opname->total_difference_value,
+        ];
     }
 
     /** @return list<array<string, mixed>> */

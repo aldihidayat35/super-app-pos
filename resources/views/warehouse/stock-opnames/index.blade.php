@@ -6,22 +6,22 @@
 @section('page_guide')
     <x-metronic.page-guide id="warehouse-stock-opnames" title="Panduan Halaman Stok Opname">
         <x-slot:function>
-            <p>Halaman ini digunakan untuk menjadwalkan, memulai, dan memantau proses stok opname. Kepala Gudang menjadwalkan opname, menetapkan PIC, memilih metode (manual/scan/import), dan memantau progress counting.</p>
+            <p>Halaman ini digunakan untuk menjadwalkan, memulai, dan memantau penghitungan fisik persediaan. Kepala Gudang menetapkan penanggung jawab, metode, cakupan, dan batas toleransi.</p>
         </x-slot:function>
         <x-slot:workflow>
-            <ol><li>Buat jadwal opname: pilih gudang, lokasi, kategori, metode, dan PIC.</li><li>Klik Buat Snapshot untuk mengambil snapshot stok saat itu.</li><li>Counter melakukan counting fisik.</li><li>Hasil counting dibandingkan dengan snapshot.</li><li>Opname disubmit ke approval jika perlu.</li><li>Variance dan laporan dihasilkan setelah approval.</li></ol>
+            <ol><li>Buat jadwal opname dan pilih penanggung jawab.</li><li>Klik Simpan Acuan Stok untuk menyimpan kondisi sistem saat ini.</li><li>Petugas melakukan penghitungan fisik.</li><li>Hasil fisik dibandingkan dengan acuan stok.</li><li>Hasil diajukan untuk persetujuan.</li><li>Selisih dan laporan tersedia sebelum penyesuaian saldo diselesaikan.</li></ol>
         </x-slot:workflow>
         <x-slot:parts>
-              <ul><li><strong>Gudang/Cabang:</strong> lokasi opname (wajib).</li><li><strong>Zona/Rak/Bin:</strong> scope lokasi detail.</li><li><strong>Kategori Produk:</strong> filter produk berdasarkan kategori.</li><li><strong>Metode:</strong> Manual, Scan, atau Import.</li><li><strong>Tanggal:</strong> jadwal opname.</li><li><strong>PIC:</strong> person in charge counting.</li><li><strong>Threshold Qty:</strong> batas selisih qty untuk flagging.</li><li><strong>Threshold Nilai:</strong> batas selisih nilai untuk approval.</li><li><strong>Blind Count:</strong> counter tidak melihat qty sistem.</li><li><strong>Freeze Stock:</strong> mencegah transaksi saat counting.</li><li><strong>Catatan:</strong> keterangan opname.</li><li><strong>Simpan Draft:</strong> simpan tanpa snapshot.</li><li><strong>Buat Snapshot:</strong> simpan dan ambil snapshot.</li><li><strong>No:</strong> nomor opname.</li><li><strong>Scope:</strong> gudang dan lokasi detail.</li><li><strong>Jadwal/PIC:</strong> tanggal dan person in charge.</li><li><strong>Progress:</strong> persentase item sudah counted.</li><li><strong>Selisih:</strong> total qty dan nilai selisih.</li><li><strong>Status:</strong> progress status opname.</li><li><strong>Detail/Counting/Variance:</strong> aksi navigasi.</li></ul>
+              <ul><li><strong>Gudang/Cabang:</strong> lokasi penghitungan.</li><li><strong>Zona/Rak/Bin:</strong> cakupan lokasi fisik.</li><li><strong>Metode Manual:</strong> petugas mengetik hasil hitung.</li><li><strong>Metode Scan:</strong> pilihan alur; pemindaian barcode khusus belum terintegrasi penuh dan input masih dilakukan pada halaman penghitungan.</li><li><strong>Metode Import:</strong> hasil dimasukkan melalui CSV.</li><li><strong>PIC:</strong> penanggung jawab opname.</li><li><strong>Batas Toleransi:</strong> batas yang memicu pemeriksaan/persetujuan lebih tinggi.</li><li><strong>Simpan Acuan Stok:</strong> menyimpan kondisi sistem sebagai pembanding.</li></ul>
         </x-slot:parts>
         <x-slot:impacts>
-            <p>Snapshot menghasilkan qty sistem sebagai acuan counting. Hasil counting dibanding dengan snapshot. Approval diperlukan jika selisih melebihi threshold. Adjustment dibuat setelah approved untuk koreksi saldo.</p>
+            <p>Acuan stok menyimpan jumlah sistem sebagai pembanding. Persetujuan belum mengubah stok; mutasi penyesuaian baru dibuat setelah proses penyelesaian.</p>
            </x-slot:impacts>
         <x-slot:operation>
-            <ol><li>Pilih gudang/cabang dan lokasi detail (opsional).</li><li>Pilih kategori produk jika ingin membatasi scope.</li><li>Pilih metode: Manual untuk input fisik, Scan untuk barcode, Import untuk CSV.</li><li>Atur tanggal, PIC, threshold, blind count, freeze stock.</li><li>Klik <strong>Buat Snapshot</strong> untuk memulai.</li><li>Monitor progress dari daftar opname di sebelah kanan.</li></ol>
+            <ol><li>Pilih gudang/cabang, lokasi, dan kategori.</li><li>Pilih metode yang sesuai.</li><li>Tentukan penanggung jawab dan batas toleransi.</li><li>Atur apakah stok sistem disembunyikan dan transaksi dibekukan.</li><li>Klik <strong>Simpan Acuan Stok</strong>.</li><li>Pantau kemajuan dari daftar opname.</li></ol>
         </x-slot:operation>
         <x-slot:warnings>
-            <div class="alert alert-warning mb-0"><ul><li>Blind count membuat counter tidak tahu qty sistem.</li><li>Freeze stock menghentikan transaksi saat counting.</li><li>Threshold nilai memicu approval owner jika dilewati.</li><li>Jangan ubah snapshot setelah counting dimulai.</li></ul></div>
+            <div class="alert alert-warning mb-0"><ul><li>Mode objektif menyembunyikan stok sistem dari petugas penghitung.</li><li>Pembekuan transaksi menghentikan perubahan stok pada cakupan aktif.</li><li>Batas nilai dapat memicu persetujuan Owner.</li><li>Cakupan tidak dapat diubah setelah acuan stok disimpan.</li></ul></div>
         </x-slot:warnings>
         <x-slot:example>
             <p>Opname Manual di Gudang Pusat pada 18/07/2025. PIC: Budi. Threshold qty: 10, threshold nilai: Rp 1.000.000. Blind count aktif. Snapshot diambil dan counter mulai menghitung fisik.</p>
@@ -95,7 +95,7 @@
 @endpush
 
 @section('content')
-    <x-metronic.page-title title="Stok Opname" description="Jadwalkan, snapshot, hitung fisik, dan koreksi saldo stok melalui approval." />
+    <x-metronic.page-title title="Stok Opname" description="Jadwalkan, simpan acuan stok, hitung fisik, periksa selisih, dan lakukan penyesuaian melalui persetujuan." />
 
     <div class="row g-6">
         <div class="col-lg-4">
@@ -152,9 +152,10 @@
                             <x-metronic.form-group name="method" label="Metode" required>
                                 <select name="method" class="form-select form-select-solid" required>
                                     <option value="manual" @selected(old('method') === 'manual')>Manual</option>
-                                    <option value="scan" @selected(old('method') === 'scan')>Scan</option>
-                                    <option value="import" @selected(old('method') === 'import')>Import</option>
+                                    <option value="scan" @selected(old('method') === 'scan')>Scan (pemindaian khusus belum terintegrasi)</option>
+                                    <option value="import" @selected(old('method') === 'import')>Import CSV</option>
                                 </select>
+                                <div class="form-text">Manual: ketik hasil. Scan: saat ini tetap memakai form penghitungan. Import: unggah file CSV.</div>
                             </x-metronic.form-group>
                         </div>
                         <div class="col-md-6">
@@ -163,7 +164,7 @@
                             </x-metronic.form-group>
                         </div>
                     </div>
-                    <x-metronic.form-group name="pic_user_id" label="PIC">
+                    <x-metronic.form-group name="pic_user_id" label="PIC (Penanggung Jawab Opname)" help="Pengguna yang bertanggung jawab mengawasi pelaksanaan stok opname.">
                         <select id="pic_user_id"
                                 name="pic_user_id"
                                 class="form-select form-select-solid"
@@ -178,25 +179,25 @@
                         </select>
                     </x-metronic.form-group>
                     <div class="row">
-                        <div class="col-md-6"><x-metronic.form-group name="threshold_qty" label="Threshold Qty"><input type="number" step="1" min="0" name="threshold_qty" value="{{ old('threshold_qty', '10') }}" class="form-control form-control-solid"></x-metronic.form-group></div>
-                        <div class="col-md-6"><x-metronic.form-group name="threshold_value" label="Threshold Nilai"><input type="number" step="0.01" min="0" name="threshold_value" value="{{ old('threshold_value', '1000000') }}" class="form-control form-control-solid"></x-metronic.form-group></div>
+                        <div class="col-md-6"><x-metronic.form-group name="threshold_qty" label="Batas Toleransi Jumlah" help="Batas selisih jumlah barang yang memerlukan perhatian atau persetujuan lebih tinggi."><input type="number" step="1" min="0" name="threshold_qty" value="{{ old('threshold_qty', '10') }}" class="form-control form-control-solid"></x-metronic.form-group></div>
+                        <div class="col-md-6"><x-metronic.form-group name="threshold_value_display" label="Batas Toleransi Nilai Kerugian" help="Batas nilai rupiah dari selisih stok yang memerlukan persetujuan lebih tinggi."><div class="input-group input-group-solid"><span class="input-group-text">Rp</span><input type="text" value="{{ old('threshold_value', '1000000') }}" class="form-control" data-currency-input data-currency-target="#threshold_value"></div><input type="hidden" id="threshold_value" name="threshold_value" value="{{ old('threshold_value', '1000000') }}"></x-metronic.form-group></div>
                     </div>
                     <label class="form-check form-switch form-check-custom form-check-solid mb-3">
                         <input type="hidden" name="blind_count" value="0">
                         <input class="form-check-input" type="checkbox" name="blind_count" value="1" @checked(old('blind_count'))>
-                        <span class="form-check-label">Blind count: counter tidak melihat qty sistem</span>
+                        <span class="form-check-label"><strong>Sembunyikan Stok Sistem dari Petugas Penghitung</strong><span class="d-block text-muted fs-7">Petugas menghitung barang berdasarkan kondisi fisik tanpa melihat angka pada sistem.</span></span>
                     </label>
                     <label class="form-check form-switch form-check-custom form-check-solid mb-5">
                         <input type="hidden" name="freeze_stock" value="0">
                         <input class="form-check-input" type="checkbox" name="freeze_stock" value="1" @checked(old('freeze_stock'))>
-                        <span class="form-check-label">Tandai freeze stock saat counting</span>
+                        <span class="form-check-label"><strong>Bekukan Transaksi Stok Selama Penghitungan</strong><span class="d-block text-muted fs-7">Transaksi stok pada cakupan opname akan diblokir sementara agar jumlah tidak berubah selama penghitungan.</span></span>
                     </label>
                     <x-metronic.form-group name="notes" label="Catatan">
                         <textarea name="notes" rows="3" class="form-control form-control-solid">{{ old('notes') }}</textarea>
                     </x-metronic.form-group>
                     <div class="d-flex gap-2">
-                        <button name="action" value="draft" class="btn btn-light-primary">Simpan Draft</button>
-                        <button name="action" value="start" class="btn btn-primary">Buat Snapshot</button>
+                        <button name="action" value="draft" class="btn btn-light-primary">Simpan Rancangan</button>
+                        <button name="action" value="start" class="btn btn-primary" data-bs-toggle="tooltip" title="Menyimpan kondisi stok sistem saat ini sebagai angka pembanding awal opname.">Simpan Acuan Stok</button>
                     </div>
                 </form>
             </x-metronic.card>

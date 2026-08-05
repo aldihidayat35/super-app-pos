@@ -95,7 +95,7 @@ class StockOpnameService
             }
 
             $opname->forceFill(['status' => StockOpnameStatus::COUNTING, 'started_at' => now()])->save();
-            $this->history($opname, StockOpnameStatus::DRAFT, StockOpnameStatus::COUNTING, $actor, 'Snapshot stok dibuat dan counting dimulai.');
+            $this->history($opname, StockOpnameStatus::DRAFT, StockOpnameStatus::COUNTING, $actor, 'Acuan stok disimpan dan proses penghitungan dimulai.');
 
             return $opname->fresh(['items.product', 'workLocation']);
         });

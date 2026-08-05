@@ -33,10 +33,10 @@
     <x-metronic.page-title :title="$opname->number" description="Ringkasan status, scope, item, dan audit stok opname.">
         <x-slot:actions>
             @if($opname->status === \App\Enums\StockOpnameStatus::DRAFT)
-                <form method="POST" action="{{ route('warehouse.stock-opnames.start', $opname) }}" class="d-inline">@csrf<button class="btn btn-primary">Buat Snapshot</button></form>
+                <form method="POST" action="{{ route('warehouse.stock-opnames.start', $opname) }}" class="d-inline">@csrf<button class="btn btn-primary">Simpan Acuan Stok</button></form>
             @endif
-            @can('count', $opname)<a href="{{ route('warehouse.stock-opnames.count', $opname) }}" class="btn btn-light-primary">Counting</a>@endcan
-            <a href="{{ route('warehouse.stock-opnames.variance', $opname) }}" class="btn btn-light-info">Variance</a>
+            @can('count', $opname)<a href="{{ route('warehouse.stock-opnames.count', $opname) }}" class="btn btn-light-primary">Penghitungan</a>@endcan
+            <a href="{{ route('warehouse.stock-opnames.variance', $opname) }}" class="btn btn-light-info">Selisih Stok</a>
             <a href="{{ route('warehouse.stock-opnames.report', $opname) }}" class="btn btn-light-success">Laporan</a>
         </x-slot:actions>
     </x-metronic.page-title>
@@ -48,17 +48,17 @@
                 <div class="mb-3"><div class="text-muted">Gudang/Cabang</div><div class="fw-bold">{{ $opname->workLocation?->name }}</div></div>
                 <div class="mb-3"><div class="text-muted">Zona/Rak/Bin</div><div>{{ $opname->warehouseLocation?->full_code ?: 'Semua lokasi detail' }}</div></div>
                 <div class="mb-3"><div class="text-muted">Kategori</div><div>{{ $opname->category?->name ?: 'Semua kategori' }}</div></div>
-                <div class="mb-3"><div class="text-muted">PIC / Dibuat oleh</div><div>{{ $opname->pic?->name ?: '-' }} / {{ $opname->creator?->name ?: '-' }}</div></div>
-                <div class="mb-3"><div class="text-muted">Snapshot</div><div>{{ $opname->started_at?->format('d/m/Y H:i') ?: '-' }}</div></div>
+                <div class="mb-3"><div class="text-muted">PIC (Penanggung Jawab) / Dibuat oleh</div><div>{{ $opname->pic?->name ?: '-' }} / {{ $opname->creator?->name ?: '-' }}</div></div>
+                <div class="mb-3"><div class="text-muted">Acuan Stok <i class="ki-outline ki-information-5 fs-7" data-bs-toggle="tooltip" title="Waktu kondisi stok sistem disimpan sebagai angka pembanding awal opname."></i></div><div>{{ $opname->started_at?->format('d/m/Y H:i') ?: '-' }}</div></div>
                 <div class="mb-3"><div class="text-muted">Catatan</div><div>{{ $opname->notes ?: '-' }}</div></div>
             </x-metronic.card>
         </div>
         <div class="col-lg-8">
             <div class="row g-4 mb-6">
-                <div class="col-md-3"><x-metronic.card title="Item"><div class="fs-2 fw-bold">{{ $opname->items->count() }}</div></x-metronic.card></div>
-                <div class="col-md-3"><x-metronic.card title="Progress"><div class="fs-2 fw-bold">{{ $opname->countedProgress() }}</div></x-metronic.card></div>
-                <div class="col-md-3"><x-metronic.card title="Selisih Qty"><div class="fs-2 fw-bold">{{ qty($opname->total_difference_qty) }}</div></x-metronic.card></div>
-                <div class="col-md-3"><x-metronic.card title="Nilai Selisih"><div class="fs-5 fw-bold">{{ \App\Support\CurrencyFormatter::rupiah($opname->total_difference_value) }}</div></x-metronic.card></div>
+                <div class="col-md-3"><x-metronic.card title="Jumlah Item"><div class="fs-2 fw-bold">{{ $opname->items->count() }}</div><div class="text-muted fs-8">Jumlah produk/lokasi dalam cakupan.</div></x-metronic.card></div>
+                <div class="col-md-3"><x-metronic.card title="Kemajuan"><div class="fs-2 fw-bold">{{ $opname->countedProgress() }}</div><div class="text-muted fs-8">Item dihitung dibanding total item.</div></x-metronic.card></div>
+                <div class="col-md-3"><x-metronic.card title="Kuantitas Fisik"><div class="fs-2 fw-bold">{{ qty($opname->items->reduce(fn($carry, $item) => \App\Support\Decimal::add($carry, (string)($item->counted_qty ?? 0)), '0.0000')) }}</div><div class="text-muted fs-8">Total hasil fisik yang sudah dimasukkan.</div></x-metronic.card></div>
+                <div class="col-md-3"><x-metronic.card title="Nilai Selisih"><div class="fs-5 fw-bold">{{ \App\Support\CurrencyFormatter::rupiah($opname->total_difference_value) }}</div><div class="text-muted fs-8">Nilai selisih berdasarkan HPP saat acuan dibuat.</div></x-metronic.card></div>
             </div>
             <x-metronic.card title="Timeline Status">
                 <div class="timeline">

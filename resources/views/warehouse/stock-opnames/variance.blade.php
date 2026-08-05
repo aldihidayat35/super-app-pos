@@ -1,72 +1,73 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Variance Stok Opname - ' . config('app.name'))
-@section('page_title', 'Variance Stok Opname')
+@section('title', 'Selisih Stok Opname - ' . config('app.name'))
+@section('page_title', 'Selisih Stok Opname')
 
 @section('page_guide')
-    <x-metronic.page-guide id="warehouse-stock-opname-variance" title="Panduan Halaman Variance Stok Opname">
-        <x-slot:function>
-            <p>Halaman ini menampilkan perbandingan antara saldo sistem dan hasil fisik per item. Variance membantu approver menentukan apakah selisih masuk akal dan perlu approval tambahan.</p>
-        </x-slot:function>
-        <x-slot:workflow>
-            <ol><li>Halaman menampilkan kartu ringkasan dan tabel daftar selisih.</li><li>Setiap item menampilkan sistem, fisik, selisih, nilai, alasan, dan tingkat risiko.</li><li>Ekspor CSV tersedia untuk analisis offline.</li><li>Approval navigasi mengarah ke halaman approval.</li></ol>
-        </x-slot:workflow>
-        <x-slot:parts>
-            <ul><li><strong>Total Selisih Qty:</strong> jumlah total selisih.</li><li><strong>Nilai Selisih:</strong> total selisih moneter.</li><li><strong>Threshold Qty/Nilai:</strong> batas flagging.</li><li><strong>Approval Owner:</strong> apakah perlu approval.</li><li><strong>Peringatan Transaksi:</strong> item berubah setelah snapshot.</li><li><strong>Produk:</strong> SKU dan nama item.</li><li><strong>Lokasi:</strong> bin penyimpanan.</li><li><strong>Sistem/Fisik/Selisih:</strong> perbandingan qty.</li><li><strong>Nilai:</strong> estimasi nilai selisih.</li><li><strong>Alasan:</strong> kategori selisih dan catatan.</li><li><strong>Risiko:</strong> Normal, Approval tinggi, atau Review transaksi.</li><li><strong>Export CSV:</strong> mengunduh laporan variance.</li><li><strong>Approval:</strong> navigasi ke halaman approval.</li></ul>
-        </x-slot:parts>
-        <x-slot:impacts>
-            <p>Halaman ini hanya untuk review. Filter dan export tidak mengubah data. Keputusan approval ada di halaman approval terpisah.</p>
-        </x-slot:impacts>
-        <x-slot:operation>
-            <ol><li>Periksa ringkasan selisih dan threshold.</li><li>Scroll tabel untuk review per item.</li><li>Perhatikan kolom Risiko untuk item yang perlu perhatian.</li><li>Klik <strong>Export CSV</strong> untuk analisis offline.</li><li>Klik <strong>Approval</strong> untuk melanjutkan.</li></ol>
-        </x-slot:operation>
-        <x-slot:warnings>
-            <div class="alert alert-warning mb-0"><ul><li>Item dengan badge "Ada transaksi setelah snapshot" perlu review manual.</li><li>Risiko "Approval tinggi" berarti selisih melewati threshold.</li><li>Periksa sebelum lanjut ke approval.</li></ul></div>
-        </x-slot:warnings>
-        <x-slot:example>
-            <p>Terlihat Kopi Arabika sistem 100, fisik 97, selisih -3, nilai Rp 150.000. Risiko Normal. Namun Kopi Robusta sistem 50, fisik 40, selisih -10, nilai Rp 500.000. Risiko "Approval tinggi".</p>
-        </x-slot:example>
+    <x-metronic.page-guide id="warehouse-stock-opname-variance" title="Panduan Selisih Stok">
+        <x-slot:function><p>Membandingkan acuan stok sistem dengan hasil penghitungan fisik sebelum persetujuan diberikan.</p></x-slot:function>
+        <x-slot:workflow><ol><li>Periksa kartu ringkasan.</li><li>Utamakan item berwarna peringatan.</li><li>Buka Kartu Stok atau detail perubahan stok bila ada transaksi setelah acuan.</li><li>Lanjutkan ke Persetujuan setelah data diyakini benar.</li></ol></x-slot:workflow>
+        <x-slot:parts><ul><li><strong>Stok Sistem:</strong> jumlah ketika acuan stok disimpan.</li><li><strong>Jumlah Fisik:</strong> hasil hitung lapangan.</li><li><strong>Selisih:</strong> jumlah fisik dikurangi stok sistem.</li><li><strong>Transaksi Setelah Acuan:</strong> perubahan stok yang terjadi setelah penghitungan dimulai.</li></ul></x-slot:parts>
+        <x-slot:impacts><p>Halaman ini hanya untuk pemeriksaan. Stok belum berubah sampai opname disetujui dan diselesaikan.</p></x-slot:impacts>
+        <x-slot:operation><ol><li>Periksa seluruh item berselisih.</li><li>Periksa transaksi setelah acuan.</li><li>Unduh CSV bila diperlukan.</li><li>Klik Persetujuan untuk melanjutkan.</li></ol></x-slot:operation>
+        <x-slot:warnings><div class="alert alert-warning mb-0">Jangan menyetujui koreksi sebelum transaksi sah setelah acuan stok selesai diperiksa.</div></x-slot:warnings>
+        <x-slot:example><p>Stok sistem 100 dan jumlah fisik 97 berarti kurang 3. Jika ada penjualan setelah acuan, periksa Kartu Stok agar penjualan tersebut tidak ikut dikoreksi.</p></x-slot:example>
     </x-metronic.page-guide>
 @endsection
 
 @section('content')
-    <x-metronic.page-title :title="'Variance ' . $opname->number" description="Perbandingan saldo sistem dengan hasil fisik dan estimasi nilai selisih.">
+    <x-metronic.page-title :title="'Selisih Stok ' . $opname->number" description="Perbandingan acuan stok dengan hasil fisik dan nilai selisih berdasarkan HPP saat acuan dibuat.">
         <x-slot:actions>
-            <a href="{{ route('warehouse.stock-opnames.variance.export', $opname) }}" class="btn btn-light-success">Export CSV</a>
-            <a href="{{ route('warehouse.stock-opnames.approval', $opname) }}" class="btn btn-primary">Approval</a>
+            <a href="{{ route('warehouse.stock-opnames.variance.export', $opname) }}" class="btn btn-light-success"><i class="ki-outline ki-file-down"></i> Unduh CSV</a>
+            <a href="{{ route('warehouse.stock-opnames.approval', $opname) }}" class="btn btn-primary">Persetujuan</a>
         </x-slot:actions>
     </x-metronic.page-title>
 
-    @if($opname->items->contains('has_transaction_after_snapshot', true))
-        <div class="alert alert-warning">Ada transaksi setelah snapshot pada sebagian item. Review sebelum approval agar koreksi tidak menimpa transaksi valid.</div>
+    @if($summary['after_reference'] > 0)
+        <div class="alert alert-warning d-flex align-items-start gap-3"><i class="ki-outline ki-information-5 fs-2"></i><div><strong>Perlu pemeriksaan khusus.</strong><div>Ditemukan transaksi stok setelah opname dimulai pada beberapa produk. Periksa produk tersebut sebelum menyetujui hasil opname agar transaksi yang sah tidak ikut terkoreksi.</div></div></div>
+    @else
+        <div class="alert alert-success"><strong>Aman:</strong> tidak ditemukan transaksi stok setelah acuan pada cakupan opname ini.</div>
     @endif
 
     <div class="row g-4 mb-6">
-        <div class="col-md-3"><x-metronic.card title="Total Selisih Qty"><div class="fs-2 fw-bold">{{ qty($opname->total_difference_qty) }}</div></x-metronic.card></div>
-        <div class="col-md-3"><x-metronic.card title="Nilai Selisih"><div class="fs-5 fw-bold">{{ \App\Support\CurrencyFormatter::rupiah($opname->total_difference_value) }}</div></x-metronic.card></div>
-        <div class="col-md-3"><x-metronic.card title="Threshold Qty"><div class="fs-2 fw-bold">{{ qty($opname->threshold_qty) }}</div></x-metronic.card></div>
-        <div class="col-md-3"><x-metronic.card title="Approval Owner"><div class="fs-4 fw-bold">{{ $opname->requires_owner_approval ? 'Wajib' : 'Tidak' }}</div></x-metronic.card></div>
+        @foreach([['Item Aman', $summary['matching'], 'success'], ['Item Berselisih', $summary['different'], 'warning'], ['Melewati Batas Toleransi', $summary['above_threshold'], 'danger'], ['Transaksi Setelah Acuan', $summary['after_reference'], 'info']] as [$label, $value, $color])
+            <div class="col-6 col-xl-3"><x-metronic.card><div class="text-muted fs-7">{{ $label }}</div><div class="fs-2 fw-bold text-{{ $color }}">{{ $value }}</div></x-metronic.card></div>
+        @endforeach
     </div>
 
-    <x-metronic.card title="Daftar Selisih">
+    <x-metronic.card title="Daftar Selisih dan Pemeriksaan">
         <div class="table-responsive">
             <table class="table table-row-dashed align-middle">
-                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Lokasi</th><th class="text-end">Sistem</th><th class="text-end">Fisik</th><th class="text-end">Selisih</th><th class="text-end">Nilai</th><th>Alasan</th><th>Risiko</th></tr></thead>
+                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Lokasi</th><th class="text-end">Stok Sistem</th><th class="text-end">Jumlah Fisik</th><th class="text-end">Selisih</th><th class="text-end">Nilai Selisih</th><th>Alasan</th><th>Transaksi Setelah Acuan Stok</th></tr></thead>
                 <tbody>
                 @foreach($opname->items as $item)
                     @php
-                        $absQty = abs((float) $item->difference_qty);
-                        $risk = $item->has_transaction_after_snapshot ? 'Review transaksi' : ($absQty > (float) $opname->threshold_qty || (float) $item->estimated_value > (float) $opname->threshold_value ? 'Approval tinggi' : 'Normal');
+                        $absQty = ltrim((string) $item->difference_qty, '-');
+                        $absValue = ltrim((string) $item->estimated_value, '-');
+                        $above = \App\Support\Decimal::compare($absQty, (string) $opname->threshold_qty) > 0 || \App\Support\Decimal::compare($absValue, (string) $opname->threshold_value, 2) > 0;
+                        $mutation = $lastMutations->get($item->product_id.'|'.($item->warehouse_location_id ?? 'null'));
                     @endphp
-                    <tr>
-                        <td class="fw-bold">{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td>
+                    <tr class="{{ $above || $item->has_transaction_after_snapshot ? 'table-warning' : '' }}">
+                        <td class="fw-bold">{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div>@if($above)<span class="badge badge-light-danger mt-1">Melewati batas toleransi</span>@endif</td>
                         <td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td>
                         <td class="text-end">{{ qty($item->system_qty_snapshot) }}</td>
                         <td class="text-end">{{ $item->counted_qty === null ? '-' : qty($item->counted_qty) }}</td>
                         <td class="text-end fw-bold">{{ qty($item->difference_qty) }}</td>
                         <td class="text-end">{{ \App\Support\CurrencyFormatter::rupiah($item->estimated_value) }}</td>
                         <td>{{ $item->reason?->label() ?: '-' }}<div class="text-muted fs-8">{{ $item->note }}</div></td>
-                        <td><span class="badge badge-light-{{ $risk === 'Normal' ? 'success' : 'warning' }}">{{ $risk }}</span></td>
+                        <td>
+                            @if($item->has_transaction_after_snapshot)
+                                <span class="badge badge-light-warning mb-2">Perlu diperiksa</span>
+                                <div class="fs-8">Terakhir: {{ $mutation?->occurred_at?->format('d/m/Y H:i') ?: 'Waktu tidak tersedia' }}</div>
+                                <div class="text-muted fs-8">Referensi: {{ $mutation?->reference_no ?: '-' }}</div>
+                                <div class="d-flex gap-2 mt-2">
+                                    <a class="btn btn-sm btn-light-primary" href="{{ route('warehouse.stock-card.index', ['product_id' => $item->product_id, 'work_location_id' => $opname->work_location_id, 'warehouse_location_id' => $item->warehouse_location_id]) }}">Kartu Stok</a>
+                                    @if($mutation)<a class="btn btn-sm btn-light" href="{{ route('warehouse.stock-mutations.show', $mutation) }}">Detail</a>@endif
+                                </div>
+                            @else
+                                <span class="badge badge-light-success">Tidak ada</span>
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
                 </tbody>

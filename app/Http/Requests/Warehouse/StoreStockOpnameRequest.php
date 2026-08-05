@@ -74,7 +74,7 @@ class StoreStockOpnameRequest extends FormRequest
             if (! $hasStock) {
                 $validator->errors()->add(
                     'work_location_id',
-                    'Scope yang dipilih belum memiliki saldo stok. Simpan sebagai draft, pilih scope lain, atau masukkan stok melalui penerimaan barang/transfer stok sebelum membuat snapshot.',
+                    'Cakupan yang dipilih belum memiliki saldo stok. Simpan sebagai rancangan, pilih cakupan lain, atau masukkan stok melalui penerimaan barang/transfer stok sebelum menyimpan acuan stok.',
                 );
             }
         }];
@@ -87,11 +87,11 @@ class StoreStockOpnameRequest extends FormRequest
             'work_location_id' => 'gudang/cabang',
             'warehouse_location_id' => 'zona/rak/bin',
             'category_id' => 'kategori produk',
-            'pic_user_id' => 'PIC',
+            'pic_user_id' => 'PIC (Penanggung Jawab Opname)',
             'method' => 'metode',
             'scheduled_at' => 'tanggal opname',
-            'threshold_qty' => 'threshold qty',
-            'threshold_value' => 'threshold nilai',
+            'threshold_qty' => 'batas toleransi jumlah',
+            'threshold_value' => 'batas toleransi nilai kerugian',
             'notes' => 'catatan',
         ];
     }
