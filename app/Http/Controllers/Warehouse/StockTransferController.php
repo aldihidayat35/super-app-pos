@@ -16,8 +16,10 @@ use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Warehouse\StockTransferService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class StockTransferController extends Controller
 {
@@ -49,6 +51,41 @@ class StockTransferController extends Controller
         $transfer = $service->create($data, $request->user());
 
         return redirect()->route('warehouse.stock-transfers.show', $transfer)->with('notification', ['type' => 'success', 'message' => "Transfer {$transfer->number} berhasil disimpan."]);
+    }
+
+    public function locationOptions(Request $request): JsonResponse
+    {
+        $this->authorize('create', StockTransfer::class);
+
+        $validated = $request->validate([
+            'work_location_id' => ['required', 'integer', Rule::exists('work_locations', 'id')->where('is_active', true)],
+            'context' => ['required', Rule::in(['source', 'destination'])],
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+        $workLocationId = (int) $validated['work_location_id'];
+
+        if ($validated['context'] === 'source') {
+            $this->ensureLocationScope($request, $workLocationId);
+        }
+
+        $search = trim((string) ($validated['q'] ?? ''));
+        $locations = WarehouseLocation::query()
+            ->where('is_active', true)
+            ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $workLocationId))
+            ->when($search !== '', fn ($query) => $query->where(function ($inner) use ($search): void {
+                $inner->where('full_code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%");
+            }))
+            ->orderBy('full_code')
+            ->limit(100)
+            ->get(['id', 'full_code', 'name']);
+
+        return response()->json([
+            'results' => $locations->map(fn (WarehouseLocation $location): array => [
+                'id' => $location->id,
+                'text' => trim($location->full_code.' — '.$location->name, ' —'),
+            ])->values(),
+        ]);
     }
 
     public function show(StockTransfer $stockTransfer): View
@@ -182,11 +219,26 @@ class StockTransferController extends Controller
     /** @return array<string, mixed> */
     private function formData(Request $request): array
     {
+        $old = session()->getOldInput();
+        $selectedLocationIds = [
+            $old['source_warehouse_location_id'] ?? null,
+            $old['destination_warehouse_location_id'] ?? null,
+        ];
+        $oldItems = isset($old['items']) && is_array($old['items']) ? $old['items'] : [];
+        foreach ($oldItems as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $selectedLocationIds[] = $item['source_warehouse_location_id'] ?? null;
+            $selectedLocationIds[] = $item['destination_warehouse_location_id'] ?? null;
+        }
+        $selectedLocationIds = collect($selectedLocationIds)->filter()->map(fn ($id): int => (int) $id)->unique()->values();
+
         return [
             'workLocations' => WorkLocation::query()->whereIn('id', $request->user()?->permittedWorkLocationIds() ?? [])->where('is_active', true)->orderBy('name')->get(),
             'allWorkLocations' => WorkLocation::query()->where('is_active', true)->orderBy('type')->orderBy('name')->get(),
-            'warehouseLocations' => WarehouseLocation::query()->where('is_active', true)->orderBy('full_code')->limit(300)->get(),
             'products' => Product::query()->where('status', 'active')->with('baseUnit')->orderBy('name')->limit(200)->get(),
+            'selectedWarehouseLocations' => WarehouseLocation::query()->whereIn('id', $selectedLocationIds)->get()->keyBy('id'),
             'restockRequests' => RestockRequest::query()->where('status', 'approved')->with(['branch', 'sourceWarehouse', 'items.product'])->latest()->limit(50)->get(),
         ];
     }

@@ -39,6 +39,14 @@ class StockTransferService
                 throw ServiceException::validation('Sumber dan tujuan transfer tidak boleh sama.');
             }
 
+            $this->ensureBinBelongsToWorkLocation($data['source_warehouse_location_id'] ?? null, $source, 'Lokasi ambil default');
+            $this->ensureBinBelongsToWorkLocation($data['destination_warehouse_location_id'] ?? null, $destination, 'Lokasi tujuan default');
+
+            foreach ($data['items'] ?? [] as $itemData) {
+                $this->ensureBinBelongsToWorkLocation($itemData['source_warehouse_location_id'] ?? null, $source, 'Lokasi ambil item');
+                $this->ensureBinBelongsToWorkLocation($itemData['destination_warehouse_location_id'] ?? null, $destination, 'Lokasi tujuan item');
+            }
+
             $transfer = StockTransfer::query()->create([
                 'number' => $this->numbers->next('transfer', $source),
                 'restock_request_id' => $data['restock_request_id'] ?? null,
@@ -256,6 +264,7 @@ class StockTransferService
                 throw ServiceException::validation('Minimal satu item harus dikirim.');
             }
 
+            $from = $transfer->status;
             $transfer->forceFill([
                 'status' => StockTransferStatus::SHIPPED,
                 'shipper_by' => $actor->id,
@@ -266,7 +275,7 @@ class StockTransferService
                 'shipping_cost' => Decimal::normalize($data['shipping_cost'] ?? 0, 2),
                 'proof_path' => $data['proof_path'] ?? $transfer->proof_path,
             ])->save();
-            $this->history($transfer, StockTransferStatus::PACKING, StockTransferStatus::SHIPPED, $actor, 'Transfer dikirim.');
+            $this->history($transfer, $from, StockTransferStatus::SHIPPED, $actor, 'Transfer dikirim.');
 
             return $transfer->fresh(['items.product', 'sourceWorkLocation', 'destinationWorkLocation']);
         });
@@ -434,6 +443,23 @@ class StockTransferService
         $id = $item->destination_warehouse_location_id ?? $transfer->destination_warehouse_location_id;
 
         return $id ? WarehouseLocation::query()->with('warehouse')->findOrFail($id) : null;
+    }
+
+    private function ensureBinBelongsToWorkLocation(mixed $warehouseLocationId, WorkLocation $workLocation, string $label): void
+    {
+        if (! filled($warehouseLocationId)) {
+            return;
+        }
+
+        $belongs = WarehouseLocation::query()
+            ->whereKey((int) $warehouseLocationId)
+            ->where('is_active', true)
+            ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $workLocation->id))
+            ->exists();
+
+        if (! $belongs) {
+            throw ServiceException::validation("{$label} tidak sesuai dengan lokasi kerja {$workLocation->name}.");
+        }
     }
 
     private function allShippedAccounted(StockTransfer $transfer): bool

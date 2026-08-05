@@ -812,6 +812,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/stock-transfers/create', [StockTransferController::class, 'create'])
             ->middleware('permission:stock_transfers.create')
             ->name('stock-transfers.create');
+        Route::get('/stock-transfers/location-options', [StockTransferController::class, 'locationOptions'])
+            ->middleware('permission:stock_transfers.create')
+            ->name('stock-transfers.location-options');
         Route::post('/stock-transfers', [StockTransferController::class, 'store'])
             ->middleware('permission:stock_transfers.create')
             ->name('stock-transfers.store');
@@ -1182,6 +1185,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     Route::get('/warehouse/losses', [InventoryLossController::class, 'index'])
         ->middleware('permission:losses.view')
         ->name('warehouse.losses.index');
+    Route::get('/warehouse/losses/options', [InventoryLossController::class, 'options'])
+        ->middleware('permission:losses.create')
+        ->name('warehouse.losses.options');
     Route::post('/warehouse/losses', [InventoryLossController::class, 'store'])
         ->middleware('permission:losses.create')
         ->name('warehouse.losses.store');
