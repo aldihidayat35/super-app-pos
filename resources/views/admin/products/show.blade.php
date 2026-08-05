@@ -23,6 +23,17 @@
     </x-metronic.page-guide>
 @endsection
 
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.location.hash === '#audit' || new URLSearchParams(window.location.search).has('audit_page')) {
+        const trigger = document.getElementById('audit-tab');
+        if (trigger && window.bootstrap?.Tab) window.bootstrap.Tab.getOrCreateInstance(trigger).show();
+    }
+});
+</script>
+@endpush
+
 @section('content')
     <div class="row g-6">
         {{-- Left Column: Summary & Image --}}
@@ -558,50 +569,7 @@
 
                     {{-- Tab: Audit --}}
                     <div class="tab-pane fade" id="audit" role="tabpanel">
-                        @php
-                            $activities = \Spatie\Activitylog\Models\Activity::where('subject_type', App\Models\Product::class)
-                                ->where('subject_id', $product->id)
-                                ->with('causer')
-                                ->orderBy('created_at', 'desc')
-                                ->limit(20)
-                                ->get();
-                        @endphp
-                        @if($activities->isNotEmpty())
-                            <div class="table-responsive">
-                                <table class="table table-row-dashed align-middle fs-7">
-                                    <thead>
-                                        <tr class="text-muted fw-bold">
-                                            <th>Waktu</th>
-                                            <th>User</th>
-                                            <th>Aksi</th>
-                                            <th>Changes</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($activities as $activity)
-                                            <tr>
-                                                <td>{{ $activity->created_at?->format('d/m/Y H:i') }}</td>
-                                                <td>{{ $activity->causer?->name ?: 'System' }}</td>
-                                                <td>
-                                                    <span class="badge bg-light">{{ $activity->event }}</span>
-                                                </td>
-                                                <td class="text-muted">
-                                                    @if($activity->old_values && $activity->new_values)
-                                                        @foreach($activity->new_values as $key => $value)
-                                                            @if($activity->old_values[$key] !== $value)
-                                                                <div>{{ $key }}: {{ $activity->old_values[$key] ?? '-' }} → {{ $value }}</div>
-                                                            @endif
-                                                        @endforeach
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        @else
-                            <x-metronic.empty-state title="Belum ada audit log" description="Audit log akan tercatat saat produk diubah." />
-                        @endif
+                        @include('admin.products.partials.audit-timeline', ['activities' => $activities, 'auditRelations' => $auditRelations])
                     </div>
                 </div>
             </x-metronic.card>

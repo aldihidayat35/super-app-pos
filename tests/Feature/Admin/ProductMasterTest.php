@@ -5,14 +5,17 @@ namespace Tests\Feature\Admin;
 use App\Models\Product;
 use App\Models\ProductBrand;
 use App\Models\ProductCategory;
+use App\Models\ProductImage;
 use App\Models\ProductUnit;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\Product\ProductImageService;
 use App\Services\Product\UnitConversionService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -238,5 +241,61 @@ class ProductMasterTest extends TestCase
 
         $this->actingAs($viewer)->get(route('admin.products.index'))->assertOk();
         $this->actingAs($viewer)->get(route('admin.products.create'))->assertForbidden();
+    }
+
+    public function test_product_primary_photo_is_persisted_owned_and_audited(): void
+    {
+        $product = Product::factory()->create(['main_image_path' => 'products/old.jpg']);
+        $first = ProductImage::query()->create(['product_id' => $product->id, 'path' => 'products/old.jpg', 'sort_order' => 1, 'is_primary' => true]);
+        $second = ProductImage::query()->create(['product_id' => $product->id, 'path' => 'products/new.jpg', 'sort_order' => 2, 'is_primary' => false]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.products.images.primary', [$product, $second]))
+            ->assertOk()
+            ->assertJsonPath('image_id', $second->id)
+            ->assertJsonPath('message', 'Foto utama berhasil diperbarui.');
+
+        $this->assertFalse($first->fresh()->is_primary);
+        $this->assertTrue($second->fresh()->is_primary);
+        $this->assertSame('products/new.jpg', $product->fresh()->main_image_path);
+        $this->assertSame(1, ProductImage::query()->where('product_id', $product->id)->where('is_primary', true)->count());
+        $this->assertDatabaseHas('activity_log', ['subject_id' => $product->id, 'description' => 'product.photo.primary_changed']);
+
+        $otherProduct = Product::factory()->create();
+        $otherImage = ProductImage::query()->create(['product_id' => $otherProduct->id, 'path' => 'products/other.jpg']);
+        $this->patchJson(route('admin.products.images.primary', [$product, $otherImage]))->assertForbidden();
+    }
+
+    public function test_deleting_primary_photo_promotes_first_remaining_photo(): void
+    {
+        $product = Product::factory()->create(['main_image_path' => 'products/primary.jpg']);
+        $primary = ProductImage::query()->create(['product_id' => $product->id, 'path' => 'products/primary.jpg', 'sort_order' => 1, 'is_primary' => true]);
+        $replacement = ProductImage::query()->create(['product_id' => $product->id, 'path' => 'products/replacement.jpg', 'sort_order' => 2, 'is_primary' => false]);
+
+        app(ProductImageService::class)->remove($product, $primary, $this->admin);
+
+        $this->assertModelMissing($primary);
+        $this->assertTrue($replacement->fresh()->is_primary);
+        $this->assertSame('products/replacement.jpg', $product->fresh()->main_image_path);
+        $this->assertDatabaseHas('activity_log', ['subject_id' => $product->id, 'description' => 'product.photo.deleted']);
+    }
+
+    public function test_product_audit_tab_formats_actions_and_uses_pagination(): void
+    {
+        $product = Product::factory()->create();
+        activity()->causedBy($this->admin)->performedOn($product)->withProperties([
+            'old' => ['name' => 'Produk Lama'],
+            'attributes' => ['name' => 'Produk Baru'],
+        ])->log('product.updated');
+
+        $response = $this->actingAs($this->admin)->get(route('admin.products.show', $product));
+        $response->assertOk()
+            ->assertSee('Produk Diperbarui')
+            ->assertSee('Nama Produk')
+            ->assertSee('Produk Lama')
+            ->assertSee('Produk Baru')
+            ->assertDontSee('product.updated');
+
+        $this->assertSame(1, Activity::query()->where('subject_id', $product->id)->count());
     }
 }

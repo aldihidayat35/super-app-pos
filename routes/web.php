@@ -540,6 +540,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::patch('/products/{product}/deactivate', [ProductController::class, 'deactivate'])
             ->middleware('permission:products.update')
             ->name('products.deactivate');
+        Route::patch('/products/{product}/images/{productImage}/primary', [ProductController::class, 'setPrimaryImage'])
+            ->middleware('permission:products.update')
+            ->name('products.images.primary');
 
         Route::get('/parties/{type}/import', [PartyImportController::class, 'index'])
             ->middleware('permission:suppliers.import|customers.import')

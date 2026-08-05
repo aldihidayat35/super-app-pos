@@ -7,6 +7,13 @@ use Illuminate\Validation\Rule;
 
 class StoreProductPriceRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'branch_id' => $this->filled('branch_id') ? $this->input('branch_id') : null,
+        ]);
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->can('prices.update') ?? false;

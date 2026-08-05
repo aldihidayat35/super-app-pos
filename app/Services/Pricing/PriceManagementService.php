@@ -36,8 +36,12 @@ class PriceManagementService
                 'branch_id' => $data['branch_id'] ?? null,
                 'customer_category' => $data['customer_category'] ?? null,
                 'margin_method' => $data['margin_method'] ?? 'percent',
-                'minimum_margin_percent' => $data['minimum_margin_percent'] ?? 20,
-                'minimum_margin_amount' => $data['minimum_margin_amount'] ?? 0,
+                'minimum_margin_percent' => ($data['margin_method'] ?? 'percent') === 'percent'
+                    ? ($data['minimum_margin_percent'] ?? 20)
+                    : 0,
+                'minimum_margin_amount' => ($data['margin_method'] ?? 'percent') === 'nominal'
+                    ? ($data['minimum_margin_amount'] ?? 0)
+                    : 0,
                 'overpricing_tolerance_percent' => $data['overpricing_tolerance_percent'] ?? 100,
                 'max_discount_percent' => $data['max_discount_percent'] ?? 20,
                 'approval_threshold_amount' => $data['approval_threshold_amount'] ?? 1000000,

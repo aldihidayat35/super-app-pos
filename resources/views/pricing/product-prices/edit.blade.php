@@ -30,7 +30,7 @@
 
             @if($price->status !== App\Enums\ProductPriceStatus::DRAFT)
                 <x-metronic.card title="Akhiri Harga Lama" class="mt-6">
-                    <form method="POST" action="{{ route('pricing.product-prices.end', $price) }}">
+                    <form method="POST" action="{{ route('pricing.product-prices.end', $price) }}" id="end-product-price-{{ $price->id }}">
                         @csrf
                         <x-metronic.form-group name="ends_at" label="Tanggal Selesai" required>
                             <input type="date" name="ends_at" value="{{ old('ends_at', $price->ends_at?->toDateString() ?? now()->toDateString()) }}" class="form-control" required>
@@ -38,7 +38,7 @@
                         <x-metronic.form-group name="reason" label="Alasan" required>
                             <textarea name="reason" class="form-control" rows="3" required>{{ old('reason') }}</textarea>
                         </x-metronic.form-group>
-                        <button class="btn btn-light-danger w-100" data-confirm="Akhiri masa berlaku harga ini?" type="submit"><i class="ki-outline ki-calendar-remove fs-5"></i> Akhiri Masa Berlaku</button>
+                        <button class="btn btn-light-danger w-100" data-confirm data-confirm-form="end-product-price-{{ $price->id }}" data-confirm-title="Akhiri masa berlaku harga?" data-confirm-text="Harga tidak digunakan setelah tanggal selesai, tetapi historinya tetap tersimpan." data-confirm-button="Ya, akhiri" type="submit"><i class="ki-outline ki-calendar fs-5"></i> Akhiri Masa Berlaku</button>
                     </form>
                 </x-metronic.card>
             @endif

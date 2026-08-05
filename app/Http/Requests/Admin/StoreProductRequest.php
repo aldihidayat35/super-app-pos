@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Enums\ProductStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreProductRequest extends FormRequest
 {
@@ -38,7 +39,7 @@ class StoreProductRequest extends FormRequest
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'minimum_price' => ['nullable', 'numeric', 'min:0'],
             'main_image' => ['nullable', 'image', 'max:4096'],
-            'photos' => ['nullable', 'array'],
+            'photos' => ['nullable', 'array', 'max:3'],
             'photos.*' => ['nullable', 'image', 'max:4096'],
             'remove_photos' => ['nullable', 'string'],
             'barcodes' => ['nullable', 'array'],
@@ -51,5 +52,15 @@ class StoreProductRequest extends FormRequest
             'units.*.is_sellable' => ['boolean'],
             'units.*.is_active' => ['boolean'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $total = count((array) $this->file('photos', [])) + ($this->hasFile('main_image') ? 1 : 0);
+            if ($total > 3) {
+                $validator->errors()->add('photos', 'Jumlah foto produk maksimal 3 file.');
+            }
+        });
     }
 }

@@ -156,7 +156,7 @@
                                         <img src="{{ asset('storage/' . $product->main_image_path) }}" class="card-img-top" alt="{{ $product->name }}" style="height: 150px; object-fit: cover;">
                                         <div class="card-body p-2">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge bg-primary">Utama</span>
+                                                <span class="badge badge-light-primary primary-photo-badge"><i class="ki-outline ki-star fs-7 me-1"></i>Foto Utama</span>
                                                 <button type="button" class="btn btn-sm btn-danger btn-remove-photo" data-path="{{ $product->main_image_path }}" {{ $product->images->count() === 0 ? 'disabled' : '' }} title="Hapus foto">
                                                     <i class="ki-outline ki-trash fs-6"></i>
                                                 </button>
@@ -166,16 +166,16 @@
                                 </div>
                             @endif
                             @foreach($product->images as $image)
-                                <div class="col-md-3" data-image-id="{{ $image->id }}" data-is-primary="{{ $image->is_primary ? '1' : '0' }}" data-path="{{ $image->path }}">
+                                <div class="col-md-3" data-image-id="{{ $image->id }}" data-is-primary="{{ $image->is_primary ? '1' : '0' }}" data-path="{{ $image->path }}" data-primary-url="{{ route('admin.products.images.primary', [$product, $image]) }}">
                                     <div class="card h-100 {{ $image->is_primary ? 'border-primary border-2' : '' }}">
                                         <img src="{{ asset('storage/' . $image->path) }}" class="card-img-top" alt="{{ $image->alt_text ?? $product->name }}" style="height: 150px; object-fit: cover;">
                                         <div class="card-body p-2">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 @if($image->is_primary)
-                                                    <span class="badge bg-primary">Utama</span>
+                                                    <span class="badge badge-light-primary primary-photo-badge"><i class="ki-outline ki-star fs-7 me-1"></i>Foto Utama</span>
                                                 @else
-                                                    <button type="button" class="btn btn-sm btn-light btn-set-primary" data-id="{{ $image->id }}" data-path="{{ $image->path }}" title="Set sebagai foto utama">
-                                                        <i class="ki-outline ki-element-contents fs-6"></i>
+                                                    <button type="button" class="btn btn-sm btn-light-primary btn-set-primary" data-id="{{ $image->id }}" data-path="{{ $image->path }}" title="Jadikan foto utama">
+                                                        <i class="ki-outline ki-star fs-6 me-1"></i>Jadikan Utama
                                                     </button>
                                                 @endif
                                                 <button type="button" class="btn btn-sm btn-danger btn-remove-photo" data-id="{{ $image->id }}" data-path="{{ $image->path }}" title="Hapus foto">
@@ -412,57 +412,61 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Handle remove existing photo
+    // Hapus foto disimpan bersama form; foto utama yang dihapus akan diganti otomatis oleh backend.
     if (existingPhotos) {
-        existingPhotos.addEventListener('click', function(e) {
-            if (e.target.closest('.btn-remove-photo')) {
-                const btn = e.target.closest('.btn-remove-photo');
-                const card = btn.closest('[data-image-id]');
-                const imageId = card.dataset.imageId;
-                const isPrimary = card.dataset.isPrimary === '1';
-                const path = btn.dataset.path;
-
-                if (imageId !== 'main' && isPrimary && existingPhotos.querySelectorAll('[data-is-primary="1"]').length <= 1) {
-                    alert('Foto utama harus tetap ada. Set foto lain sebagai utama terlebih dahulu.');
-                    return;
-                }
-
-                if (confirm('Hapus foto ini?')) {
+        existingPhotos.addEventListener('click', async function(e) {
+            const removeButton = e.target.closest('.btn-remove-photo');
+            if (removeButton) {
+                const card = removeButton.closest('[data-image-id]');
+                const path = removeButton.dataset.path;
+                const confirmed = window.Swal
+                    ? (await window.Swal.fire({ title: 'Hapus foto?', text: 'Perubahan diterapkan setelah form produk disimpan.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, hapus', cancelButtonText: 'Batal' })).isConfirmed
+                    : window.confirm('Hapus foto ini?');
+                if (confirmed) {
                     card.remove();
                     removePaths.push(path);
-                    removePhotosInput.value = removePaths.join(',');
+                    removePhotosInput.value = [...new Set(removePaths)].join(',');
                 }
+                return;
             }
 
-            if (e.target.closest('.btn-set-primary')) {
-                const btn = e.target.closest('.btn-set-primary');
-                const card = btn.closest('[data-image-id]');
-                const imageId = btn.dataset.id;
+            const primaryButton = e.target.closest('.btn-set-primary');
+            if (!primaryButton) return;
+            const card = primaryButton.closest('[data-image-id]');
+            const url = card.dataset.primaryUrl;
+            if (!url) return;
 
-                // Remove primary from all
-                existingPhotos.querySelectorAll('[data-is-primary="1"]').forEach(el => {
-                    el.dataset.isPrimary = '0';
-                    el.querySelector('.card').classList.remove('border-primary', 'border-2');
-                    const badge = el.querySelector('.badge');
-                    if (badge) badge.remove();
-                    const newBtn = document.createElement('button');
-                    newBtn.type = 'button';
-                    newBtn.className = 'btn btn-sm btn-light btn-set-primary';
-                    newBtn.dataset.id = el.dataset.imageId;
-                    newBtn.dataset.path = el.querySelector('.btn-remove-photo').dataset.path;
-                    newBtn.title = 'Set sebagai foto utama';
-                    newBtn.innerHTML = '<i class="ki-outline ki-element-contents fs-6"></i>';
-                    el.querySelector('.card-body').querySelector('.d-flex').insertBefore(newBtn, el.querySelector('.card-body').querySelector('.btn-remove-photo'));
-                    newBtn.addEventListener('click', arguments.callee);
+            primaryButton.disabled = true;
+            primaryButton.setAttribute('data-kt-indicator', 'on');
+            try {
+                const response = await fetch(url, {
+                    method: 'PATCH',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
                 });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.message || 'Foto utama tidak dapat diperbarui.');
 
-                // Set this as primary
-                card.dataset.isPrimary = '1';
-                card.querySelector('.card').classList.add('border-primary', 'border-2');
-                const badge = document.createElement('span');
-                badge.className = 'badge bg-primary';
-                badge.textContent = 'Utama';
-                card.querySelector('.card-body').querySelector('.d-flex').insertBefore(badge, card.querySelector('.card-body').querySelector('.btn-set-primary'));
+                existingPhotos.querySelectorAll('[data-image-id]').forEach(photo => {
+                    const isSelected = photo === card;
+                    photo.dataset.isPrimary = isSelected ? '1' : '0';
+                    photo.querySelector('.card')?.classList.toggle('border-primary', isSelected);
+                    photo.querySelector('.card')?.classList.toggle('border-2', isSelected);
+                    photo.querySelector('.primary-photo-badge')?.remove();
+                    const actions = photo.querySelector('.card-body .d-flex');
+                    const oldButton = actions?.querySelector('.btn-set-primary');
+                    if (isSelected) {
+                        oldButton?.remove();
+                        actions?.insertAdjacentHTML('afterbegin', '<span class="badge badge-light-primary primary-photo-badge"><i class="ki-outline ki-star fs-7 me-1"></i>Foto Utama</span>');
+                    } else if (!oldButton && photo.dataset.primaryUrl) {
+                        actions?.insertAdjacentHTML('afterbegin', '<button type="button" class="btn btn-sm btn-light-primary btn-set-primary" title="Jadikan foto utama"><i class="ki-outline ki-star fs-6 me-1"></i>Jadikan Utama</button>');
+                    }
+                });
+                existingPhotos.prepend(card);
+                window.Swal?.fire({ icon: 'success', title: 'Berhasil', text: payload.message, timer: 1800, showConfirmButton: false });
+            } catch (error) {
+                primaryButton.disabled = false;
+                primaryButton.removeAttribute('data-kt-indicator');
+                window.Swal ? window.Swal.fire('Gagal', error.message, 'error') : alert(error.message);
             }
         });
     }

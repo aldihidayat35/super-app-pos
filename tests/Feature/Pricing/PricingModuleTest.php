@@ -368,6 +368,53 @@ class PricingModuleTest extends TestCase
         $this->assertDatabaseCount('customer_price_overrides', 1);
     }
 
+    public function test_price_rule_stores_only_margin_value_for_selected_method_and_global_branch(): void
+    {
+        $this->actingAs($this->admin)->post(route('pricing.rules.store'), [
+            'name' => 'Margin Persentase Global',
+            'channel' => 'retail',
+            'branch_id' => '',
+            'margin_method' => 'percent',
+            'minimum_margin_percent' => '15.50',
+            'minimum_margin_amount' => '999999.00',
+            'priority' => 10,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $percentRule = PriceRule::query()->where('name', 'Margin Persentase Global')->firstOrFail();
+        $this->assertNull($percentRule->branch_id);
+        $this->assertSame('15.50', $percentRule->minimum_margin_percent);
+        $this->assertSame('0.00', $percentRule->minimum_margin_amount);
+
+        $this->actingAs($this->admin)->post(route('pricing.rules.store'), [
+            'name' => 'Margin Nominal',
+            'channel' => 'retail',
+            'margin_method' => 'nominal',
+            'minimum_margin_percent' => '88.00',
+            'minimum_margin_amount' => '25000.00',
+            'priority' => 11,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $nominalRule = PriceRule::query()->where('name', 'Margin Nominal')->firstOrFail();
+        $this->assertSame('0.00', $nominalRule->minimum_margin_percent);
+        $this->assertSame('25000.00', $nominalRule->minimum_margin_amount);
+    }
+
+    public function test_price_rule_rejects_missing_active_margin_and_product_picker_uses_synchronized_events(): void
+    {
+        $this->actingAs($this->admin)->post(route('pricing.rules.store'), [
+            'name' => 'Margin Tidak Lengkap',
+            'channel' => 'retail',
+            'margin_method' => 'nominal',
+            'minimum_margin_amount' => '',
+        ])->assertSessionHasErrors('minimum_margin_amount');
+
+        $response = $this->get(route('pricing.product-prices.index'));
+        $response->assertOk()
+            ->assertSee("new Event('change', { bubbles: true })", false)
+            ->assertSee('Belum ada produk dipilih')
+            ->assertSee('data-allow-clear="true"', false);
+    }
+
     private function product(string $costPrice = '10000.00', ?Unit $baseUnit = null): Product
     {
         return Product::factory()->create([

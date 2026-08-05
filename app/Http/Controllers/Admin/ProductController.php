@@ -5,23 +5,29 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\ProductStatus;
 use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SetPrimaryProductImageRequest;
 use App\Http\Requests\Admin\StoreProductRequest;
 use App\Http\Requests\Admin\UpdateProductRequest;
 use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\ProductBrand;
 use App\Models\ProductCategory;
+use App\Models\ProductImage;
 use App\Models\Stock;
 use App\Models\Unit;
 use App\Models\Warehouse;
+use App\Services\Product\ProductImageService;
 use App\Services\Product\ProductSkuService;
 use App\Services\Product\UnitConversionService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductController extends Controller
@@ -72,10 +78,10 @@ class ProductController extends Controller
         ]), $conversion->defaultUnitsPayload((int) $baseUnit?->id)));
     }
 
-    public function store(StoreProductRequest $request, ProductSkuService $skuService, UnitConversionService $conversion): RedirectResponse
+    public function store(StoreProductRequest $request, ProductSkuService $skuService, UnitConversionService $conversion, ProductImageService $imageService): RedirectResponse
     {
         try {
-            $product = DB::transaction(function () use ($request, $skuService, $conversion): Product {
+            $product = DB::transaction(function () use ($request, $skuService, $conversion, $imageService): Product {
                 $data = $this->productData($request->validated());
                 $data['sku'] = $data['sku'] ?: $skuService->generate();
                 $conversion->assertValidUnitPayload($request->validated('units'), (int) $data['base_unit_id']);
@@ -83,8 +89,10 @@ class ProductController extends Controller
                 $product = Product::query()->create($data);
                 $conversion->syncProductUnits($product, $request->validated('units'));
                 $this->syncBarcodes($product, $request->validated('barcodes', []));
-                $this->syncPhotos($product, $request);
-                activity()->causedBy($request->user())->performedOn($product)->log('product.created');
+                $this->syncPhotos($product, $request, $imageService);
+                activity()->causedBy($request->user())->performedOn($product)->withProperties([
+                    'attributes' => $product->only(['sku', 'name', 'category_id', 'brand_id', 'base_unit_id', 'status', 'cost_price', 'minimum_price']),
+                ])->log('product.created');
 
                 return $product;
             });
@@ -121,21 +129,39 @@ class ProductController extends Controller
             ')
             ->first();
 
-        return view('admin.products.show', compact('product', 'stockSummary'));
+        $activities = Activity::query()
+            ->where('subject_type', Product::class)
+            ->where('subject_id', $product->id)
+            ->with('causer')
+            ->latest('created_at')
+            ->paginate(10, ['*'], 'audit_page')
+            ->withQueryString()
+            ->fragment('audit');
+
+        $auditRelations = [
+            'category_id' => ProductCategory::query()->pluck('name', 'id')->all(),
+            'subcategory_id' => ProductCategory::query()->pluck('name', 'id')->all(),
+            'brand_id' => ProductBrand::query()->pluck('name', 'id')->all(),
+            'base_unit_id' => Unit::query()->pluck('name', 'id')->all(),
+            'default_warehouse_id' => Warehouse::query()->pluck('name', 'id')->all(),
+        ];
+
+        return view('admin.products.show', compact('product', 'stockSummary', 'activities', 'auditRelations'));
     }
 
     public function edit(Product $product): View
     {
         $this->authorize('update', $product);
 
-        return view('admin.products.edit', $this->formData($product->load(['units', 'barcodes'])));
+        return view('admin.products.edit', $this->formData($product->load(['units', 'barcodes', 'images' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('sort_order')])));
     }
 
-    public function update(UpdateProductRequest $request, Product $product, UnitConversionService $conversion): RedirectResponse
+    public function update(UpdateProductRequest $request, Product $product, UnitConversionService $conversion, ProductImageService $imageService): RedirectResponse
     {
         try {
-            DB::transaction(function () use ($request, $product, $conversion): void {
+            DB::transaction(function () use ($request, $product, $conversion, $imageService): void {
                 $data = $this->productData($request->validated());
+                $before = $product->getAttributes();
                 $conversion->assertValidUnitPayload($request->validated('units'), (int) $data['base_unit_id']);
 
                 if ($product->has_transactions && $product->sku !== $data['sku']) {
@@ -143,10 +169,16 @@ class ProductController extends Controller
                 }
 
                 $product->fill($data)->save();
+                $changedKeys = array_values(array_diff(array_keys($product->getChanges()), ['updated_at']));
+                $oldValues = collect($before)->only($changedKeys)->all();
+                $newValues = collect($product->getAttributes())->only($changedKeys)->all();
                 $conversion->syncProductUnits($product, $request->validated('units'));
                 $this->syncBarcodes($product, $request->validated('barcodes', []));
-                $this->syncPhotos($product, $request);
-                activity()->causedBy($request->user())->performedOn($product)->log('product.updated');
+                $this->syncPhotos($product, $request, $imageService);
+                activity()->causedBy($request->user())->performedOn($product)->withProperties([
+                    'old' => $oldValues,
+                    'attributes' => $newValues,
+                ])->log('product.updated');
             });
         } catch (ServiceException $exception) {
             throw ValidationException::withMessages(['units' => $exception->getMessage()]);
@@ -159,7 +191,10 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
         $product->forceFill(['status' => ProductStatus::INACTIVE])->save();
-        activity()->causedBy($request->user())->performedOn($product)->log('product.deactivated');
+        activity()->causedBy($request->user())->performedOn($product)->withProperties([
+            'old' => ['status' => ProductStatus::ACTIVE->value],
+            'attributes' => ['status' => ProductStatus::INACTIVE->value],
+        ])->log('product.deactivated');
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Produk berhasil dinonaktifkan.']);
     }
@@ -256,36 +291,41 @@ class ProductController extends Controller
         ProductBarcode::query()->where('product_id', $product->id)->whereNotIn('id', $keptIds)->delete();
     }
 
-    private function syncPhotos(Product $product, Request $request): void
+    public function setPrimaryImage(SetPrimaryProductImageRequest $request, Product $product, ProductImage $productImage, ProductImageService $service): JsonResponse
     {
-        if ($request->hasFile('main_image') && $request->file('main_image')?->isValid()) {
-            $path = $request->file('main_image')?->store('products', 'public');
+        $selected = $service->setPrimary($product, $productImage, $request->user());
 
-            if ($path) {
-                $product->forceFill(['main_image_path' => $path])->save();
-                $this->syncPrimaryImage($product, $path);
+        return response()->json([
+            'message' => 'Foto utama berhasil diperbarui.',
+            'image_id' => $selected->id,
+            'path' => $selected->path,
+        ]);
+    }
+
+    private function syncPhotos(Product $product, Request $request, ProductImageService $imageService): void
+    {
+        if ($request->hasFile('main_image')) {
+            $mainImage = $request->file('main_image');
+            if ($mainImage instanceof UploadedFile && $mainImage->isValid()) {
+                $path = $mainImage->store('products', 'public');
+                $imageService->add($product, $path, $request->user(), true);
             }
         }
 
         // Remove photos by path
         if ($request->input('remove_photos')) {
-            $paths = array_filter(array_map('trim', explode(',', $request->input('remove_photos'))));
+            $paths = array_filter(array_map('trim', explode(',', (string) $request->input('remove_photos'))));
             foreach ($paths as $path) {
-                if (empty($path)) {
-                    continue;
-                }
-
                 // Try to find and delete from product_images
                 $image = $product->images()->where('path', $path)->first();
                 if ($image) {
-                    $image->delete();
+                    $imageService->remove($product, $image, $request->user());
                     Storage::disk('public')->delete($path);
-                }
-
-                // Also check main_image_path
-                if ($product->main_image_path === $path) {
+                } elseif ($product->main_image_path === $path) {
+                    // Dukungan untuk foto utama lama yang belum mempunyai baris product_images.
                     $product->main_image_path = null;
                     $product->save();
+                    Storage::disk('public')->delete($path);
                 }
             }
         }
@@ -294,7 +334,7 @@ class ProductController extends Controller
         if ($request->hasFile('photos')) {
             $files = $request->file('photos');
             $existingCount = $product->images()->count();
-            $maxPhotos = 10;
+            $maxPhotos = 3;
 
             foreach ($files as $index => $file) {
                 if ($existingCount + $index >= $maxPhotos) {
@@ -306,30 +346,9 @@ class ProductController extends Controller
                 }
 
                 $path = $file->store('products', 'public');
-                $product->images()->create([
-                    'path' => $path,
-                    'alt_text' => $product->name,
-                    'sort_order' => $product->images()->max('sort_order') ?? 0 + $index + 1,
-                    'is_primary' => $index === 0 && $product->images->count() === 0,
-                ]);
-            }
-
-            // Ensure at least one primary image exists
-            $hasPrimary = $product->images()->where('is_primary', true)->exists();
-            if (! $hasPrimary && $product->images()->count() > 0) {
-                $product->images()->orderBy('sort_order')->first()->update(['is_primary' => true]);
+                $imageService->add($product, $path, $request->user());
             }
         }
-    }
-
-    private function syncPrimaryImage(Product $product, ?string $path): void
-    {
-        if (! $path) {
-            return;
-        }
-
-        $product->images()->update(['is_primary' => false]);
-        $product->images()->create(['path' => $path, 'alt_text' => $product->name, 'is_primary' => true]);
     }
 
     /**

@@ -46,7 +46,34 @@
 
         <div class="table-responsive">
             <table class="table table-row-dashed align-middle">
-                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Lokasi</th><th>On Hand</th><th>Reserved</th><th>Rusak</th><th>Available</th><th>Min/Safety</th><th>Nilai HPP</th><th class="text-end">Aksi</th></tr></thead>
+                <thead>
+                    <tr class="text-muted fw-bold text-uppercase fs-7">
+                        <th>Produk</th>
+                        <th>Lokasi</th>
+                        <th>On Hand</th>
+                        <th>Reserved</th>
+                        <th>Rusak</th>
+                        <th>Available</th>
+                        <th>Min/Safety</th>
+                        <th>
+                            <span class="d-inline-flex align-items-center gap-1">
+                                Nilai HPP
+                                <button
+                                    type="button"
+                                    class="btn btn-icon btn-sm h-20px w-20px p-0 text-gray-500 text-hover-primary"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-trigger="hover focus click"
+                                    data-bs-placement="top"
+                                    title="Nilai HPP adalah total nilai modal persediaan pada baris lokasi ini, bukan harga jual dan bukan HPP per unit. Secara umum nilainya berasal dari jumlah stok fisik dikali HPP per unit produk. Nilai Rp0 dapat berarti HPP produk masih nol atau nilai persediaan belum disinkronkan oleh proses stok."
+                                    aria-label="Penjelasan Nilai HPP"
+                                >
+                                    <i class="ki-outline ki-information-5 fs-7"></i>
+                                </button>
+                            </span>
+                        </th>
+                        <th class="text-end">Aksi</th>
+                    </tr>
+                </thead>
                 <tbody>
                 @forelse ($stocks as $stock)
                     <tr>
