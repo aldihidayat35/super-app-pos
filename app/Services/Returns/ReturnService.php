@@ -11,6 +11,7 @@ use App\Models\InventoryLoss;
 use App\Models\Product;
 use App\Models\ReturnDocument;
 use App\Models\ReturnItem;
+use App\Models\Stock;
 use App\Models\User;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
@@ -274,15 +275,22 @@ class ReturnService
         return DB::transaction(function () use ($data, $actor): InventoryLoss {
             $workLocation = WorkLocation::query()->findOrFail($data['work_location_id']);
             $product = Product::query()->findOrFail($data['product_id']);
+            $warehouseLocation = filled($data['warehouse_location_id'] ?? null)
+                ? WarehouseLocation::query()->with('warehouse')->findOrFail($data['warehouse_location_id'])
+                : null;
+            if ($warehouseLocation !== null && (int) $warehouseLocation->warehouse?->work_location_id !== (int) $workLocation->id) {
+                throw ServiceException::validation('Zona/rak/bin tidak sesuai dengan lokasi kerja yang dipilih.');
+            }
             $quantity = Decimal::normalize($data['quantity']);
-            $unitCost = Decimal::normalize($data['unit_cost_snapshot'] ?? $product->cost_price, 2);
+            // Snapshot HPP loss selalu berasal dari master produk, bukan nilai kiriman browser.
+            $unitCost = Decimal::normalize((string) $product->cost_price, 2);
             $lossValue = Decimal::mul($quantity, $unitCost);
             $needsApproval = Decimal::compare($lossValue, self::APPROVAL_THRESHOLD, 2) > 0;
 
             $loss = InventoryLoss::query()->create([
                 'number' => $this->numbers->next('loss', $workLocation),
                 'work_location_id' => $workLocation->id,
-                'warehouse_location_id' => $data['warehouse_location_id'] ?? null,
+                'warehouse_location_id' => $warehouseLocation?->id,
                 'product_id' => $product->id,
                 'reported_by' => $actor->id,
                 'loss_type' => $data['loss_type'],
@@ -326,6 +334,23 @@ class ReturnService
 
     private function postLossMutation(InventoryLoss $loss, User $actor): void
     {
+        $stock = Stock::query()
+            ->where('product_id', $loss->product_id)
+            ->where('work_location_id', $loss->work_location_id)
+            ->when($loss->warehouse_location_id === null, fn ($query) => $query->whereNull('warehouse_location_id'), fn ($query) => $query->where('warehouse_location_id', $loss->warehouse_location_id))
+            ->lockForUpdate()
+            ->first();
+        $available = $stock instanceof Stock ? $stock->available_quantity : '0.0000';
+        if (Decimal::compare($available, (string) $loss->quantity) < 0) {
+            $shortage = Decimal::sub((string) $loss->quantity, $available);
+            $location = $loss->warehouseLocation?->full_code ?: $loss->workLocation?->name ?: 'lokasi yang dipilih';
+            throw ServiceException::validation(
+                'Persetujuan tidak dapat diproses. Stok tersedia produk '.$loss->product?->name.' di '.$location
+                .' adalah '.qty($available).' unit, sedangkan jumlah yang akan diproses '.qty($loss->quantity)
+                .' unit. Kekurangan '.qty($shortage).' unit.'
+            );
+        }
+
         $warehouseLocation = $loss->warehouseLocation;
         $reference = ['type' => 'inventory_loss', 'id' => $loss->id, 'no' => $loss->number];
         $reason = 'Loss tracking: '.$loss->loss_type.' — '.$loss->reason;

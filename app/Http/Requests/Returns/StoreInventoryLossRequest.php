@@ -31,4 +31,18 @@ class StoreInventoryLossRequest extends FormRequest
             'reason' => ['nullable', 'string', 'max:1000'],
         ];
     }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'work_location_id' => 'lokasi kerja',
+            'warehouse_location_id' => 'zona/rak/bin',
+            'product_id' => 'produk',
+            'loss_type' => 'jenis kerugian',
+            'disposition' => 'dampak ke stok',
+            'quantity' => 'jumlah barang terdampak',
+            'reason' => 'penyebab atau catatan',
+        ];
+    }
 }
