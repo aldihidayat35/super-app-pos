@@ -178,14 +178,19 @@ class GoodsReceiptService
             }
 
             $received = Decimal::normalize($itemData['quantity_received']);
-            $accepted = Decimal::normalize($itemData['quantity_accepted'] ?? 0);
             $rejected = Decimal::normalize($itemData['quantity_rejected'] ?? 0);
             $damaged = Decimal::normalize($itemData['quantity_damaged'] ?? 0);
             $returned = Decimal::normalize($itemData['quantity_returned_to_supplier'] ?? 0);
-            $qcTotal = Decimal::add(Decimal::add($accepted, $rejected), Decimal::add($damaged, $returned));
+            $nonAcceptedTotal = Decimal::add($rejected, Decimal::add($damaged, $returned));
+            $accepted = Decimal::sub($received, $nonAcceptedTotal);
 
-            if (Decimal::compare($qcTotal, $received) !== 0) {
-                throw ServiceException::validation("Total QC produk {$poItem->product_sku_snapshot} harus sama dengan qty datang.");
+            if (Decimal::compare($accepted, '0') < 0) {
+                throw ServiceException::validation("Jumlah ditolak, rusak, dan retur supplier untuk produk {$poItem->product_sku_snapshot} melebihi jumlah barang datang.");
+            }
+
+            if (array_key_exists('quantity_accepted', $itemData)
+                && Decimal::compare(Decimal::normalize($itemData['quantity_accepted']), $accepted) !== 0) {
+                throw ServiceException::validation("Jumlah barang diterima baik untuk produk {$poItem->product_sku_snapshot} tidak sesuai dengan pembagian hasil pemeriksaan.");
             }
 
             $outstanding = Decimal::sub((string) $poItem->quantity_ordered, (string) $poItem->quantity_received);
