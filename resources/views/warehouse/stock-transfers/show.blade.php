@@ -37,6 +37,77 @@
 @endsection
 
 @section('content')
+    @php
+        $stages = [
+            ['status' => 'draft', 'label' => 'Rancangan'],
+            ['status' => 'pending_approval', 'label' => 'Menunggu Persetujuan'],
+            ['status' => 'approved', 'label' => 'Disetujui'],
+            ['status' => 'packing', 'label' => 'Pengambilan & Pengemasan'],
+            ['status' => 'shipped', 'label' => 'Dikirim'],
+            ['status' => 'received', 'label' => 'Penerimaan'],
+            ['status' => 'completed', 'label' => 'Selesai'],
+        ];
+        $stageIndex = match($transfer->status->value) {
+            'draft' => 0, 'pending_approval' => 1, 'approved' => 2, 'packing' => 3,
+            'shipped' => 4, 'partially_received', 'fully_received' => 5, 'completed' => 6,
+            default => -1,
+        };
+        $nextStep = match($transfer->status->value) {
+            'draft' => 'Periksa item lalu ajukan dokumen untuk persetujuan.',
+            'pending_approval' => 'Menunggu pemeriksaan dan persetujuan Kepala Gudang.',
+            'approved' => 'Stok sumber sudah dialokasikan. Lanjutkan ke pengambilan dan pengemasan.',
+            'packing' => 'Selesaikan jumlah yang berhasil diambil, lalu kirim barang.',
+            'shipped' => 'Barang sedang dalam perjalanan dan menunggu konfirmasi penerimaan tujuan.',
+            'partially_received' => 'Masih ada barang yang belum dipertanggungjawabkan. Lanjutkan penerimaan berikutnya.',
+            'fully_received' => 'Seluruh barang sudah dipertanggungjawabkan. Transfer dapat diselesaikan.',
+            'completed' => 'Transfer telah selesai dan tidak memerlukan tindakan lanjutan.',
+            'cancelled' => 'Transfer dibatalkan. Tidak ada tindakan lanjutan pada dokumen ini.',
+            default => 'Periksa status dokumen sebelum melanjutkan.',
+        };
+        $hasDamaged = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare((string)$item->quantity_damaged, '0') > 0);
+        $hasDiscrepancy = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare((string)$item->quantity_discrepancy, '0') > 0);
+        $hasTransit = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare($item->inTransitQuantity(), '0') > 0);
+        $hasShort = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare((string)$item->quantity_short, '0') > 0);
+    @endphp
+
+    <x-metronic.card title="Perjalanan Transfer" class="mb-5">
+        <div class="d-flex flex-column flex-lg-row align-items-stretch gap-2">
+            @foreach($stages as $index => $stage)
+                @php
+                    $cancelled = $transfer->status->value === 'cancelled';
+                    $complete = !$cancelled && $index < $stageIndex;
+                    $active = !$cancelled && $index === $stageIndex;
+                @endphp
+                <div class="flex-fill d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 {{ $cancelled ? 'bg-light-danger text-danger' : ($complete ? 'bg-success text-white' : ($active ? 'bg-primary text-white' : 'bg-light text-muted')) }}" style="width:34px;height:34px">
+                        <i class="ki-outline {{ $cancelled ? 'ki-cross' : ($complete ? 'ki-check' : 'ki-right') }} fs-5"></i>
+                    </div>
+                    <div class="fs-8 fw-semibold {{ $active ? 'text-primary' : ($complete ? 'text-success' : 'text-muted') }}">{{ $stage['label'] }}</div>
+                    @if(!$loop->last)<div class="d-none d-lg-block flex-grow-1 border-top border-2 {{ $complete ? 'border-success' : 'border-gray-300' }}"></div>@endif
+                </div>
+            @endforeach
+        </div>
+        @if($transfer->status->value === 'cancelled')<div class="alert alert-danger mt-4 mb-0">Dokumen ini telah dibatalkan.</div>@endif
+    </x-metronic.card>
+
+    <div class="row g-5 mb-5">
+        <div class="col-lg-5"><x-metronic.card title="Langkah Berikutnya" class="h-100"><div class="d-flex gap-3"><i class="ki-outline ki-route fs-2 text-primary"></i><div class="text-gray-800">{{ $nextStep }}</div></div></x-metronic.card></div>
+        <div class="col-lg-7">
+            <x-metronic.card title="Perhatian Operasional" class="h-100">
+                @if(!$hasDamaged && !$hasDiscrepancy && !$hasTransit && !$hasShort)
+                    <div class="alert alert-success mb-0">Tidak ada kerusakan, selisih pengiriman, kekurangan pengambilan, atau barang dalam perjalanan yang perlu ditindaklanjuti.</div>
+                @else
+                    <div class="d-flex flex-wrap gap-2">
+                        @if($hasDamaged)<span class="badge badge-light-danger">Ada barang rusak</span>@endif
+                        @if($hasDiscrepancy)<span class="badge badge-light-danger">Ada selisih pengiriman</span>@endif
+                        @if($hasTransit)<span class="badge badge-light-warning">Masih ada barang dalam perjalanan</span>@endif
+                        @if($hasShort)<span class="badge badge-light-warning">Jumlah diambil kurang dari yang disetujui</span>@endif
+                    </div>
+                @endif
+            </x-metronic.card>
+        </div>
+    </div>
+
     <div class="row g-5">
         <div class="col-lg-8">
             <x-metronic.card title="{{ $transfer->number }}">
@@ -52,8 +123,8 @@
                 </div>
                 <div class="table-responsive">
                     <table class="table table-row-dashed align-middle">
-                        <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Request</th><th>Approved</th><th>Picked/Short</th><th>Shipped</th><th>Received</th><th>Rusak</th><th>Discrepancy</th><th>In Transit</th></tr></thead>
-                        <tbody>@foreach($transfer->items as $item)<tr><td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td><td>{{ qty($item->quantity_requested) }}</td><td>{{ qty($item->quantity_approved) }}</td><td>{{ qty($item->quantity_picked) }} / {{ qty($item->quantity_short) }}</td><td>{{ qty($item->quantity_shipped) }}</td><td>{{ qty($item->quantity_received) }}</td><td>{{ qty($item->quantity_damaged) }}</td><td>{{ qty($item->quantity_discrepancy) }}</td><td class="fw-bold">{{ qty($item->inTransitQuantity()) }}</td></tr>@endforeach</tbody>
+                        <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Diminta</th><th>Disetujui</th><th>Diambil/Kurang</th><th>Dikirim</th><th>Diterima</th><th>Rusak</th><th>Selisih Pengiriman</th><th>Dalam Perjalanan</th></tr></thead>
+                        <tbody>@foreach($transfer->items as $item)<tr><td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td><td>{{ qty($item->quantity_requested) }}</td><td>{{ qty($item->quantity_approved) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_short, '0') > 0 ? 'text-warning fw-bold' : '' }}">{{ qty($item->quantity_picked) }} / {{ qty($item->quantity_short) }}</td><td>{{ qty($item->quantity_shipped) }}</td><td>{{ qty($item->quantity_received) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_damaged, '0') > 0 ? 'text-danger fw-bold' : '' }}">{{ qty($item->quantity_damaged) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_discrepancy, '0') > 0 ? 'text-danger fw-bold' : '' }}">{{ qty($item->quantity_discrepancy) }}</td><td class="{{ \App\Support\Decimal::compare($item->inTransitQuantity(), '0') > 0 ? 'text-warning fw-bold' : 'fw-bold' }}">{{ qty($item->inTransitQuantity()) }}</td></tr>@endforeach</tbody>
                     </table>
                 </div>
             </x-metronic.card>
@@ -66,14 +137,14 @@
             <x-metronic.card title="Aksi Dokumen">
                 <div class="d-grid gap-3">
                     @can('approve', $transfer)
-                        <form method="POST" action="{{ route('warehouse.stock-transfers.approve', $transfer) }}">@csrf @foreach($transfer->items as $item)<input type="hidden" name="items[{{ $item->id }}][quantity_approved]" value="{{ qty_input($item->quantity_approved) }}">@endforeach<button class="btn btn-success">Approve & Reserve</button></form>
+                        <form method="POST" action="{{ route('warehouse.stock-transfers.approve', $transfer) }}">@csrf @foreach($transfer->items as $item)<input type="hidden" name="items[{{ $item->id }}][quantity_approved]" value="{{ qty_input($item->quantity_approved) }}">@endforeach<button class="btn btn-success">Setujui & Alokasikan Stok</button></form>
                     @endcan
                     @can('complete', $transfer)<form method="POST" action="{{ route('warehouse.stock-transfers.complete', $transfer) }}">@csrf<button class="btn btn-primary">Selesaikan Transfer</button></form>@endcan
-                    @can('cancel', $transfer)<form method="POST" action="{{ route('warehouse.stock-transfers.cancel', $transfer) }}">@csrf<input name="reason" class="form-control mb-2" placeholder="Alasan batal" required><button class="btn btn-light-danger">Cancel Transfer</button></form>@endcan
+                    @can('cancel', $transfer)<form method="POST" action="{{ route('warehouse.stock-transfers.cancel', $transfer) }}">@csrf<input name="reason" class="form-control mb-2" placeholder="Alasan pembatalan" required><button class="btn btn-light-danger">Batalkan Transfer</button></form>@endcan
                 </div>
             </x-metronic.card>
             <x-metronic.card title="Timeline" class="mt-5">
-                @forelse($timeline as $history)<div class="border-start border-3 ps-4 mb-4"><div class="fw-bold">{{ ucfirst(str_replace('_', ' ', $history->to_status)) }}</div><div class="text-muted">{{ $history->created_at->format('d/m/Y H:i') }} oleh {{ $history->actor?->name ?: '-' }}</div><div>{{ $history->notes ?: '-' }}</div></div>@empty<x-metronic.empty-state title="Belum ada timeline" description="Status transfer akan tercatat di sini." />@endforelse
+                @forelse($timeline as $history)@php($fromStatus = $history->from_status ? \App\Enums\StockTransferStatus::tryFrom($history->from_status)?->label() : 'Awal')@php($toStatus = \App\Enums\StockTransferStatus::tryFrom($history->to_status)?->label() ?? $history->to_status)<div class="border-start border-3 ps-4 mb-4"><div class="fw-bold">{{ $fromStatus }} → {{ $toStatus }}</div><div class="text-muted">{{ $history->created_at->format('d/m/Y H:i') }} oleh {{ $history->actor?->name ?: '-' }}</div><div>{{ $history->notes ?: '-' }}</div></div>@empty<x-metronic.empty-state title="Belum ada riwayat status" description="Perubahan status transfer akan tercatat di sini." />@endforelse
             </x-metronic.card>
             <x-metronic.card title="Paket dan Bukti" class="mt-5">
                 @forelse($transfer->packages as $package)<div class="mb-3"><div class="fw-bold">{{ $package->package_no }}</div><div class="text-muted">Checker {{ $package->checker?->name ?: '-' }}</div><div>{{ $package->notes ?: '-' }}</div></div>@empty<div class="text-muted">Belum ada paket.</div>@endforelse
