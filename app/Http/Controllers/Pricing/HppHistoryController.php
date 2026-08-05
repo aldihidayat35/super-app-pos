@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductCostHistory;
 use App\Models\Supplier;
+use App\Support\Decimal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -16,8 +17,40 @@ class HppHistoryController extends Controller
     {
         $this->authorize('viewAny', ProductCostHistory::class);
 
+        $filtered = $this->query($request);
+        $latest = (clone $filtered)->first();
+        $previous = $latest
+            ? (clone $filtered)->where('product_id', $latest->product_id)->skip(1)->first()
+            : null;
+        $difference = $latest ? Decimal::sub((string) $latest->hpp_after, (string) ($previous ? $previous->hpp_after : $latest->hpp_after), 2) : '0.00';
+        $percentage = $previous && Decimal::compare((string) $previous->hpp_after, '0', 2) !== 0
+            ? Decimal::mul(Decimal::div($difference, (string) $previous->hpp_after, 2, 2, 4), '100', 4, 2, 2)
+            : '0.00';
+
+        $chartHistories = (clone $filtered)->limit(40)->get()->sortBy([
+            ['effective_at', 'asc'],
+            ['id', 'asc'],
+        ])->values();
+
         return view('pricing.hpp-history.index', [
-            'histories' => $this->query($request)->paginate(15)->withQueryString(),
+            'histories' => (clone $filtered)->paginate(15)->withQueryString(),
+            'chartHistories' => $chartHistories,
+            'chartData' => $chartHistories->map(function (ProductCostHistory $history): array {
+                $effectiveAt = $history->getAttribute('effective_at');
+
+                return [
+                    'value' => (string) $history->hpp_after,
+                    'date' => $effectiveAt instanceof \DateTimeInterface ? $effectiveAt->format('d/m/Y H:i') : null,
+                    'product' => $history->product?->name,
+                    'supplier' => $history->supplier?->name,
+                ];
+            })->values(),
+            'summary' => [
+                'latest' => $latest,
+                'previous' => $previous,
+                'difference' => $difference,
+                'percentage' => $percentage,
+            ],
             'products' => Product::query()->orderBy('name')->limit(200)->get(),
             'suppliers' => Supplier::query()->orderBy('name')->get(),
             'filters' => $request->only(['product_id', 'supplier_id', 'date_from', 'date_to']),
