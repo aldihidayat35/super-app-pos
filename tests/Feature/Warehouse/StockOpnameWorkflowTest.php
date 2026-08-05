@@ -63,9 +63,9 @@ class StockOpnameWorkflowTest extends TestCase
 
         $this->get(route('warehouse.stock-opnames.index'))->assertOk()->assertSee('Stok Opname');
         $this->get(route('warehouse.stock-opnames.show', $opname))->assertOk()->assertSee($opname->number);
-        $this->get(route('warehouse.stock-opnames.count', $opname))->assertOk()->assertSee('Counting '.$opname->number);
-        $this->get(route('warehouse.stock-opnames.variance', $opname))->assertOk()->assertSee('Variance '.$opname->number);
-        $this->get(route('warehouse.stock-opnames.approval', $opname))->assertOk()->assertSee('Approval '.$opname->number);
+        $this->get(route('warehouse.stock-opnames.count', $opname))->assertOk()->assertSee('Penghitungan '.$opname->number);
+        $this->get(route('warehouse.stock-opnames.variance', $opname))->assertOk()->assertSee('Selisih Stok '.$opname->number);
+        $this->get(route('warehouse.stock-opnames.approval', $opname))->assertOk()->assertSee('Persetujuan '.$opname->number);
         $this->get(route('warehouse.stock-opnames.report', $opname))->assertOk()->assertSee('Berita Acara Stok Opname');
     }
 
@@ -105,6 +105,26 @@ class StockOpnameWorkflowTest extends TestCase
         $response->assertDontSee($otherBin->full_code);
     }
 
+    public function test_blind_count_view_does_not_expose_system_quantity(): void
+    {
+        [$product, $workLocation, $bin] = $this->fixture('PRD-OPN-BLIND');
+        $this->assignScope($workLocation);
+        $this->inventory->receive($product, $workLocation, $bin, '9876', $this->warehouseHead);
+        $opname = $this->opnames->create([
+            'work_location_id' => $workLocation->id,
+            'warehouse_location_id' => $bin->id,
+            'method' => 'manual',
+            'blind_count' => true,
+            'action' => 'start',
+        ], $this->warehouseHead);
+
+        $response = $this->actingAs($this->warehouseStaff)->get(route('warehouse.stock-opnames.count', $opname));
+
+        $response->assertOk()->assertSee('Stok sistem disembunyikan karena mode penghitungan objektif aktif.')
+            ->assertDontSee('data-system-qty', false)
+            ->assertDontSee('9.876');
+    }
+
     public function test_start_snapshot_without_stock_returns_validation_error_instead_of_server_error(): void
     {
         [, $workLocation, $bin] = $this->fixture('PRD-OPN-EMPTY');
@@ -122,7 +142,7 @@ class StockOpnameWorkflowTest extends TestCase
         $response
             ->assertRedirect(route('warehouse.stock-opnames.index'))
             ->assertSessionHasErrors([
-                'work_location_id' => 'Scope yang dipilih belum memiliki saldo stok. Simpan sebagai draft, pilih scope lain, atau masukkan stok melalui penerimaan barang/transfer stok sebelum membuat snapshot.',
+                'work_location_id' => 'Cakupan yang dipilih belum memiliki saldo stok. Simpan sebagai rancangan, pilih cakupan lain, atau masukkan stok melalui penerimaan barang/transfer stok sebelum menyimpan acuan stok.',
             ]);
         $this->assertDatabaseCount('stock_opnames', 0);
         $this->assertDatabaseCount('stock_opname_items', 0);

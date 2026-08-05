@@ -163,6 +163,36 @@ class GoodsReceiptWorkflowTest extends TestCase
         $this->assertDatabaseCount('stock_mutations', 0);
     }
 
+    public function test_server_rejects_manipulated_accepted_quantity(): void
+    {
+        [$warehouse, $supplier, $product, $unit, $bin] = $this->fixture();
+        $this->assignLocationScope($warehouse);
+        $po = $this->makeSentPurchaseOrder($warehouse, $supplier, $product, $unit, '5', '100');
+        $payload = $this->receiptPayload($po, $bin, received: '5', accepted: '5', rejected: '1');
+
+        try {
+            $this->receipts->createDraft($payload, $this->warehouseStaff);
+            $this->fail('Accepted hasil manipulasi browser seharusnya ditolak.');
+        } catch (ServiceException $exception) {
+            $this->assertStringContainsString('tidak sesuai dengan pembagian hasil pemeriksaan', $exception->getMessage());
+        }
+
+        $this->assertDatabaseCount('goods_receipts', 0);
+        $this->assertDatabaseCount('stock_mutations', 0);
+    }
+
+    public function test_qc_categories_cannot_exceed_received_quantity(): void
+    {
+        [$warehouse, $supplier, $product, $unit, $bin] = $this->fixture();
+        $this->assignLocationScope($warehouse);
+        $po = $this->makeSentPurchaseOrder($warehouse, $supplier, $product, $unit, '5', '100');
+        $payload = $this->receiptPayload($po, $bin, received: '3', accepted: '0', rejected: '2', damaged: '2');
+
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessage('melebihi jumlah barang datang');
+        $this->receipts->createDraft($payload, $this->warehouseStaff);
+    }
+
     public function test_second_partial_receipt_keeps_po_partial_until_completed(): void
     {
         [$warehouse, $supplier, $product, $unit, $bin] = $this->fixture();

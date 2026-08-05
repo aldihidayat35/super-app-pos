@@ -128,6 +128,8 @@ class ReturnAndLossWorkflowTest extends TestCase
             'unit_cost_snapshot' => '1000',
         ], $this->staff);
         $this->assertSame(InventoryLossStatus::APPROVED, $small->status);
+        $this->assertSame('2000000.00', $small->unit_cost_snapshot);
+        $this->assertSame('200000.00', $small->loss_value);
         $this->assertSame('0.1000', Stock::query()->where('product_id', $product->id)->firstOrFail()->quantity_damaged);
 
         $large = $this->returns->createLoss([
@@ -144,6 +146,33 @@ class ReturnAndLossWorkflowTest extends TestCase
         $approved = $this->returns->approveLoss($large, $this->head);
         $this->assertSame(InventoryLossStatus::APPROVED, $approved->status);
         $this->assertSame('4.0000', Stock::query()->where('product_id', $product->id)->firstOrFail()->quantity_on_hand);
+    }
+
+    public function test_failed_loss_approval_returns_friendly_message_and_rolls_back(): void
+    {
+        [$product, $workLocation, $bin] = $this->fixture('LOSS-SHORT', '2000000.00');
+        $this->assignScope($workLocation);
+        $this->inventory->receive($product, $workLocation, $bin, '0.5', $this->head);
+        $loss = $this->returns->createLoss([
+            'work_location_id' => $workLocation->id,
+            'warehouse_location_id' => $bin->id,
+            'product_id' => $product->id,
+            'loss_type' => 'lost',
+            'disposition' => 'issue',
+            'quantity' => '1',
+            'unit_cost_snapshot' => '1',
+        ], $this->staff);
+
+        $response = $this->actingAs($this->head)
+            ->from(route('warehouse.losses.index'))
+            ->post(route('warehouse.losses.approve', $loss));
+
+        $response->assertRedirect(route('warehouse.losses.index'))
+            ->assertSessionHas('notification', fn (array $notification): bool => $notification['type'] === 'danger'
+                && str_contains($notification['message'], 'Kekurangan'));
+        $this->assertSame(InventoryLossStatus::PENDING_APPROVAL, $loss->fresh()->status);
+        $this->assertSame(0, StockMutation::query()->where('reference_type', 'inventory_loss')->where('reference_id', $loss->id)->count());
+        $this->assertSame('0.5000', Stock::query()->where('product_id', $product->id)->firstOrFail()->available_quantity);
     }
 
     public function test_cross_location_return_is_forbidden(): void

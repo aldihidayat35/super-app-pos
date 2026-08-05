@@ -66,7 +66,7 @@ class StockTransferWorkflowTest extends TestCase
         $this->actingAs($this->warehouseHead);
         $this->get(route('retail.restock-requests.index'))->assertOk()->assertSee('Permintaan Restock Cabang');
         $this->get(route('warehouse.stock-transfers.index'))->assertOk()->assertSee('Daftar Transfer Stok')->assertSee($transfer->number);
-        $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertSee('Form dan Approval Transfer');
+        $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertSee('Form dan Persetujuan Transfer');
         $this->get(route('warehouse.stock-transfers.show', $transfer))->assertOk()->assertSee('Detail Transfer dan Timeline');
         $this->get(route('warehouse.stock-transfers.packing', $transfer))->assertOk()->assertSee('Picking dan Packing');
     }
@@ -119,6 +119,72 @@ class StockTransferWorkflowTest extends TestCase
         $this->assertSame('5.0000', $stock->quantity_on_hand);
         $this->assertSame('0.0000', $stock->quantity_reserved);
         $this->assertSame(StockTransferStatus::CANCELLED, $transfer->fresh()->status);
+    }
+
+    public function test_transfer_supports_more_than_five_items(): void
+    {
+        [$warehouse, $branch, $firstProduct, $sourceBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $products = collect([$firstProduct]);
+        for ($index = 2; $index <= 6; $index++) {
+            $products->push(Product::factory()->create([
+                'base_unit_id' => $firstProduct->base_unit_id,
+                'status' => 'active',
+                'sku' => 'TRF-MULTI-'.$index,
+            ]));
+        }
+        foreach ($products as $product) {
+            $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '2', $this->warehouseHead);
+        }
+
+        $transfer = $this->transfers->create([
+            'source_work_location_id' => $warehouse->work_location_id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'destination_work_location_id' => $branch->work_location_id,
+            'transfer_date' => now()->toDateString(),
+            'items' => $products->map(fn (Product $product): array => [
+                'product_id' => $product->id,
+                'quantity_requested' => '1',
+                'quantity_approved' => '1',
+                'source_warehouse_location_id' => $sourceBin->id,
+            ])->all(),
+            'action' => 'draft',
+        ], $this->warehouseStaff);
+
+        $this->assertCount(6, $transfer->items);
+        $this->assertDatabaseCount('stock_transfer_items', 6);
+    }
+
+    public function test_source_and_destination_bins_must_match_selected_work_locations(): void
+    {
+        [$sourceWarehouse, $sourceBranch, $product, $sourceBin] = $this->fixture();
+        [$destinationWarehouse] = $this->warehouseAndBranch('DEST');
+        $destinationBin = WarehouseLocation::factory()->create(['warehouse_id' => $destinationWarehouse->id, 'full_code' => 'DEST-BIN']);
+        $this->assignScope($sourceWarehouse, $sourceBranch);
+        $this->warehouseStaff->workLocations()->syncWithoutDetaching([$destinationWarehouse->work_location_id => ['is_default' => false, 'is_active' => true]]);
+
+        try {
+            $this->transfers->create([
+                'source_work_location_id' => $sourceWarehouse->work_location_id,
+                'source_warehouse_location_id' => $destinationBin->id,
+                'destination_work_location_id' => $destinationWarehouse->work_location_id,
+                'destination_warehouse_location_id' => $destinationBin->id,
+                'items' => [['product_id' => $product->id, 'quantity_requested' => '1', 'quantity_approved' => '1']],
+            ], $this->warehouseStaff);
+            $this->fail('Bin sumber lintas lokasi seharusnya ditolak.');
+        } catch (ServiceException $exception) {
+            $this->assertStringContainsString('Lokasi ambil default', $exception->getMessage());
+        }
+
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessage('Lokasi tujuan default');
+        $this->transfers->create([
+            'source_work_location_id' => $sourceWarehouse->work_location_id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'destination_work_location_id' => $destinationWarehouse->work_location_id,
+            'destination_warehouse_location_id' => $sourceBin->id,
+            'items' => [['product_id' => $product->id, 'quantity_requested' => '1', 'quantity_approved' => '1']],
+        ], $this->warehouseStaff);
     }
 
     public function test_over_pick_and_over_receive_are_rejected(): void

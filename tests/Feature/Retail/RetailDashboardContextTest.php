@@ -72,11 +72,13 @@ class RetailDashboardContextTest extends TestCase
             'base_unit_id' => $unit->id,
             'name' => 'Produk Toko Pusat',
             'minimum_stock' => '10.0000',
+            'cost_price' => '10000.00',
         ]);
         $this->secondProduct = Product::factory()->create([
             'base_unit_id' => $unit->id,
             'name' => 'Produk Toko Timur',
             'minimum_stock' => '5.0000',
+            'cost_price' => '20000.00',
         ]);
 
         Stock::query()->create([
