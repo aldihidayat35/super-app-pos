@@ -68,7 +68,7 @@
             icon="ki-outline ki-wallet"
             color="success"
             description="Nilai stok berdasarkan HPP"
-            tooltip="Total nilai persediaan dihitung dari kolom stocks.cost_value dengan metode HPP rata-rata."
+            tooltip="Total nilai persediaan dihitung dari stok fisik (On Hand) dikali HPP per unit produk."
         />
     </div>
     <div class="col-md-6 col-xl-4 col-xxl-3">

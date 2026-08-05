@@ -119,13 +119,14 @@ class ProductController extends Controller
         ]);
 
         $stockSummary = Stock::query()
-            ->where('product_id', $product->id)
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->where('stocks.product_id', $product->id)
             ->selectRaw('
                 COUNT(*) as total_locations,
-                SUM(quantity_on_hand) as total_on_hand,
-                SUM(quantity_reserved) as total_reserved,
-                SUM(quantity_damaged) as total_damaged,
-                SUM(cost_value) as total_value
+                SUM(stocks.quantity_on_hand) as total_on_hand,
+                SUM(stocks.quantity_reserved) as total_reserved,
+                SUM(stocks.quantity_damaged) as total_damaged,
+                SUM('.Stock::inventoryValueSql().') as total_value
             ')
             ->first();
 

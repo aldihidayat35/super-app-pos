@@ -21,6 +21,28 @@ class Stock extends Model
         return Decimal::sub(Decimal::sub((string) $this->quantity_on_hand, (string) $this->quantity_reserved), (string) $this->quantity_damaged);
     }
 
+    /**
+     * Nilai modal persediaan pada baris stok ini.
+     *
+     * Basis kuantitasnya selalu on hand; reserved dan damaged tetap merupakan
+     * bagian dari barang fisik yang dimiliki perusahaan.
+     */
+    public function getInventoryValueAttribute(): string
+    {
+        return Decimal::mul(
+            (string) $this->quantity_on_hand,
+            (string) $this->product->cost_price,
+        );
+    }
+
+    /**
+     * Ekspresi SQL decimal-safe untuk laporan/agregasi nilai persediaan.
+     */
+    public static function inventoryValueSql(string $stockAlias = 'stocks', string $productAlias = 'products'): string
+    {
+        return "COALESCE({$stockAlias}.quantity_on_hand, 0) * COALESCE({$productAlias}.cost_price, 0)";
+    }
+
     /** @return BelongsTo<Product, $this> */
     public function product(): BelongsTo
     {

@@ -49,7 +49,7 @@ class StockController extends Controller
                         $stock->available_quantity,
                         $stock->product?->minimum_stock,
                         $stock->product?->safety_stock,
-                        $stock->cost_value,
+                        $stock->inventory_value,
                     ]);
                 }
             });

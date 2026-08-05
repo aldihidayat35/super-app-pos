@@ -18,6 +18,7 @@ use App\Enums\ShipmentStatus;
 use App\Enums\StockMutationType;
 use App\Enums\StockOpnameStatus;
 use App\Enums\StockTransferStatus;
+use App\Models\Stock;
 use App\Models\User;
 use App\Support\Decimal;
 use Illuminate\Database\Query\Builder;
@@ -296,7 +297,7 @@ class ReportMetricService
             'rows' => DB::table('stocks')->join('products', 'products.id', '=', 'stocks.product_id')
                 ->leftJoin('work_locations', 'work_locations.id', '=', 'stocks.work_location_id')
                 ->whereIn('stocks.work_location_id', $filters['location_ids'])
-                ->selectRaw('products.sku, products.name as product, work_locations.name as location, stocks.quantity_on_hand, stocks.quantity_reserved, stocks.quantity_damaged, (stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) as available, stocks.cost_value')
+                ->selectRaw('products.sku, products.name as product, work_locations.name as location, stocks.quantity_on_hand, stocks.quantity_reserved, stocks.quantity_damaged, (stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) as available, '.Stock::inventoryValueSql().' as cost_value')
                 ->orderBy('products.name')
                 ->limit(200)
                 ->get()
@@ -527,7 +528,13 @@ class ReportMetricService
             'reserved_quantity' => $reserved,
             'damaged_quantity' => $damaged,
             'available_quantity' => $available,
-            'stock_value' => $this->money((clone $query)->sum('cost_value')),
+            'stock_value' => $this->money(
+                DB::table('stocks')
+                    ->join('products', 'products.id', '=', 'stocks.product_id')
+                    ->whereIn('stocks.work_location_id', $filters['location_ids'])
+                    ->selectRaw('COALESCE(SUM('.Stock::inventoryValueSql().'), 0) as aggregate')
+                    ->value('aggregate'),
+            ),
             'critical_count' => (clone $query)->join('products', 'products.id', '=', 'stocks.product_id')->whereColumn('stocks.quantity_on_hand', '<=', 'products.minimum_stock')->count(),
             'empty_count' => (clone $query)->where('quantity_on_hand', '<=', 0)->count(),
         ];
@@ -815,7 +822,7 @@ class ReportMetricService
             ->whereIn('stocks.work_location_id', $filters['location_ids'])
             ->where('stocks.quantity_on_hand', '>', 0)
             ->when($soldProductIds !== [], fn (Builder $query) => $query->whereNotIn('stocks.product_id', $soldProductIds))
-            ->selectRaw('products.sku, products.name as product, COALESCE(SUM(stocks.quantity_on_hand),0) as quantity, COALESCE(SUM(stocks.cost_value),0) as stock_value')
+            ->selectRaw('products.sku, products.name as product, COALESCE(SUM(stocks.quantity_on_hand),0) as quantity, COALESCE(SUM('.Stock::inventoryValueSql().'),0) as stock_value')
             ->groupBy('products.sku', 'products.name')
             ->orderByDesc('stock_value')
             ->limit(20)
@@ -1096,7 +1103,7 @@ class ReportMetricService
     {
         return match ($type) {
             'warehouse' => [
-                'Nilai stok berasal dari stocks.cost_value aktif sesuai scope lokasi.',
+                'Nilai stok dihitung dari quantity on hand dikali HPP per unit produk sesuai scope lokasi.',
                 'Available = on hand - reserved - damaged dalam unit dasar.',
                 'Mutasi masuk/keluar dihitung dari stock_mutations append-only pada periode filter.',
             ],
@@ -1183,7 +1190,7 @@ class ReportMetricService
             ->whereIn('stocks.work_location_id', $filters['location_ids'])
             ->where('stocks.quantity_on_hand', '>', 0)
             ->when($movedProductIds !== [], fn (Builder $query) => $query->whereNotIn('stocks.product_id', $movedProductIds))
-            ->selectRaw('products.id as product_id, products.sku, products.name as product, SUM(stocks.quantity_on_hand) as quantity, SUM(stocks.cost_value) as stock_value')
+            ->selectRaw('products.id as product_id, products.sku, products.name as product, SUM(stocks.quantity_on_hand) as quantity, SUM('.Stock::inventoryValueSql().') as stock_value')
             ->groupBy('products.id', 'products.sku', 'products.name')
             ->orderByDesc('stock_value')
             ->limit(8)
@@ -1209,7 +1216,7 @@ class ReportMetricService
         return DB::table('stocks')
             ->join('products', 'products.id', '=', 'stocks.product_id')
             ->whereIn('stocks.work_location_id', $filters['location_ids'])
-            ->selectRaw('products.id as product_id, products.sku, products.name as product, SUM(stocks.quantity_on_hand) as quantity, SUM(stocks.cost_value) as stock_value')
+            ->selectRaw('products.id as product_id, products.sku, products.name as product, SUM(stocks.quantity_on_hand) as quantity, SUM('.Stock::inventoryValueSql().') as stock_value')
             ->groupBy('products.id', 'products.sku', 'products.name')
             ->orderByDesc('stock_value')
             ->limit(5)
@@ -1265,7 +1272,7 @@ class ReportMetricService
      * Membandingkan metrik utama dengan periode sebelumnya.
      *
      * @param  ReportFilters  $filters
-     * @return array{incoming: array{current: int, previous: int}, outgoing: array{current: int, previous: int}, stock_value: array{current: string, previous: string}}
+     * @return array{incoming: array{current: int, previous: int}, outgoing: array{current: int, previous: int}}
      */
     private function previousPeriodComparison(array $filters): array
     {

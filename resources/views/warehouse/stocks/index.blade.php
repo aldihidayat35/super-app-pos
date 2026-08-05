@@ -84,7 +84,7 @@
                         <td>{{ qty($stock->quantity_damaged) }}</td>
                         <td class="fw-bold">{{ qty($stock->available_quantity) }}</td>
                         <td>{{ qty($stock->product?->minimum_stock) }} / {{ qty($stock->product?->safety_stock) }}</td>
-                        <td>Rp {{ number_format((float) $stock->cost_value, 0, ',', '.') }}</td>
+                        <td>{{ \App\Support\CurrencyFormatter::rupiah($stock->inventory_value) }}</td>
                         <td class="text-end"><a class="btn btn-sm btn-light" href="{{ route('warehouse.stock-card.index', ['product_id' => $stock->product_id, 'work_location_id' => $stock->work_location_id, 'warehouse_location_id' => $stock->warehouse_location_id]) }}">Kartu Stok</a></td>
                     </tr>
                 @empty

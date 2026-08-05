@@ -81,13 +81,14 @@ class WarehouseController extends Controller
 
         // 统计仓库的库存数据
         $stockSummary = Stock::query()
+            ->join('products', 'products.id', '=', 'stocks.product_id')
             ->whereHas('warehouseLocation', fn ($q) => $q->where('warehouse_id', $warehouse->id))
             ->selectRaw('
                 COUNT(*) as total_products,
-                SUM(quantity_on_hand) as total_on_hand,
-                SUM(quantity_reserved) as total_reserved,
-                SUM(quantity_damaged) as total_damaged,
-                SUM(cost_value) as total_value
+                SUM(stocks.quantity_on_hand) as total_on_hand,
+                SUM(stocks.quantity_reserved) as total_reserved,
+                SUM(stocks.quantity_damaged) as total_damaged,
+                SUM('.Stock::inventoryValueSql().') as total_value
             ')
             ->first();
 
@@ -103,7 +104,7 @@ class WarehouseController extends Controller
             ->get();
 
         // 获取仓库的所有用户
-        $warehouseUsers = $warehouse->workLocation?->users ?? collect();
+        $warehouseUsers = $warehouse->workLocation->users;
 
         // 统计各类型仓库位置数量
         $locationStats = WarehouseLocation::query()

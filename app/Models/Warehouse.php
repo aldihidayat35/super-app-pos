@@ -6,6 +6,7 @@ use Database\Factories\WarehouseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -50,15 +51,12 @@ class Warehouse extends Model
         return $this->belongsTo(User::class, 'manager_user_id');
     }
 
-    /**
-     * Get all users with kepala_gudang role assigned to this warehouse's work location.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
+    /** @return BelongsToMany<User, $this> */
     public function warehouseHeads(): BelongsToMany
     {
-        return $this->workLocation()->users()
-            ->whereHasPivot('is_active', true)
+        return $this->belongsToMany(User::class, 'user_work_locations', 'work_location_id', 'user_id', 'work_location_id', 'id')
+            ->withPivot('is_default', 'effective_from', 'effective_until', 'is_active')
+            ->wherePivot('is_active', true)
             ->whereHas('roles', fn ($q) => $q->where('name', 'kepala_gudang'));
     }
 

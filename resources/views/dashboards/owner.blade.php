@@ -19,7 +19,7 @@
         ['label' => 'Omzet', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['revenue']), 'color' => 'primary', 'description' => 'POS + B2B non-cancelled'],
         ['label' => 'Laba Kotor Estimasi', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['gross_margin']), 'color' => 'success', 'description' => 'Snapshot margin transaksi'],
         ['label' => 'Margin', 'value' => $kpis['margin_percent'].'%', 'color' => 'info', 'description' => 'Gross margin / omzet'],
-        ['label' => 'Nilai Stok', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['stock_value']), 'color' => 'warning', 'description' => 'stocks.cost_value'],
+        ['label' => 'Nilai Stok', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['stock_value']), 'color' => 'warning', 'description' => 'Stok fisik × HPP per unit'],
         ['label' => 'Stok Kritis', 'value' => $kpis['critical_stock_count'], 'color' => 'danger'],
         ['label' => 'Piutang Outstanding', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['receivable_outstanding']), 'color' => 'warning'],
         ['label' => 'Selisih Kas', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['cash_difference']), 'color' => 'danger'],
