@@ -4,6 +4,7 @@ namespace App\Http\Requests\Warehouse;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreStockTransferRequest extends FormRequest
 {
@@ -50,5 +51,20 @@ class StoreStockTransferRequest extends FormRequest
             'items.*.quantity_approved' => ['nullable', 'numeric', 'min:0'],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
         ];
+    }
+
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            foreach ((array) $this->input('items', []) as $index => $item) {
+                if (! is_array($item) || ! filled($item['quantity_approved'] ?? null) || ! filled($item['quantity_requested'] ?? null)) {
+                    continue;
+                }
+
+                if (bccomp((string) $item['quantity_approved'], (string) $item['quantity_requested'], 4) === 1) {
+                    $validator->errors()->add("items.{$index}.quantity_approved", 'Qty disetujui tidak boleh melebihi qty yang diminta.');
+                }
+            }
+        }];
     }
 }

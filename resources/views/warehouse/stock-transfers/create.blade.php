@@ -97,7 +97,7 @@
                     <tbody id="transfer-items">
                         @foreach($initialItems as $index => $item)
                             <tr class="transfer-item-row">
-                                <td><select name="items[{{ $index }}][product_id]" class="form-select form-select-sm product-select" data-control="select2" required><option value="">Pilih produk</option>@foreach($products as $product)<option value="{{ $product->id }}" @selected((int)($item['product_id'] ?? 0) === $product->id)>{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select></td>
+                                <td><select name="items[{{ $index }}][product_id]" class="form-select form-select-sm product-select" required><option value="">Pilih produk</option>@if($selectedProducts->has((int)($item['product_id'] ?? 0)))<option value="{{ $item['product_id'] }}" selected>{{ $selectedProducts->get((int)$item['product_id'])->sku }} — {{ $selectedProducts->get((int)$item['product_id'])->name }}</option>@endif</select></td>
                                 <td><input name="items[{{ $index }}][quantity_requested]" type="number" step="1" min="1" value="{{ $item['quantity_requested'] ?? 1 }}" class="form-control form-control-sm" required></td>
                                 <td><input name="items[{{ $index }}][quantity_approved]" type="number" step="1" min="0" value="{{ $item['quantity_approved'] ?? 1 }}" class="form-control form-control-sm"></td>
                                 <td><select name="items[{{ $index }}][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2" data-selected="{{ $item['source_warehouse_location_id'] ?? '' }}"><option value="">Gunakan default</option>@if($selectedWarehouseLocations->has((int)($item['source_warehouse_location_id'] ?? 0)))<option value="{{ $item['source_warehouse_location_id'] }}" selected>{{ $selectedWarehouseLocations->get((int)$item['source_warehouse_location_id'])->full_code }}</option>@endif</select></td>
@@ -116,7 +116,7 @@
 
     <template id="transfer-item-template">
         <tr class="transfer-item-row">
-            <td><select name="items[__INDEX__][product_id]" class="form-select form-select-sm product-select" data-control="select2" required><option value="">Pilih produk</option>@foreach($products as $product)<option value="{{ $product->id }}">{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select></td>
+            <td><select name="items[__INDEX__][product_id]" class="form-select form-select-sm product-select" required><option value="">Pilih produk</option></select></td>
             <td><input name="items[__INDEX__][quantity_requested]" type="number" step="1" min="1" value="1" class="form-control form-control-sm" required></td>
             <td><input name="items[__INDEX__][quantity_approved]" type="number" step="1" min="0" value="1" class="form-control form-control-sm"></td>
             <td><select name="items[__INDEX__][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2"><option value="">Gunakan default</option></select></td>
@@ -136,25 +136,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const destination = document.getElementById('destination-work-location');
     let nextIndex = body.querySelectorAll('.transfer-item-row').length;
 
-    const resetSelect2 = (select) => {
+    const destroy = (select) => {
         if (window.$?.fn?.select2 && window.$(select).hasClass('select2-hidden-accessible')) window.$(select).select2('destroy');
     };
-    const initialize = (root) => window.GudangTokoSelect2?.initialize(root);
-    const loadBins = async (select, workLocationId, context, selected = '') => {
-        resetSelect2(select);
-        select.innerHTML = `<option value="">${select.closest('td') ? 'Gunakan default' : 'Tanpa zona/rak/bin khusus'}</option>`;
+    const configureRemote = (select, context) => {
+        destroy(select);
+        const workLocationId = context === 'destination' ? destination.value : source.value;
         select.disabled = !workLocationId;
-        if (workLocationId) {
-            try {
-                const response = await window.appFetch(`${optionsUrl}?work_location_id=${encodeURIComponent(workLocationId)}&context=${context}`);
-                if (!response.ok) throw new Error('Gagal memuat lokasi');
-                const payload = await response.json();
-                payload.results.forEach((item) => select.add(new Option(item.text, item.id, false, String(item.id) === String(selected))));
-            } catch (error) {
-                select.innerHTML = '<option value="">Lokasi tidak dapat dimuat</option>';
-            }
-        }
-        initialize(select);
+        if (!window.$?.fn?.select2) return;
+        window.$(select).select2({
+            width: '100%', allowClear: true, minimumInputLength: 0,
+            placeholder: context === 'product' ? 'Cari SKU atau nama produk' : (workLocationId ? 'Cari zona/rak/bin' : 'Pilih lokasi kerja terlebih dahulu'),
+            ajax: {
+                url: optionsUrl, dataType: 'json', delay: 250,
+                data: (params) => ({
+                    work_location_id: workLocationId,
+                    context,
+                    warehouse_location_id: context === 'product' ? (select.closest('tr')?.querySelector('.source-bin-select')?.value || document.querySelector('select[name="source_warehouse_location_id"]')?.value || '') : '',
+                    q: params.term || '', page: params.page || 1,
+                }),
+                processResults: (payload) => payload,
+                transport: (params, success, failure) => {
+                    const controller = new AbortController();
+                    window.appFetch(`${params.url}?${new URLSearchParams(params.data)}`, {signal: controller.signal})
+                        .then((response) => response.ok ? response.json() : Promise.reject(response))
+                        .then(success).catch((error) => { if (error?.name !== 'AbortError') failure(error); });
+                    return {abort: () => controller.abort()};
+                },
+            },
+            language: {noResults: () => context === 'product' ? 'Tidak ada produk dengan stok tersedia' : 'Lokasi ini belum memiliki zona/rak/bin', searching: () => 'Mencari data…'},
+        });
+    };
+    const loadBins = (select, workLocationId, context) => {
+        select.disabled = !workLocationId;
+        configureRemote(select, context);
     };
     const refreshGroup = (context) => {
         const workLocationId = context === 'source' ? source.value : destination.value;
@@ -165,18 +180,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (body.querySelectorAll('.transfer-item-row').length === 1) return;
             row.remove();
         });
-        initialize(row);
+        configureRemote(row.querySelector('.product-select'), 'product');
         loadBins(row.querySelector('.source-bin-select'), source.value, 'source');
         loadBins(row.querySelector('.destination-bin-select'), destination.value, 'destination');
     };
 
     source.addEventListener('change', () => {
-        document.querySelectorAll('.source-bin-select').forEach((select) => { select.dataset.selected = ''; });
+        document.querySelectorAll('.source-bin-select').forEach((select) => { select.dataset.selected = ''; select.value = ''; });
+        document.querySelectorAll('.product-select').forEach((select) => { destroy(select); select.innerHTML = '<option value="">Pilih produk</option>'; configureRemote(select, 'product'); });
         refreshGroup('source');
     });
     destination.addEventListener('change', () => {
-        document.querySelectorAll('.destination-bin-select').forEach((select) => { select.dataset.selected = ''; });
+        document.querySelectorAll('.destination-bin-select').forEach((select) => { select.dataset.selected = ''; select.value = ''; });
         refreshGroup('destination');
+    });
+    body.addEventListener('change', (event) => {
+        if (!event.target.classList.contains('source-bin-select')) return;
+        const product = event.target.closest('tr')?.querySelector('.product-select');
+        if (product) configureRemote(product, 'product');
     });
     document.getElementById('add-transfer-item').addEventListener('click', () => {
         const template = document.getElementById('transfer-item-template').innerHTML.replaceAll('__INDEX__', String(nextIndex++));
@@ -187,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         row.querySelector('.remove-transfer-item').addEventListener('click', () => {
             if (body.querySelectorAll('.transfer-item-row').length > 1) row.remove();
         });
+        configureRemote(row.querySelector('.product-select'), 'product');
     });
     refreshGroup('source');
     refreshGroup('destination');

@@ -13,6 +13,7 @@ use App\Models\RestockRequestItem;
 use App\Models\StockTransfer;
 use App\Models\StockTransferItem;
 use App\Models\StockTransferReceipt;
+use App\Models\Stock;
 use App\Models\User;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
@@ -154,6 +155,22 @@ class StockTransferService
                 }
 
                 $sourceBin = $this->sourceBin($transfer, $item);
+                $stock = Stock::query()
+                    ->where('product_id', $item->product_id)
+                    ->where('work_location_id', $transfer->source_work_location_id)
+                    ->when($sourceBin, fn ($query) => $query->where('warehouse_location_id', $sourceBin->id), fn ($query) => $query->whereNull('warehouse_location_id'))
+                    ->lockForUpdate()
+                    ->first();
+                $available = $stock?->available_quantity ?? '0.0000';
+
+                if (Decimal::compare($available, $approved) < 0) {
+                    $location = $sourceBin?->full_code ?? $transfer->sourceWorkLocation?->name ?? '-';
+                    throw ServiceException::validation(
+                        "Stok {$item->product_sku_snapshot} — {$item->product_name_snapshot} di {$location} tidak cukup. "
+                        .'On hand: '.($stock?->quantity_on_hand ?? '0.0000').'; reserved: '.($stock?->quantity_reserved ?? '0.0000')
+                        .'; rusak: '.($stock?->quantity_damaged ?? '0.0000')."; tersedia: {$available}; dibutuhkan: {$approved}; kurang: ".Decimal::sub($approved, $available).'.'
+                    );
+                }
                 $this->inventory->reserve(
                     product: $item->product,
                     workLocation: $transfer->sourceWorkLocation,
@@ -356,6 +373,10 @@ class StockTransferService
                 throw ServiceException::validation('Transfer hanya dapat diselesaikan setelah diterima penuh.');
             }
 
+            if ($transfer->items->contains(fn (StockTransferItem $item): bool => Decimal::compare((string) $item->quantity_discrepancy, '0') > 0)) {
+                throw ServiceException::validation('Transfer memiliki selisih pengiriman yang belum diselesaikan dan belum dapat ditutup.');
+            }
+
             $transfer->forceFill(['status' => StockTransferStatus::COMPLETED, 'completed_at' => now()])->save();
             $this->history($transfer, StockTransferStatus::FULLY_RECEIVED, StockTransferStatus::COMPLETED, $actor, 'Transfer diselesaikan.');
 
@@ -406,6 +427,10 @@ class StockTransferService
 
             if (Decimal::compare($requested, '0') <= 0) {
                 throw ServiceException::validation("Qty produk {$product->sku} harus lebih dari nol.");
+            }
+
+            if (Decimal::compare($approved, $requested) > 0) {
+                throw ServiceException::validation("Qty approved produk {$product->sku} tidak boleh melebihi qty request.");
             }
 
             $transfer->items()->create([

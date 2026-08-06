@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Warehouse;
 
 use App\Enums\StockTransferStatus;
+use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Retail\ReceiveStockTransferRequest;
 use App\Http\Requests\Warehouse\PackStockTransferRequest;
@@ -12,6 +13,7 @@ use App\Models\DocumentStatusHistory;
 use App\Models\Product;
 use App\Models\RestockRequest;
 use App\Models\StockTransfer;
+use App\Models\Stock;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Warehouse\StockTransferService;
@@ -59,16 +61,38 @@ class StockTransferController extends Controller
 
         $validated = $request->validate([
             'work_location_id' => ['required', 'integer', Rule::exists('work_locations', 'id')->where('is_active', true)],
-            'context' => ['required', Rule::in(['source', 'destination'])],
+            'context' => ['required', Rule::in(['source', 'destination', 'product'])],
             'q' => ['nullable', 'string', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
         ]);
         $workLocationId = (int) $validated['work_location_id'];
 
-        if ($validated['context'] === 'source') {
+        if (in_array($validated['context'], ['source', 'product'], true)) {
             $this->ensureLocationScope($request, $workLocationId);
         }
 
         $search = trim((string) ($validated['q'] ?? ''));
+        $page = (int) ($validated['page'] ?? 1);
+
+        if ($validated['context'] === 'product') {
+            $warehouseLocationId = $request->integer('warehouse_location_id') ?: null;
+            $query = Product::query()
+                ->where('status', 'active')
+                ->whereHas('stocks', fn ($stock) => $stock
+                    ->where('work_location_id', $workLocationId)
+                    ->when($warehouseLocationId, fn ($row) => $row->where('warehouse_location_id', $warehouseLocationId))
+                    ->whereRaw('(quantity_on_hand - quantity_reserved - quantity_damaged) > 0'))
+                ->when($search !== '', fn ($product) => $product->where(function ($inner) use ($search): void {
+                    $inner->where('sku', 'like', "%{$search}%")->orWhere('name', 'like', "%{$search}%");
+                }))
+                ->orderBy('name');
+            $products = $query->paginate(20, ['id', 'sku', 'name'], 'page', $page);
+
+            return response()->json([
+                'results' => $products->map(fn (Product $product): array => ['id' => $product->id, 'text' => "{$product->sku} — {$product->name}"])->values(),
+                'pagination' => ['more' => $products->hasMorePages()],
+            ]);
+        }
         $locations = WarehouseLocation::query()
             ->where('is_active', true)
             ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $workLocationId))
@@ -77,14 +101,14 @@ class StockTransferController extends Controller
                     ->orWhere('name', 'like', "%{$search}%");
             }))
             ->orderBy('full_code')
-            ->limit(100)
-            ->get(['id', 'full_code', 'name']);
+            ->paginate(20, ['id', 'full_code', 'name'], 'page', $page);
 
         return response()->json([
             'results' => $locations->map(fn (WarehouseLocation $location): array => [
                 'id' => $location->id,
                 'text' => trim($location->full_code.' — '.$location->name, ' —'),
             ])->values(),
+            'pagination' => ['more' => $locations->hasMorePages()],
         ]);
     }
 
@@ -92,13 +116,35 @@ class StockTransferController extends Controller
     {
         $this->authorize('view', $stockTransfer);
 
+        $transfer = $stockTransfer->load([
+            'items.product', 'items.sourceWarehouseLocation', 'items.destinationWarehouseLocation',
+            'sourceWorkLocation', 'destinationWorkLocation', 'restockRequest', 'requester',
+            'approver', 'shipper', 'receiver', 'packages.checker', 'receipts.items.stockTransferItem',
+            'stockMutations.product', 'statusHistories.actor',
+        ]);
+        $sourceBalances = Stock::query()
+            ->where('work_location_id', $transfer->source_work_location_id)
+            ->whereIn('product_id', $transfer->items->pluck('product_id'))
+            ->get()
+            ->keyBy(fn (Stock $stock): string => $stock->product_id.'|'.($stock->warehouse_location_id ?? 'null'));
+        $approvalStocks = $transfer->items->mapWithKeys(function ($item) use ($sourceBalances, $transfer): array {
+            $binId = $item->source_warehouse_location_id ?? $transfer->source_warehouse_location_id;
+            $stock = $sourceBalances->get($item->product_id.'|'.($binId ?? 'null'));
+            $available = $stock?->available_quantity ?? '0.0000';
+
+            return [$item->id => [
+                'on_hand' => (string) ($stock?->quantity_on_hand ?? '0.0000'),
+                'reserved' => (string) ($stock?->quantity_reserved ?? '0.0000'),
+                'damaged' => (string) ($stock?->quantity_damaged ?? '0.0000'),
+                'available' => $available,
+                'needed' => (string) $item->quantity_approved,
+                'enough' => \App\Support\Decimal::compare($available, (string) $item->quantity_approved) >= 0,
+            ]];
+        });
+
         return view('warehouse.stock-transfers.show', [
-            'transfer' => $stockTransfer->load([
-                'items.product', 'items.sourceWarehouseLocation', 'items.destinationWarehouseLocation',
-                'sourceWorkLocation', 'destinationWorkLocation', 'restockRequest', 'requester',
-                'approver', 'shipper', 'receiver', 'packages.checker', 'receipts.items.stockTransferItem',
-                'stockMutations.product', 'statusHistories.actor',
-            ]),
+            'transfer' => $transfer,
+            'approvalStocks' => $approvalStocks,
             'timeline' => DocumentStatusHistory::query()->with('actor')->where('document_type', 'stock_transfer')->where('document_id', $stockTransfer->id)->orderBy('created_at')->get(),
         ]);
     }
@@ -112,7 +158,11 @@ class StockTransferController extends Controller
                 $approved[(int) $id] = $item['quantity_approved'] ?? 0;
             }
         }
-        $service->approve($stockTransfer, $request->user(), $approved);
+        try {
+            $service->approve($stockTransfer, $request->user(), $approved);
+        } catch (ServiceException $exception) {
+            return back()->withErrors(['approval' => $exception->getMessage()])->withInput();
+        }
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Transfer disetujui dan stok sumber di-reserve.']);
     }
@@ -233,12 +283,13 @@ class StockTransferController extends Controller
             $selectedLocationIds[] = $item['destination_warehouse_location_id'] ?? null;
         }
         $selectedLocationIds = collect($selectedLocationIds)->filter()->map(fn ($id): int => (int) $id)->unique()->values();
+        $selectedProductIds = collect($oldItems)->filter(fn ($item) => is_array($item))->pluck('product_id')->filter()->map(fn ($id): int => (int) $id)->unique()->values();
 
         return [
             'workLocations' => WorkLocation::query()->whereIn('id', $request->user()?->permittedWorkLocationIds() ?? [])->where('is_active', true)->orderBy('name')->get(),
             'allWorkLocations' => WorkLocation::query()->where('is_active', true)->orderBy('type')->orderBy('name')->get(),
-            'products' => Product::query()->where('status', 'active')->with('baseUnit')->orderBy('name')->limit(200)->get(),
             'selectedWarehouseLocations' => WarehouseLocation::query()->whereIn('id', $selectedLocationIds)->get()->keyBy('id'),
+            'selectedProducts' => Product::query()->whereIn('id', $selectedProductIds)->get()->keyBy('id'),
             'restockRequests' => RestockRequest::query()->where('status', 'approved')->with(['branch', 'sourceWarehouse', 'items.product'])->latest()->limit(50)->get(),
         ];
     }
