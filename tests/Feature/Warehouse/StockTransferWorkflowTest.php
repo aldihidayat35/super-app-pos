@@ -223,7 +223,7 @@ class StockTransferWorkflowTest extends TestCase
 
         $received = $this->transfers->receive($shipped, ['idempotency_key' => 'discrepancy', 'items' => [$item->id => ['quantity_received' => '2', 'quantity_damaged' => '0', 'quantity_discrepancy' => '1']]], $this->storeHead);
 
-        $this->assertSame(StockTransferStatus::FULLY_RECEIVED, $received->status);
+        $this->assertSame(StockTransferStatus::PARTIALLY_RECEIVED, $received->status);
         $this->assertSame('2.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
         $this->assertSame('1.0000', $received->items->firstOrFail()->quantity_discrepancy);
 

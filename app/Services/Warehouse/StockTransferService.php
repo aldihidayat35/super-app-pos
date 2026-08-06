@@ -356,9 +356,13 @@ class StockTransferService
             }
 
             $transfer->refresh()->load('items');
-            $status = $this->allShippedAccounted($transfer) ? StockTransferStatus::FULLY_RECEIVED : StockTransferStatus::PARTIALLY_RECEIVED;
+            $hasDiscrepancy = $transfer->items->contains(fn (StockTransferItem $item): bool => Decimal::compare((string) $item->quantity_discrepancy, '0') > 0);
+            $status = ! $hasDiscrepancy && $this->allShippedAccounted($transfer) ? StockTransferStatus::FULLY_RECEIVED : StockTransferStatus::PARTIALLY_RECEIVED;
             $transfer->forceFill(['status' => $status, 'receiver_by' => $actor->id, 'received_at' => now()])->save();
-            $this->history($transfer, StockTransferStatus::SHIPPED, $status, $actor, $status === StockTransferStatus::FULLY_RECEIVED ? 'Transfer diterima penuh.' : 'Transfer diterima sebagian.');
+            $notes = $hasDiscrepancy
+                ? 'Penerimaan mencatat discrepancy dan wajib ditinjau sebelum transfer dapat diselesaikan.'
+                : ($status === StockTransferStatus::FULLY_RECEIVED ? 'Transfer diterima penuh.' : 'Transfer diterima sebagian.');
+            $this->history($transfer, StockTransferStatus::SHIPPED, $status, $actor, $notes);
 
             return $transfer->fresh(['items.product', 'receipts.items', 'stockMutations']);
         });
@@ -369,12 +373,12 @@ class StockTransferService
         return DB::transaction(function () use ($transfer, $actor): StockTransfer {
             $transfer = StockTransfer::query()->with('items')->lockForUpdate()->findOrFail($transfer->id);
 
-            if ($transfer->status !== StockTransferStatus::FULLY_RECEIVED) {
-                throw ServiceException::validation('Transfer hanya dapat diselesaikan setelah diterima penuh.');
-            }
-
             if ($transfer->items->contains(fn (StockTransferItem $item): bool => Decimal::compare((string) $item->quantity_discrepancy, '0') > 0)) {
                 throw ServiceException::validation('Transfer memiliki selisih pengiriman yang belum diselesaikan dan belum dapat ditutup.');
+            }
+
+            if ($transfer->status !== StockTransferStatus::FULLY_RECEIVED) {
+                throw ServiceException::validation('Transfer hanya dapat diselesaikan setelah diterima penuh.');
             }
 
             $transfer->forceFill(['status' => StockTransferStatus::COMPLETED, 'completed_at' => now()])->save();
