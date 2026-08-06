@@ -138,6 +138,25 @@ class StockOpnameWorkflowTest extends TestCase
         $this->assertStringContainsString('Semua item harus dihitung sebelum diajukan.', $html);
     }
 
+    public function test_approval_page_actions_follow_permission_and_location_scope(): void
+    {
+        [$product, $workLocation, $bin] = $this->fixture('PRD-OPN-PERM');
+        $this->assignScope($workLocation);
+        $this->inventory->receive($product, $workLocation, $bin, '5', $this->warehouseHead);
+        $opname = $this->createCountingOpname($workLocation, $bin);
+        $this->opnames->countItem($opname->items->firstOrFail(), ['counted_qty' => '5'], $this->warehouseStaff);
+        $opname = $this->opnames->submit($opname, $this->warehouseStaff);
+
+        $this->actingAs($this->warehouseStaff)->get(route('warehouse.stock-opnames.approval', $opname))
+            ->assertOk()->assertSee('tidak memiliki izin')->assertDontSee('Setujui Opname')->assertDontSee('Tolak Opname');
+        $this->actingAs($this->warehouseHead)->get(route('warehouse.stock-opnames.approval', $opname))
+            ->assertOk()->assertSee('Setujui Opname')->assertSee('Tolak Opname');
+
+        $outside = User::factory()->create(['is_active' => true]);
+        $outside->assignRole(Role::findOrCreate('kepala_gudang'));
+        $this->actingAs($outside)->get(route('warehouse.stock-opnames.approval', $opname))->assertForbidden();
+    }
+
     public function test_start_snapshot_without_stock_returns_validation_error_instead_of_server_error(): void
     {
         [, $workLocation, $bin] = $this->fixture('PRD-OPN-EMPTY');

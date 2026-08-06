@@ -127,6 +127,19 @@ class GoodsReceiptWorkflowTest extends TestCase
         $this->assertSame('100.00', $history->landed_cost_allocated);
         $this->assertSame('20.00', $history->hpp_after);
         $this->assertSame('20.00', $product->fresh()->cost_price);
+
+        $secondHistory = $history->replicate();
+        $secondHistory->hpp_after = '21.00';
+        $secondHistory->effective_at = now()->addMinute();
+        $secondHistory->save();
+        $product->forceFill(['name' => '<img src=x onerror=alert(1)>'])->save();
+        $supplier->forceFill(['name' => '<script>alert(1)</script>'])->save();
+        $html = $this->actingAs($this->warehouseStaff)->get(route('pricing.hpp-history.index'))->assertOk()->getContent();
+        $this->assertStringContainsString("type: 'datetime'", $html);
+        $this->assertStringContainsString('rows.filter', $html);
+        $this->assertStringContainsString('textContent = String', $html);
+        $this->assertStringNotContainsString('<img src=x onerror=alert(1)>', $html);
+        $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
     }
 
     public function test_rejected_item_is_recorded_without_stock_or_po_received_qty(): void

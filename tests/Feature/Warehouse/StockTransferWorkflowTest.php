@@ -261,20 +261,32 @@ class StockTransferWorkflowTest extends TestCase
         $this->assertSame(StockTransferStatus::PENDING_APPROVAL, $transfer->fresh()->status);
         $this->assertSame('0.0000', Stock::query()->where('product_id', $product->id)->firstOrFail()->quantity_reserved);
         $this->assertSame('0.0000', Stock::query()->where('product_id', $second->id)->firstOrFail()->quantity_reserved);
+
+        $mutationCount = \App\Models\StockMutation::query()->count();
+        $items = $transfer->fresh('items')->items;
+        $this->actingAs($this->warehouseHead)->from(route('warehouse.stock-transfers.show', $transfer))
+            ->post(route('warehouse.stock-transfers.approve', $transfer), ['items' => $items->mapWithKeys(fn ($item) => [$item->id => ['quantity_approved' => $item->quantity_approved]])->all()])
+            ->assertRedirect(route('warehouse.stock-transfers.show', $transfer))
+            ->assertSessionHas('notification.type', 'danger');
+        $this->assertSame($mutationCount, \App\Models\StockMutation::query()->count());
+        $this->assertSame(StockTransferStatus::PENDING_APPROVAL, $transfer->fresh()->status);
     }
 
     public function test_create_rejects_approved_quantity_above_requested_quantity(): void
     {
-        [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
+        [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();
         $this->assignScope($warehouse, $branch);
 
         $this->actingAs($this->warehouseStaff)->post(route('warehouse.stock-transfers.store'), [
             'source_work_location_id' => $warehouse->work_location_id,
             'source_warehouse_location_id' => $sourceBin->id,
             'destination_work_location_id' => $branch->work_location_id,
+            'destination_warehouse_location_id' => $destinationBin->id,
             'transfer_date' => now()->toDateString(),
             'items' => [['product_id' => $product->id, 'quantity_requested' => '2', 'quantity_approved' => '3']],
-        ])->assertSessionHasErrors('items.0.quantity_approved');
+        ])->assertSessionHasErrors('items.0.quantity_approved')->assertSessionHasInput('destination_warehouse_location_id', $destinationBin->id);
+
+        $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertSee($destinationBin->full_code);
     }
 
     public function test_remote_options_are_scoped_searchable_and_paginated(): void
@@ -288,6 +300,20 @@ class StockTransferWorkflowTest extends TestCase
         ]))->assertOk()->assertJsonPath('results.0.id', $product->id)->assertJsonStructure(['results', 'pagination' => ['more']]);
 
         $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertDontSee('@foreach($products', false);
+
+        [$otherWarehouse, $emptyBranch] = $this->warehouseAndBranch('OPTIONS');
+        $destinationBin = WarehouseLocation::factory()->create(['warehouse_id' => $otherWarehouse->id, 'full_code' => 'DEST-ONLY']);
+        $this->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $otherWarehouse->work_location_id, 'context' => 'destination',
+        ]))->assertOk()->assertJsonPath('results.0.id', $destinationBin->id)->assertJsonMissing(['id' => $sourceBin->id]);
+        $this->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $emptyBranch->work_location_id, 'context' => 'destination',
+        ]))->assertOk()->assertJsonCount(0, 'results');
+
+        $unauthorized = User::factory()->create(['is_active' => true]);
+        $this->actingAs($unauthorized)->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $otherWarehouse->work_location_id, 'context' => 'destination',
+        ]))->assertForbidden();
     }
 
     public function test_branch_scope_blocks_other_branch_receive_page(): void

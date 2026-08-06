@@ -80,4 +80,16 @@ class StockValuationTest extends TestCase
         $response->assertOk();
         $this->assertStringContainsString('2500000.00', $response->streamedContent());
     }
+
+    public function test_critical_stock_uses_available_in_page_and_export(): void
+    {
+        $this->product->update(['minimum_stock' => '20.0000']);
+        $this->stock->update(['quantity_on_hand' => '100.0000', 'quantity_reserved' => '90.0000', 'quantity_damaged' => '5.0000']);
+
+        $this->actingAs($this->user)->get(route('warehouse.stocks.index', ['status' => 'critical']))
+            ->assertOk()->assertSee($this->product->sku);
+        $csv = $this->get(route('warehouse.stocks.export', ['status' => 'critical']))->assertOk()->streamedContent();
+        $this->assertStringContainsString($this->product->sku, $csv);
+        $this->assertSame('5.0000', $this->stock->fresh()->available_quantity);
+    }
 }
