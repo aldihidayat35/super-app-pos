@@ -57,7 +57,13 @@ class StoreStockTransferRequest extends FormRequest
     public function after(): array
     {
         return [function (Validator $validator): void {
+            $defaultSourceLocationId = $this->input('source_warehouse_location_id');
+
             foreach ((array) $this->input('items', []) as $index => $item) {
+                if (is_array($item) && ! filled($item['source_warehouse_location_id'] ?? $defaultSourceLocationId)) {
+                    $validator->errors()->add("items.{$index}.source_warehouse_location_id", 'Lokasi ambil wajib dipilih sebelum produk dipindahkan.');
+                }
+
                 if (! is_array($item) || ! filled($item['quantity_approved'] ?? null) || ! filled($item['quantity_requested'] ?? null)) {
                     continue;
                 }

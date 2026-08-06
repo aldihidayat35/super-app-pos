@@ -75,6 +75,29 @@ class StockTransferItem extends Model
         return $this->hasMany(StockTransferReceiptItem::class);
     }
 
+    /** @return HasMany<StockTransferDiscrepancyResolution, $this> */
+    public function discrepancyResolutions(): HasMany
+    {
+        return $this->hasMany(StockTransferDiscrepancyResolution::class);
+    }
+
+    public function resolvedDiscrepancyQuantity(): string
+    {
+        $quantity = $this->relationLoaded('discrepancyResolutions')
+            ? $this->discrepancyResolutions->reduce(
+                fn (string $carry, StockTransferDiscrepancyResolution $resolution): string => Decimal::add($carry, (string) $resolution->quantity),
+                '0.0000',
+            )
+            : (string) $this->discrepancyResolutions()->sum('quantity');
+
+        return Decimal::normalize((string) $quantity);
+    }
+
+    public function unresolvedDiscrepancyQuantity(): string
+    {
+        return Decimal::sub((string) $this->quantity_discrepancy, $this->resolvedDiscrepancyQuantity());
+    }
+
     public function inTransitQuantity(): string
     {
         return Decimal::sub(

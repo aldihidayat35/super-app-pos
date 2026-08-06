@@ -79,8 +79,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const rows = @json($chartData);
     if (!target || rows.length === 0 || typeof window.ApexCharts === 'undefined') return;
     const escapeHtml = (value) => { const node = document.createElement('div'); node.textContent = String(value ?? '-'); return node.innerHTML; };
-    const productNames = [...new Set(rows.map(row => row.product || 'Tanpa nama'))];
-    const grouped = productNames.map(name => ({ name, data: rows.filter(row => row.product === name && row.x).map(row => ({...row, y: Number(row.y)})) }));
+    const productIds = [...new Set(rows.map(row => row.productId))];
+    const grouped = productIds.map(productId => {
+        const productRows = rows.filter(row => row.productId === productId && row.x);
+        return {name: productRows[0]?.productLabel || 'Produk tidak dikenal', data: productRows.map(row => ({...row, y: Number(row.y)}))};
+    });
     if (rows.length === 1) target.insertAdjacentHTML('beforebegin', '<div class="alert alert-light-info py-3">Baru tersedia satu rekaman HPP. Titik akan membentuk tren setelah ada penerimaan berikutnya.</div>');
     new window.ApexCharts(target, {
         chart: { type: 'line', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },

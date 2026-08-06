@@ -138,6 +138,37 @@ class DashboardReportTest extends TestCase
         $this->assertLessThan(60, count(DB::getQueryLog()));
     }
 
+    public function test_critical_stock_kpi_counts_products_not_stock_rows(): void
+    {
+        $unit = Unit::factory()->create();
+        $product = Product::factory()->create([
+            'base_unit_id' => $unit->id,
+            'minimum_stock' => '5.0000',
+        ]);
+        foreach (range(1, 3) as $bin) {
+            Stock::query()->create([
+                'product_id' => $product->id,
+                'work_location_id' => $this->branchLocation->id,
+                'location_scope_key' => 'test-bin:'.$bin,
+                'quantity_on_hand' => '1.0000',
+                'quantity_reserved' => '0.0000',
+                'quantity_damaged' => '0.0000',
+                'cost_value' => '0.00',
+            ]);
+        }
+
+        $filters = app(ReportMetricService::class)->filters($this->retail, [
+            'start_date' => now('Asia/Jakarta')->toDateString(),
+            'end_date' => now('Asia/Jakarta')->toDateString(),
+        ]);
+        $dashboard = app(ReportMetricService::class)->retailDashboard($this->retail, $filters);
+
+        $this->assertSame(1, $dashboard['kpis']['critical_stock_count']);
+        $this->assertCount(1, $dashboard['stock_alerts']);
+        $this->assertSame($product->id, $dashboard['stock_alerts'][0]['product_id']);
+        $this->assertSame('3.0000', $dashboard['stock_alerts'][0]['available']);
+    }
+
     private function seedFixtureSale(string $amount, string $margin, WorkLocation $location, string $status = PosSaleStatus::COMPLETED->value, mixed $completedAt = null): PosSale
     {
         $unit = Unit::factory()->create();

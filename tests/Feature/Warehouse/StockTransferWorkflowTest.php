@@ -3,14 +3,17 @@
 namespace Tests\Feature\Warehouse;
 
 use App\Enums\RestockRequestStatus;
+use App\Enums\StockTransferDiscrepancyResolutionType;
 use App\Enums\StockTransferStatus;
 use App\Exceptions\ServiceException;
 use App\Models\Branch;
+use App\Models\InventoryLoss;
 use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\Stock;
 use App\Models\StockMutation;
 use App\Models\StockTransfer;
+use App\Models\StockTransferDiscrepancyResolution;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -227,9 +230,111 @@ class StockTransferWorkflowTest extends TestCase
         $this->assertSame('2.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
         $this->assertSame('1.0000', $received->items->firstOrFail()->quantity_discrepancy);
 
-        $this->expectException(ServiceException::class);
-        $this->expectExceptionMessage('selisih pengiriman');
-        $this->transfers->complete($received, $this->warehouseHead);
+        try {
+            $this->transfers->complete($received, $this->warehouseHead);
+            $this->fail('Transfer dengan discrepancy belum selesai seharusnya tidak dapat ditutup.');
+        } catch (ServiceException $exception) {
+            $this->assertStringContainsString('selisih pengiriman', $exception->getMessage());
+        }
+
+        $resolved = $this->transfers->resolveDiscrepancy($received, [
+            'stock_transfer_item_id' => $item->id,
+            'resolution_type' => StockTransferDiscrepancyResolutionType::FOUND_RECEIVED->value,
+            'quantity' => '1',
+            'notes' => 'Paket susulan ditemukan.',
+            'idempotency_key' => 'resolution-found-1',
+        ], $this->storeHead);
+
+        $this->assertSame(StockTransferStatus::FULLY_RECEIVED, $resolved->status);
+        $this->assertSame('3.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
+        $this->assertSame('0.0000', $resolved->items->firstOrFail()->unresolvedDiscrepancyQuantity());
+        $this->transfers->resolveDiscrepancy($resolved, [
+            'stock_transfer_item_id' => $item->id,
+            'resolution_type' => StockTransferDiscrepancyResolutionType::FOUND_RECEIVED->value,
+            'quantity' => '1',
+            'notes' => 'Retry request yang sama.',
+            'idempotency_key' => 'resolution-found-1',
+        ], $this->storeHead);
+        $this->assertDatabaseCount('stock_transfer_discrepancy_resolutions', 1);
+        $this->assertSame('3.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
+        $this->assertSame(StockTransferStatus::COMPLETED, $this->transfers->complete($resolved, $this->storeHead)->status);
+    }
+
+    public function test_discrepancy_can_be_resolved_as_loss_without_double_issuing_source_stock(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '5', $this->warehouseHead);
+        $transfer = $this->makeApprovedTransfer($warehouse, $branch, $product, $sourceBin, $destinationBin, '3');
+        $this->transfers->pack($transfer, ['items' => [$transfer->items->first()->id => ['quantity_picked' => '3']]], $this->warehouseStaff);
+        $shipped = $this->transfers->ship($transfer, [], $this->warehouseStaff);
+        $item = $shipped->items->firstOrFail();
+        $received = $this->transfers->receive($shipped, ['idempotency_key' => 'loss-receipt', 'items' => [$item->id => ['quantity_received' => '2', 'quantity_discrepancy' => '1']]], $this->storeHead);
+        $sourceBefore = Stock::query()->where('work_location_id', $warehouse->work_location_id)->where('product_id', $product->id)->firstOrFail()->quantity_on_hand;
+
+        $resolved = $this->transfers->resolveDiscrepancy($received, [
+            'stock_transfer_item_id' => $item->id,
+            'resolution_type' => StockTransferDiscrepancyResolutionType::INVENTORY_LOSS->value,
+            'quantity' => '1',
+            'notes' => 'Barang hilang selama perjalanan dan disetujui.',
+            'idempotency_key' => 'resolution-loss-1',
+        ], $this->warehouseHead);
+
+        $loss = InventoryLoss::query()->firstOrFail();
+        $this->assertSame('in_transit', $loss->disposition);
+        $this->assertSame($transfer->id, $loss->reference_id);
+        $this->assertSame($sourceBefore, Stock::query()->where('work_location_id', $warehouse->work_location_id)->where('product_id', $product->id)->firstOrFail()->quantity_on_hand);
+        $this->assertSame(StockTransferStatus::FULLY_RECEIVED, $resolved->status);
+        $this->assertDatabaseHas('document_status_histories', ['document_type' => 'stock_transfer', 'document_id' => $transfer->id, 'to_status' => StockTransferStatus::FULLY_RECEIVED->value]);
+    }
+
+    public function test_discrepancy_resolution_validates_permission_and_unresolved_quantity(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '5', $this->warehouseHead);
+        $transfer = $this->makeApprovedTransfer($warehouse, $branch, $product, $sourceBin, $destinationBin, '3');
+        $this->transfers->pack($transfer, ['items' => [$transfer->items->first()->id => ['quantity_picked' => '3']]], $this->warehouseStaff);
+        $shipped = $this->transfers->ship($transfer, [], $this->warehouseStaff);
+        $item = $shipped->items->firstOrFail();
+        $received = $this->transfers->receive($shipped, ['idempotency_key' => 'shortage-receipt', 'items' => [$item->id => ['quantity_received' => '2', 'quantity_discrepancy' => '1']]], $this->storeHead);
+
+        try {
+            $this->transfers->resolveDiscrepancy($received, [
+                'stock_transfer_item_id' => $item->id,
+                'resolution_type' => StockTransferDiscrepancyResolutionType::SHORTAGE_ACCEPTED->value,
+                'quantity' => '2',
+                'notes' => 'Melebihi selisih.',
+                'idempotency_key' => 'resolution-over-1',
+            ], $this->warehouseHead);
+            $this->fail('Resolusi melebihi discrepancy seharusnya ditolak.');
+        } catch (ServiceException $exception) {
+            $this->assertStringContainsString('tidak boleh melebihi', $exception->getMessage());
+        }
+
+        try {
+            $this->transfers->resolveDiscrepancy($received, [
+                'stock_transfer_item_id' => $item->id,
+                'resolution_type' => StockTransferDiscrepancyResolutionType::SHORTAGE_ACCEPTED->value,
+                'quantity' => '1',
+                'notes' => 'Dicoba user penerima tanpa approval.',
+                'idempotency_key' => 'resolution-no-approval-1',
+            ], $this->storeHead);
+            $this->fail('Shortage final tanpa izin approval seharusnya ditolak.');
+        } catch (ServiceException $exception) {
+            $this->assertStringContainsString('memerlukan izin approval', $exception->getMessage());
+        }
+
+        $resolved = $this->transfers->resolveDiscrepancy($received, [
+            'stock_transfer_item_id' => $item->id,
+            'resolution_type' => StockTransferDiscrepancyResolutionType::SHORTAGE_ACCEPTED->value,
+            'quantity' => '1',
+            'notes' => 'Kekurangan diterima sebagai final.',
+            'idempotency_key' => 'resolution-shortage-1',
+        ], $this->warehouseHead);
+        $this->assertSame(StockTransferStatus::FULLY_RECEIVED, $resolved->status);
+        $this->assertSame('2.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
+        $this->assertSame(1, StockTransferDiscrepancyResolution::query()->count());
     }
 
     public function test_insufficient_approval_is_atomic_and_explains_balance(): void
@@ -295,21 +400,62 @@ class StockTransferWorkflowTest extends TestCase
         [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
         $this->assignScope($warehouse, $branch);
         $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '2', $this->warehouseHead);
+        $otherBin = WarehouseLocation::factory()->create(['warehouse_id' => $warehouse->id, 'full_code' => 'SRC-OTHER']);
+        $otherProduct = Product::factory()->create(['base_unit_id' => $product->base_unit_id, 'status' => 'active', 'sku' => 'ONLY-OTHER-BIN']);
+        $this->inventory->receive($otherProduct, $warehouse->workLocation, $otherBin, '2', $this->warehouseHead);
 
         $this->actingAs($this->warehouseStaff)->getJson(route('warehouse.stock-transfers.location-options', [
-            'work_location_id' => $warehouse->work_location_id, 'context' => 'product', 'q' => $product->sku, 'page' => 1,
-        ]))->assertOk()->assertJsonPath('results.0.id', $product->id)->assertJsonStructure(['results', 'pagination' => ['more']]);
+            'work_location_id' => $warehouse->work_location_id, 'warehouse_location_id' => $sourceBin->id,
+            'context' => 'product', 'q' => $product->sku, 'page' => 1,
+        ]))->assertOk()->assertJsonPath('results.0.id', $product->id)->assertJsonMissing(['id' => $otherProduct->id])->assertJsonStructure(['results', 'pagination' => ['more']]);
 
-        $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertDontSee('@foreach($products', false);
+        $this->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $warehouse->work_location_id, 'warehouse_location_id' => $otherBin->id,
+            'context' => 'product', 'q' => $otherProduct->sku,
+        ]))->assertOk()->assertJsonPath('results.0.id', $otherProduct->id)->assertJsonMissing(['id' => $product->id]);
 
-        [$otherWarehouse, $emptyBranch] = $this->warehouseAndBranch('OPTIONS');
+        $this->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $warehouse->work_location_id, 'context' => 'product',
+        ]))->assertUnprocessable()->assertJsonValidationErrors('warehouse_location_id');
+
+        $createHtml = $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertDontSee('@foreach($products', false)->getContent();
+        $this->assertStringContainsString('data-options-url=', $createHtml);
+        $cascadeScript = file_get_contents(resource_path('js/modules/warehouse-stock-transfer-form.js'));
+        $this->assertIsString($cascadeScript);
+        $this->assertStringContainsString('Memuat zona/rak/bin ${label}...', $cascadeScript);
+        $this->assertStringContainsString('// Always enable select2 for searchable UX, even when initial results are empty', $cascadeScript);
+        $this->assertStringContainsString('select.disabled = false', $cascadeScript);
+        $this->assertStringContainsString('resetProduct(row, true)', $cascadeScript);
+        $this->assertStringContainsString('bindSelectChange(source, \'stock-transfer-source\'', $cascadeScript);
+        $this->assertStringContainsString('bindDelegatedSelectChange(body, \'.source-bin-select\', \'stock-transfer-row-source-bin\'', $cascadeScript);
+        $this->assertStringNotContainsString("source.addEventListener('change'", $cascadeScript);
+        $this->assertStringNotContainsString("document.addEventListener('DOMContentLoaded', initializeStockTransferForm", $cascadeScript);
+
+        $appScript = file_get_contents(resource_path('js/app.js'));
+        $this->assertIsString($appScript);
+        $this->assertStringContainsString("import { initializeStockTransferForm } from './modules/warehouse-stock-transfer-form';", $appScript);
+        $this->assertStringContainsString('initializeStockTransferForm();', $appScript);
+        $this->assertLessThan(
+            strpos($appScript, 'const initializeApplication'),
+            strpos($appScript, 'window.appFetch ='),
+            'appFetch harus tersedia sebelum form transfer stok diinisialisasi.',
+        );
+
+        $this->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $warehouse->work_location_id, 'context' => 'source', 'per_page' => 50,
+        ]))->assertOk()->assertJsonFragment(['id' => $sourceBin->id, 'text' => $sourceBin->full_code.' — '.$sourceBin->name]);
+
+        [$otherWarehouse, $destinationBranch] = $this->warehouseAndBranch('OPTIONS');
         $destinationBin = WarehouseLocation::factory()->create(['warehouse_id' => $otherWarehouse->id, 'full_code' => 'DEST-ONLY']);
         $this->getJson(route('warehouse.stock-transfers.location-options', [
             'work_location_id' => $otherWarehouse->work_location_id, 'context' => 'destination',
         ]))->assertOk()->assertJsonPath('results.0.id', $destinationBin->id)->assertJsonMissing(['id' => $sourceBin->id]);
         $this->getJson(route('warehouse.stock-transfers.location-options', [
-            'work_location_id' => $emptyBranch->work_location_id, 'context' => 'destination',
-        ]))->assertOk()->assertJsonCount(0, 'results');
+            'work_location_id' => $destinationBranch->work_location_id, 'context' => 'destination',
+        ]))->assertOk()->assertJsonPath('results.0.id', $destinationBin->id)->assertJsonMissing(['id' => $sourceBin->id]);
+        $this->actingAs($this->warehouseHead)->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $branch->work_location_id, 'context' => 'source',
+        ]))->assertOk()->assertJsonFragment(['id' => $sourceBin->id]);
 
         $unauthorized = User::factory()->create(['is_active' => true]);
         $this->actingAs($unauthorized)->getJson(route('warehouse.stock-transfers.location-options', [
@@ -376,14 +522,14 @@ class StockTransferWorkflowTest extends TestCase
             'source_work_location_id' => $warehouse->work_location_id,
             'source_warehouse_location_id' => $sourceBin->id,
             'destination_work_location_id' => $branch->work_location_id,
-            'destination_warehouse_location_id' => null,
+            'destination_warehouse_location_id' => $destinationBin->id,
             'transfer_date' => now()->toDateString(),
             'items' => [[
                 'product_id' => $product->id,
                 'quantity_requested' => $qty,
                 'quantity_approved' => $qty,
                 'source_warehouse_location_id' => $sourceBin->id,
-                'destination_warehouse_location_id' => null,
+                'destination_warehouse_location_id' => $destinationBin->id,
             ]],
             'action' => 'submit',
         ], $this->warehouseStaff);

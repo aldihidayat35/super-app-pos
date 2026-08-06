@@ -152,9 +152,36 @@ class StockOpnameWorkflowTest extends TestCase
         $this->actingAs($this->warehouseHead)->get(route('warehouse.stock-opnames.approval', $opname))
             ->assertOk()->assertSee('Setujui Opname')->assertSee('Tolak Opname');
 
+        $approved = $this->opnames->approve($opname, $this->warehouseHead, 'Disetujui untuk pengujian permission complete.');
+        $this->actingAs($this->warehouseStaff)->get(route('warehouse.stock-opnames.approval', $approved))
+            ->assertOk()->assertSee('tidak memiliki izin membuat penyesuaian')->assertDontSee('Selesaikan dan Buat Penyesuaian');
+        $this->actingAs($this->warehouseStaff)->post(route('warehouse.stock-opnames.complete', $approved))->assertForbidden();
+        $this->actingAs($this->warehouseHead)->get(route('warehouse.stock-opnames.approval', $approved))
+            ->assertOk()->assertSee('Selesaikan dan Buat Penyesuaian');
+
         $outside = User::factory()->create(['is_active' => true]);
         $outside->assignRole(Role::findOrCreate('kepala_gudang'));
         $this->actingAs($outside)->get(route('warehouse.stock-opnames.approval', $opname))->assertForbidden();
+    }
+
+    public function test_review_summary_excludes_uncounted_items_from_matching_and_threshold_counts(): void
+    {
+        [$firstProduct, $workLocation, $bin] = $this->fixture('PRD-OPN-SUM-1');
+        $this->assignScope($workLocation);
+        $secondProduct = Product::factory()->create(['sku' => 'PRD-OPN-SUM-2', 'cost_price' => '10000.00']);
+        $thirdProduct = Product::factory()->create(['sku' => 'PRD-OPN-SUM-3', 'cost_price' => '10000.00']);
+        foreach ([$firstProduct, $secondProduct, $thirdProduct] as $product) {
+            $this->inventory->receive($product, $workLocation, $bin, '10', $this->warehouseHead);
+        }
+        $opname = $this->createCountingOpname($workLocation, $bin);
+        $items = $opname->items()->orderBy('id')->get();
+        $this->opnames->countItem($items[0], ['counted_qty' => '10'], $this->warehouseStaff);
+        $this->opnames->countItem($items[1], ['counted_qty' => '8'], $this->warehouseStaff);
+
+        $this->actingAs($this->warehouseHead)
+            ->get(route('warehouse.stock-opnames.variance', $opname))
+            ->assertOk()
+            ->assertSeeInOrder(['Belum Dihitung', '1', 'Item Aman', '1', 'Item Berselisih', '1']);
     }
 
     public function test_start_snapshot_without_stock_returns_validation_error_instead_of_server_error(): void

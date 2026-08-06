@@ -839,6 +839,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/stock-transfers/{stockTransfer}/complete', [StockTransferController::class, 'complete'])
             ->middleware('permission:stock_transfers.receive|stock_transfers.approve')
             ->name('stock-transfers.complete');
+        Route::post('/stock-transfers/{stockTransfer}/resolve-discrepancy', [StockTransferController::class, 'resolveDiscrepancy'])
+            ->middleware('permission:stock_transfers.receive|stock_transfers.approve|losses.create')
+            ->name('stock-transfers.resolve-discrepancy');
         Route::post('/stock-transfers/{stockTransfer}/cancel', [StockTransferController::class, 'cancel'])
             ->middleware('permission:stock_transfers.create|stock_transfers.approve')
             ->name('stock-transfers.cancel');

@@ -7,13 +7,16 @@ use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Retail\ReceiveStockTransferRequest;
 use App\Http\Requests\Warehouse\PackStockTransferRequest;
+use App\Http\Requests\Warehouse\ResolveStockTransferDiscrepancyRequest;
 use App\Http\Requests\Warehouse\ShipStockTransferRequest;
 use App\Http\Requests\Warehouse\StoreStockTransferRequest;
+use App\Models\Branch;
 use App\Models\DocumentStatusHistory;
 use App\Models\Product;
 use App\Models\RestockRequest;
 use App\Models\Stock;
 use App\Models\StockTransfer;
+use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Warehouse\StockTransferService;
@@ -51,7 +54,11 @@ class StockTransferController extends Controller
     {
         $data = $request->validated();
         $this->ensureLocationScope($request, (int) $data['source_work_location_id']);
-        $transfer = $service->create($data, $request->user());
+        try {
+            $transfer = $service->create($data, $request->user());
+        } catch (ServiceException $exception) {
+            return back()->withInput()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
+        }
 
         return redirect()->route('warehouse.stock-transfers.show', $transfer)->with('notification', ['type' => 'success', 'message' => "Transfer {$transfer->number} berhasil disimpan."]);
     }
@@ -63,8 +70,18 @@ class StockTransferController extends Controller
         $validated = $request->validate([
             'work_location_id' => ['required', 'integer', Rule::exists('work_locations', 'id')->where('is_active', true)],
             'context' => ['required', Rule::in(['source', 'destination', 'product'])],
+            'warehouse_location_id' => [
+                Rule::requiredIf(fn (): bool => $request->input('context') === 'product'),
+                'nullable',
+                'integer',
+                Rule::exists('warehouse_locations', 'id')->where('is_active', true),
+            ],
             'q' => ['nullable', 'string', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ], [
+            'warehouse_location_id.required' => 'Pilih lokasi ambil sebelum mencari produk.',
+            'warehouse_location_id.exists' => 'Lokasi ambil tidak aktif atau tidak ditemukan.',
         ]);
         $workLocationId = (int) $validated['work_location_id'];
 
@@ -74,35 +91,46 @@ class StockTransferController extends Controller
 
         $search = trim((string) ($validated['q'] ?? ''));
         $page = (int) ($validated['page'] ?? 1);
+        $perPage = (int) ($validated['per_page'] ?? 20);
 
         if ($validated['context'] === 'product') {
-            $warehouseLocationId = $request->integer('warehouse_location_id') ?: null;
+            $warehouseLocationId = (int) $validated['warehouse_location_id'];
+            $warehouseIds = $this->warehouseIdsForWorkLocation($workLocationId);
+            $locationIsValid = WarehouseLocation::query()
+                ->whereKey($warehouseLocationId)
+                ->where('is_active', true)
+                ->whereIn('warehouse_id', $warehouseIds)
+                ->exists();
+
+            abort_unless($locationIsValid, 422, 'Lokasi ambil tidak sesuai dengan lokasi kerja sumber.');
+
             $query = Product::query()
                 ->where('status', 'active')
                 ->whereHas('stocks', fn ($stock) => $stock
                     ->where('work_location_id', $workLocationId)
-                    ->when($warehouseLocationId, fn ($row) => $row->where('warehouse_location_id', $warehouseLocationId))
+                    ->where('warehouse_location_id', $warehouseLocationId)
                     ->whereRaw('(quantity_on_hand - quantity_reserved - quantity_damaged) > 0'))
                 ->when($search !== '', fn ($product) => $product->where(function ($inner) use ($search): void {
                     $inner->where('sku', 'like', "%{$search}%")->orWhere('name', 'like', "%{$search}%");
                 }))
                 ->orderBy('name');
-            $products = $query->paginate(20, ['id', 'sku', 'name'], 'page', $page);
+            $products = $query->paginate($perPage, ['id', 'sku', 'name'], 'page', $page);
 
             return response()->json([
                 'results' => $products->map(fn (Product $product): array => ['id' => $product->id, 'text' => "{$product->sku} — {$product->name}"])->values(),
                 'pagination' => ['more' => $products->hasMorePages()],
             ]);
         }
+        $warehouseIds = $this->warehouseIdsForWorkLocation($workLocationId);
         $locations = WarehouseLocation::query()
             ->where('is_active', true)
-            ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $workLocationId))
+            ->whereIn('warehouse_id', $warehouseIds)
             ->when($search !== '', fn ($query) => $query->where(function ($inner) use ($search): void {
                 $inner->where('full_code', 'like', "%{$search}%")
                     ->orWhere('name', 'like', "%{$search}%");
             }))
             ->orderBy('full_code')
-            ->paginate(20, ['id', 'full_code', 'name'], 'page', $page);
+            ->paginate($perPage, ['id', 'full_code', 'name'], 'page', $page);
 
         return response()->json([
             'results' => $locations->map(fn (WarehouseLocation $location): array => [
@@ -119,6 +147,8 @@ class StockTransferController extends Controller
 
         $transfer = $stockTransfer->load([
             'items.product', 'items.sourceWarehouseLocation', 'items.destinationWarehouseLocation',
+            'items.discrepancyResolutions.resolver', 'items.discrepancyResolutions.inventoryLoss',
+            'discrepancyResolutions.item', 'discrepancyResolutions.resolver', 'discrepancyResolutions.inventoryLoss',
             'sourceWorkLocation', 'destinationWorkLocation', 'restockRequest', 'requester',
             'approver', 'shipper', 'receiver', 'packages.checker', 'receipts.items.stockTransferItem',
             'stockMutations.product', 'statusHistories.actor',
@@ -184,7 +214,11 @@ class StockTransferController extends Controller
             $data['photo_path'] = $request->file('photo')?->store('stock-transfer-packages', 'public');
         }
 
-        $service->pack($stockTransfer, $data, $request->user());
+        try {
+            $service->pack($stockTransfer, $data, $request->user());
+        } catch (ServiceException $exception) {
+            return back()->withInput()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
+        }
 
         return redirect()->route('warehouse.stock-transfers.show', $stockTransfer)->with('notification', ['type' => 'success', 'message' => 'Picking dan packing berhasil disimpan.']);
     }
@@ -204,7 +238,11 @@ class StockTransferController extends Controller
             $data['proof_path'] = $request->file('proof')?->store('stock-transfer-shipping', 'public');
         }
 
-        $service->ship($stockTransfer, $data, $request->user());
+        try {
+            $service->ship($stockTransfer, $data, $request->user());
+        } catch (ServiceException $exception) {
+            return back()->withInput()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
+        }
 
         return redirect()->route('warehouse.stock-transfers.show', $stockTransfer)->with('notification', ['type' => 'success', 'message' => 'Transfer berhasil dikirim.']);
     }
@@ -224,7 +262,11 @@ class StockTransferController extends Controller
             $data['proof_path'] = $request->file('proof')?->store('stock-transfer-receipts', 'public');
         }
 
-        $service->receive($stockTransfer, $data, $request->user());
+        try {
+            $service->receive($stockTransfer, $data, $request->user());
+        } catch (ServiceException $exception) {
+            return back()->withInput()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
+        }
 
         return redirect()->route('warehouse.stock-transfers.show', $stockTransfer)->with('notification', ['type' => 'success', 'message' => 'Penerimaan transfer berhasil disimpan.']);
     }
@@ -232,16 +274,44 @@ class StockTransferController extends Controller
     public function complete(Request $request, StockTransfer $stockTransfer, StockTransferService $service): RedirectResponse
     {
         $this->authorize('complete', $stockTransfer);
-        $service->complete($stockTransfer, $request->user());
+        try {
+            $service->complete($stockTransfer, $request->user());
+        } catch (ServiceException $exception) {
+            return back()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
+        }
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Transfer diselesaikan.']);
+    }
+
+    public function resolveDiscrepancy(
+        ResolveStockTransferDiscrepancyRequest $request,
+        StockTransfer $stockTransfer,
+        StockTransferService $service,
+    ): RedirectResponse {
+        $this->authorize('resolveDiscrepancy', $stockTransfer);
+        $data = $request->validated();
+        if ($request->hasFile('proof')) {
+            $data['proof_path'] = $request->file('proof')?->store('stock-transfer-discrepancies', 'public');
+        }
+
+        try {
+            $service->resolveDiscrepancy($stockTransfer, $data, $request->user());
+        } catch (ServiceException $exception) {
+            return back()->withInput()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
+        }
+
+        return back()->with('notification', ['type' => 'success', 'message' => 'Selisih transfer berhasil diselesaikan dan dicatat pada audit.']);
     }
 
     public function cancel(Request $request, StockTransfer $stockTransfer, StockTransferService $service): RedirectResponse
     {
         $this->authorize('cancel', $stockTransfer);
         $request->validate(['reason' => ['required', 'string', 'max:500']]);
-        $service->cancel($stockTransfer, $request->user(), $request->input('reason'));
+        try {
+            $service->cancel($stockTransfer, $request->user(), $request->input('reason'));
+        } catch (ServiceException $exception) {
+            return back()->withInput()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
+        }
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Transfer dibatalkan.']);
     }
@@ -299,5 +369,28 @@ class StockTransferController extends Controller
     private function ensureLocationScope(Request $request, int $workLocationId): void
     {
         abort_unless($request->user()?->canAccessWorkLocation($workLocationId), 403);
+    }
+
+    /** @return list<int> */
+    private function warehouseIdsForWorkLocation(int $workLocationId): array
+    {
+        $warehouseIds = Warehouse::query()
+            ->where('is_active', true)
+            ->where('work_location_id', $workLocationId)
+            ->pluck('id');
+
+        $branchWarehouseIds = Branch::query()
+            ->where('is_active', true)
+            ->where('work_location_id', $workLocationId)
+            ->whereHas('primaryWarehouse', fn ($query) => $query->where('is_active', true))
+            ->pluck('primary_warehouse_id');
+
+        return $warehouseIds
+            ->merge($branchWarehouseIds)
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 }

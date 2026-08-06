@@ -2,19 +2,25 @@
 
 namespace App\Services\Warehouse;
 
+use App\Enums\InventoryLossStatus;
 use App\Enums\RestockRequestStatus;
+use App\Enums\StockTransferDiscrepancyResolutionType;
 use App\Enums\StockTransferStatus;
 use App\Exceptions\ServiceException;
+use App\Models\Branch;
 use App\Models\DocumentStatusHistory;
+use App\Models\InventoryLoss;
 use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\RestockRequest;
 use App\Models\RestockRequestItem;
 use App\Models\Stock;
 use App\Models\StockTransfer;
+use App\Models\StockTransferDiscrepancyResolution;
 use App\Models\StockTransferItem;
 use App\Models\StockTransferReceipt;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Inventory\InventoryService;
@@ -371,9 +377,9 @@ class StockTransferService
     public function complete(StockTransfer $transfer, User $actor): StockTransfer
     {
         return DB::transaction(function () use ($transfer, $actor): StockTransfer {
-            $transfer = StockTransfer::query()->with('items')->lockForUpdate()->findOrFail($transfer->id);
+            $transfer = StockTransfer::query()->with('items.discrepancyResolutions')->lockForUpdate()->findOrFail($transfer->id);
 
-            if ($transfer->items->contains(fn (StockTransferItem $item): bool => Decimal::compare((string) $item->quantity_discrepancy, '0') > 0)) {
+            if ($transfer->items->contains(fn (StockTransferItem $item): bool => Decimal::compare($item->unresolvedDiscrepancyQuantity(), '0') > 0)) {
                 throw ServiceException::validation('Transfer memiliki selisih pengiriman yang belum diselesaikan dan belum dapat ditutup.');
             }
 
@@ -385,6 +391,138 @@ class StockTransferService
             $this->history($transfer, StockTransferStatus::FULLY_RECEIVED, StockTransferStatus::COMPLETED, $actor, 'Transfer diselesaikan.');
 
             return $transfer->fresh(['items.product', 'sourceWorkLocation', 'destinationWorkLocation']);
+        });
+    }
+
+    /** @param array<string, mixed> $data */
+    public function resolveDiscrepancy(StockTransfer $transfer, array $data, User $actor): StockTransfer
+    {
+        $hasGeneralPermission = $actor->can('stock_transfers.receive')
+            || $actor->can('stock_transfers.approve')
+            || $actor->can('losses.create');
+        $hasLocationScope = $actor->canAccessWorkLocation((int) $transfer->source_work_location_id)
+            || $actor->canAccessWorkLocation((int) $transfer->destination_work_location_id);
+        if (! $hasGeneralPermission || ! $hasLocationScope) {
+            throw ServiceException::validation('Anda tidak berwenang menyelesaikan selisih transfer ini.');
+        }
+
+        $existing = StockTransferDiscrepancyResolution::query()
+            ->where('idempotency_key', $data['idempotency_key'])
+            ->first();
+        if ($existing instanceof StockTransferDiscrepancyResolution) {
+            if ((int) $existing->stock_transfer_id !== (int) $transfer->id) {
+                throw ServiceException::validation('Kunci idempotensi sudah digunakan oleh transfer lain.');
+            }
+
+            return $transfer->fresh(['items.discrepancyResolutions', 'discrepancyResolutions']);
+        }
+
+        return DB::transaction(function () use ($transfer, $data, $actor): StockTransfer {
+            $transfer = StockTransfer::query()
+                ->with(['items.product', 'items.discrepancyResolutions', 'sourceWorkLocation', 'destinationWorkLocation'])
+                ->lockForUpdate()
+                ->findOrFail($transfer->id);
+
+            if ($transfer->status !== StockTransferStatus::PARTIALLY_RECEIVED) {
+                throw ServiceException::validation('Penyelesaian selisih hanya tersedia untuk transfer yang diterima sebagian.');
+            }
+
+            $item = StockTransferItem::query()
+                ->with(['product', 'discrepancyResolutions'])
+                ->where('stock_transfer_id', $transfer->id)
+                ->lockForUpdate()
+                ->findOrFail((int) $data['stock_transfer_item_id']);
+            $quantity = Decimal::normalize((string) $data['quantity']);
+            $unresolved = $item->unresolvedDiscrepancyQuantity();
+
+            if (Decimal::compare($quantity, '0') <= 0 || Decimal::compare($quantity, $unresolved) > 0) {
+                throw ServiceException::validation("Jumlah penyelesaian tidak boleh melebihi selisih yang belum selesai ({$unresolved}).");
+            }
+
+            $type = StockTransferDiscrepancyResolutionType::from((string) $data['resolution_type']);
+            $inventoryLoss = null;
+
+            if ($type === StockTransferDiscrepancyResolutionType::FOUND_RECEIVED) {
+                if (! $actor->can('stock_transfers.receive') || ! $actor->canAccessWorkLocation((int) $transfer->destination_work_location_id)) {
+                    throw ServiceException::validation('Anda tidak berwenang menerima barang susulan di lokasi tujuan.');
+                }
+                $this->inventory->transferIn(
+                    $item->product,
+                    $transfer->destinationWorkLocation,
+                    $this->destinationBin($transfer, $item),
+                    $quantity,
+                    $actor,
+                    $this->reference($transfer),
+                    'Barang discrepancy ditemukan dan diterima susulan.',
+                    "stock-transfer-{$transfer->id}-discrepancy-{$data['idempotency_key']}-in",
+                    ['stock_transfer_item_id' => $item->id, 'resolution_type' => $type->value],
+                );
+            } elseif ($type === StockTransferDiscrepancyResolutionType::INVENTORY_LOSS) {
+                if (! $actor->can('stock_transfers.approve') || ! $actor->can('losses.create')) {
+                    throw ServiceException::validation('Penyelesaian sebagai kehilangan memerlukan izin approval transfer dan pencatatan loss.');
+                }
+                $unitCost = Decimal::normalize((string) ($item->product->cost_price ?? 0), 2);
+                $inventoryLoss = InventoryLoss::query()->create([
+                    'number' => $this->numbers->next('loss', $transfer->sourceWorkLocation),
+                    'work_location_id' => $transfer->source_work_location_id,
+                    'warehouse_location_id' => $item->source_warehouse_location_id ?? $transfer->source_warehouse_location_id,
+                    'product_id' => $item->product_id,
+                    'reported_by' => $actor->id,
+                    'approved_by' => $actor->id,
+                    'loss_type' => 'stock_transfer_in_transit',
+                    'disposition' => 'in_transit',
+                    'status' => InventoryLossStatus::APPROVED,
+                    'quantity' => $quantity,
+                    'unit_cost_snapshot' => $unitCost,
+                    'loss_value' => Decimal::mul($quantity, $unitCost, 4, 2, 2),
+                    'reference_type' => 'stock_transfer',
+                    'reference_id' => $transfer->id,
+                    'reference_no' => $transfer->number,
+                    'evidence_path' => $data['proof_path'] ?? null,
+                    'reason' => $data['notes'],
+                    'reported_at' => now(),
+                    'approved_at' => now(),
+                ]);
+                // Tidak ada issue kedua: stok sudah keluar dari sumber ketika status SHIPPED.
+            } else {
+                if (! $actor->can('stock_transfers.approve')) {
+                    throw ServiceException::validation('Penerimaan kekurangan sebagai final memerlukan izin approval transfer.');
+                }
+            }
+
+            $resolution = StockTransferDiscrepancyResolution::query()->create([
+                'stock_transfer_id' => $transfer->id,
+                'stock_transfer_item_id' => $item->id,
+                'quantity' => $quantity,
+                'resolution_type' => $type,
+                'notes' => $data['notes'],
+                'proof_path' => $data['proof_path'] ?? null,
+                'resolved_by' => $actor->id,
+                'resolved_at' => now(),
+                'inventory_loss_id' => $inventoryLoss?->id,
+                'idempotency_key' => $data['idempotency_key'],
+                'metadata' => ['unresolved_before' => $unresolved],
+            ]);
+
+            $transfer->load('items.discrepancyResolutions');
+            $hasUnresolved = $transfer->items->contains(
+                fn (StockTransferItem $transferItem): bool => Decimal::compare($transferItem->unresolvedDiscrepancyQuantity(), '0') > 0,
+            );
+            $from = $transfer->status;
+            $to = ! $hasUnresolved && $this->allShippedAccounted($transfer)
+                ? StockTransferStatus::FULLY_RECEIVED
+                : StockTransferStatus::PARTIALLY_RECEIVED;
+            $transfer->forceFill(['status' => $to])->save();
+            $this->history(
+                $transfer,
+                $from,
+                $to,
+                $actor,
+                "Selisih {$item->product_sku_snapshot} diselesaikan: {$type->label()} sebanyak {$quantity}. {$data['notes']}",
+                ['resolution_id' => $resolution->id, 'resolution_type' => $type->value, 'quantity' => $quantity],
+            );
+
+            return $transfer->fresh(['items.discrepancyResolutions', 'discrepancyResolutions.inventoryLoss', 'statusHistories']);
         });
     }
 
@@ -483,7 +621,7 @@ class StockTransferService
         $belongs = WarehouseLocation::query()
             ->whereKey((int) $warehouseLocationId)
             ->where('is_active', true)
-            ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $workLocation->id))
+            ->whereIn('warehouse_id', $this->warehouseIdsForWorkLocation($workLocation))
             ->exists();
 
         if (! $belongs) {
@@ -491,12 +629,36 @@ class StockTransferService
         }
     }
 
+    /** @return list<int> */
+    private function warehouseIdsForWorkLocation(WorkLocation $workLocation): array
+    {
+        $warehouseIds = Warehouse::query()
+            ->where('is_active', true)
+            ->where('work_location_id', $workLocation->id)
+            ->pluck('id');
+
+        $branchWarehouseIds = Branch::query()
+            ->where('is_active', true)
+            ->where('work_location_id', $workLocation->id)
+            ->whereHas('primaryWarehouse', fn ($query) => $query->where('is_active', true))
+            ->pluck('primary_warehouse_id');
+
+        return $warehouseIds
+            ->merge($branchWarehouseIds)
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     private function allShippedAccounted(StockTransfer $transfer): bool
     {
         return $transfer->items->every(fn (StockTransferItem $item): bool => Decimal::compare($item->inTransitQuantity(), '0') === 0);
     }
 
-    private function history(StockTransfer $transfer, ?StockTransferStatus $from, StockTransferStatus $to, User $actor, ?string $notes = null): void
+    /** @param array<string, mixed>|null $metadata */
+    private function history(StockTransfer $transfer, ?StockTransferStatus $from, StockTransferStatus $to, User $actor, ?string $notes = null, ?array $metadata = null): void
     {
         DocumentStatusHistory::query()->create([
             'document_type' => 'stock_transfer',
@@ -505,6 +667,7 @@ class StockTransferService
             'to_status' => $to->value,
             'actor_user_id' => $actor->id,
             'notes' => $notes,
+            'metadata' => $metadata,
         ]);
     }
 }

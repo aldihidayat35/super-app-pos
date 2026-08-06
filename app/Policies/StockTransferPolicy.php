@@ -67,6 +67,13 @@ class StockTransferPolicy
             && $this->view($user, $stockTransfer);
     }
 
+    public function resolveDiscrepancy(User $user, StockTransfer $stockTransfer): bool
+    {
+        return ($user->can('stock_transfers.receive') || $user->can('stock_transfers.approve') || $user->can('losses.create'))
+            && $stockTransfer->status === StockTransferStatus::PARTIALLY_RECEIVED
+            && $this->view($user, $stockTransfer);
+    }
+
     public function cancel(User $user, StockTransfer $stockTransfer): bool
     {
         return ($user->can('stock_transfers.create') || $user->can('stock_transfers.approve'))

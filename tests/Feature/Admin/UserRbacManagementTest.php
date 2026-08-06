@@ -2,11 +2,14 @@
 
 namespace Tests\Feature\Admin;
 
+use App\DataTables\UsersDataTable;
 use App\Models\ApprovalRequest;
 use App\Models\User;
 use App\Models\WorkLocation;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -45,6 +48,28 @@ class UserRbacManagementTest extends TestCase
         $this->actingAs($admin)->get(route('admin.roles.index'))->assertOk()->assertSee('Daftar Role');
         $this->actingAs($admin)->get(route('admin.roles.show', $role))->assertOk()->assertSee('Matriks Permission');
         $this->actingAs($admin)->get(route('admin.permissions.index'))->assertOk()->assertSee('Daftar Permission');
+    }
+
+    #[Test]
+    public function users_datatable_uses_eager_loaded_default_locations_without_per_row_queries(): void
+    {
+        $location = WorkLocation::factory()->create(['name' => 'Lokasi Utama']);
+        $role = Role::findOrCreate('admin_user');
+        foreach (range(1, 15) as $index) {
+            $user = User::factory()->create(['name' => 'User Query '.$index]);
+            $user->assignRole($role);
+            $user->workLocations()->attach($location->id, ['is_default' => true, 'is_active' => true]);
+        }
+
+        $request = Request::create('/admin/users/datatable', 'GET', ['start' => 0, 'length' => 15]);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $result = (new UsersDataTable($request))->paginate();
+        $queryCount = count(DB::getQueryLog());
+
+        $this->assertCount(15, $result['data']);
+        $this->assertStringContainsString('Lokasi Utama', (string) $result['data'][0]['location']);
+        $this->assertLessThanOrEqual(6, $queryCount, "UsersDataTable menjalankan {$queryCount} query; jumlah ini tidak boleh bertambah per baris.");
     }
 
     #[Test]

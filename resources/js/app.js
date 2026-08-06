@@ -1,5 +1,6 @@
 import './vendor';
 import './bootstrap';
+import { initializeStockTransferForm } from './modules/warehouse-stock-transfer-form';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 const loadingOverlay = document.querySelector('[data-app-loading]');
@@ -353,6 +354,7 @@ const initializeSidebarToggle = () => {
 const initializeApplication = () => {
     initializeTheme();
     initializeSelect2();
+    initializeStockTransferForm();
     observeDynamicSelect2();
     initializeSearchableSelectFallbacks();
     initializeDatePickers();

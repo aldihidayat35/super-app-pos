@@ -109,6 +109,12 @@ class StockTransfer extends Model
         return $this->hasMany(StockTransferReceipt::class);
     }
 
+    /** @return HasMany<StockTransferDiscrepancyResolution, $this> */
+    public function discrepancyResolutions(): HasMany
+    {
+        return $this->hasMany(StockTransferDiscrepancyResolution::class);
+    }
+
     /** @return HasMany<StockMutation, $this> */
     public function stockMutations(): HasMany
     {

@@ -65,7 +65,7 @@
             default => 'Periksa status dokumen sebelum melanjutkan.',
         };
         $hasDamaged = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare((string)$item->quantity_damaged, '0') > 0);
-        $hasDiscrepancy = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare((string)$item->quantity_discrepancy, '0') > 0);
+        $hasDiscrepancy = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare($item->unresolvedDiscrepancyQuantity(), '0') > 0);
         $hasTransit = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare($item->inTransitQuantity(), '0') > 0);
         $hasShort = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare((string)$item->quantity_short, '0') > 0);
     @endphp
@@ -124,10 +124,20 @@
                 <div class="table-responsive">
                     <table class="table table-row-dashed align-middle">
                         <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Diminta</th><th>Disetujui</th><th>Diambil/Kurang</th><th>Dikirim</th><th>Diterima</th><th>Rusak</th><th>Selisih Pengiriman</th><th>Dalam Perjalanan</th></tr></thead>
-                        <tbody>@foreach($transfer->items as $item)<tr><td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td><td>{{ qty($item->quantity_requested) }}</td><td>{{ qty($item->quantity_approved) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_short, '0') > 0 ? 'text-warning fw-bold' : '' }}">{{ qty($item->quantity_picked) }} / {{ qty($item->quantity_short) }}</td><td>{{ qty($item->quantity_shipped) }}</td><td>{{ qty($item->quantity_received) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_damaged, '0') > 0 ? 'text-danger fw-bold' : '' }}">{{ qty($item->quantity_damaged) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_discrepancy, '0') > 0 ? 'text-danger fw-bold' : '' }}">{{ qty($item->quantity_discrepancy) }}</td><td class="{{ \App\Support\Decimal::compare($item->inTransitQuantity(), '0') > 0 ? 'text-warning fw-bold' : 'fw-bold' }}">{{ qty($item->inTransitQuantity()) }}</td></tr>@endforeach</tbody>
+                        <tbody>@foreach($transfer->items as $item)<tr><td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td><td>{{ qty($item->quantity_requested) }}</td><td>{{ qty($item->quantity_approved) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_short, '0') > 0 ? 'text-warning fw-bold' : '' }}">{{ qty($item->quantity_picked) }} / {{ qty($item->quantity_short) }}</td><td>{{ qty($item->quantity_shipped) }}</td><td>{{ qty($item->quantity_received) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_damaged, '0') > 0 ? 'text-danger fw-bold' : '' }}">{{ qty($item->quantity_damaged) }}</td><td class="{{ \App\Support\Decimal::compare($item->unresolvedDiscrepancyQuantity(), '0') > 0 ? 'text-danger fw-bold' : '' }}">{{ qty($item->unresolvedDiscrepancyQuantity()) }} belum selesai<div class="text-muted fs-8">Dicatat {{ qty($item->quantity_discrepancy) }}, diselesaikan {{ qty($item->resolvedDiscrepancyQuantity()) }}</div></td><td class="{{ \App\Support\Decimal::compare($item->inTransitQuantity(), '0') > 0 ? 'text-warning fw-bold' : 'fw-bold' }}">{{ qty($item->inTransitQuantity()) }}</td></tr>@endforeach</tbody>
                     </table>
                 </div>
             </x-metronic.card>
+
+            @if($transfer->discrepancyResolutions->isNotEmpty())
+                <x-metronic.card title="Riwayat Penyelesaian Selisih" class="mt-5">
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle"><thead><tr><th>Produk</th><th>Penyelesaian</th><th>Jumlah</th><th>Pelaksana</th><th>Catatan</th><th>Referensi</th></tr></thead><tbody>
+                        @foreach($transfer->discrepancyResolutions as $resolution)
+                            <tr><td>{{ $resolution->item?->product_sku_snapshot }}</td><td>{{ $resolution->resolution_type->label() }}</td><td>{{ qty($resolution->quantity) }}</td><td>{{ $resolution->resolver?->name }}<div class="text-muted fs-8">{{ $resolution->resolved_at?->format('d/m/Y H:i') }}</div></td><td>{{ $resolution->notes }}</td><td>{{ $resolution->inventoryLoss?->number ?: '-' }}</td></tr>
+                        @endforeach
+                    </tbody></table></div>
+                </x-metronic.card>
+            @endif
 
             <x-metronic.card title="Mutasi Stok" class="mt-5">
                 <div class="table-responsive"><table class="table align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Waktu</th><th>Produk</th><th>Jenis</th><th>On Hand</th><th>Reserved</th><th>Lokasi</th></tr></thead><tbody>@forelse($transfer->stockMutations as $mutation)<tr><td>{{ $mutation->occurred_at?->format('d/m/Y H:i') }}</td><td>{{ $mutation->product?->sku }}</td><td>{{ $mutation->mutation_type->label() }}</td><td>{{ qty($mutation->quantity_on_hand_change) }}</td><td>{{ qty($mutation->quantity_reserved_change) }}</td><td>{{ $mutation->workLocation?->name }}</td></tr>@empty<tr><td colspan="6"><x-metronic.empty-state title="Belum ada mutasi" description="Reserve, ship, dan receive akan membuat mutasi stok." /></td></tr>@endforelse</tbody></table></div>
@@ -150,6 +160,36 @@
                     @can('cancel', $transfer)<form method="POST" action="{{ route('warehouse.stock-transfers.cancel', $transfer) }}">@csrf<input name="reason" class="form-control mb-2" placeholder="Alasan pembatalan" required><button class="btn btn-light-danger">Batalkan Transfer</button></form>@endcan
                 </div>
             </x-metronic.card>
+            @if($hasDiscrepancy)
+                <x-metronic.card title="Penyelesaian Selisih" class="mt-5">
+                    @can('resolveDiscrepancy', $transfer)
+                        @foreach($transfer->items as $item)
+                            @if(\App\Support\Decimal::compare($item->unresolvedDiscrepancyQuantity(), '0') > 0)
+                                <form method="POST" enctype="multipart/form-data" action="{{ route('warehouse.stock-transfers.resolve-discrepancy', $transfer) }}" class="border rounded p-4 mb-4">
+                                    @csrf
+                                    <input type="hidden" name="stock_transfer_item_id" value="{{ $item->id }}">
+                                    <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
+                                    <div class="fw-bold mb-1">{{ $item->product_sku_snapshot }} — {{ $item->product_name_snapshot }}</div>
+                                    <div class="text-muted fs-8 mb-3">Belum diselesaikan: {{ qty($item->unresolvedDiscrepancyQuantity()) }}</div>
+                                    <label class="form-label required">Jenis Penyelesaian</label>
+                                    <select name="resolution_type" class="form-select form-select-solid mb-3" required>
+                                        @foreach(\App\Enums\StockTransferDiscrepancyResolutionType::options() as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
+                                    </select>
+                                    <label class="form-label required">Jumlah</label>
+                                    <input type="number" step="1" min="1" max="{{ qty_input($item->unresolvedDiscrepancyQuantity()) }}" name="quantity" class="form-control form-control-solid mb-3" required>
+                                    <label class="form-label required">Alasan dan Catatan</label>
+                                    <textarea name="notes" class="form-control form-control-solid mb-3" rows="3" required></textarea>
+                                    <label class="form-label">Bukti</label>
+                                    <input type="file" name="proof" accept=".jpg,.jpeg,.png,.pdf" class="form-control form-control-solid mb-3">
+                                    <button class="btn btn-warning w-100">Simpan Penyelesaian</button>
+                                </form>
+                            @endif
+                        @endforeach
+                    @else
+                        <div class="alert alert-light-info mb-0">Anda dapat melihat selisih, tetapi tidak memiliki izin menyelesaikannya.</div>
+                    @endcan
+                </x-metronic.card>
+            @endif
             <x-metronic.card title="Timeline" class="mt-5">
                 @forelse($timeline as $history)@php($fromStatus = $history->from_status ? \App\Enums\StockTransferStatus::tryFrom($history->from_status)?->label() : 'Awal')@php($toStatus = \App\Enums\StockTransferStatus::tryFrom($history->to_status)?->label() ?? $history->to_status)<div class="border-start border-3 ps-4 mb-4"><div class="fw-bold">{{ $fromStatus }} → {{ $toStatus }}</div><div class="text-muted">{{ $history->created_at->format('d/m/Y H:i') }} oleh {{ $history->actor?->name ?: '-' }}</div><div>{{ $history->notes ?: '-' }}</div></div>@empty<x-metronic.empty-state title="Belum ada riwayat status" description="Perubahan status transfer akan tercatat di sini." />@endforelse
             </x-metronic.card>

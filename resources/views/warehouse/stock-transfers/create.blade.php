@@ -52,7 +52,7 @@
     </div>
 
     <x-metronic.card title="Transfer Baru">
-        <form method="POST" action="{{ route('warehouse.stock-transfers.store') }}" id="stock-transfer-form">
+        <form method="POST" action="{{ route('warehouse.stock-transfers.store') }}" id="stock-transfer-form" data-options-url="{{ route('warehouse.stock-transfers.location-options') }}">
             @csrf
             <div class="row g-4">
                 <div class="col-md-3">
@@ -69,7 +69,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Lokasi Ambil Default</label>
+                    <label class="form-label required">Lokasi Ambil Default</label>
                     <select name="source_warehouse_location_id" class="form-select form-select-solid source-bin-select" data-control="select2" data-selected="{{ old('source_warehouse_location_id') }}">
                         <option value="">Tanpa zona/rak/bin khusus</option>
                         @if($selectedWarehouseLocations->has((int) old('source_warehouse_location_id')))<option value="{{ old('source_warehouse_location_id') }}" selected>{{ $selectedWarehouseLocations->get((int) old('source_warehouse_location_id'))->full_code }}</option>@endif
@@ -85,6 +85,8 @@
                 <div class="col-md-3"><label class="form-label required">Tanggal</label><input type="date" name="transfer_date" value="{{ old('transfer_date', now()->toDateString()) }}" class="form-control form-control-solid" required></div>
                 <div class="col-md-9"><label class="form-label">Catatan</label><input name="notes" value="{{ old('notes') }}" class="form-control form-control-solid"></div>
             </div>
+
+            <div id="transfer-location-feedback" class="alert alert-light-danger mt-4 d-none" role="alert"></div>
 
             <div class="separator my-6"></div>
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -126,92 +128,3 @@
         </tr>
     </template>
 @endsection
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const optionsUrl = @json(route('warehouse.stock-transfers.location-options'));
-    const body = document.getElementById('transfer-items');
-    const source = document.getElementById('source-work-location');
-    const destination = document.getElementById('destination-work-location');
-    let nextIndex = body.querySelectorAll('.transfer-item-row').length;
-
-    const destroy = (select) => {
-        if (window.$?.fn?.select2 && window.$(select).hasClass('select2-hidden-accessible')) window.$(select).select2('destroy');
-    };
-    const configureRemote = (select, context) => {
-        destroy(select);
-        const workLocationId = context === 'destination' ? destination.value : source.value;
-        select.disabled = !workLocationId;
-        if (!window.$?.fn?.select2) return;
-        window.$(select).select2({
-            width: '100%', allowClear: true, minimumInputLength: 0,
-            placeholder: context === 'product' ? 'Cari SKU atau nama produk' : (workLocationId ? 'Cari zona/rak/bin' : 'Pilih lokasi kerja terlebih dahulu'),
-            ajax: {
-                url: optionsUrl, dataType: 'json', delay: 250,
-                data: (params) => ({
-                    work_location_id: workLocationId,
-                    context,
-                    warehouse_location_id: context === 'product' ? (select.closest('tr')?.querySelector('.source-bin-select')?.value || document.querySelector('select[name="source_warehouse_location_id"]')?.value || '') : '',
-                    q: params.term || '', page: params.page || 1,
-                }),
-                processResults: (payload) => payload,
-                transport: (params, success, failure) => {
-                    const controller = new AbortController();
-                    window.appFetch(`${params.url}?${new URLSearchParams(params.data)}`, {signal: controller.signal})
-                        .then((response) => response.ok ? response.json() : Promise.reject(response))
-                        .then(success).catch((error) => { if (error?.name !== 'AbortError') failure(error); });
-                    return {abort: () => controller.abort()};
-                },
-            },
-            language: {noResults: () => context === 'product' ? 'Tidak ada produk dengan stok tersedia' : 'Lokasi ini belum memiliki zona/rak/bin', searching: () => 'Mencari data…'},
-        });
-    };
-    const loadBins = (select, workLocationId, context) => {
-        select.disabled = !workLocationId;
-        configureRemote(select, context);
-    };
-    const refreshGroup = (context) => {
-        const workLocationId = context === 'source' ? source.value : destination.value;
-        document.querySelectorAll(`.${context}-bin-select`).forEach((select) => loadBins(select, workLocationId, context, select.dataset.selected || ''));
-    };
-    const bindRow = (row) => {
-        row.querySelector('.remove-transfer-item').addEventListener('click', () => {
-            if (body.querySelectorAll('.transfer-item-row').length === 1) return;
-            row.remove();
-        });
-        configureRemote(row.querySelector('.product-select'), 'product');
-        loadBins(row.querySelector('.source-bin-select'), source.value, 'source');
-        loadBins(row.querySelector('.destination-bin-select'), destination.value, 'destination');
-    };
-
-    source.addEventListener('change', () => {
-        document.querySelectorAll('.source-bin-select').forEach((select) => { select.dataset.selected = ''; select.value = ''; });
-        document.querySelectorAll('.product-select').forEach((select) => { destroy(select); select.innerHTML = '<option value="">Pilih produk</option>'; configureRemote(select, 'product'); });
-        refreshGroup('source');
-    });
-    destination.addEventListener('change', () => {
-        document.querySelectorAll('.destination-bin-select').forEach((select) => { select.dataset.selected = ''; select.value = ''; });
-        refreshGroup('destination');
-    });
-    body.addEventListener('change', (event) => {
-        if (!event.target.classList.contains('source-bin-select')) return;
-        const product = event.target.closest('tr')?.querySelector('.product-select');
-        if (product) configureRemote(product, 'product');
-    });
-    document.getElementById('add-transfer-item').addEventListener('click', () => {
-        const template = document.getElementById('transfer-item-template').innerHTML.replaceAll('__INDEX__', String(nextIndex++));
-        body.insertAdjacentHTML('beforeend', template);
-        bindRow(body.lastElementChild);
-    });
-    body.querySelectorAll('.transfer-item-row').forEach((row) => {
-        row.querySelector('.remove-transfer-item').addEventListener('click', () => {
-            if (body.querySelectorAll('.transfer-item-row').length > 1) row.remove();
-        });
-        configureRemote(row.querySelector('.product-select'), 'product');
-    });
-    refreshGroup('source');
-    refreshGroup('destination');
-});
-</script>
-@endpush

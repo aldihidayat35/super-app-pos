@@ -132,11 +132,23 @@ class GoodsReceiptWorkflowTest extends TestCase
         $secondHistory->hpp_after = '21.00';
         $secondHistory->effective_at = now()->addMinute();
         $secondHistory->save();
+        $sameNameProduct = Product::factory()->create([
+            'base_unit_id' => $product->base_unit_id,
+            'sku' => 'HPP-SAME-NAME',
+            'name' => $product->name,
+        ]);
+        $otherProductHistory = $history->replicate();
+        $otherProductHistory->product_id = $sameNameProduct->id;
+        $otherProductHistory->effective_at = now()->addMinutes(2);
+        $otherProductHistory->save();
         $product->forceFill(['name' => '<img src=x onerror=alert(1)>'])->save();
         $supplier->forceFill(['name' => '<script>alert(1)</script>'])->save();
         $html = $this->actingAs($this->warehouseStaff)->get(route('pricing.hpp-history.index'))->assertOk()->getContent();
         $this->assertStringContainsString("type: 'datetime'", $html);
         $this->assertStringContainsString('rows.filter', $html);
+        $this->assertStringContainsString('row.productId === productId', $html);
+        $this->assertStringContainsString('HPP-SAME-NAME', $html);
+        $this->assertStringContainsString('"productId":'.$sameNameProduct->id, $html);
         $this->assertStringContainsString('textContent = String', $html);
         $this->assertStringNotContainsString('<img src=x onerror=alert(1)>', $html);
         $this->assertStringNotContainsString('<script>alert(1)</script>', $html);

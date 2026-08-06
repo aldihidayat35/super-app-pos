@@ -518,6 +518,7 @@ class ReportMetricService
     private function stockSummary(array $filters): array
     {
         $query = DB::table('stocks')->whereIn('work_location_id', $filters['location_ids']);
+        $health = $this->stockHealth($filters);
         $onHand = $this->quantity((clone $query)->sum('quantity_on_hand'));
         $reserved = $this->quantity((clone $query)->sum('quantity_reserved'));
         $damaged = $this->quantity((clone $query)->sum('quantity_damaged'));
@@ -535,8 +536,8 @@ class ReportMetricService
                     ->selectRaw('COALESCE(SUM('.Stock::inventoryValueSql().'), 0) as aggregate')
                     ->value('aggregate'),
             ),
-            'critical_count' => (clone $query)->join('products', 'products.id', '=', 'stocks.product_id')->whereRaw('(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock')->count(),
-            'empty_count' => (clone $query)->where('quantity_on_hand', '<=', 0)->count(),
+            'critical_count' => $health['critical_count'],
+            'empty_count' => $health['empty_count'],
         ];
     }
 

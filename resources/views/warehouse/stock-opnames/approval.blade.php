@@ -23,7 +23,7 @@
     <div class="alert alert-info">Menyetujui opname belum langsung mengubah stok. Perubahan saldo akan dibuat saat proses penyelesaian dan penyesuaian dijalankan.</div>
 
     <div class="row g-4 mb-6">
-        @foreach([['Total Item', $summary['total']], ['Item Sesuai', $summary['matching']], ['Item Berselisih', $summary['different']], ['Melewati Batas', $summary['above_threshold']], ['Transaksi Setelah Acuan', $summary['after_reference']]] as [$label, $value])
+        @foreach([['Total Item', $summary['total']], ['Belum Dihitung', $summary['uncounted']], ['Item Sesuai', $summary['matching']], ['Item Berselisih', $summary['different']], ['Melewati Batas', $summary['above_threshold']], ['Transaksi Setelah Acuan', $summary['after_reference']]] as [$label, $value])
             <div class="col-6 col-xl"><x-metronic.card><div class="text-muted fs-7">{{ $label }}</div><div class="fs-2 fw-bold">{{ $value }}</div></x-metronic.card></div>
         @endforeach
     </div>
@@ -49,7 +49,11 @@
                     @endcan
                 @elseif($opname->status === \App\Enums\StockOpnameStatus::APPROVED)
                     <div class="alert alert-danger"><strong>Perhatian:</strong> proses ini akan membuat mutasi penyesuaian stok berdasarkan hasil fisik yang telah disetujui.</div>
-                    <form method="POST" action="{{ route('warehouse.stock-opnames.complete', $opname) }}">@csrf<button class="btn btn-primary">Selesaikan dan Buat Penyesuaian</button></form>
+                    @can('complete', $opname)
+                        <form method="POST" action="{{ route('warehouse.stock-opnames.complete', $opname) }}">@csrf<button class="btn btn-primary">Selesaikan dan Buat Penyesuaian</button></form>
+                    @else
+                        <div class="alert alert-light-info mb-0">Anda dapat melihat hasil opname, tetapi tidak memiliki izin membuat penyesuaian stok.</div>
+                    @endcan
                 @else
                     <x-metronic.empty-state title="Tidak menunggu persetujuan" description="Tindakan hanya tersedia saat dokumen menunggu persetujuan atau sudah disetujui." />
                 @endif

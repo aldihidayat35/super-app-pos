@@ -5,12 +5,14 @@ namespace App\Services\Inventory;
 use App\Enums\StockMutationType;
 use App\Enums\StockOpnameStatus;
 use App\Exceptions\ServiceException;
+use App\Models\Branch;
 use App\Models\InventoryIdempotencyKey;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\StockMutation;
 use App\Models\StockOpname;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Support\Decimal;
@@ -360,7 +362,7 @@ class InventoryService
 
     private function lockedStock(Product $product, WorkLocation $workLocation, ?WarehouseLocation $warehouseLocation): Stock
     {
-        if ($warehouseLocation !== null && (int) $warehouseLocation->warehouse?->work_location_id !== (int) $workLocation->id) {
+        if ($warehouseLocation !== null && ! in_array((int) $warehouseLocation->warehouse_id, $this->warehouseIdsForWorkLocation($workLocation), true)) {
             throw ServiceException::validation('Lokasi bin tidak sesuai dengan gudang/lokasi kerja.');
         }
 
@@ -384,6 +386,29 @@ class InventoryService
             ->where('location_scope_key', $scopeKey)
             ->lockForUpdate()
             ->firstOrFail();
+    }
+
+    /** @return list<int> */
+    private function warehouseIdsForWorkLocation(WorkLocation $workLocation): array
+    {
+        $warehouseIds = Warehouse::query()
+            ->where('is_active', true)
+            ->where('work_location_id', $workLocation->id)
+            ->pluck('id');
+
+        $branchWarehouseIds = Branch::query()
+            ->where('is_active', true)
+            ->where('work_location_id', $workLocation->id)
+            ->whereHas('primaryWarehouse', fn ($query) => $query->where('is_active', true))
+            ->pluck('primary_warehouse_id');
+
+        return $warehouseIds
+            ->merge($branchWarehouseIds)
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function scopeKey(WorkLocation $workLocation, ?WarehouseLocation $warehouseLocation): string

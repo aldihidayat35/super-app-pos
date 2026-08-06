@@ -3,6 +3,7 @@
 namespace App\DataTables;
 
 use App\Models\User;
+use App\Models\WorkLocation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Http\Request;
@@ -97,7 +98,8 @@ class UsersDataTable
     /** @return array<string, int|string> */
     private function row(User $user): array
     {
-        $primary = $user->workLocations()->wherePivot('is_default', true)->first();
+        $primary = $user->workLocations
+            ->first(fn (WorkLocation $location): bool => (bool) ($location->pivot->is_default ?? false));
 
         $locationHtml = $primary
             ? '<div class="fw-semibold">'.e($primary->name).'</div><div class="text-muted fs-7">'.e($primary->typeLabel()).'</div>'

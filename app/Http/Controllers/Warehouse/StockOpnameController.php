@@ -230,8 +230,9 @@ class StockOpnameController extends Controller
     /** @return array<string, int|string> */
     private function opnameReviewSummary(StockOpname $opname): array
     {
-        $different = $opname->items->filter(fn (StockOpnameItem $item): bool => Decimal::compare((string) $item->difference_qty, '0') !== 0);
-        $aboveThreshold = $opname->items->filter(function (StockOpnameItem $item) use ($opname): bool {
+        $counted = $opname->items->whereNotNull('counted_qty');
+        $different = $counted->filter(fn (StockOpnameItem $item): bool => Decimal::compare((string) $item->difference_qty, '0') !== 0);
+        $aboveThreshold = $counted->filter(function (StockOpnameItem $item) use ($opname): bool {
             $absoluteQuantity = ltrim((string) $item->difference_qty, '-');
             $absoluteValue = ltrim((string) $item->estimated_value, '-');
 
@@ -241,7 +242,8 @@ class StockOpnameController extends Controller
 
         return [
             'total' => $opname->items->count(),
-            'matching' => $opname->items->count() - $different->count(),
+            'uncounted' => $opname->items->count() - $counted->count(),
+            'matching' => $counted->count() - $different->count(),
             'different' => $different->count(),
             'above_threshold' => $aboveThreshold->count(),
             'after_reference' => $opname->items->where('has_transaction_after_snapshot', true)->count(),

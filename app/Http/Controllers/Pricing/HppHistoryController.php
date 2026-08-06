@@ -39,6 +39,8 @@ class HppHistoryController extends Controller
                 $effectiveAt = $history->getAttribute('effective_at');
 
                 return [
+                    'productId' => $history->product_id,
+                    'productLabel' => ($history->product?->sku ?: '-').' — '.($history->product?->name ?: 'Tanpa nama'),
                     'x' => $effectiveAt instanceof \DateTimeInterface ? $effectiveAt->getTimestamp() * 1000 : null,
                     'y' => (string) $history->hpp_after,
                     'dateLabel' => $effectiveAt instanceof \DateTimeInterface ? $effectiveAt->format('d/m/Y H:i') : '-',
