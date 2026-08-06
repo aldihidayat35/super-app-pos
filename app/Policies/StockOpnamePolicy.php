@@ -50,6 +50,10 @@ class StockOpnamePolicy
             return false;
         }
 
+        if ($stockOpname->status !== StockOpnameStatus::PENDING_APPROVAL) {
+            return false;
+        }
+
         return ! $stockOpname->requires_owner_approval || $user->hasAnyRole(['owner_approver', 'super_admin']);
     }
 

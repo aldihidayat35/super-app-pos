@@ -35,37 +35,37 @@
     </x-metronic.card>
 
     <x-metronic.card title="Daftar Penghitungan">
+        @foreach($opname->items as $item)
+            <form id="count-item-{{ $item->id }}" method="POST" action="{{ route('warehouse.stock-opnames.count-item', [$opname, $item]) }}" enctype="multipart/form-data" class="d-none">@csrf</form>
+        @endforeach
         <div class="table-responsive">
             <table class="table table-row-dashed align-middle">
                 <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Lokasi</th><th class="text-end">Stok Sistem</th><th class="text-end">Jumlah Fisik</th><th class="text-end">Selisih</th><th>Alasan & Bukti Pendukung</th><th>Petugas Penghitung <i class="ki-outline ki-information-5 fs-7" data-bs-toggle="tooltip" title="Pengguna yang memasukkan hasil penghitungan fisik."></i></th><th class="text-end">Aksi</th></tr></thead>
                 <tbody>
                 @foreach($opname->items as $item)
                     <tr>
-                        <form method="POST" action="{{ route('warehouse.stock-opnames.count-item', [$opname, $item]) }}" enctype="multipart/form-data">
-                            @csrf
                             <td class="fw-bold">{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div>@if($item->has_transaction_after_snapshot)<span class="badge badge-light-warning mt-1">Ada transaksi setelah acuan stok</span>@endif</td>
                             <td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td>
                             <td class="text-end">{{ $opname->blind_count ? 'Disembunyikan' : qty($item->system_qty_snapshot) }}</td>
-                            <td class="text-end"><input type="number" step="1" min="0" name="counted_qty" value="{{ old('counted_qty', qty_input($item->counted_qty)) }}" class="form-control form-control-solid text-end counted-input" @unless($opname->blind_count)data-system-qty="{{ qty_input($item->system_qty_snapshot) }}"@endunless required></td>
+                            <td class="text-end"><input form="count-item-{{ $item->id }}" type="number" step="1" min="0" name="counted_qty" value="{{ old('counted_qty', qty_input($item->counted_qty)) }}" class="form-control form-control-solid text-end counted-input" @unless($opname->blind_count)data-system-qty="{{ qty_input($item->system_qty_snapshot) }}"@endunless required></td>
                             <td class="text-end"><span class="badge difference-badge badge-light">{{ $opname->blind_count ? 'Dihitung setelah disimpan' : 'Belum dihitung' }}</span></td>
                             <td>
-                                <select name="reason" class="form-select form-select-solid mb-2">
+                                <select form="count-item-{{ $item->id }}" name="reason" class="form-select form-select-solid mb-2">
                                     <option value="">Tidak ada selisih</option>
                                     @foreach($reasons as $value => $label)<option value="{{ $value }}" @selected(old('reason', $item->reason?->value) === $value)>{{ $label }}</option>@endforeach
                                 </select>
-                                <input name="note" value="{{ old('note', $item->note) }}" class="form-control form-control-solid mb-2" placeholder="Catatan petugas penghitung">
-                                <input type="file" name="evidence" class="form-control form-control-solid" accept=".jpg,.jpeg,.png,.pdf">
+                                <input form="count-item-{{ $item->id }}" name="note" value="{{ old('note', $item->note) }}" class="form-control form-control-solid mb-2" placeholder="Catatan petugas penghitung">
+                                <input form="count-item-{{ $item->id }}" type="file" name="evidence" class="form-control form-control-solid" accept=".jpg,.jpeg,.png,.pdf">
                                 @if($item->evidence_path)<a href="{{ Storage::disk('public')->url($item->evidence_path) }}" target="_blank" class="btn btn-sm btn-light mt-2">Lihat Bukti Tersimpan</a>@endif
                             </td>
                             <td>{{ $item->counter?->name ?: '-' }}<div class="text-muted fs-8">{{ $item->counted_at?->format('d/m/Y H:i') ?: '-' }}</div></td>
-                            <td class="text-end"><button class="btn btn-sm btn-primary">Simpan</button></td>
-                        </form>
+                            <td class="text-end"><button form="count-item-{{ $item->id }}" class="btn btn-sm btn-primary">Simpan</button></td>
                     </tr>
                 @endforeach
                 </tbody>
             </table>
         </div>
-        <x-slot:footer><form method="POST" action="{{ route('warehouse.stock-opnames.submit', $opname) }}" class="text-end">@csrf<button class="btn btn-success">Ajukan Persetujuan</button></form></x-slot:footer>
+        <x-slot:footer><form method="POST" action="{{ route('warehouse.stock-opnames.submit', $opname) }}" class="text-end">@csrf<button class="btn btn-success" @disabled($opname->items->contains(fn($item) => $item->counted_qty === null))>Ajukan Persetujuan</button>@if($opname->items->contains(fn($item) => $item->counted_qty === null))<div class="text-muted fs-8 mt-2">Semua item harus dihitung sebelum diajukan.</div>@endif</form></x-slot:footer>
     </x-metronic.card>
 @endsection
 

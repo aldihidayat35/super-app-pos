@@ -30,7 +30,7 @@
     @endif
 
     <div class="row g-4 mb-6">
-        @foreach([['Item Aman', $summary['matching'], 'success'], ['Item Berselisih', $summary['different'], 'warning'], ['Melewati Batas Toleransi', $summary['above_threshold'], 'danger'], ['Transaksi Setelah Acuan', $summary['after_reference'], 'info']] as [$label, $value, $color])
+        @foreach([['Belum Dihitung', $opname->items->whereNull('counted_qty')->count(), 'secondary'], ['Item Aman', $summary['matching'], 'success'], ['Item Berselisih', $summary['different'], 'warning'], ['Melewati Batas Toleransi', $summary['above_threshold'], 'danger']] as [$label, $value, $color])
             <div class="col-6 col-xl-3"><x-metronic.card><div class="text-muted fs-7">{{ $label }}</div><div class="fs-2 fw-bold text-{{ $color }}">{{ $value }}</div></x-metronic.card></div>
         @endforeach
     </div>
@@ -52,8 +52,8 @@
                         <td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td>
                         <td class="text-end">{{ qty($item->system_qty_snapshot) }}</td>
                         <td class="text-end">{{ $item->counted_qty === null ? '-' : qty($item->counted_qty) }}</td>
-                        <td class="text-end fw-bold">{{ qty($item->difference_qty) }}</td>
-                        <td class="text-end">{{ \App\Support\CurrencyFormatter::rupiah($item->estimated_value) }}</td>
+                        <td class="text-end fw-bold">{{ $item->counted_qty === null ? 'Belum dihitung' : qty($item->difference_qty) }}</td>
+                        <td class="text-end">{{ $item->counted_qty === null ? '-' : \App\Support\CurrencyFormatter::rupiah($item->estimated_value) }}</td>
                         <td>{{ $item->reason?->label() ?: '-' }}<div class="text-muted fs-8">{{ $item->note }}</div></td>
                         <td>
                             @if($item->has_transaction_after_snapshot)

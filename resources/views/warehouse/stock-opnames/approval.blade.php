@@ -41,10 +41,12 @@
             <x-metronic.card title="Keputusan">
                 @if($summary['after_reference'] > 0)<div class="alert alert-warning">Ada {{ $summary['after_reference'] }} item dengan transaksi setelah acuan stok. Pastikan sudah diperiksa.</div>@endif
                 @if($opname->status === \App\Enums\StockOpnameStatus::PENDING_APPROVAL)
-                    <div class="row g-4">
+                    @can('approve', $opname)<div class="row g-4">
                         <div class="col-md-6"><form method="POST" action="{{ route('warehouse.stock-opnames.approve', $opname) }}">@csrf<x-metronic.form-group name="notes" label="Catatan Persetujuan" required><textarea name="notes" rows="4" class="form-control form-control-solid" required>{{ old('notes') }}</textarea></x-metronic.form-group><button class="btn btn-success">Setujui Opname</button></form></div>
                         <div class="col-md-6"><form method="POST" action="{{ route('warehouse.stock-opnames.reject', $opname) }}">@csrf<x-metronic.form-group name="notes" label="Alasan Penolakan" required><textarea name="notes" rows="4" class="form-control form-control-solid" required>{{ old('notes') }}</textarea></x-metronic.form-group><button class="btn btn-light-danger">Tolak Opname</button></form></div>
-                    </div>
+                    </div>@else
+                        <div class="alert alert-light-info mb-0">Anda dapat melihat hasil opname, tetapi tidak memiliki izin untuk menyetujui atau menolaknya.</div>
+                    @endcan
                 @elseif($opname->status === \App\Enums\StockOpnameStatus::APPROVED)
                     <div class="alert alert-danger"><strong>Perhatian:</strong> proses ini akan membuat mutasi penyesuaian stok berdasarkan hasil fisik yang telah disetujui.</div>
                     <form method="POST" action="{{ route('warehouse.stock-opnames.complete', $opname) }}">@csrf<button class="btn btn-primary">Selesaikan dan Buat Penyesuaian</button></form>
