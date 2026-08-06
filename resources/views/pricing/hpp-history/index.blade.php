@@ -78,14 +78,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const target = document.getElementById('hpp-trend-chart');
     const rows = @json($chartData);
     if (!target || rows.length === 0 || typeof window.ApexCharts === 'undefined') return;
+    const escapeHtml = (value) => { const node = document.createElement('div'); node.textContent = String(value ?? '-'); return node.innerHTML; };
     const productNames = [...new Set(rows.map(row => row.product || 'Tanpa nama'))];
+    const grouped = productNames.map(name => ({ name, data: rows.filter(row => row.product === name && row.x).map(row => ({...row, y: Number(row.y)})) }));
+    if (rows.length === 1) target.insertAdjacentHTML('beforebegin', '<div class="alert alert-light-info py-3">Baru tersedia satu rekaman HPP. Titik akan membentuk tren setelah ada penerimaan berikutnya.</div>');
     new window.ApexCharts(target, {
         chart: { type: 'line', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
-        series: productNames.map(name => ({ name, data: rows.map(row => (row.product || 'Tanpa nama') === name ? Number(row.value) : null) })),
-        xaxis: { categories: rows.map(row => row.date), labels: { rotate: -35 } },
-        stroke: { curve: 'smooth', width: 3 }, colors: ['#17c653'], markers: { size: 4 },
+        series: grouped,
+        xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'dd MMM yy' } },
+        stroke: { curve: 'straight', width: 3, connectNulls: false }, markers: { size: 5, hover: { size: 7 } },
         yaxis: { labels: { formatter: value => new Intl.NumberFormat('id-ID', { notation: 'compact' }).format(value) } },
-        tooltip: { custom: ({ dataPointIndex }) => { const row = rows[dataPointIndex]; return `<div class="p-3"><strong>${row.product || '-'}</strong><div>${row.supplier || '-'}</div><div>${row.date}</div><div class="text-success fw-bold">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(row.value)}</div></div>`; } },
+        tooltip: { custom: ({ seriesIndex, dataPointIndex }) => { const row = grouped[seriesIndex]?.data[dataPointIndex] || {}; return `<div class="p-3"><strong>${escapeHtml(row.product)}</strong><div>Supplier: ${escapeHtml(row.supplier)}</div><div>Tanggal: ${escapeHtml(row.dateLabel)}</div><div>Receipt: ${escapeHtml(row.receipt)}</div><div class="text-success fw-bold">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(row.y || 0))}</div></div>`; } },
         noData: { text: 'Belum ada data tren.' }, grid: { borderColor: '#eff2f5' },
     }).render();
 });
