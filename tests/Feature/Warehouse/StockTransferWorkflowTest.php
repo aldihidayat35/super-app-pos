@@ -225,6 +225,69 @@ class StockTransferWorkflowTest extends TestCase
         $this->assertSame(StockTransferStatus::FULLY_RECEIVED, $received->status);
         $this->assertSame('2.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
         $this->assertSame('1.0000', $received->items->firstOrFail()->quantity_discrepancy);
+
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessage('selisih pengiriman');
+        $this->transfers->complete($received, $this->warehouseHead);
+    }
+
+    public function test_insufficient_approval_is_atomic_and_explains_balance(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $second = Product::factory()->create(['base_unit_id' => $product->base_unit_id, 'status' => 'active', 'sku' => 'TRF-SHORT']);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '5', $this->warehouseHead);
+        $this->inventory->receive($second, $warehouse->workLocation, $sourceBin, '1', $this->warehouseHead);
+        $transfer = $this->transfers->create([
+            'source_work_location_id' => $warehouse->work_location_id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'destination_work_location_id' => $branch->work_location_id,
+            'items' => [
+                ['product_id' => $product->id, 'quantity_requested' => '2', 'quantity_approved' => '2'],
+                ['product_id' => $second->id, 'quantity_requested' => '3', 'quantity_approved' => '3'],
+            ],
+            'action' => 'submit',
+        ], $this->warehouseStaff);
+
+        try {
+            $this->transfers->approve($transfer, $this->warehouseHead);
+            $this->fail('Approval seharusnya ditolak.');
+        } catch (ServiceException $exception) {
+            $this->assertStringContainsString('TRF-SHORT', $exception->getMessage());
+            $this->assertStringContainsString('tersedia: 1.0000', $exception->getMessage());
+            $this->assertStringContainsString('kurang: 2.0000', $exception->getMessage());
+        }
+
+        $this->assertSame(StockTransferStatus::PENDING_APPROVAL, $transfer->fresh()->status);
+        $this->assertSame('0.0000', Stock::query()->where('product_id', $product->id)->firstOrFail()->quantity_reserved);
+        $this->assertSame('0.0000', Stock::query()->where('product_id', $second->id)->firstOrFail()->quantity_reserved);
+    }
+
+    public function test_create_rejects_approved_quantity_above_requested_quantity(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+
+        $this->actingAs($this->warehouseStaff)->post(route('warehouse.stock-transfers.store'), [
+            'source_work_location_id' => $warehouse->work_location_id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'destination_work_location_id' => $branch->work_location_id,
+            'transfer_date' => now()->toDateString(),
+            'items' => [['product_id' => $product->id, 'quantity_requested' => '2', 'quantity_approved' => '3']],
+        ])->assertSessionHasErrors('items.0.quantity_approved');
+    }
+
+    public function test_remote_options_are_scoped_searchable_and_paginated(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '2', $this->warehouseHead);
+
+        $this->actingAs($this->warehouseStaff)->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $warehouse->work_location_id, 'context' => 'product', 'q' => $product->sku, 'page' => 1,
+        ]))->assertOk()->assertJsonPath('results.0.id', $product->id)->assertJsonStructure(['results', 'pagination' => ['more']]);
+
+        $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertDontSee('@foreach($products', false);
     }
 
     public function test_branch_scope_blocks_other_branch_receive_page(): void

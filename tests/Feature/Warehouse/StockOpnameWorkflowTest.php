@@ -125,6 +125,19 @@ class StockOpnameWorkflowTest extends TestCase
             ->assertDontSee('9.876');
     }
 
+    public function test_count_table_uses_standalone_valid_forms(): void
+    {
+        [$product, $workLocation, $bin] = $this->fixture('PRD-OPN-FORM');
+        $this->assignScope($workLocation);
+        $this->inventory->receive($product, $workLocation, $bin, '5', $this->warehouseHead);
+        $opname = $this->createCountingOpname($workLocation, $bin);
+
+        $html = $this->actingAs($this->warehouseStaff)->get(route('warehouse.stock-opnames.count', $opname))->assertOk()->getContent();
+        $this->assertDoesNotMatchRegularExpression('/<tr[^>]*>\s*<form/i', $html);
+        $this->assertStringContainsString('form="count-item-', $html);
+        $this->assertStringContainsString('Semua item harus dihitung sebelum diajukan.', $html);
+    }
+
     public function test_start_snapshot_without_stock_returns_validation_error_instead_of_server_error(): void
     {
         [, $workLocation, $bin] = $this->fixture('PRD-OPN-EMPTY');
