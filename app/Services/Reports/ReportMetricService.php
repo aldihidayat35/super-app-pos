@@ -535,7 +535,7 @@ class ReportMetricService
                     ->selectRaw('COALESCE(SUM('.Stock::inventoryValueSql().'), 0) as aggregate')
                     ->value('aggregate'),
             ),
-            'critical_count' => (clone $query)->join('products', 'products.id', '=', 'stocks.product_id')->whereColumn('stocks.quantity_on_hand', '<=', 'products.minimum_stock')->count(),
+            'critical_count' => (clone $query)->join('products', 'products.id', '=', 'stocks.product_id')->whereRaw('(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock')->count(),
             'empty_count' => (clone $query)->where('quantity_on_hand', '<=', 0)->count(),
         ];
     }

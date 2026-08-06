@@ -38,7 +38,7 @@ class PurchaseRequestController extends Controller
         $recommendations = Stock::query()
             ->with(['product.baseUnit', 'warehouseLocation', 'workLocation'])
             ->whereIn('work_location_id', $locationIds)
-            ->whereHas('product', fn ($query) => $query->whereColumn('stocks.quantity_on_hand', '<=', 'products.minimum_stock'))
+            ->whereHas('product', fn ($query) => $query->whereRaw('(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock'))
             ->limit(10)
             ->get();
 
