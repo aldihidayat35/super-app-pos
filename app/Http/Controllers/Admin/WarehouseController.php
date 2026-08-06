@@ -82,7 +82,10 @@ class WarehouseController extends Controller
         // 统计仓库的库存数据
         $stockSummary = Stock::query()
             ->join('products', 'products.id', '=', 'stocks.product_id')
-            ->whereHas('warehouseLocation', fn ($q) => $q->where('warehouse_id', $warehouse->id))
+            ->where('stocks.work_location_id', $warehouse->work_location_id)
+            ->where(function ($query) use ($warehouse): void {
+                $query->whereNull('stocks.warehouse_location_id')->orWhereIn('stocks.warehouse_location_id', WarehouseLocation::query()->select('id')->where('warehouse_id', $warehouse->id));
+            })
             ->selectRaw('
                 COUNT(*) as total_products,
                 SUM(stocks.quantity_on_hand) as total_on_hand,
@@ -95,8 +98,8 @@ class WarehouseController extends Controller
         // 获取最近的库存变动
         $recentMutations = StockMutation::query()
             ->where('work_location_id', $warehouse->work_location_id)
-            ->where('warehouse_location_id', function ($q) use ($warehouse) {
-                $q->select('id')->from('warehouse_locations')->where('warehouse_id', $warehouse->id);
+            ->where(function ($query) use ($warehouse): void {
+                $query->whereNull('warehouse_location_id')->orWhereIn('warehouse_location_id', WarehouseLocation::query()->select('id')->where('warehouse_id', $warehouse->id));
             })
             ->with(['product', 'warehouseLocation', 'actor'])
             ->orderBy('occurred_at', 'desc')
