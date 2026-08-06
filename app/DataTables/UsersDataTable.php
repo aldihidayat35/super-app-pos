@@ -3,13 +3,16 @@
 namespace App\DataTables;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Role;
 
 class UsersDataTable
 {
     public function __construct(protected Request $request) {}
 
+    /** @return EloquentBuilder<User> */
     public function query(User $model): EloquentBuilder
     {
         $query = $model->newQuery()
@@ -43,36 +46,35 @@ class UsersDataTable
         return $query;
     }
 
+    /** @return array{draw: int, recordsTotal: int, recordsFiltered: int, data: list<array<string, int|string>>} */
     public function paginate(): array
     {
-        $draw   = (int) $this->request->input('draw', 0);
-        $start  = (int) $this->request->input('start', 0);
+        $draw = (int) $this->request->input('draw', 0);
+        $start = (int) $this->request->input('start', 0);
         $length = (int) $this->request->input('length', 15);
 
         if ($length < 1) {
             $length = 15;
         }
 
-        $query = $this->query(new User());
+        $query = $this->query(new User);
 
         $recordsTotal = User::count();
 
         // Apply ordering
         $orderColIdx = $this->request->input('order.0.column');
-        $orderDir    = $this->request->input('order.0.dir', 'desc');
-        $columns     = $this->request->input('columns', []);
+        $orderDir = $this->request->input('order.0.dir', 'desc');
+        $columns = $this->request->input('columns', []);
 
         if ($orderColIdx !== null && isset($columns[$orderColIdx]['name']) && $columns[$orderColIdx]['name'] !== '') {
             $colName = $columns[$orderColIdx]['name'];
             $map = [
-                'name'         => 'users.name',
-                'email'        => 'users.email',
-                'status'       => 'users.is_active',
-                'login_at'     => 'users.last_login_at',
-                'roles'        => null,
-                'location'     => null,
+                'name' => 'users.name',
+                'email' => 'users.email',
+                'status' => 'users.is_active',
+                'login_at' => 'users.last_login_at',
             ];
-            if (isset($map[$colName]) && $map[$colName] !== null) {
+            if (isset($map[$colName])) {
                 $query->orderBy($map[$colName], $orderDir === 'asc' ? 'asc' : 'desc');
             } else {
                 $query->latest('id');
@@ -82,53 +84,59 @@ class UsersDataTable
         }
 
         $recordsFiltered = (clone $query)->count();
-        $rows            = $query->offset($start)->limit($length)->get();
+        $rows = $query->offset($start)->limit($length)->get();
 
         return [
-            'draw'            => $draw,
-            'recordsTotal'    => $recordsTotal,
+            'draw' => $draw,
+            'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
-            'data'            => $rows->map(fn (User $u) => $this->row($u))->all(),
+            'data' => $rows->map(fn (User $u) => $this->row($u))->all(),
         ];
     }
 
+    /** @return array<string, int|string> */
     private function row(User $user): array
     {
-        $primary = $user->workLocations->firstWhere('pivot.is_default', true);
+        $primary = $user->workLocations()->wherePivot('is_default', true)->first();
 
         $locationHtml = $primary
             ? '<div class="fw-semibold">'.e($primary->name).'</div><div class="text-muted fs-7">'.e($primary->typeLabel()).'</div>'
             : '<span class="text-muted">Belum ada</span>';
 
-        $roleBadges = $user->roles->map(fn ($r) => '<span class="badge badge-light-primary me-1">'.e(str_replace('_', ' ', $r->name)).'</span>')->implode('')
-            ?: '<span class="text-muted">Belum ada</span>';
+        $roleBadges = '';
+        foreach ($user->roles as $role) {
+            if ($role instanceof Role) {
+                $roleBadges .= '<span class="badge badge-light-primary me-1">'.e(str_replace('_', ' ', $role->name)).'</span>';
+            }
+        }
+        $roleBadges = $roleBadges ?: '<span class="text-muted">Belum ada</span>';
 
         $statusBadge = $user->is_active
             ? '<span class="badge badge-light-success">Aktif</span>'
             : '<span class="badge badge-light-secondary">Nonaktif</span>';
 
         $loginAt = $user->last_login_at
-            ? $user->last_login_at->timezone(config('app.timezone'))->format('d/m/Y H:i')
+            ? Carbon::parse((string) $user->last_login_at)->timezone(config('app.timezone'))->format('d/m/Y H:i')
             : '-';
 
         $detailUrl = route('admin.users.show', $user);
-        $editUrl   = route('admin.users.edit', $user);
+        $editUrl = route('admin.users.edit', $user);
 
         $actions = '<a href="'.$detailUrl.'" class="btn btn-sm btn-light me-1">Detail</a>'
             .'<a href="'.$editUrl.'" class="btn btn-sm btn-light-primary me-1">Edit</a>';
 
         return [
-            'id'            => $user->id,
-            'name'          => '<a href="'.$detailUrl.'" class="fw-bold text-gray-900 text-hover-primary">'.e($user->name).'</a>'
+            'id' => $user->id,
+            'name' => '<a href="'.$detailUrl.'" class="fw-bold text-gray-900 text-hover-primary">'.e($user->name).'</a>'
                 .'<div class="text-muted fs-7">'.e($user->username).'</div>',
-            'email'         => e($user->email),
-            'phone_number'  => e($user->phone_number ?: '-'),
-            'roles'         => $roleBadges,
-            'location'      => $locationHtml,
-            'status'        => $statusBadge,
-            'login_at'      => e($loginAt),
-            'action'        => $actions,
-            'route_detail'  => $detailUrl,
+            'email' => e($user->email),
+            'phone_number' => e($user->phone_number ?: '-'),
+            'roles' => $roleBadges,
+            'location' => $locationHtml,
+            'status' => $statusBadge,
+            'login_at' => e($loginAt),
+            'action' => $actions,
+            'route_detail' => $detailUrl,
         ];
     }
 }

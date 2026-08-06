@@ -2,12 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Enums\InventoryLossStatus;
 use App\Enums\PurchaseOrderStatus;
-use App\Enums\StockMutationType;
+use App\Enums\RestockRequestStatus;
 use App\Enums\StockOpnameStatus;
 use App\Enums\StockTransferStatus;
-use App\Enums\InventoryLossStatus;
-use App\Enums\RestockRequestStatus;
 use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\GoodsReceipt;
@@ -43,6 +42,7 @@ use App\Services\Organization\WorkLocationSyncService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Seeder khusus modul gudang (warehouse).
@@ -114,7 +114,7 @@ class WarehouseSeeder extends Seeder
             // 9) Stock opname yang sedang berjalan + inventory loss
             $this->seedOpnameAndLoss($warehouseLocation, $bin, $products[0], $users);
 
-            app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
         });
     }
 
@@ -575,7 +575,6 @@ class WarehouseSeeder extends Seeder
                 'notes' => 'Antrian transfer internal gudang menunggu approval kepala gudang.',
             ],
         );
-
 
         // Item transfer actual (gunakan restock id = transfer id sudah cukup melalui relasi langsung).
         $transfer = StockTransfer::query()->where('number', 'TRF-GDG-0001')->first();

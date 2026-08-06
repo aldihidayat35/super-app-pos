@@ -7,6 +7,9 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Models\StockMutation;
 use App\Models\User;
+use App\Models\Warehouse;
+use App\Models\WarehouseLocation;
+use App\Models\WorkLocation;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -30,23 +33,23 @@ class WarehouseChartDataSeeder extends Seeder
 
         Schema::enableForeignKeyConstraints();
 
-        /** @var \App\Models\Warehouse $warehouse */
-        $warehouse = \App\Models\Warehouse::query()
+        /** @var Warehouse $warehouse */
+        $warehouse = Warehouse::query()
             ->where('code', 'GDG-JB')
             ->firstOrFail();
 
-        /** @var \App\Models\WorkLocation $workLocation */
-        $workLocation = \App\Models\WorkLocation::query()
+        /** @var WorkLocation $workLocation */
+        $workLocation = WorkLocation::query()
             ->findOrFail($warehouse->work_location_id);
 
-        /** @var \App\Models\WarehouseLocation $bin */
-        $bin = \App\Models\WarehouseLocation::query()
+        /** @var WarehouseLocation $bin */
+        $bin = WarehouseLocation::query()
             ->where('warehouse_id', $warehouse->id)
             ->where('type', 'bin')
             ->first();
 
         if (! $bin) {
-            $bin = \App\Models\WarehouseLocation::query()
+            $bin = WarehouseLocation::query()
                 ->where('work_location_id', $workLocation->id)
                 ->where('type', 'bin')
                 ->first();
@@ -54,12 +57,12 @@ class WarehouseChartDataSeeder extends Seeder
 
         if (! $bin) {
             $this->command->warn('Gudang Jambu Air belum punya bin. Buat bin dummy.');
-            $rack = \App\Models\WarehouseLocation::query()
+            $rack = WarehouseLocation::query()
                 ->where('warehouse_id', $warehouse->id)
                 ->where('type', 'rack')
                 ->first();
 
-            $bin = \App\Models\WarehouseLocation::query()->create([
+            $bin = WarehouseLocation::query()->create([
                 'warehouse_id' => $warehouse->id,
                 'parent_id' => $rack?->id,
                 'type' => 'bin',

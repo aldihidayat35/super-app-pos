@@ -140,9 +140,10 @@ class Product extends Model
      */
     public function getMainImageUrlAttribute(): ?string
     {
-        if (!$this->main_image_path) {
+        if (! $this->main_image_path) {
             return null;
         }
+
         return Storage::url($this->main_image_path);
     }
 }

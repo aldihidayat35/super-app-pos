@@ -25,7 +25,7 @@ return new class extends Migration
         ];
 
         foreach ($indexes as [$table, $columns, $indexName]) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
             $connection = Schema::getConnection();

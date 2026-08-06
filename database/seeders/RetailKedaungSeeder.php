@@ -15,6 +15,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Models\WorkLocation;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
@@ -323,7 +324,7 @@ class RetailKedaungSeeder extends Seeder
         string $paymentReference,
         string $notes,
         string $idempotencyKey,
-        ?\Illuminate\Support\Carbon $completedAt,
+        ?Carbon $completedAt,
         ?string $shiftIdempotencyKey,
     ): void {
         $lineTotal = bcmul((string) $unitPrice, (string) $qty, 2);
