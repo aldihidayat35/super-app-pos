@@ -161,7 +161,7 @@ class StockTransferController extends Controller
         try {
             $service->approve($stockTransfer, $request->user(), $approved);
         } catch (ServiceException $exception) {
-            return back()->withErrors(['approval' => $exception->getMessage()])->withInput();
+            return back()->withInput()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
         }
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Transfer disetujui dan stok sumber di-reserve.']);

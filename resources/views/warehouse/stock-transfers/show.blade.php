@@ -135,14 +135,13 @@
         </div>
         <div class="col-lg-4">
             <x-metronic.card title="Aksi Dokumen">
-                @error('approval')<div class="alert alert-danger">{{ $message }}</div>@enderror
                 <div class="d-grid gap-3">
                     @can('approve', $transfer)
                         @php($approvalBlocked = $approvalStocks->contains(fn($row) => !$row['enough']))
                         <div class="border rounded p-3">
                             <div class="fw-bold mb-2">Ketersediaan stok sumber</div>
                             @foreach($transfer->items as $item)@php($balance = $approvalStocks->get($item->id))
-                                <div class="fs-8 py-2 border-bottom"><span class="fw-semibold">{{ $item->product_sku_snapshot }}</span>: tersedia {{ qty($balance['available']) }} / perlu {{ qty($balance['needed']) }} <span class="badge badge-light-{{ $balance['enough'] ? 'success' : 'danger' }}">{{ $balance['enough'] ? 'Cukup' : 'Kurang' }}</span><div class="text-muted">On hand {{ qty($balance['on_hand']) }}, reserved {{ qty($balance['reserved']) }}, rusak {{ qty($balance['damaged']) }}</div></div>
+                                <div class="fs-8 py-2 border-bottom"><span class="fw-semibold">{{ $item->product_sku_snapshot }}</span>: tersedia {{ qty($balance['available']) }} / perlu {{ qty($balance['needed']) }} <span class="badge badge-light-{{ $balance['enough'] ? 'success' : 'danger' }}">{{ $balance['enough'] ? 'Cukup' : 'Kurang '.qty(\App\Support\Decimal::sub($balance['needed'], $balance['available'])) }}</span><div class="text-muted">On hand {{ qty($balance['on_hand']) }}, reserved {{ qty($balance['reserved']) }}, rusak {{ qty($balance['damaged']) }}</div></div>
                             @endforeach
                         </div>
                         <form method="POST" action="{{ route('warehouse.stock-transfers.approve', $transfer) }}">@csrf @foreach($transfer->items as $item)<input type="hidden" name="items[{{ $item->id }}][quantity_approved]" value="{{ qty_input($item->quantity_approved) }}">@endforeach<button class="btn btn-success w-100" @disabled($approvalBlocked)>Setujui & Alokasikan Stok</button>@if($approvalBlocked)<div class="text-danger fs-8 mt-2">Approval dinonaktifkan sampai stok sumber mencukupi.</div>@endif</form>
