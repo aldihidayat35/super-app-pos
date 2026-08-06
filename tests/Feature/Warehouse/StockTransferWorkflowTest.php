@@ -9,6 +9,7 @@ use App\Models\Branch;
 use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\Stock;
+use App\Models\StockMutation;
 use App\Models\StockTransfer;
 use App\Models\Unit;
 use App\Models\User;
@@ -262,13 +263,13 @@ class StockTransferWorkflowTest extends TestCase
         $this->assertSame('0.0000', Stock::query()->where('product_id', $product->id)->firstOrFail()->quantity_reserved);
         $this->assertSame('0.0000', Stock::query()->where('product_id', $second->id)->firstOrFail()->quantity_reserved);
 
-        $mutationCount = \App\Models\StockMutation::query()->count();
+        $mutationCount = StockMutation::query()->count();
         $items = $transfer->fresh('items')->items;
         $this->actingAs($this->warehouseHead)->from(route('warehouse.stock-transfers.show', $transfer))
             ->post(route('warehouse.stock-transfers.approve', $transfer), ['items' => $items->mapWithKeys(fn ($item) => [$item->id => ['quantity_approved' => $item->quantity_approved]])->all()])
             ->assertRedirect(route('warehouse.stock-transfers.show', $transfer))
             ->assertSessionHas('notification.type', 'danger');
-        $this->assertSame($mutationCount, \App\Models\StockMutation::query()->count());
+        $this->assertSame($mutationCount, StockMutation::query()->count());
         $this->assertSame(StockTransferStatus::PENDING_APPROVAL, $transfer->fresh()->status);
     }
 

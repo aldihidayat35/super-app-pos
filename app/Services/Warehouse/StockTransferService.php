@@ -10,10 +10,10 @@ use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\RestockRequest;
 use App\Models\RestockRequestItem;
+use App\Models\Stock;
 use App\Models\StockTransfer;
 use App\Models\StockTransferItem;
 use App\Models\StockTransferReceipt;
-use App\Models\Stock;
 use App\Models\User;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
@@ -160,15 +160,15 @@ class StockTransferService
                     ->where('work_location_id', $transfer->source_work_location_id)
                     ->when($sourceBin, fn ($query) => $query->where('warehouse_location_id', $sourceBin->id), fn ($query) => $query->whereNull('warehouse_location_id'))
                     ->lockForUpdate()
-                    ->first();
-                $available = $stock?->available_quantity ?? '0.0000';
+                    ->firstOrNew([], ['quantity_on_hand' => '0.0000', 'quantity_reserved' => '0.0000', 'quantity_damaged' => '0.0000']);
+                $available = $stock->available_quantity;
 
                 if (Decimal::compare($available, $approved) < 0) {
-                    $location = $sourceBin?->full_code ?? $transfer->sourceWorkLocation?->name ?? '-';
+                    $location = $sourceBin instanceof WarehouseLocation ? $sourceBin->full_code : ($transfer->sourceWorkLocation->name ?? '-');
                     throw ServiceException::validation(
                         "Stok {$item->product_sku_snapshot} — {$item->product_name_snapshot} di {$location} tidak cukup. "
-                        .'On hand: '.($stock?->quantity_on_hand ?? '0.0000').'; reserved: '.($stock?->quantity_reserved ?? '0.0000')
-                        .'; rusak: '.($stock?->quantity_damaged ?? '0.0000')."; tersedia: {$available}; dibutuhkan: {$approved}; kurang: ".Decimal::sub($approved, $available).'.'
+                        .'On hand: '.$stock->quantity_on_hand.'; reserved: '.$stock->quantity_reserved
+                        .'; rusak: '.$stock->quantity_damaged."; tersedia: {$available}; dibutuhkan: {$approved}; kurang: ".Decimal::sub($approved, $available).'.'
                     );
                 }
                 $this->inventory->reserve(

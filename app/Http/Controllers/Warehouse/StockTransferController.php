@@ -12,11 +12,12 @@ use App\Http\Requests\Warehouse\StoreStockTransferRequest;
 use App\Models\DocumentStatusHistory;
 use App\Models\Product;
 use App\Models\RestockRequest;
-use App\Models\StockTransfer;
 use App\Models\Stock;
+use App\Models\StockTransfer;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Warehouse\StockTransferService;
+use App\Support\Decimal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -129,16 +130,17 @@ class StockTransferController extends Controller
             ->keyBy(fn (Stock $stock): string => $stock->product_id.'|'.($stock->warehouse_location_id ?? 'null'));
         $approvalStocks = $transfer->items->mapWithKeys(function ($item) use ($sourceBalances, $transfer): array {
             $binId = $item->source_warehouse_location_id ?? $transfer->source_warehouse_location_id;
-            $stock = $sourceBalances->get($item->product_id.'|'.($binId ?? 'null'));
-            $available = $stock?->available_quantity ?? '0.0000';
+            $key = $item->product_id.'|'.($binId ?? 'null');
+            $stock = $sourceBalances->has($key) ? $sourceBalances->get($key) : null;
+            $available = $stock instanceof Stock ? $stock->available_quantity : '0.0000';
 
             return [$item->id => [
-                'on_hand' => (string) ($stock?->quantity_on_hand ?? '0.0000'),
-                'reserved' => (string) ($stock?->quantity_reserved ?? '0.0000'),
-                'damaged' => (string) ($stock?->quantity_damaged ?? '0.0000'),
+                'on_hand' => $stock instanceof Stock ? (string) $stock->quantity_on_hand : '0.0000',
+                'reserved' => $stock instanceof Stock ? (string) $stock->quantity_reserved : '0.0000',
+                'damaged' => $stock instanceof Stock ? (string) $stock->quantity_damaged : '0.0000',
                 'available' => $available,
                 'needed' => (string) $item->quantity_approved,
-                'enough' => \App\Support\Decimal::compare($available, (string) $item->quantity_approved) >= 0,
+                'enough' => Decimal::compare($available, (string) $item->quantity_approved) >= 0,
             ]];
         });
 
