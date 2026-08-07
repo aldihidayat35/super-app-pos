@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CustomerDocument extends Model
 {
-    protected $fillable = ['customer_id', 'type', 'name', 'path', 'expires_at'];
+    protected $fillable = ['customer_id', 'type', 'name', 'document_number', 'issued_at', 'path', 'expires_at', 'notes'];
 
     protected function casts(): array
     {
-        return ['expires_at' => 'date'];
+        return [
+            'issued_at' => 'date',
+            'expires_at' => 'date',
+        ];
     }
 
     /** @return BelongsTo<Customer, $this> */

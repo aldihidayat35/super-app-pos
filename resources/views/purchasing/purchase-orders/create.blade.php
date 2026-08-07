@@ -4,7 +4,7 @@
 @section('page_title', 'Form Purchase Order')
 
 @section('content')
-    <x-metronic.card title="PO Draft">
+    <x-metronic.card title="Buat Purchase Order Draft">
         <form method="POST" action="{{ route('purchasing.purchase-orders.store') }}">
             @include('purchasing.purchase-orders._form')
         </form>

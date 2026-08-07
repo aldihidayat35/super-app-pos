@@ -4,6 +4,8 @@ namespace App\Http\Requests\Returns;
 
 use App\Enums\ReturnCondition;
 use App\Enums\ReturnResolution;
+use App\Models\ReturnDocument;
+use App\Models\Warehouse;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,9 +19,14 @@ class InspectReturnRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        $return = $this->route('return');
+        $workLocationId = $return instanceof ReturnDocument ? (int) $return->work_location_id : 0;
+
         return [
             'items' => ['required', 'array', 'min:1'],
-            'items.*.warehouse_location_id' => ['nullable', Rule::exists('warehouse_locations', 'id')->where('is_active', true)],
+            'items.*.warehouse_location_id' => ['nullable', Rule::exists('warehouse_locations', 'id')->where(fn ($query) => $query
+                ->where('is_active', true)
+                ->whereIn('warehouse_id', Warehouse::query()->select('id')->where('work_location_id', $workLocationId)))],
             'items.*.quantity_good' => ['required', 'numeric', 'min:0'],
             'items.*.quantity_damaged' => ['required', 'numeric', 'min:0'],
             'items.*.quantity_rejected' => ['required', 'numeric', 'min:0'],

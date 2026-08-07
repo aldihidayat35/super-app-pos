@@ -34,21 +34,34 @@ class PriceResolverService
         $baseQuantity = Decimal::mul(Decimal::normalize($quantity), $factor, 4, 6, 4);
         $rule = $this->activeRule($channel, $branch, $customer, $at);
         $hppBase = Decimal::normalize($product->cost_price ?? 0, 2);
-        $minimumBase = $this->minimumBasePrice($product, $rule);
-        $maximumBase = $this->maximumBasePrice($minimumBase, $rule);
+        $policyMinimumBase = $this->minimumBasePrice($product, $rule);
+        $policyMaximumBase = $this->maximumBasePrice($policyMinimumBase, $rule);
 
         $candidates = $this->candidates($product, $baseQuantity, $branch, $customer, $channel, $at);
         if ($candidates === []) {
             $candidates[] = [
                 'source' => 'computed_minimum',
                 'priority' => 9999,
-                'price_base' => $minimumBase,
+                'price_base' => $policyMinimumBase,
+                'ring_name' => $rule->name,
+                'minimum_base' => $policyMinimumBase,
+                'maximum_base' => $policyMaximumBase,
                 'reason' => 'Fallback dari HPP + aturan margin minimum.',
             ];
         }
 
         usort($candidates, fn (array $a, array $b): int => [$a['priority'], $a['source']] <=> [$b['priority'], $b['source']]);
         $selected = $candidates[0];
+        $minimumBase = isset($selected['minimum_base']) && Decimal::compare((string) $selected['minimum_base'], '0', 2) > 0
+            ? $this->maximum($policyMinimumBase, (string) $selected['minimum_base'])
+            : $policyMinimumBase;
+        $maximumBase = isset($selected['maximum_base']) && Decimal::compare((string) $selected['maximum_base'], '0', 2) > 0
+            ? $this->minimum($policyMaximumBase, (string) $selected['maximum_base'])
+            : $policyMaximumBase;
+        if (Decimal::compare($maximumBase, $minimumBase, 2) < 0) {
+            $maximumBase = $minimumBase;
+        }
+        $recommendedUnit = Decimal::mul((string) $selected['price_base'], $factor, 2, 6, 2);
         $selectedBase = Decimal::normalize($requestedPrice === null ? $selected['price_base'] : Decimal::div($requestedPrice, $factor, 2, 6, 2), 2);
         $selectedUnit = Decimal::mul($selectedBase, $factor, 2, 6, 2);
         $minimumUnit = Decimal::mul($minimumBase, $factor, 2, 6, 2);
@@ -72,6 +85,8 @@ class PriceResolverService
             'quantity_base' => $baseQuantity,
             'minimum_price' => $minimumUnit,
             'maximum_price' => $maximumUnit,
+            'recommended_price' => $recommendedUnit,
+            'price_ring' => $selected['ring_name'] ?? $rule->name,
             'selected_price' => $selectedUnit,
             'discounted_price' => $discountedUnit,
             'margin_amount' => $marginAmount,
@@ -186,6 +201,7 @@ class PriceResolverService
                         'source' => 'customer_special',
                         'priority' => (int) $override->priority,
                         'price_base' => (string) $override->price,
+                        'ring_name' => 'Harga Khusus Pelanggan',
                         'reason' => 'Harga khusus pelanggan.',
                         'id' => $override->id,
                     ];
@@ -211,6 +227,9 @@ class PriceResolverService
                     'source' => 'product_price',
                     'priority' => 100 + (int) $price->priority - $specificity,
                     'price_base' => (string) $price->recommended_price,
+                    'ring_name' => $price->price_ring,
+                    'minimum_base' => $price->min_price,
+                    'maximum_base' => $price->max_price,
                     'reason' => "Harga {$price->price_ring} {$price->channel}.",
                     'id' => $price->id,
                 ];
@@ -233,5 +252,15 @@ class PriceResolverService
         }
 
         return Decimal::mul(Decimal::div(Decimal::sub($sellPrice, $hpp, 2), $sellPrice, 2, 2, 4), '100', 4, 2, 2);
+    }
+
+    private function minimum(string $left, string $right): string
+    {
+        return Decimal::compare($left, $right, 2) <= 0 ? $left : $right;
+    }
+
+    private function maximum(string $left, string $right): string
+    {
+        return Decimal::compare($left, $right, 2) >= 0 ? $left : $right;
     }
 }

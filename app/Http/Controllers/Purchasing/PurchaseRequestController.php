@@ -82,18 +82,37 @@ class PurchaseRequestController extends Controller
         return redirect()->route('purchasing.requests.index')->with('notification', ['type' => 'success', 'message' => "Permintaan {$purchaseRequest->number} berhasil diajukan."]);
     }
 
+    public function show(PurchaseRequest $purchaseRequest): View
+    {
+        $this->authorize('view', $purchaseRequest);
+
+        return view('purchasing.requests.show', [
+            'purchaseRequest' => $purchaseRequest->load([
+                'warehouse',
+                'requester',
+                'items.product.baseUnit',
+                'items.unit',
+                'convertedPurchaseOrder.supplier',
+                'statusHistories.actor',
+            ]),
+            'suppliers' => Supplier::query()->where('is_active', true)->orderBy('name')->get(),
+        ]);
+    }
+
     public function approve(Request $request, PurchaseRequest $purchaseRequest): RedirectResponse
     {
         $this->authorize('approve', $purchaseRequest);
 
         DB::transaction(function () use ($request, $purchaseRequest): void {
-            $from = $purchaseRequest->status->value;
-            $purchaseRequest->forceFill([
+            $lockedRequest = PurchaseRequest::query()->lockForUpdate()->findOrFail($purchaseRequest->id);
+            $this->authorize('approve', $lockedRequest);
+            $from = $lockedRequest->status->value;
+            $lockedRequest->forceFill([
                 'status' => PurchaseRequestStatus::APPROVED,
                 'approved_at' => now(),
                 'approved_by' => $request->user()?->id,
             ])->save();
-            $this->history($purchaseRequest, $from, PurchaseRequestStatus::APPROVED->value, $request, 'Permintaan disetujui.');
+            $this->history($lockedRequest, $from, PurchaseRequestStatus::APPROVED->value, $request, 'Permintaan disetujui.');
         });
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Permintaan pembelian disetujui.']);
@@ -105,13 +124,15 @@ class PurchaseRequestController extends Controller
         $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
 
         DB::transaction(function () use ($request, $purchaseRequest, $data): void {
-            $from = $purchaseRequest->status->value;
-            $purchaseRequest->forceFill([
+            $lockedRequest = PurchaseRequest::query()->lockForUpdate()->findOrFail($purchaseRequest->id);
+            $this->authorize('approve', $lockedRequest);
+            $from = $lockedRequest->status->value;
+            $lockedRequest->forceFill([
                 'status' => PurchaseRequestStatus::REJECTED,
                 'rejected_at' => now(),
                 'rejected_by' => $request->user()?->id,
             ])->save();
-            $this->history($purchaseRequest, $from, PurchaseRequestStatus::REJECTED->value, $request, $data['reason']);
+            $this->history($lockedRequest, $from, PurchaseRequestStatus::REJECTED->value, $request, $data['reason']);
         });
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Permintaan pembelian ditolak.']);
@@ -123,8 +144,10 @@ class PurchaseRequestController extends Controller
         $data = $request->validate(['supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('is_active', true)]]);
 
         $purchaseOrder = DB::transaction(function () use ($request, $purchaseRequest, $orders, $data) {
-            $purchaseRequest->load(['items.product.baseUnit', 'warehouse']);
-            $items = $purchaseRequest->items->map(fn ($item): array => [
+            $lockedRequest = PurchaseRequest::query()->lockForUpdate()->findOrFail($purchaseRequest->id);
+            $this->authorize('convert', $lockedRequest);
+            $lockedRequest->load(['items.product.baseUnit', 'warehouse']);
+            $items = $lockedRequest->items->map(fn ($item): array => [
                 'product_id' => $item->product_id,
                 'unit_id' => $item->unit_id ?: $item->product->base_unit_id,
                 'quantity_ordered' => $item->quantity,
@@ -134,22 +157,22 @@ class PurchaseRequestController extends Controller
             ])->values()->all();
 
             $purchaseOrder = $orders->create([
-                'warehouse_id' => $purchaseRequest->warehouse_id,
+                'warehouse_id' => $lockedRequest->warehouse_id,
                 'supplier_id' => $data['supplier_id'],
-                'purchase_request_id' => $purchaseRequest->id,
+                'purchase_request_id' => $lockedRequest->id,
                 'order_date' => now()->toDateString(),
                 'expected_at' => null,
                 'payment_term_days' => 0,
-                'notes' => 'Dikonversi dari '.$purchaseRequest->number,
+                'notes' => 'Dikonversi dari '.$lockedRequest->number,
                 'items' => $items,
             ], $request->user());
 
-            $from = $purchaseRequest->status->value;
-            $purchaseRequest->forceFill([
+            $from = $lockedRequest->status->value;
+            $lockedRequest->forceFill([
                 'status' => PurchaseRequestStatus::CONVERTED,
                 'converted_purchase_order_id' => $purchaseOrder->id,
             ])->save();
-            $this->history($purchaseRequest, $from, PurchaseRequestStatus::CONVERTED->value, $request, 'Dikonversi ke PO '.$purchaseOrder->number);
+            $this->history($lockedRequest, $from, PurchaseRequestStatus::CONVERTED->value, $request, 'Dikonversi ke PO '.$purchaseOrder->number);
 
             return $purchaseOrder;
         });

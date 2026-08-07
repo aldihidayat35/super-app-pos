@@ -137,6 +137,55 @@ class PurchaseOrderWorkflowTest extends TestCase
             ->assertRedirect();
     }
 
+    public function test_approved_purchase_order_can_be_marked_sent_through_route(): void
+    {
+        [$warehouse, $supplier, $product, $unit] = $this->fixture();
+        $this->purchasing->workLocations()->syncWithoutDetaching([$warehouse->work_location_id => ['is_default' => true, 'is_active' => true]]);
+        $this->approver->workLocations()->syncWithoutDetaching([$warehouse->work_location_id => ['is_default' => true, 'is_active' => true]]);
+        $purchaseOrder = $this->makePurchaseOrder($warehouse, $supplier, $product, $unit);
+        $this->service->submit($purchaseOrder, $this->purchasing);
+        $this->service->approve($purchaseOrder->fresh(), $this->approver);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.send', $purchaseOrder))
+            ->assertRedirect();
+
+        $this->assertSame(PurchaseOrderStatus::SENT_TO_SUPPLIER, $purchaseOrder->fresh()->status);
+    }
+
+    public function test_cancellation_route_requires_reason_and_records_it(): void
+    {
+        [$warehouse, $supplier, $product, $unit] = $this->fixture();
+        $this->purchasing->workLocations()->syncWithoutDetaching([$warehouse->work_location_id => ['is_default' => true, 'is_active' => true]]);
+        $purchaseOrder = $this->makePurchaseOrder($warehouse, $supplier, $product, $unit);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.cancel', $purchaseOrder))
+            ->assertSessionHasErrors('reason');
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.cancel', $purchaseOrder), ['reason' => 'Supplier tidak dapat memenuhi pesanan.'])
+            ->assertRedirect();
+
+        $purchaseOrder->refresh();
+        $this->assertSame(PurchaseOrderStatus::CANCELLED, $purchaseOrder->status);
+        $this->assertSame('Supplier tidak dapat memenuhi pesanan.', $purchaseOrder->cancel_reason);
+    }
+
+    public function test_purchase_order_store_rejects_unpermitted_warehouse(): void
+    {
+        [$warehouse, $supplier, $product, $unit] = $this->fixture();
+        $otherLocation = WorkLocation::factory()->create(['type' => 'warehouse']);
+        $otherWarehouse = Warehouse::factory()->create(['work_location_id' => $otherLocation->id]);
+        $this->purchasing->workLocations()->syncWithoutDetaching([$warehouse->work_location_id => ['is_default' => true, 'is_active' => true]]);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.store'), $this->payload($otherWarehouse, $supplier, $product, $unit))
+            ->assertSessionHasErrors('warehouse_id');
+
+        $this->assertDatabaseCount('purchase_orders', 0);
+    }
+
     public function test_document_numbers_are_unique_for_multiple_purchase_orders(): void
     {
         [$warehouse, $supplier, $product, $unit] = $this->fixture();

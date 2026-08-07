@@ -22,6 +22,7 @@ class CustomerSettingsController extends Controller
             'products' => Product::query()->orderBy('name')->limit(100)->get(),
             'statuses' => CustomerStatus::options(),
             'priceCategories' => ['retail' => 'Retail', 'grosir' => 'Grosir', 'reseller' => 'Reseller', 'project' => 'Proyek', 'special' => 'Khusus'],
+            'documentTypes' => ['nib' => 'NIB', 'npwp' => 'NPWP', 'owner_id_card' => 'KTP Pemilik / PIC', 'deed' => 'Akta Usaha', 'business_license' => 'SIUP / Izin Usaha', 'other' => 'Dokumen Lainnya'],
         ]);
     }
 
@@ -36,7 +37,11 @@ class CustomerSettingsController extends Controller
                 $customer->documents()->create([
                     'type' => $request->input('document_type', 'business_document'),
                     'name' => $request->input('document_name') ?: $request->file('document')?->getClientOriginalName(),
+                    'document_number' => $request->input('document_number'),
+                    'issued_at' => $request->input('document_issued_at'),
+                    'expires_at' => $request->input('document_expires_at'),
                     'path' => $request->file('document')?->store('customer-documents', 'public'),
+                    'notes' => $request->input('document_notes'),
                 ]);
             }
 

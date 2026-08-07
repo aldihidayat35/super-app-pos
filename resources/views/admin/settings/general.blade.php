@@ -30,6 +30,9 @@
                     <x-metronic.form-group name="company_phone" label="Telepon Perusahaan">
                         <input name="company_phone" value="{{ old('company_phone', $settings['company_phone']) }}" class="form-control @error('company_phone') is-invalid @enderror">
                     </x-metronic.form-group>
+                    <x-metronic.form-group name="company_email" label="Email Perusahaan">
+                        <input type="email" name="company_email" value="{{ old('company_email', $settings['company_email']) }}" class="form-control @error('company_email') is-invalid @enderror">
+                    </x-metronic.form-group>
                     <x-metronic.form-group name="logo" label="Logo" help="Format gambar, maksimal 2 MB.">
                         <input type="file" name="logo" class="form-control @error('logo') is-invalid @enderror" accept="image/*">
                     </x-metronic.form-group>

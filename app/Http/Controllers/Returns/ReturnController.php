@@ -5,20 +5,26 @@ namespace App\Http\Controllers\Returns;
 use App\Enums\ReturnCondition;
 use App\Enums\ReturnResolution;
 use App\Enums\ReturnStatus;
+use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Returns\InspectReturnRequest;
 use App\Http\Requests\Returns\SettleReturnRequest;
 use App\Http\Requests\Returns\StoreReturnRequest;
+use App\Models\Attachment;
 use App\Models\Product;
 use App\Models\ReturnDocument;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Returns\ReturnService;
+use App\Services\Returns\ReturnSourceService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class ReturnController extends Controller
 {
@@ -44,21 +50,84 @@ class ReturnController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request, ReturnSourceService $sources): View
     {
-        abort_unless($request->user()?->can('returns.create'), 403);
+        $this->authorize('create', ReturnDocument::class);
 
-        return view('returns.create', $this->formData($request));
+        return view('returns.create', $this->formData($request, $sources, new ReturnDocument([
+            'return_date' => now(),
+            'status' => ReturnStatus::DRAFT,
+        ])));
     }
 
     public function store(StoreReturnRequest $request, ReturnService $service): RedirectResponse
     {
-        $data = $this->validatedWithEvidence($request);
-        abort_unless($request->user()?->canAccessWorkLocation((int) $data['work_location_id']), 403);
+        $data = $request->validated();
+        $existing = filled($data['idempotency_key'] ?? null)
+            ? ReturnDocument::query()->where('idempotency_key', $data['idempotency_key'])->first()
+            : null;
+        if ($existing instanceof ReturnDocument) {
+            return redirect()->route('returns.show', $existing);
+        }
 
-        $return = $service->create($data, $request->user());
+        [$data, $storedFiles] = $this->storeEvidenceFiles($request, $data);
+        try {
+            $return = DB::transaction(function () use ($data, $storedFiles, $request, $service): ReturnDocument {
+                $return = $service->create($data, $request->user());
+                $this->attachEvidence($return, $storedFiles, $request);
 
-        return redirect()->route('returns.show', $return)->with('notification', ['type' => 'success', 'message' => "Retur {$return->number} berhasil dibuat."]);
+                return $return;
+            });
+        } catch (ServiceException $exception) {
+            $this->deleteStoredFiles($storedFiles);
+
+            return back()->withInput()->withErrors(['return' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            $this->deleteStoredFiles($storedFiles);
+            throw $exception;
+        }
+
+        $message = $return->status === ReturnStatus::DRAFT
+            ? "Draft retur {$return->number} berhasil disimpan."
+            : "Retur {$return->number} berhasil diajukan untuk pemeriksaan QC.";
+
+        return redirect()->route('returns.show', $return)->with('notification', ['type' => 'success', 'message' => $message]);
+    }
+
+    public function edit(Request $request, ReturnDocument $return, ReturnSourceService $sources): View
+    {
+        $this->authorize('update', $return);
+
+        return view('returns.edit', $this->formData($request, $sources, $return->load(['items.product.baseUnit', 'items.warehouseLocation', 'attachments'])));
+    }
+
+    public function update(StoreReturnRequest $request, ReturnDocument $return, ReturnService $service): RedirectResponse
+    {
+        $this->authorize('update', $return);
+        $data = $request->validated();
+        [$data, $storedFiles] = $this->storeEvidenceFiles($request, $data);
+
+        try {
+            $return = DB::transaction(function () use ($data, $storedFiles, $request, $return, $service): ReturnDocument {
+                $return = $service->updateDraft($return, $data, $request->user());
+                $this->attachEvidence($return, $storedFiles, $request);
+
+                return $return;
+            });
+        } catch (ServiceException $exception) {
+            $this->deleteStoredFiles($storedFiles);
+
+            return back()->withInput()->withErrors(['return' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            $this->deleteStoredFiles($storedFiles);
+            throw $exception;
+        }
+
+        $message = $return->status === ReturnStatus::DRAFT
+            ? "Draft retur {$return->number} berhasil diperbarui."
+            : "Retur {$return->number} berhasil diajukan untuk pemeriksaan QC.";
+
+        return redirect()->route('returns.show', $return)->with('notification', ['type' => 'success', 'message' => $message]);
     }
 
     public function show(ReturnDocument $return): View
@@ -76,7 +145,10 @@ class ReturnController extends Controller
             'return' => $this->loadReturn($return),
             'conditions' => ReturnCondition::options(),
             'resolutions' => ReturnResolution::options(),
-            'warehouseLocations' => WarehouseLocation::query()->where('is_active', true)->orderBy('full_code')->limit(300)->get(),
+            'warehouseLocations' => WarehouseLocation::query()
+                ->where('is_active', true)
+                ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $return->work_location_id))
+                ->orderBy('full_code')->limit(300)->get(),
         ]);
     }
 
@@ -139,30 +211,145 @@ class ReturnController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function formData(Request $request): array
+    private function formData(Request $request, ReturnSourceService $sources, ReturnDocument $return): array
     {
+        $showCost = $request->user()?->can('margins.view_sensitive') ?? false;
+        $sourceType = (string) old('source_type', $return->source_type ?: 'pos');
+        $referenceId = (int) old('reference_id', (string) ($return->reference_id ?: 0));
+        $workLocationId = (int) old('work_location_id', (string) ($return->work_location_id ?: 0));
+        $selectedSourceDocument = null;
+        $resolvedSourceItems = collect();
+        if (! in_array($sourceType, ['manual', 'branch'], true) && $referenceId > 0 && $workLocationId > 0) {
+            try {
+                $selectedSourceDocument = $sources->document($sourceType, $referenceId, $workLocationId);
+                $resolvedSourceItems = collect($sources->documentItems($sourceType, $referenceId, $workLocationId, $showCost, $return->exists ? $return->id : null))->keyBy('source_item_id');
+            } catch (ServiceException) {
+                $selectedSourceDocument = null;
+            }
+        }
+
+        $oldItems = old('items');
+        if (is_array($oldItems)) {
+            $products = Product::query()->with('baseUnit')->whereIn('id', collect($oldItems)->pluck('product_id')->filter())->get()->keyBy('id');
+            $locationIds = collect($oldItems)->pluck('warehouse_location_id')->filter();
+            $locations = WarehouseLocation::query()->whereIn('id', $locationIds)->get()->keyBy('id');
+            $formItems = collect($oldItems)->map(function (array $item) use ($products, $locations, $resolvedSourceItems, $showCost): array {
+                $product = $products->get((int) ($item['product_id'] ?? 0));
+                $source = $resolvedSourceItems->get((int) ($item['source_item_id'] ?? 0), []);
+                $location = $locations->get((int) ($item['warehouse_location_id'] ?? 0));
+
+                return [
+                    'product_id' => $product?->id,
+                    'source_item_id' => $item['source_item_id'] ?? null,
+                    'source_item_type' => $source['source_item_type'] ?? null,
+                    'sku' => $source['sku'] ?? $product?->sku,
+                    'name' => $source['name'] ?? $product?->name,
+                    'thumbnail' => $source['thumbnail'] ?? $product?->main_image_url,
+                    'unit' => $source['unit'] ?? $product?->baseUnit?->name,
+                    'source_quantity' => $source['source_quantity'] ?? null,
+                    'already_returned' => $source['already_returned'] ?? '0.0000',
+                    'maximum_quantity' => $source['maximum_quantity'] ?? null,
+                    'quantity_requested' => $item['quantity_requested'] ?? null,
+                    'unit_cost' => $showCost ? ($source['unit_cost'] ?? $product?->cost_price) : null,
+                    'condition' => $item['condition'] ?? ReturnCondition::GOOD->value,
+                    'warehouse_location_id' => $item['warehouse_location_id'] ?? null,
+                    'warehouse_location_text' => $location?->full_code,
+                    'notes' => $item['notes'] ?? null,
+                ];
+            })->values()->all();
+        } elseif ($return->exists) {
+            $formItems = $return->items->map(function ($item) use ($resolvedSourceItems, $showCost): array {
+                $source = $resolvedSourceItems->get((int) $item->source_item_id, []);
+
+                return [
+                    'product_id' => $item->product_id,
+                    'source_item_id' => $item->source_item_id,
+                    'source_item_type' => $item->source_item_type,
+                    'sku' => $item->product_sku_snapshot,
+                    'name' => $item->product_name_snapshot,
+                    'thumbnail' => $item->product?->main_image_url,
+                    'unit' => $item->unit_name_snapshot ?: $item->product?->baseUnit?->name,
+                    'source_quantity' => $source['source_quantity'] ?? (string) $item->source_quantity,
+                    'already_returned' => $source['already_returned'] ?? '0.0000',
+                    'maximum_quantity' => $source['maximum_quantity'] ?? (string) $item->source_quantity,
+                    'quantity_requested' => (string) $item->quantity_requested,
+                    'unit_cost' => $showCost ? ($source['unit_cost'] ?? (string) $item->unit_cost_snapshot) : null,
+                    'condition' => (string) $item->getRawOriginal('condition'),
+                    'warehouse_location_id' => $item->warehouse_location_id,
+                    'warehouse_location_text' => $item->warehouseLocation?->full_code,
+                    'notes' => $item->notes,
+                ];
+            })->values()->all();
+        } else {
+            $formItems = [];
+        }
+
         return [
             'workLocations' => WorkLocation::query()->whereIn('id', $request->user()?->permittedWorkLocationIds() ?? [])->where('is_active', true)->orderBy('name')->get(),
-            'products' => Product::query()->where('status', 'active')->orderBy('name')->limit(500)->get(),
-            'warehouseLocations' => WarehouseLocation::query()->where('is_active', true)->orderBy('full_code')->limit(300)->get(),
+            'return' => $return,
+            'sourceTypes' => ReturnSourceService::sourceOptions(),
             'conditions' => ReturnCondition::options(),
             'resolutions' => ReturnResolution::options(),
+            'showCost' => $showCost,
+            'approvalThreshold' => ReturnService::APPROVAL_THRESHOLD,
+            'selectedSourceDocument' => $selectedSourceDocument,
+            'formItems' => $formItems,
         ];
     }
 
     private function loadReturn(ReturnDocument $return): ReturnDocument
     {
-        return $return->load(['workLocation', 'requester', 'checker', 'approver', 'items.product', 'items.warehouseLocation', 'inspections', 'settlements', 'stockMutations.product', 'statusHistories.actor']);
+        return $return->load(['workLocation', 'requester', 'checker', 'approver', 'items.product', 'items.warehouseLocation', 'attachments.uploader', 'inspections', 'settlements', 'stockMutations.product', 'statusHistories.actor']);
     }
 
-    /** @return array<string, mixed> */
-    private function validatedWithEvidence(StoreReturnRequest $request): array
+    /** @param array<string, mixed> $data
+     * @return array{array<string, mixed>, list<array<string, mixed>>}
+     */
+    private function storeEvidenceFiles(StoreReturnRequest $request, array $data): array
     {
-        $data = $request->validated();
-        if ($request->hasFile('evidence')) {
-            $data['evidence_path'] = $request->file('evidence')?->store('returns', 'public');
+        $storedFiles = [];
+        try {
+            foreach ((array) $request->file('evidence_files', []) as $file) {
+                $path = $file->store('returns', 'public');
+                $storedFiles[] = [
+                    'path' => $path,
+                    'original_name' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                ];
+            }
+        } catch (Throwable $exception) {
+            $this->deleteStoredFiles($storedFiles);
+            throw $exception;
+        }
+        unset($data['evidence_files']);
+        if ($storedFiles !== []) {
+            $data['evidence_path'] = $storedFiles[0]['path'];
         }
 
-        return $data;
+        return [$data, $storedFiles];
+    }
+
+    /** @param list<array<string, mixed>> $storedFiles */
+    private function attachEvidence(ReturnDocument $return, array $storedFiles, StoreReturnRequest $request): void
+    {
+        foreach ($storedFiles as $file) {
+            Attachment::query()->create([
+                'document_type' => 'return',
+                'document_id' => $return->id,
+                'disk' => 'public',
+                'path' => $file['path'],
+                'original_name' => $file['original_name'],
+                'mime_type' => $file['mime_type'],
+                'size' => $file['size'],
+                'uploaded_by' => $request->user()?->id,
+            ]);
+        }
+    }
+
+    /** @param list<array<string, mixed>> $storedFiles */
+    private function deleteStoredFiles(array $storedFiles): void
+    {
+        Storage::disk('public')->delete(array_column($storedFiles, 'path'));
     }
 }

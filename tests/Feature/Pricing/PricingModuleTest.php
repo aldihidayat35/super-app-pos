@@ -70,6 +70,36 @@ class PricingModuleTest extends TestCase
         $this->assertFalse($atMaximum['approval_required']);
     }
 
+    public function test_product_price_ring_bounds_are_the_same_bounds_returned_by_resolver(): void
+    {
+        $product = $this->product(costPrice: '10000.00');
+        $this->defaultRule();
+        ProductPrice::query()->create([
+            'product_id' => $product->id,
+            'channel' => 'pos',
+            'price_ring' => 'Ring Kasir',
+            'min_price' => '13000.00',
+            'recommended_price' => '15000.00',
+            'max_price' => '17000.00',
+            'minimum_qty' => '1',
+            'priority' => 1,
+            'status' => ProductPriceStatus::ACTIVE,
+        ]);
+
+        $atMinimum = $this->resolver->resolve($product, channel: 'pos', user: $this->cashier, requestedPrice: '13000.00');
+        $atMaximum = $this->resolver->resolve($product, channel: 'pos', user: $this->cashier, requestedPrice: '17000.00');
+        $below = $this->resolver->resolve($product, channel: 'pos', user: $this->cashier, requestedPrice: '12999.00');
+
+        $this->assertSame('Ring Kasir', $atMinimum['price_ring']);
+        $this->assertSame('15000.00', $atMinimum['recommended_price']);
+        $this->assertSame('13000.00', $atMinimum['minimum_price']);
+        $this->assertSame('17000.00', $atMinimum['maximum_price']);
+        $this->assertFalse($atMinimum['approval_required']);
+        $this->assertFalse($atMaximum['approval_required']);
+        $this->assertTrue($below['approval_required']);
+        $this->assertContains('below_minimum', $below['approval_reasons']);
+    }
+
     public function test_priority_conflict_prefers_customer_special_price(): void
     {
         [$product, $branch, $customer] = $this->pricingFixture();

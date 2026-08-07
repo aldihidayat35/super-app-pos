@@ -18,6 +18,7 @@ use App\Models\PosSale;
 use App\Models\PosSaleItem;
 use App\Models\Product;
 use App\Models\SalePayment;
+use App\Models\Stock;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\WarehouseLocation;
@@ -43,6 +44,10 @@ class PosService
         if (($data['idempotency_key'] ?? null) !== null) {
             $existing = PosSale::query()->where('idempotency_key', $data['idempotency_key'])->first();
             if ($existing instanceof PosSale) {
+                if ((int) $existing->cashier_user_id !== (int) $cashier->id) {
+                    throw ServiceException::validation('Kunci idempotensi sudah digunakan oleh transaksi kasir lain.');
+                }
+
                 return $existing->load(['items.product', 'payments', 'branch', 'cashShift', 'customer']);
             }
         }
@@ -50,7 +55,10 @@ class PosService
         return DB::transaction(function () use ($data, $cashier): PosSale {
             $branch = $this->branchForSale((int) $data['branch_id'], $cashier);
             $shift = $this->activeShift($branch, $cashier, true);
-            $customer = isset($data['customer_id']) ? Customer::query()->find($data['customer_id']) : null;
+            $customer = isset($data['customer_id']) ? Customer::query()->where('is_active', true)->find($data['customer_id']) : null;
+            if (filled($data['customer_id'] ?? null) && ! $customer instanceof Customer) {
+                throw ServiceException::validation('Pelanggan tidak aktif atau tidak ditemukan.');
+            }
 
             if (! $shift instanceof CashShift) {
                 throw ServiceException::validation('Kasir belum memiliki shift aktif di cabang ini.');
@@ -62,6 +70,11 @@ class PosService
             }
 
             $calculated = $this->calculateItems($itemPayloads, $branch, $customer, $cashier);
+            $approvalItems = collect($calculated['items'])->filter(fn (array $item): bool => $item['price']['approval_required'] === true);
+            if ($approvalItems->isNotEmpty()) {
+                $messages = $approvalItems->map(fn (array $item): string => $item['product']->name.' ('.implode(', ', $item['price']['approval_reasons']).')');
+                throw ServiceException::validation('Harga/diskon membutuhkan approval dan belum dapat di-checkout: '.$messages->implode('; ').'.');
+            }
             $payments = $this->validatePayments($data['payments'] ?? [], $calculated['grand_total'], $customer);
             if (Decimal::compare($payments['credit_amount'], '0', 2) > 0) {
                 $this->receivables->assertCanUseCredit($this->requireCustomer($customer), $payments['credit_amount']);
@@ -137,9 +150,9 @@ class PosService
                 ]);
             }
 
-            if (Decimal::compare($payments['cash_amount'], '0', 2) > 0) {
+            if (Decimal::compare($payments['net_cash_amount'], '0', 2) > 0) {
                 $shift->forceFill([
-                    'expected_cash_amount' => Decimal::add((string) $shift->expected_cash_amount, $payments['cash_amount'], 2),
+                    'expected_cash_amount' => Decimal::add((string) $shift->expected_cash_amount, $payments['net_cash_amount'], 2),
                 ])->save();
             }
 
@@ -161,16 +174,64 @@ class PosService
                 throw ServiceException::validation('Kasir belum memiliki shift aktif di cabang ini.');
             }
 
+            $customer = isset($data['customer_id']) ? Customer::query()->where('is_active', true)->find($data['customer_id']) : null;
+            if (filled($data['customer_id'] ?? null) && ! $customer instanceof Customer) {
+                throw ServiceException::validation('Pelanggan tidak aktif atau tidak ditemukan.');
+            }
+
+            if (isset($data['items']) && is_array($data['items']) && $data['items'] !== []) {
+                $calculated = $this->calculateItems($data['items'], $branch, $customer, $cashier);
+                $snapshot = [
+                    'version' => 1,
+                    'customer_id' => $customer?->id,
+                    'items' => collect($calculated['items'])->map(fn (array $item): array => [
+                        'product_id' => $item['product']->id,
+                        'sku' => $item['product']->sku,
+                        'name' => $item['product']->name,
+                        'image_url' => $item['product']->main_image_url,
+                        'unit_id' => $item['unit']->id,
+                        'unit' => $item['unit']->name,
+                        'warehouse_location_id' => $item['warehouse_location']?->id,
+                        'quantity' => $item['quantity'],
+                        'selected_price' => $item['selected_price'],
+                        'discount_percent' => $item['discount_percent'],
+                        'line_total' => $item['line_total'],
+                        'pricing' => [
+                            'ring' => $item['price']['price_ring'],
+                            'source' => $item['price']['selected_source'],
+                            'reason' => $item['price']['reason'],
+                            'recommended_price' => $item['price']['recommended_price'],
+                            'minimum_price' => $item['price']['minimum_price'],
+                            'maximum_price' => $item['price']['maximum_price'],
+                            'selected_price' => $item['price']['selected_price'],
+                            'discounted_price' => $item['price']['discounted_price'],
+                            'approval_required' => $item['price']['approval_required'],
+                            'approval_reasons' => $item['price']['approval_reasons'],
+                        ],
+                    ])->values()->all(),
+                    'totals' => [
+                        'subtotal' => $calculated['subtotal'],
+                        'discount' => $calculated['discount'],
+                        'grand_total' => $calculated['grand_total'],
+                    ],
+                ];
+                $estimatedTotal = $calculated['grand_total'];
+            } else {
+                // Jalur kompatibilitas untuk snapshot hold lama yang dibuat sebelum POS scanner-first.
+                $snapshot = (array) ($data['cart_snapshot'] ?? []);
+                $estimatedTotal = Decimal::normalize($data['estimated_total'] ?? 0, 2);
+            }
+
             return PosHold::query()->create([
                 'number' => $this->numbers->next('sale', $branch->workLocation).'-H',
                 'branch_id' => $branch->id,
                 'work_location_id' => $branch->work_location_id,
                 'cash_shift_id' => $shift->id,
                 'cashier_user_id' => $cashier->id,
-                'customer_id' => $data['customer_id'] ?? null,
+                'customer_id' => $customer?->id,
                 'status' => PosHoldStatus::HELD,
-                'cart_snapshot' => $data['cart_snapshot'] ?? [],
-                'estimated_total' => $data['estimated_total'] ?? 0,
+                'cart_snapshot' => $snapshot,
+                'estimated_total' => $estimatedTotal,
                 'notes' => $data['notes'] ?? null,
             ]);
         });
@@ -178,19 +239,50 @@ class PosService
 
     public function resumeHold(PosHold $hold, User $cashier): PosHold
     {
-        if ((int) $hold->cashier_user_id !== (int) $cashier->id) {
-            throw ServiceException::validation('Hold hanya bisa dilanjutkan oleh kasir yang sama.');
-        }
+        return DB::transaction(function () use ($hold, $cashier): PosHold {
+            $hold = PosHold::query()->lockForUpdate()->findOrFail($hold->id);
+            if ((int) $hold->cashier_user_id !== (int) $cashier->id) {
+                throw ServiceException::validation('Hold hanya bisa dilanjutkan oleh kasir yang sama.');
+            }
 
-        $hold->forceFill(['status' => PosHoldStatus::RESUMED, 'resumed_at' => now()])->save();
+            if ($hold->status !== PosHoldStatus::HELD) {
+                throw ServiceException::validation('Transaksi hold ini sudah dilanjutkan atau dibatalkan.');
+            }
+            $shift = CashShift::query()
+                ->with('branch')
+                ->whereKey($hold->cash_shift_id)
+                ->where('cashier_user_id', $cashier->id)
+                ->where('status', CashShiftStatus::OPEN->value)
+                ->first();
+            if (! $shift instanceof CashShift || ! $shift->branch instanceof Branch) {
+                throw ServiceException::validation('Hold tidak dapat dilanjutkan karena shift asal sudah tidak aktif.');
+            }
 
-        return $hold->fresh(['customer', 'branch']);
+            $snapshot = $this->holdSnapshot($hold);
+            if ((int) ($snapshot['version'] ?? 0) >= 1) {
+                $customer = $hold->customer_id !== null
+                    ? Customer::query()->where('is_active', true)->find($hold->customer_id)
+                    : null;
+                if ($hold->customer_id !== null && ! $customer instanceof Customer) {
+                    throw ServiceException::validation('Pelanggan pada transaksi hold sudah tidak aktif.');
+                }
+                $this->calculateItems((array) ($snapshot['items'] ?? []), $shift->branch, $customer, $cashier);
+            }
+
+            $hold->forceFill(['status' => PosHoldStatus::RESUMED, 'resumed_at' => now()])->save();
+
+            return $hold->fresh(['customer', 'branch']);
+        });
     }
 
     public function cancelHold(PosHold $hold, User $cashier, string $reason): PosHold
     {
         if ((int) $hold->cashier_user_id !== (int) $cashier->id) {
             throw ServiceException::validation('Hold hanya bisa dibatalkan oleh kasir yang sama.');
+        }
+
+        if ($hold->status !== PosHoldStatus::HELD) {
+            throw ServiceException::validation('Hanya transaksi hold aktif yang dapat dibatalkan.');
         }
 
         $hold->forceFill(['status' => PosHoldStatus::CANCELLED, 'cancel_reason' => $reason, 'cancelled_at' => now()])->save();
@@ -379,8 +471,22 @@ class PosService
 
             $product = Product::query()->with(['baseUnit', 'units.unit'])->where('status', 'active')->findOrFail($row['product_id']);
             $unitId = isset($row['unit_id']) ? (int) $row['unit_id'] : (int) $product->base_unit_id;
-            $unit = Unit::query()->findOrFail($unitId);
-            $warehouseLocation = isset($row['warehouse_location_id']) ? WarehouseLocation::query()->find($row['warehouse_location_id']) : null;
+            $unit = Unit::query()->where('is_active', true)->findOrFail($unitId);
+            if ($unitId !== (int) $product->base_unit_id && ! $product->units->contains(fn ($productUnit): bool => (int) $productUnit->unit_id === $unitId && $productUnit->is_active && $productUnit->is_sellable)) {
+                throw ServiceException::validation('Unit '.$unit->name.' tidak tersedia sebagai unit jual produk '.$product->name.'.');
+            }
+            $warehouseLocation = null;
+            if (filled($row['warehouse_location_id'] ?? null)) {
+                $warehouseLocation = WarehouseLocation::query()->where('is_active', true)->find($row['warehouse_location_id']);
+                $validStockLocation = $warehouseLocation instanceof WarehouseLocation && Stock::query()
+                    ->where('product_id', $product->id)
+                    ->where('work_location_id', $branch->work_location_id)
+                    ->where('warehouse_location_id', $warehouseLocation->id)
+                    ->exists();
+                if (! $validStockLocation) {
+                    throw ServiceException::validation('Lokasi stok produk '.$product->name.' tidak sesuai dengan cabang shift aktif.');
+                }
+            }
             $quantity = Decimal::normalize($row['quantity'] ?? 1, 4);
             $discountPercent = Decimal::normalize($row['discount_percent'] ?? 0, 2);
             $price = $this->prices->resolve(
@@ -394,10 +500,6 @@ class PosService
                 requestedPrice: $row['selected_price'] ?? null,
                 discountPercent: $discountPercent,
             );
-
-            if ($price['approval_required'] === true) {
-                throw ServiceException::validation('Harga/diskon membutuhkan approval: '.implode(', ', $price['approval_reasons']));
-            }
 
             $selectedPrice = (string) $price['selected_price'];
             $discountedPrice = (string) $price['discounted_price'];
@@ -432,7 +534,7 @@ class PosService
     }
 
     /**
-     * @return array{rows: list<array<string, mixed>>, paid: string, change: string, cash_amount: string, credit_amount: string}
+     * @return array{rows: list<array<string, mixed>>, paid: string, change: string, cash_amount: string, net_cash_amount: string, credit_amount: string}
      */
     private function validatePayments(mixed $payments, string $grandTotal, ?Customer $customer): array
     {
@@ -474,7 +576,12 @@ class PosService
             throw ServiceException::validation('Total pembayaran kurang dari grand total.');
         }
 
-        return ['rows' => $rows, 'paid' => $paid, 'change' => Decimal::sub($paid, $grandTotal, 2), 'cash_amount' => $cash, 'credit_amount' => $credit];
+        $change = Decimal::sub($paid, $grandTotal, 2);
+        if (Decimal::compare($change, $cash, 2) > 0) {
+            throw ServiceException::validation('Pembayaran non-tunai tidak boleh melebihi total transaksi. Sesuaikan nominal split payment.');
+        }
+
+        return ['rows' => $rows, 'paid' => $paid, 'change' => $change, 'cash_amount' => $cash, 'net_cash_amount' => Decimal::sub($cash, $change, 2), 'credit_amount' => $credit];
     }
 
     private function requireCustomer(?Customer $customer): Customer
@@ -484,5 +591,13 @@ class PosService
         }
 
         return $customer;
+    }
+
+    /** @return array<string, mixed> */
+    private function holdSnapshot(PosHold $hold): array
+    {
+        $snapshot = $hold->getAttribute('cart_snapshot');
+
+        return is_array($snapshot) ? $snapshot : [];
     }
 }

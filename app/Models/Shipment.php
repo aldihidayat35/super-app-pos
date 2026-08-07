@@ -36,6 +36,12 @@ class Shipment extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    /** @return BelongsTo<WorkLocation, $this> */
+    public function originWorkLocation(): BelongsTo
+    {
+        return $this->belongsTo(WorkLocation::class, 'origin_work_location_id');
+    }
+
     /** @return BelongsTo<CustomerAddress, $this> */
     public function destinationAddress(): BelongsTo
     {

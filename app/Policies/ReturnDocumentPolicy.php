@@ -18,6 +18,16 @@ class ReturnDocumentPolicy
         return $user->can('returns.view') && $user->canAccessWorkLocation((int) $returnDocument->work_location_id);
     }
 
+    public function create(User $user): bool
+    {
+        return $user->can('returns.create');
+    }
+
+    public function update(User $user, ReturnDocument $returnDocument): bool
+    {
+        return $user->can('returns.create') && $returnDocument->status->canEdit() && $this->view($user, $returnDocument);
+    }
+
     public function inspect(User $user, ReturnDocument $returnDocument): bool
     {
         return $user->can('returns.inspect') && $returnDocument->status === ReturnStatus::SUBMITTED && $this->view($user, $returnDocument);

@@ -22,11 +22,12 @@ use Illuminate\Support\Facades\DB;
 
 class ReturnService
 {
-    private const APPROVAL_THRESHOLD = '1000000.00';
+    public const APPROVAL_THRESHOLD = '1000000.00';
 
     public function __construct(
         private readonly DocumentNumberService $numbers,
         private readonly InventoryService $inventory,
+        private readonly ReturnSourceService $sources,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -41,6 +42,7 @@ class ReturnService
 
         return DB::transaction(function () use ($data, $actor): ReturnDocument {
             $workLocation = WorkLocation::query()->lockForUpdate()->findOrFail($data['work_location_id']);
+            $data = $this->sources->normalizeReturnData($data);
             $status = ($data['action'] ?? 'submit') === 'draft' ? ReturnStatus::DRAFT : ReturnStatus::SUBMITTED;
             $return = ReturnDocument::query()->create([
                 'number' => $this->numbers->next('return', $workLocation),
@@ -77,7 +79,56 @@ class ReturnService
     }
 
     /** @param array<string, mixed> $data */
-    private function createItem(ReturnDocument $return, array $data): ReturnItem
+    public function updateDraft(ReturnDocument $return, array $data, User $actor): ReturnDocument
+    {
+        return DB::transaction(function () use ($return, $data, $actor): ReturnDocument {
+            $return = ReturnDocument::query()->with('items')->lockForUpdate()->findOrFail($return->id);
+            if ($return->status !== ReturnStatus::DRAFT) {
+                throw ServiceException::validation('Hanya retur berstatus draft yang dapat diubah.');
+            }
+
+            $workLocation = WorkLocation::query()->lockForUpdate()->findOrFail($data['work_location_id']);
+            $data = $this->sources->normalizeReturnData($data, $return->id);
+            $targetStatus = ($data['action'] ?? 'draft') === 'submit' ? ReturnStatus::SUBMITTED : ReturnStatus::DRAFT;
+
+            $return->forceFill([
+                'work_location_id' => $workLocation->id,
+                'source_type' => $data['source_type'],
+                'source_id' => $data['source_id'] ?? null,
+                'source_name' => $data['source_name'] ?? null,
+                'destination_type' => $data['destination_type'] ?? null,
+                'destination_id' => $data['destination_id'] ?? null,
+                'destination_name' => $data['destination_name'] ?? null,
+                'reference_type' => $data['reference_type'] ?? null,
+                'reference_id' => $data['reference_id'] ?? null,
+                'reference_no' => $data['reference_no'] ?? null,
+                'reason' => $data['reason'],
+                'requested_resolution' => $data['requested_resolution'],
+                'return_date' => $data['return_date'],
+                'status' => $targetStatus,
+                'submitted_at' => $targetStatus === ReturnStatus::SUBMITTED ? now() : null,
+                'evidence_path' => $data['evidence_path'] ?? $return->evidence_path,
+                'notes' => $data['notes'] ?? null,
+            ])->save();
+
+            $return->items()->delete();
+            foreach ((array) $data['items'] as $itemData) {
+                $this->createItem($return, $itemData, $return->id);
+            }
+
+            $return->recalculateTotals();
+            if ($targetStatus === ReturnStatus::SUBMITTED) {
+                $this->history($return, ReturnStatus::DRAFT, ReturnStatus::SUBMITTED, $actor, 'Draft retur diajukan untuk pemeriksaan QC.');
+            } else {
+                activity()->causedBy($actor)->performedOn($return)->log('return.draft_updated');
+            }
+
+            return $return->fresh(['items.product', 'workLocation']);
+        });
+    }
+
+    /** @param array<string, mixed> $data */
+    private function createItem(ReturnDocument $return, array $data, ?int $excludeReturnId = null): ReturnItem
     {
         $product = Product::query()->with('baseUnit')->findOrFail($data['product_id']);
         $quantity = Decimal::normalize($data['quantity_requested']);
@@ -86,18 +137,36 @@ class ReturnService
         }
 
         $sourceQuantity = Decimal::normalize($data['source_quantity'] ?? $quantity);
-        $alreadyReturned = $this->returnedQuantityForSource($data['source_item_type'] ?? null, $data['source_item_id'] ?? null);
+        $alreadyReturned = isset($data['source_already_returned'])
+            ? Decimal::normalize($data['source_already_returned'])
+            : $this->returnedQuantityForSource($data['source_item_type'] ?? null, $data['source_item_id'] ?? null, $excludeReturnId);
         if (($data['source_item_id'] ?? null) !== null && Decimal::compare(Decimal::add($alreadyReturned, $quantity), $sourceQuantity) > 0) {
-            throw ServiceException::validation('Qty retur melebihi qty dokumen asal.');
+            $maximum = Decimal::compare($sourceQuantity, $alreadyReturned) > 0 ? Decimal::sub($sourceQuantity, $alreadyReturned) : '0.0000';
+            throw ServiceException::validation(
+                'Qty retur maksimum untuk produk '.$product->name.' adalah '.qty($maximum)
+                .' karena '.qty($alreadyReturned).' dari '.qty($sourceQuantity)
+                .' unit sebelumnya sudah diproses; permintaan ini melebihi qty dokumen asal yang tersisa.'
+            );
         }
 
         $unitCost = Decimal::normalize($data['unit_cost_snapshot'] ?? $product->cost_price, 2);
         $lineValue = Decimal::mul($quantity, $unitCost);
+        $warehouseLocation = null;
+        if (filled($data['warehouse_location_id'] ?? null)) {
+            $warehouseLocation = WarehouseLocation::query()
+                ->whereKey($data['warehouse_location_id'])
+                ->where('is_active', true)
+                ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $return->work_location_id))
+                ->first();
+            if (! $warehouseLocation instanceof WarehouseLocation) {
+                throw ServiceException::validation('Lokasi/rak/bin tujuan tidak aktif atau berada di luar lokasi kerja retur.');
+            }
+        }
 
         return $return->items()->create([
             'product_id' => $product->id,
             'unit_id' => $data['unit_id'] ?? $product->base_unit_id,
-            'warehouse_location_id' => $data['warehouse_location_id'] ?? null,
+            'warehouse_location_id' => $warehouseLocation?->id,
             'source_item_type' => $data['source_item_type'] ?? null,
             'source_item_id' => $data['source_item_id'] ?? null,
             'product_sku_snapshot' => $product->sku,
@@ -116,7 +185,7 @@ class ReturnService
         ]);
     }
 
-    private function returnedQuantityForSource(?string $sourceItemType, mixed $sourceItemId): string
+    private function returnedQuantityForSource(?string $sourceItemType, mixed $sourceItemId, ?int $excludeReturnId = null): string
     {
         if ($sourceItemType === null || $sourceItemId === null) {
             return '0.0000';
@@ -125,6 +194,7 @@ class ReturnService
         return ReturnItem::query()
             ->where('source_item_type', $sourceItemType)
             ->where('source_item_id', $sourceItemId)
+            ->when($excludeReturnId !== null, fn ($query) => $query->where('return_id', '!=', $excludeReturnId))
             ->whereHas('returnDocument', fn ($query) => $query->whereNotIn('status', [ReturnStatus::REJECTED->value, ReturnStatus::CANCELLED->value]))
             ->sum('quantity_requested') ?: '0.0000';
     }
@@ -175,7 +245,11 @@ class ReturnService
 
         $lossValue = Decimal::mul($damaged, (string) $item->unit_cost_snapshot);
         $warehouseLocation = ($payload['warehouse_location_id'] ?? null) !== null
-            ? WarehouseLocation::query()->findOrFail($payload['warehouse_location_id'])
+            ? WarehouseLocation::query()
+                ->whereKey($payload['warehouse_location_id'])
+                ->where('is_active', true)
+                ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $return->work_location_id))
+                ->firstOrFail()
             : $item->warehouseLocation;
 
         if (Decimal::compare($good, '0') > 0) {

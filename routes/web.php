@@ -572,6 +572,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/customers/export', [CustomerController::class, 'export'])
             ->middleware('permission:customers.export')
             ->name('customers.export');
+        Route::get('/customers/registration-form', [CustomerController::class, 'registrationForm'])
+            ->middleware('permission:customers.create')
+            ->name('customers.registration-form');
         Route::get('/customers/{customer}/access', [CustomerAccessController::class, 'edit'])
             ->middleware('permission:customers.manage_access')
             ->name('customers.access.edit');
@@ -855,7 +858,7 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
 
     Route::prefix('purchasing')->name('purchasing.')->group(function (): void {
         Route::get('/requests', [PurchaseRequestController::class, 'index'])
-            ->middleware('permission:purchase_orders.view|purchase_orders.create')
+            ->middleware('permission:purchase_orders.view|purchase_orders.create|stock.create')
             ->name('requests.index');
         Route::post('/requests', [PurchaseRequestController::class, 'store'])
             ->middleware('permission:purchase_orders.create|stock.create')
@@ -869,6 +872,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/requests/{purchaseRequest}/convert', [PurchaseRequestController::class, 'convert'])
             ->middleware('permission:purchase_orders.create')
             ->name('requests.convert');
+        Route::get('/requests/{purchaseRequest}', [PurchaseRequestController::class, 'show'])
+            ->middleware('permission:purchase_orders.view|purchase_orders.create|stock.create')
+            ->name('requests.show');
 
         Route::get('/purchase-orders/export', [PurchaseOrderController::class, 'export'])
             ->middleware('permission:reports.export|purchase_orders.view')
@@ -1019,12 +1025,27 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     Route::get('/returns/export', [ReturnController::class, 'export'])
         ->middleware('permission:reports.export|returns.view')
         ->name('returns.export');
+    Route::get('/returns/source-documents', [\App\Http\Controllers\Returns\ReturnSourceController::class, 'documents'])
+        ->middleware('permission:returns.create')
+        ->name('returns.source-documents');
+    Route::get('/returns/source-items', [\App\Http\Controllers\Returns\ReturnSourceController::class, 'items'])
+        ->middleware('permission:returns.create')
+        ->name('returns.source-items');
+    Route::get('/returns/locations', [\App\Http\Controllers\Returns\ReturnSourceController::class, 'locations'])
+        ->middleware('permission:returns.create')
+        ->name('returns.locations');
     Route::get('/returns/create', [ReturnController::class, 'create'])
         ->middleware('permission:returns.create')
         ->name('returns.create');
     Route::post('/returns', [ReturnController::class, 'store'])
         ->middleware('permission:returns.create')
         ->name('returns.store');
+    Route::get('/returns/{return}/edit', [ReturnController::class, 'edit'])
+        ->middleware('permission:returns.create')
+        ->name('returns.edit');
+    Route::put('/returns/{return}', [ReturnController::class, 'update'])
+        ->middleware('permission:returns.create')
+        ->name('returns.update');
     Route::get('/returns', [ReturnController::class, 'index'])
         ->middleware('permission:returns.view')
         ->name('returns.index');
@@ -1126,6 +1147,12 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/pos', [PosController::class, 'index'])
             ->middleware('permission:pos.view')
             ->name('pos.index');
+        Route::get('/pos/products', [PosController::class, 'products'])
+            ->middleware('permission:pos.view')
+            ->name('pos.products');
+        Route::post('/pos/quote', [PosController::class, 'quote'])
+            ->middleware('permission:pos.create')
+            ->name('pos.quote');
         Route::post('/pos', [PosController::class, 'store'])
             ->middleware('permission:pos.create')
             ->name('pos.store');
@@ -1135,6 +1162,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/pos/holds', [PosController::class, 'holds'])
             ->middleware('permission:pos.create')
             ->name('pos.holds');
+        Route::get('/pos/holds/data', [PosController::class, 'holdData'])
+            ->middleware('permission:pos.create')
+            ->name('pos.holds.data');
         Route::post('/pos/holds', [PosController::class, 'storeHold'])
             ->middleware('permission:pos.create')
             ->name('pos.holds.store');

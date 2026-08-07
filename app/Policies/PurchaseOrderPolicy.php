@@ -33,9 +33,17 @@ class PurchaseOrderPolicy
         return $user->can('purchase_orders.approve') && $purchaseOrder->status === PurchaseOrderStatus::SUBMITTED && $this->view($user, $purchaseOrder);
     }
 
+    public function send(User $user, PurchaseOrder $purchaseOrder): bool
+    {
+        return $user->can('purchase_orders.create') && $purchaseOrder->status === PurchaseOrderStatus::APPROVED && $this->view($user, $purchaseOrder);
+    }
+
     public function cancel(User $user, PurchaseOrder $purchaseOrder): bool
     {
-        return $user->can('purchase_orders.create') && ! $purchaseOrder->status->isFinal() && $this->view($user, $purchaseOrder);
+        return $user->can('purchase_orders.create')
+            && in_array($purchaseOrder->status, [PurchaseOrderStatus::DRAFT, PurchaseOrderStatus::SUBMITTED, PurchaseOrderStatus::APPROVED], true)
+            && ! $purchaseOrder->items()->where('quantity_received', '>', 0)->exists()
+            && $this->view($user, $purchaseOrder);
     }
 
     public function print(User $user, PurchaseOrder $purchaseOrder): bool

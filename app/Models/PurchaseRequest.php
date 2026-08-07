@@ -47,4 +47,11 @@ class PurchaseRequest extends Model
     {
         return $this->hasMany(PurchaseRequestItem::class);
     }
+
+    /** @return HasMany<DocumentStatusHistory, $this> */
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(DocumentStatusHistory::class, 'document_id')
+            ->where('document_type', 'purchase_request');
+    }
 }

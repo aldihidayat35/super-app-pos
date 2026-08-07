@@ -98,7 +98,7 @@ class PurchaseOrderController extends Controller
 
     public function send(Request $request, PurchaseOrder $purchaseOrder, PurchaseOrderService $service): RedirectResponse
     {
-        $this->authorize('update', $purchaseOrder);
+        $this->authorize('send', $purchaseOrder);
         $service->markSent($purchaseOrder, $request->user());
 
         return back()->with('notification', ['type' => 'success', 'message' => 'PO ditandai sudah dikirim ke supplier.']);

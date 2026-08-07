@@ -10,11 +10,15 @@ use App\Http\Requests\Admin\StoreCustomerRequest;
 use App\Http\Requests\Admin\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Models\Shipment;
+use App\Models\SystemSetting;
+use App\Services\Organization\DocumentNumberService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class CustomerController extends Controller
 {
@@ -45,17 +49,67 @@ class CustomerController extends Controller
         return view('admin.customers.create', $this->formData(new Customer(['type' => CustomerType::GENERAL, 'verification_status' => CustomerStatus::PENDING_VERIFICATION, 'account_status' => CustomerStatus::PENDING_VERIFICATION, 'price_category' => 'retail', 'is_active' => true])));
     }
 
-    public function store(StoreCustomerRequest $request): RedirectResponse
+    public function store(StoreCustomerRequest $request, DocumentNumberService $numbers): RedirectResponse
     {
-        $customer = DB::transaction(function () use ($request): Customer {
-            $customer = Customer::query()->create([...$request->validated(), 'is_active' => $request->boolean('is_active')]);
-            $customer->creditLimit()->create(['credit_limit' => $customer->credit_limit, 'payment_term_days' => $customer->payment_term_days, 'current_balance' => 0, 'effective_from' => now()->toDateString()]);
-            activity()->causedBy($request->user())->performedOn($customer)->log('customer.created');
+        $storedPaths = [];
 
-            return $customer;
-        });
+        try {
+            $customer = DB::transaction(function () use ($request, $numbers, &$storedPaths): Customer {
+                $validated = $request->validated();
+                $documents = $validated['documents'] ?? [];
+                unset($validated['documents']);
+
+                $validated['code'] = $this->nextAvailableCustomerCode($numbers, $validated['type']);
+                $customer = Customer::query()->create([...$validated, 'is_active' => $request->boolean('is_active')]);
+                $customer->creditLimit()->create(['credit_limit' => $customer->credit_limit, 'payment_term_days' => $customer->payment_term_days, 'current_balance' => 0, 'effective_from' => now()->toDateString()]);
+
+                foreach ($documents as $index => $document) {
+                    $file = $request->file("documents.{$index}.file");
+                    if ($file === null) {
+                        continue;
+                    }
+
+                    $path = $file->store('customer-documents', 'public');
+                    $storedPaths[] = $path;
+
+                    $customer->documents()->create([
+                        'type' => $document['type'],
+                        'name' => filled($document['name'] ?? null) ? $document['name'] : $file->getClientOriginalName(),
+                        'document_number' => $document['document_number'] ?? null,
+                        'issued_at' => $document['issued_at'] ?? null,
+                        'expires_at' => $document['expires_at'] ?? null,
+                        'path' => $path,
+                        'notes' => $document['notes'] ?? null,
+                    ]);
+
+                    activity()->causedBy($request->user())->performedOn($customer)->withProperties(['document_type' => $document['type']])->log('customer.document.created');
+                }
+
+                activity()->causedBy($request->user())->performedOn($customer)->log('customer.created');
+
+                return $customer;
+            });
+        } catch (Throwable $exception) {
+            foreach ($storedPaths as $path) {
+                Storage::disk('public')->delete($path);
+            }
+
+            throw $exception;
+        }
 
         return redirect()->route('admin.customers.show', $customer)->with('notification', ['type' => 'success', 'message' => 'Pelanggan berhasil dibuat.']);
+    }
+
+    public function registrationForm(): View
+    {
+        $this->authorize('create', Customer::class);
+
+        return view('admin.customers.registration-form', [
+            'company' => $this->companySettings(),
+            'types' => CustomerType::options(),
+            'priceCategories' => $this->priceCategories(),
+            'documentTypes' => $this->documentTypes(),
+        ]);
     }
 
     public function show(Request $request, Customer $customer): View
@@ -175,6 +229,58 @@ class CustomerController extends Controller
     /** @return array<string, mixed> */
     private function formData(Customer $customer): array
     {
-        return ['customer' => $customer, 'types' => CustomerType::options(), 'statuses' => CustomerStatus::options(), 'priceCategories' => ['retail' => 'Retail', 'grosir' => 'Grosir', 'reseller' => 'Reseller', 'project' => 'Proyek', 'special' => 'Khusus']];
+        return ['customer' => $customer, 'types' => CustomerType::options(), 'statuses' => CustomerStatus::options(), 'priceCategories' => $this->priceCategories(), 'documentTypes' => $this->documentTypes()];
+    }
+
+    private function nextAvailableCustomerCode(DocumentNumberService $numbers, CustomerType|string $type): string
+    {
+        do {
+            $code = $numbers->nextCustomerCode($type);
+        } while (Customer::withTrashed()->where('code', $code)->exists());
+
+        return $code;
+    }
+
+    /** @return array<string, string> */
+    private function priceCategories(): array
+    {
+        return ['retail' => 'Retail', 'grosir' => 'Grosir', 'reseller' => 'Reseller', 'project' => 'Proyek', 'special' => 'Khusus'];
+    }
+
+    /** @return array<string, string> */
+    private function documentTypes(): array
+    {
+        return [
+            'nib' => 'NIB',
+            'npwp' => 'NPWP',
+            'owner_id_card' => 'KTP Pemilik / PIC',
+            'deed' => 'Akta Usaha',
+            'business_license' => 'SIUP / Izin Usaha',
+            'other' => 'Dokumen Lainnya',
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function companySettings(): array
+    {
+        $defaults = [
+            'company_name' => config('app.name'),
+            'company_address' => null,
+            'company_phone' => null,
+            'company_email' => null,
+            'logo_path' => null,
+            'logo_url' => null,
+        ];
+
+        $stored = SystemSetting::query()
+            ->where('group', 'general')
+            ->get()
+            ->mapWithKeys(fn (SystemSetting $setting): array => [$setting->key => $setting->value])
+            ->all();
+
+        $settings = array_merge($defaults, $stored);
+        $settings['logo_url'] = filled($settings['logo_path'] ?? null) ? asset('storage/'.$settings['logo_path']) : null;
+
+        return $settings;
     }
 }

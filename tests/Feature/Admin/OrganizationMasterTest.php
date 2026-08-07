@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\CashShiftStatus;
 use App\Models\Branch;
+use App\Models\CashShift;
 use App\Models\DocumentSequence;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -124,6 +126,17 @@ class OrganizationMasterTest extends TestCase
             'is_active' => true,
         ]);
         $location = app(WorkLocationSyncService::class)->syncBranch($branch);
+        CashShift::query()->create([
+            'number' => 'SHIFT-BRANCH-CONTEXT',
+            'branch_id' => $branch->id,
+            'work_location_id' => $location->id,
+            'cashier_user_id' => $admin->id,
+            'opened_by' => $admin->id,
+            'status' => CashShiftStatus::OPEN,
+            'opening_cash_amount' => '0.00',
+            'expected_cash_amount' => '0.00',
+            'opened_at' => now(),
+        ]);
 
         $this->actingAs($admin)
             ->get(route('admin.branches.show', $branch))
@@ -155,8 +168,9 @@ class OrganizationMasterTest extends TestCase
         $this->actingAs($admin)
             ->get(route('retail.pos.index', ['branch_id' => $branch->id]))
             ->assertOk()
-            ->assertSee('name="branch_id" value="'.$branch->id.'"', false)
-            ->assertSee('value="'.$branch->id.'" selected', false);
+            ->assertSee($branch->name)
+            ->assertSee('SHIFT-BRANCH-CONTEXT')
+            ->assertDontSee('name="branch_id"', false);
     }
 
     #[Test]

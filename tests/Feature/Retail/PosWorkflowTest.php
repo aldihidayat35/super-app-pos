@@ -7,6 +7,7 @@ use App\Enums\PosSaleStatus;
 use App\Exceptions\ServiceException;
 use App\Models\Branch;
 use App\Models\CashShift;
+use App\Models\PosHold;
 use App\Models\PriceRule;
 use App\Models\Product;
 use App\Models\ProductBarcode;
@@ -73,11 +74,19 @@ class PosWorkflowTest extends TestCase
         ProductBarcode::query()->create(['product_id' => $product->id, 'code' => '899POS001', 'type' => 'barcode', 'is_primary' => true, 'is_active' => true]);
         $sale = $this->checkoutSale($product, quantity: '1', paid: '200');
 
-        $this->actingAs($this->cashier)->get(route('retail.pos.index', ['q' => '899POS001']))
+        $this->actingAs($this->cashier)->get(route('retail.pos.index'))
             ->assertOk()
             ->assertSee('Kasir POS')
-            ->assertSee($product->sku);
-        $this->actingAs($this->cashier)->get(route('retail.pos.checkout'))->assertOk()->assertSee('Checkout dan Pembayaran');
+            ->assertSee('pos-scanner', false)
+            ->assertSee('BAYAR');
+        $this->actingAs($this->cashier)->getJson(route('retail.pos.products', ['q' => '899POS001']))
+            ->assertOk()
+            ->assertJsonPath('exact_match', true)
+            ->assertJsonPath('results.0.sku', $product->sku)
+            ->assertJsonPath('results.0.stock', '4.0000')
+            ->assertJsonMissingPath('results.0.pricing.hpp')
+            ->assertJsonMissingPath('results.0.pricing.margin_amount');
+        $this->actingAs($this->cashier)->get(route('retail.pos.checkout'))->assertRedirect(route('retail.pos.index'));
         $this->actingAs($this->cashier)->get(route('retail.pos.holds'))->assertOk()->assertSee('Transaksi Ditahan');
         $this->actingAs($this->cashier)->get(route('retail.sales.show', $sale))->assertOk()->assertSee($sale->number);
         $this->actingAs($this->cashier)->get(route('retail.sales.print', $sale))->assertOk()->assertSee('Terima kasih');
@@ -189,6 +198,73 @@ class PosWorkflowTest extends TestCase
         $voided = $this->pos->voidSale($sale->fresh(), $this->supervisor, 'Void setelah retur parsial untuk test reversal.');
         $this->assertSame(PosSaleStatus::VOID_APPROVED, $voided->status);
         $this->assertSame('5.0000', Stock::query()->where('product_id', $product->id)->firstOrFail()->quantity_on_hand);
+    }
+
+    public function test_ajax_checkout_uses_active_shift_branch_is_idempotent_and_records_net_cash(): void
+    {
+        $product = $this->stockedProduct('5');
+        $otherLocation = WorkLocation::factory()->create(['type' => 'branch']);
+        $otherBranch = Branch::factory()->create(['work_location_id' => $otherLocation->id]);
+        $payload = [
+            'branch_id' => $otherBranch->id,
+            'idempotency_key' => 'ajax-pos-idempotency',
+            'items' => [['product_id' => $product->id, 'unit_id' => $this->unit->id, 'quantity' => 1]],
+            'payments' => [['method' => 'cash', 'amount' => 200]],
+        ];
+
+        $first = $this->actingAs($this->cashier)->postJson(route('retail.pos.store'), $payload)
+            ->assertCreated()
+            ->assertJsonPath('sale.grand_total', '120.00')
+            ->assertJsonPath('sale.change', '80.00');
+        $saleId = $first->json('sale.id');
+        $this->actingAs($this->cashier)->postJson(route('retail.pos.store'), $payload)
+            ->assertCreated()
+            ->assertJsonPath('sale.id', $saleId);
+
+        $this->assertDatabaseHas('pos_sales', ['id' => $saleId, 'branch_id' => $this->branch->id]);
+        $this->assertSame(1, StockMutation::query()->where('reference_type', 'pos_sale')->where('reference_id', $saleId)->count());
+        $this->assertSame('100120.00', CashShift::query()->where('cashier_user_id', $this->cashier->id)->firstOrFail()->expected_cash_amount);
+    }
+
+    public function test_hold_snapshot_is_calculated_by_server_and_can_be_resumed_once(): void
+    {
+        $product = $this->stockedProduct('5');
+        $response = $this->actingAs($this->cashier)->postJson(route('retail.pos.holds.store'), [
+            'branch_id' => $this->branch->id,
+            'items' => [['product_id' => $product->id, 'unit_id' => $this->unit->id, 'quantity' => 2]],
+            'estimated_total' => 1,
+            'cart_snapshot' => [['product_id' => -1]],
+        ])->assertCreated()->assertJsonStructure(['hold' => ['id', 'number']]);
+
+        $hold = PosHold::query()->findOrFail($response->json('hold.id'));
+        $this->assertSame('240.00', $hold->estimated_total);
+        $this->assertSame(1, $hold->cart_snapshot['version']);
+        $this->assertSame($product->id, $hold->cart_snapshot['items'][0]['product_id']);
+
+        $this->actingAs($this->cashier)->getJson(route('retail.pos.holds.data'))
+            ->assertOk()
+            ->assertJsonPath('count', 1)
+            ->assertJsonPath('results.0.estimated_total', '240.00');
+        $this->actingAs($this->cashier)->postJson(route('retail.pos.holds.resume', $hold))
+            ->assertOk()
+            ->assertJsonPath('cart.version', 1)
+            ->assertJsonPath('cart.items.0.product_id', $product->id);
+        $this->actingAs($this->cashier)->postJson(route('retail.pos.holds.resume', $hold))
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Transaksi hold ini sudah dilanjutkan atau dibatalkan.');
+    }
+
+    public function test_pos_page_and_catalog_require_an_active_shift(): void
+    {
+        CashShift::query()->delete();
+
+        $this->actingAs($this->cashier)->get(route('retail.pos.index'))
+            ->assertOk()
+            ->assertSee('Shift kasir belum dibuka')
+            ->assertDontSee('pos-scanner', false);
+        $this->actingAs($this->cashier)->getJson(route('retail.pos.products'))
+            ->assertStatus(422)
+            ->assertJsonPath('errors.products.0', 'Kasir belum memiliki shift aktif. Buka shift sebelum memulai transaksi POS.');
     }
 
     private function stockedProduct(string $quantity): Product

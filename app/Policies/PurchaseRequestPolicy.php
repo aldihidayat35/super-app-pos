@@ -10,7 +10,7 @@ class PurchaseRequestPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('purchase_orders.view') || $user->can('purchase_orders.create');
+        return $user->can('purchase_orders.view') || $user->can('purchase_orders.create') || $user->can('stock.create');
     }
 
     public function view(User $user, PurchaseRequest $purchaseRequest): bool

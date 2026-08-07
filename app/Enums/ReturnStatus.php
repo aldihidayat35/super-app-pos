@@ -27,6 +27,11 @@ enum ReturnStatus: string
         };
     }
 
+    public function canEdit(): bool
+    {
+        return $this === self::DRAFT;
+    }
+
     /** @return array<string, string> */
     public static function options(): array
     {

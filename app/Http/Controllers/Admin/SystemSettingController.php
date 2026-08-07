@@ -54,6 +54,7 @@ class SystemSettingController extends Controller
             'company_name' => 'GudangToko',
             'company_address' => null,
             'company_phone' => null,
+            'company_email' => null,
             'timezone' => 'Asia/Jakarta',
             'locale' => 'id',
             'currency' => 'IDR',

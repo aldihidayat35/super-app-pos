@@ -1,436 +1,269 @@
 @extends('layouts.metronic.app')
+
 @section('title', 'Detail ' . $purchaseOrder->number)
 @section('page_title', 'Detail dan Approval PO')
 
 @section('toolbar_actions')
-    <a href="{{ route('purchasing.purchase-orders.print', $purchaseOrder) }}" class="btn btn-light-success">
-        <i class="ki-outline ki-printer fs-5 me-2"></i>Print
+    <a href="{{ route('purchasing.purchase-orders.print', $purchaseOrder) }}" class="btn btn-light-success" title="Cetak Purchase Order">
+        <i class="ki-outline ki-printer fs-5 me-2"></i>Cetak
     </a>
-    <a href="{{ route('purchasing.purchase-orders.print', [$purchaseOrder, 'download' => 'pdf']) }}" class="btn btn-light-primary">
+    <a href="{{ route('purchasing.purchase-orders.print', [$purchaseOrder, 'download' => 'pdf']) }}" class="btn btn-light-primary" title="Unduh PDF Purchase Order">
         <i class="ki-outline ki-file-down fs-5 me-2"></i>PDF
     </a>
-    <a href="{{ route('purchasing.purchase-orders.export-one', $purchaseOrder) }}" class="btn btn-light-info">
+    <a href="{{ route('purchasing.purchase-orders.export-one', $purchaseOrder) }}" class="btn btn-light-info" title="Unduh data Purchase Order dalam Excel">
         <i class="ki-outline ki-file-down fs-5 me-2"></i>Excel
     </a>
 @endsection
 
 @section('page_guide')
     <x-metronic.page-guide id="purchasing-po-show" title="Panduan Detail Purchase Order">
-        <x-slot:function><p>Halaman ini menampilkan rincian lengkap Purchase Order (PO) termasuk informasi supplier, item produk, status, approval, dan histori transaksi.</p></x-slot:function>
-        <x-slot:parts>
-            <ul>
-                <li><strong>Header:</strong> nomor PO, tanggal, supplier, gudang, status, dan total nilai.</li>
-                <li><strong>Progress:</strong> indikator penerimaan barang (ordered vs received).</li>
-                <li><strong>Item Table:</strong> daftar produk yang dipesan dengan qty, harga, diskon, dan subtotal.</li>
-                <li><strong>Aksi:</strong> tombol untuk submit, approve, send, atau cancel PO.</li>
-                <li><strong>Timeline:</strong> histori perubahan status PO.</li>
-            </ul>
-        </x-slot:parts>
-        <x-slot:impacts><p>Status PO memengaruhi alur pekerjaan purchasing dan penerimaan barang.</p></x-slot:impacts>
-        <x-slot:operation><ol><li>Periksa header dan status PO.</li><li>Verifikasi item dan quantity.</li><li>Lakukan aksi sesuai status (submit/approve/cancel).</li></ol></x-slot:operation>
+        <x-slot:function><p>Purchase Order adalah pesanan resmi perusahaan kepada supplier. Halaman ini menampilkan dokumen, nilai, item, status, dan tindakan yang valid untuk pengguna saat ini.</p></x-slot:function>
+        <x-slot:workflow><ol><li>Purchasing melengkapi PO draft dan mengajukannya.</li><li>Approver menyetujui PO.</li><li>Purchasing mengirim PO ke supplier.</li><li>Gudang mencatat penerimaan sampai selesai.</li></ol></x-slot:workflow>
+        <x-slot:warnings><p>Aksi berubah mengikuti status, permission, dan kondisi penerimaan. PO yang sudah menerima barang tidak dapat dibatalkan.</p></x-slot:warnings>
     </x-metronic.page-guide>
 @endsection
 
 @section('content')
     @php
-        $totalOrdered = $purchaseOrder->items->sum(fn($item) => (float) $item->quantity_ordered);
-        $totalReceived = $purchaseOrder->items->sum(fn($item) => (float) $item->quantity_received);
-        $totalOutstanding = $totalOrdered - $totalReceived;
+        $status = $purchaseOrder->status;
+        $totalOrdered = (float) $purchaseOrder->orderedQuantity();
+        $totalReceived = (float) $purchaseOrder->receivedQuantity();
+        $totalOutstanding = max($totalOrdered - $totalReceived, 0);
         $progressPercent = $totalOrdered > 0 ? min(100, ($totalReceived / $totalOrdered) * 100) : 0;
-        $statusColor = match($purchaseOrder->status?->value) {
-            'draft' => 'warning',
-            'submitted' => 'info',
-            'approved' => 'success',
-            'sent_to_supplier' => 'primary',
-            'partially_received' => 'warning',
-            'completed' => 'success',
-            'cancelled' => 'danger',
-            default => 'secondary',
+        $historyStatuses = $purchaseOrder->statusHistories->pluck('to_status')->all();
+        $processSteps = [
+            ['status' => 'draft', 'label' => 'Draft', 'description' => 'PO disiapkan oleh Purchasing.'],
+            ['status' => 'submitted', 'label' => 'Diajukan', 'description' => 'PO menunggu persetujuan.'],
+            ['status' => 'approved', 'label' => 'Disetujui', 'description' => 'PO boleh dikirim atau diterima.'],
+            ['status' => 'sent_to_supplier', 'label' => 'Dikirim', 'description' => 'Pesanan telah dikirim ke supplier.'],
+            ['status' => 'partially_received', 'label' => 'Penerimaan', 'description' => 'Barang diterima sebagian oleh gudang.'],
+            ['status' => 'completed', 'label' => 'Selesai', 'description' => 'Seluruh barang telah diterima.'],
+        ];
+        [$processHolder, $processNext] = match ($status) {
+            \App\Enums\PurchaseOrderStatus::DRAFT => ['Purchasing dengan izin purchase_orders.create', 'Lengkapi data dan ajukan PO untuk persetujuan.'],
+            \App\Enums\PurchaseOrderStatus::SUBMITTED => ['Pengguna dengan izin purchase_orders.approve', 'Tinjau nilai dan item, lalu setujui PO.'],
+            \App\Enums\PurchaseOrderStatus::APPROVED => ['Purchasing atau petugas penerimaan yang berwenang', 'Kirim PO ke supplier atau catat penerimaan saat barang tiba.'],
+            \App\Enums\PurchaseOrderStatus::SENT_TO_SUPPLIER => ['Petugas dengan izin goods_receipts.create', 'Catat barang yang diterima dari supplier.'],
+            \App\Enums\PurchaseOrderStatus::PARTIALLY_RECEIVED => ['Petugas dengan izin goods_receipts.create', 'Lanjutkan penerimaan untuk jumlah yang masih outstanding.'],
+            \App\Enums\PurchaseOrderStatus::COMPLETED => ['Proses selesai', 'Tidak ada tindakan transaksi lanjutan pada PO.'],
+            \App\Enums\PurchaseOrderStatus::CANCELLED => ['Proses dihentikan', 'PO telah dibatalkan dan tidak dapat diproses lagi.'],
         };
+        $canEdit = auth()->user()?->can('update', $purchaseOrder) ?? false;
+        $canApprove = auth()->user()?->can('approve', $purchaseOrder) ?? false;
+        $canSend = auth()->user()?->can('send', $purchaseOrder) ?? false;
+        $canCancel = auth()->user()?->can('cancel', $purchaseOrder) ?? false;
+        $canReceive = (auth()->user()?->can('goods_receipts.create') ?? false)
+            && in_array($status, [\App\Enums\PurchaseOrderStatus::APPROVED, \App\Enums\PurchaseOrderStatus::SENT_TO_SUPPLIER, \App\Enums\PurchaseOrderStatus::PARTIALLY_RECEIVED], true);
+        $hasAction = $canEdit || $canApprove || $canSend || $canCancel || $canReceive;
     @endphp
 
-    <div class="row g-6">
-        {{-- Kolom Kiri: Info PO & Items --}}
-        <div class="col-lg-8">
-            {{-- Header Card --}}
-            <x-metronic.card class="mb-6">
-                <div class="d-flex justify-content-between align-items-start mb-5">
-                    <div class="d-flex align-items-center">
-                        <div class="symbol symbol-70px symbol-circle bg-light-primary text-primary me-4">
-                            <span class="symbol-label fs-1 fw-bold">{{ substr($purchaseOrder->number, 0, 1) }}</span>
-                        </div>
-                        <div>
-                            <h3 class="fw-bold text-gray-900 mb-1">{{ $purchaseOrder->number }}</h3>
-                            <div class="text-muted fs-7">
-                                Dibuat oleh {{ $purchaseOrder->creator?->name ?: 'System' }}
-                                @if($purchaseOrder->order_date)
-                                    · {{ $purchaseOrder->order_date->format('d M Y') }}
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    <x-metronic.status-badge :status="$purchaseOrder->status?->value ?? 'draft'" :label="$purchaseOrder->status?->label() ?? 'Draft'" />
-                </div>
+    @if ($status === \App\Enums\PurchaseOrderStatus::CANCELLED)
+        <div class="alert alert-light-danger d-flex align-items-start mb-5">
+            <i class="ki-outline ki-cross-circle fs-2 text-danger me-3"></i>
+            <div><div class="fw-bold">Purchase Order dibatalkan</div><div class="fs-7">{{ $purchaseOrder->cancel_reason ?: 'Tidak ada alasan pembatalan yang dicatat.' }}</div></div>
+        </div>
+    @endif
 
-                <div class="row g-4 mb-5">
-                    <div class="col-md-4">
-                        <div class="text-muted fs-7 mb-1">Supplier</div>
-                        <a href="{{ route('admin.suppliers.show', $purchaseOrder->supplier_id) }}" class="fw-semibold text-primary text-hover-primary">
-                            <i class="ki-outline ki-user fs-5 me-1 text-muted"></i>{{ $purchaseOrder->supplier?->name ?: '-' }}
-                        </a>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-5">
+        <div>
+            <div class="d-flex align-items-center gap-3 mb-1">
+                <h2 class="fs-3 fw-bold mb-0">{{ $purchaseOrder->number }}</h2>
+                <x-metronic.status-badge :status="$status" />
+            </div>
+            <div class="text-muted fs-7">Dibuat oleh {{ $purchaseOrder->creator?->name ?: 'Sistem' }} pada {{ $purchaseOrder->created_at?->format('d/m/Y H:i') ?: '-' }}</div>
+        </div>
+        <div class="text-end"><div class="text-muted fs-8">NILAI PURCHASE ORDER</div><div class="fs-2 fw-bold text-primary">Rp {{ number_format((float) $purchaseOrder->grand_total, 0, ',', '.') }}</div></div>
+    </div>
+
+    <x-metronic.card title="Alur Purchase Order">
+        <div class="row g-3">
+            @foreach ($processSteps as $step)
+                @php
+                    $stepState = $status->value === $step['status'] ? 'current' : (in_array($step['status'], $historyStatuses, true) ? 'done' : 'pending');
+                    $stepColor = $stepState === 'done' ? 'success' : ($stepState === 'current' ? 'primary' : 'secondary');
+                @endphp
+                <div class="col-12 col-sm-6 col-xl-2">
+                    <div class="border rounded p-3 h-100 {{ $stepState === 'current' ? 'border-primary bg-light-primary' : '' }}">
+                        <div class="d-flex align-items-center gap-2 mb-2"><span class="badge badge-light-{{ $stepColor }}">{{ $loop->iteration }}</span><span class="fw-bold fs-7">{{ $step['label'] }}</span></div>
+                        <div class="text-muted fs-8">{{ $step['description'] }}</div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="text-muted fs-7 mb-1">Gudang</div>
-                        <div class="fw-semibold">
-                            <i class="ki-outline ki-warehouse fs-5 me-1 text-muted"></i>{{ $purchaseOrder->warehouse?->name ?: '-' }}
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted fs-7 mb-1">Termin Pembayaran</div>
-                        <div class="fw-semibold">
-                            <i class="ki-outline ki-calendar fs-5 me-1 text-muted"></i>{{ $purchaseOrder->payment_term_days }} hari
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted fs-7 mb-1">Tanggal Pesanan</div>
-                        <div class="fw-semibold">
-                            <i class="ki-outline ki-calendar fs-5 me-1 text-muted"></i>{{ $purchaseOrder->order_date?->format('d/m/Y') ?: '-' }}
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted fs-7 mb-1">Estimasi Tiba (ETA)</div>
-                        <div class="fw-semibold {{ $purchaseOrder->expected_at && $purchaseOrder->expected_at->isPast() ? 'text-danger' : '' }}">
-                            <i class="ki-outline ki-time fs-5 me-1 text-muted"></i>{{ $purchaseOrder->expected_at?->format('d/m/Y') ?: '-' }}
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted fs-7 mb-1">Purchase Request</div>
-                        <div class="fw-semibold">
-                            @if($purchaseOrder->purchaseRequest)
-                                <a href="#" class="text-primary text-hover-primary">
-                                    <i class="ki-outline ki-basket fs-5 me-1 text-muted"></i>{{ $purchaseOrder->purchaseRequest->number }}
-                                </a>
+                </div>
+            @endforeach
+        </div>
+        <div class="row g-4 mt-2 pt-4 border-top">
+            <div class="col-md-6"><div class="text-muted fs-8 mb-1">PIHAK YANG MEMEGANG PROSES</div><div class="fw-semibold">{{ $processHolder }}</div></div>
+            <div class="col-md-6"><div class="text-muted fs-8 mb-1">LANGKAH BERIKUTNYA</div><div class="fw-semibold">{{ $processNext }}</div></div>
+        </div>
+    </x-metronic.card>
+
+    <div class="row g-5 mt-0">
+        <div class="col-xl-8">
+            <x-metronic.card title="Informasi Dokumen">
+                <div class="row g-4">
+                    <div class="col-sm-6 col-lg-3"><div class="text-muted fs-8 mb-1">NOMOR PO</div><div class="fw-semibold">{{ $purchaseOrder->number }}</div></div>
+                    <div class="col-sm-6 col-lg-3"><div class="text-muted fs-8 mb-1">TANGGAL PESANAN</div><div class="fw-semibold">{{ $purchaseOrder->order_date?->format('d/m/Y') ?: '-' }}</div></div>
+                    <div class="col-sm-6 col-lg-3"><div class="text-muted fs-8 mb-1">PERKIRAAN TIBA</div><div class="fw-semibold {{ $purchaseOrder->expected_at?->isPast() && ! $status->isFinal() ? 'text-danger' : '' }}">{{ $purchaseOrder->expected_at?->format('d/m/Y') ?: 'Belum ditentukan' }}</div></div>
+                    <div class="col-sm-6 col-lg-3"><div class="text-muted fs-8 mb-1">STATUS</div><x-metronic.status-badge :status="$status" /></div>
+                    <div class="col-md-6">
+                        <div class="text-muted fs-8 mb-1">REFERENSI PERMINTAAN PEMBELIAN</div>
+                        @if ($purchaseOrder->purchaseRequest)
+                            @can('view', $purchaseOrder->purchaseRequest)
+                                <a href="{{ route('purchasing.requests.show', $purchaseOrder->purchaseRequest) }}" class="fw-semibold text-primary">Berasal dari {{ $purchaseOrder->purchaseRequest->number }}</a>
                             @else
-                                <span class="text-muted">-</span>
-                            @endif
-                        </div>
+                                <span class="fw-semibold">{{ $purchaseOrder->purchaseRequest->number }}</span>
+                            @endcan
+                        @else
+                            <span class="text-muted">PO dibuat langsung tanpa Purchase Request.</span>
+                        @endif
                     </div>
-                    @if($purchaseOrder->notes)
-                    <div class="col-md-12">
-                        <div class="text-muted fs-7 mb-1">Catatan</div>
-                        <div class="bg-light p-3 rounded">{{ $purchaseOrder->notes }}</div>
-                    </div>
+                    @if ($purchaseOrder->notes)
+                        <div class="col-md-6"><div class="text-muted fs-8 mb-1">CATATAN PO</div><div class="fw-semibold">{{ $purchaseOrder->notes }}</div></div>
                     @endif
                 </div>
-                {{-- Progress Bar --}}
-                @if($totalOrdered > 0)
-                <div class="mb-5">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted fs-7 fw-semibold">Progress Penerimaan</span>
-                        <span class="fw-bold">{{ number_format($progressPercent, 0) }}% ({{ qty($totalReceived) }} / {{ qty($totalOrdered) }})</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar {{ $progressPercent >= 100 ? 'bg-success' : ($progressPercent > 0 ? 'bg-warning' : 'bg-light') }}"
-                             role="progressbar"
-                             style="width: {{ $progressPercent }}%;"
-                             aria-valuenow="{{ $progressPercent }}"
-                             aria-valuemin="0"
-                             aria-valuemax="100"></div>
-                    </div>
-                    @if($totalOutstanding > 0)
-                    <div class="text-muted fs-7 mt-2">
-                        <i class="ki-outline ki-exclamation-triangle fs-6 me-1 text-warning"></i>
-                        Outstanding: {{ qty($totalOutstanding) }} unit
-                    </div>
-                    @endif
-                </div>
-                @endif
 
-                {{-- Items Table --}}
+                <div class="separator my-5"></div>
+
+                <div class="row g-5">
+                    <div class="col-md-6">
+                        <div class="fw-bold mb-3">Supplier</div>
+                        <div class="text-muted fs-8 mb-1">Pemasok yang menerima pesanan pembelian ini.</div>
+                        @if (auth()->user()?->can('suppliers.view'))
+                            <a href="{{ route('admin.suppliers.show', $purchaseOrder->supplier_id) }}" class="fw-semibold text-primary">{{ $purchaseOrder->supplier?->code }} - {{ $purchaseOrder->supplier?->name }}</a>
+                        @else
+                            <div class="fw-semibold">{{ $purchaseOrder->supplier?->code }} - {{ $purchaseOrder->supplier?->name }}</div>
+                        @endif
+                        <div class="text-muted fs-7 mt-2">Kontak: {{ $purchaseOrder->supplier?->contact_name ?: '-' }} / {{ $purchaseOrder->supplier?->phone_number ?: '-' }}</div>
+                        <div class="text-muted fs-7">Termin pembayaran: {{ $purchaseOrder->payment_term_days }} hari</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="fw-bold mb-3">Tujuan Penerimaan</div>
+                        <div class="text-muted fs-8 mb-1">Gudang yang akan menerima barang dari supplier.</div>
+                        <div class="fw-semibold">{{ $purchaseOrder->warehouse?->code }} - {{ $purchaseOrder->warehouse?->name }}</div>
+                        <div class="text-muted fs-7 mt-2">Penerimaan dicatat melalui modul Goods Receipt sesuai akses lokasi kerja.</div>
+                    </div>
+                </div>
+            </x-metronic.card>
+
+            <x-metronic.card title="Item Purchase Order" class="mt-5">
+                @if ($totalOrdered > 0)
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+                        <div><span class="fw-semibold">Progress penerimaan {{ number_format($progressPercent, 0) }}%</span><div class="text-muted fs-8">{{ qty($totalReceived) }} diterima dari {{ qty($totalOrdered) }} dipesan; {{ qty($totalOutstanding) }} outstanding.</div></div>
+                        <div class="progress w-200px" style="height: 8px;"><div class="progress-bar bg-{{ $progressPercent >= 100 ? 'success' : 'primary' }}" style="width: {{ $progressPercent }}%"></div></div>
+                    </div>
+                @endif
                 <div class="table-responsive">
-                    <table class="table table-row-dashed align-middle fs-7">
-                        <thead>
-                            <tr class="text-muted fw-bold text-uppercase">
-                                <th class="min-w-200px">Produk</th>
-                                <th class="min-w-100px">Qty</th>
-                                <th class="min-w-100px">Harga</th>
-                                <th class="min-w-100px">Diskon</th>
-                                <th class="min-w-100px">Pajak</th>
-                                <th class="min-w-120px text-end">Subtotal</th>
-                            </tr>
-                        </thead>
+                    <table class="table table-row-dashed align-middle mb-0">
+                        <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th class="text-end">Dipesan</th><th class="text-end">Diterima</th><th class="text-end">Harga</th><th class="text-end">Diskon</th><th class="text-end">Pajak</th><th class="text-end">Subtotal</th></tr></thead>
                         <tbody>
-                            @foreach($purchaseOrder->items as $item)
+                            @foreach ($purchaseOrder->items as $item)
                                 <tr>
-                                    <td>
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-semibold text-gray-900">{{ $item->product_name_snapshot }}</span>
-                                            <span class="text-muted font-monospace">{{ $item->product_sku_snapshot }}</span>
-                                            <span class="text-muted">{{ $item->unit_name_snapshot }} × {{ qty($item->conversion_factor_snapshot) }}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-semibold">Order: {{ qty($item->quantity_ordered) }}</span>
-                                            <span class="text-success">Recv: {{ qty($item->quantity_received) }}</span>
-                                            @if($item->outstandingQuantity() > 0)
-                                                <span class="text-warning fw-bold">Out: {{ qty($item->outstandingQuantity()) }}</span>
-                                            @endif
-                                        </div>
-                                    </td>
+                                    <td><span class="fw-semibold">{{ $item->product_name_snapshot }}</span><div class="text-muted fs-8">{{ $item->product_sku_snapshot }} / {{ $item->unit_name_snapshot }} x {{ qty($item->conversion_factor_snapshot) }}</div></td>
+                                    <td class="text-end">{{ qty($item->quantity_ordered) }}</td>
+                                    <td class="text-end"><span class="{{ (float) $item->quantity_received > 0 ? 'text-success fw-semibold' : '' }}">{{ qty($item->quantity_received) }}</span><div class="text-muted fs-8">Sisa {{ qty($item->outstandingQuantity()) }}</div></td>
                                     <td class="text-end">Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}</td>
-                                    <td class="text-end">
-                                        @if($item->discount_amount > 0)
-                                            <span class="text-danger">-Rp {{ number_format((float) $item->discount_amount, 0, ',', '.') }}</span>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-end">
-                                        @if($item->tax_amount > 0)
-                                            <span class="text-warning">Rp {{ number_format((float) $item->tax_amount, 0, ',', '.') }}</span>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-end fw-bold text-primary">
-                                        Rp {{ number_format((float) $item->subtotal, 0, ',', '.') }}
-                                    </td>
+                                    <td class="text-end">Rp {{ number_format((float) $item->discount_amount, 0, ',', '.') }}</td>
+                                    <td class="text-end">Rp {{ number_format((float) $item->tax_amount, 0, ',', '.') }}</td>
+                                    <td class="text-end fw-bold">Rp {{ number_format((float) $item->subtotal, 0, ',', '.') }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-
-                {{-- Totals --}}
-                <div class="row justify-content-end mt-5">
-                    <div class="col-md-5">
-                        <div class="bg-light p-4 rounded">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">Subtotal Item</span>
-                                <span class="fw-semibold">Rp {{ number_format((float) $purchaseOrder->items_subtotal, 0, ',', '.') }}</span>
-                            </div>
-                            @if($purchaseOrder->header_discount > 0)
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">Diskon Header</span>
-                                <span class="fw-semibold text-danger">-Rp {{ number_format((float) $purchaseOrder->header_discount, 0, ',', '.') }}</span>
-                            </div>
-                            @endif
-                            @if($purchaseOrder->freight_cost > 0)
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">Ongkir</span>
-                                <span class="fw-semibold">Rp {{ number_format((float) $purchaseOrder->freight_cost, 0, ',', '.') }}</span>
-                            </div>
-                            @endif
-                            @if($purchaseOrder->additional_cost > 0)
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">Biaya Tambahan</span>
-                                <span class="fw-semibold">Rp {{ number_format((float) $purchaseOrder->additional_cost, 0, ',', '.') }}</span>
-                            </div>
-                            @endif
-                            <div class="separator my-3"></div>
-                            <div class="d-flex justify-content-between fs-4 fw-bold text-primary">
-                                <span>Total</span>
-                                <span>Rp {{ number_format((float) $purchaseOrder->grand_total, 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </x-metronic.card>
 
-            {{-- Tab Navigation --}}
-            <x-metronic.card class="mt-6">
-                <ul class="nav nav-tabs nav-line-tabs mb-5" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab">
-                            <i class="ki-outline ki-clock fs-5 me-2"></i>Timeline Status
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="approvals-tab" data-bs-toggle="tab" data-bs-target="#approvals" type="button" role="tab">
-                            <i class="ki-outline ki-shield fs-5 me-2"></i>Approval
-                        </button>
-                    </li>
-                </ul>
-
-                <div class="tab-content">
-                    {{-- Tab Timeline --}}
-                    <div class="tab-pane fade show active" id="timeline" role="tabpanel">
-                        @forelse($purchaseOrder->statusHistories as $history)
-                            <div class="d-flex gap-4 mb-4">
-                                <div class="d-flex flex-column align-items-center">
-                                    <div class="symbol symbol-40px symbol-circle bg-{{ $statusColor }}-simple">
-                                        <i class="ki-outline {{ match($history->to_status) {
-                                            'draft' => ' ki-pencil',
-                                            'submitted' => ' ki-send',
-                                            'approved' => ' ki-check',
-                                            'sent_to_supplier' => ' ki-truck',
-                                            'partially_received' => ' ki-truck',
-                                            'completed' => ' ki-check-circle',
-                                            'cancelled' => ' ki-close',
-                                            default => ' ki-circle'
-                                        } }} fs-4 text-{{ $statusColor }}"></i>
-                                    </div>
-                                    @if(!$loop->last)
-                                        <div class="border border-2 border-{{ $statusColor }} border-dashed" style="height: 40px; min-width: 2px;"></div>
-                                    @endif
-                                </div>
-                                <div class="flex-grow-1 pb-2">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <span class="badge badge-{{ $statusColor }} fs-7 fw-normal me-2">
-                                                {{ ucfirst($history->to_status) }}
-                                            </span>
-                                            <span class="fw-bold text-gray-900">{{ $history->actor?->name ?? 'System' }}</span>
-                                        </div>
-                                        <span class="text-muted fs-7">{{ $history->created_at->format('d/m/Y H:i') }}</span>
-                                    </div>
-                                    @if($history->notes)
-                                        <div class="mt-2 text-muted">{{ $history->notes }}</div>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <x-metronic.empty-state title="Belum ada timeline" description="Perubahan status akan tercatat di sini." icon="ki-outline ki-clock" />
-                        @endforelse
-                    </div>
-
-                    {{-- Tab Approvals --}}
-                    <div class="tab-pane fade" id="approvals" role="tabpanel">
-                        @forelse($purchaseOrder->approvals as $approval)
-                            <div class="card border-0 bg-light mb-3">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="d-flex align-items-center">
-                                            <div class="symbol symbol-50px symbol-circle bg-success-simple text-success me-3">
-                                                <span class="symbol-label">{{ substr($approval->approver?->name ?? 'A', 0, 1) }}</span>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold">{{ $approval->approver?->name ?? '-' }}</div>
-                                                <div class="text-muted fs-7">{{ $approval->approved_at?->format('d/m/Y H:i') ?? '-' }}</div>
-                                            </div>
-                                        </div>
-                                        <span class="badge badge-success">Approved</span>
-                                    </div>
-                                    @if($approval->notes)
-                                        <div class="mt-3 pt-3 border-top">
-                                            <div class="text-muted fs-7 mb-1">Catatan:</div>
-                                            <div>{{ $approval->notes }}</div>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <x-metronic.empty-state title="Belum ada approval" description="Approval akan tercatat setelah PO disetujui." icon="ki-outline ki-shield" />
-                        @endforelse
-                    </div>
+            <x-metronic.card title="Nilai Purchase Order" class="mt-5">
+                <div class="row g-4">
+                    <div class="col-6 col-lg"><div class="text-muted fs-8">SUBTOTAL ITEM</div><div class="fw-semibold">Rp {{ number_format((float) $purchaseOrder->items_subtotal, 0, ',', '.') }}</div></div>
+                    <div class="col-6 col-lg"><div class="text-muted fs-8">DISKON DOKUMEN</div><div class="fw-semibold text-danger">Rp {{ number_format((float) $purchaseOrder->header_discount, 0, ',', '.') }}</div></div>
+                    <div class="col-6 col-lg"><div class="text-muted fs-8">BIAYA PENGIRIMAN</div><div class="fw-semibold">Rp {{ number_format((float) $purchaseOrder->freight_cost, 0, ',', '.') }}</div></div>
+                    <div class="col-6 col-lg"><div class="text-muted fs-8">BIAYA TAMBAHAN</div><div class="fw-semibold">Rp {{ number_format((float) $purchaseOrder->additional_cost, 0, ',', '.') }}</div></div>
+                    <div class="col-12 col-lg"><div class="text-muted fs-8">GRAND TOTAL</div><div class="fs-4 fw-bold text-primary">Rp {{ number_format((float) $purchaseOrder->grand_total, 0, ',', '.') }}</div></div>
                 </div>
             </x-metronic.card>
         </div>
-        <div class="col-lg-4">
-            {{-- Actions Card --}}
-            <x-metronic.card title="Aksi Dokumen">
-                <div class="d-grid gap-3">
-                    @can('update', $purchaseOrder)
-                        @if($purchaseOrder->status === \App\Enums\PurchaseOrderStatus::DRAFT)
-                            <form method="POST" action="{{ route('purchasing.purchase-orders.submit', $purchaseOrder) }}">
-                                @csrf
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="ki-outline ki-send fs-5 me-2"></i>Ajukan Approval
-                                </button>
-                            </form>
-                        @endif
-                        @if($purchaseOrder->status === \App\Enums\PurchaseOrderStatus::SUBMITTED)
-                            <div class="alert alert-warning fs-7">
-                                <i class="ki-outline ki-alert fs-5 me-2"></i>Menunggu approval
-                            </div>
-                        @endif
-                        @if($purchaseOrder->status === \App\Enums\PurchaseOrderStatus::APPROVED)
-                            <form method="POST" action="{{ route('purchasing.purchase-orders.send', $purchaseOrder) }}">
-                                @csrf
-                                <button type="submit" class="btn btn-info w-100">
-                                    <i class="ki-outline ki-truck fs-5 me-2"></i>Tandai Dikirim
-                                </button>
-                            </form>
-                        @endif
-                        @if($purchaseOrder->status === \App\Enums\PurchaseOrderStatus::SENT_TO_SUPPLIER || $purchaseOrder->status === \App\Enums\PurchaseOrderStatus::PARTIALLY_RECEIVED)
-                            <a href="{{ route('warehouse.goods-receipts.create', ['purchase_order_id' => $purchaseOrder->id]) }}" class="btn btn-success w-100">
-                                <i class="ki-outline ki-plus fs-5 me-2"></i>Catat Penerimaan
-                            </a>
-                        @endif
-                    @endcan
 
-                    @can('approve', $purchaseOrder)
-                        @if($purchaseOrder->status === \App\Enums\PurchaseOrderStatus::SUBMITTED)
-                            <form method="POST" action="{{ route('purchasing.purchase-orders.approve', $purchaseOrder) }}">
-                                @csrf
-                                <input type="text" name="notes" class="form-control form-control-solid mb-2" placeholder="Catatan approval (opsional)">
-                                <button type="submit" class="btn btn-success w-100">
-                                    <i class="ki-outline ki-check fs-5 me-2"></i>Approve PO
-                                </button>
-                            </form>
-                        @endif
-                    @endcan
+        <div class="col-xl-4">
+            <x-metronic.card title="Aksi yang Tersedia untuk Anda">
+                <div class="alert alert-light-primary fs-7">{{ $processNext }}</div>
 
-                    @if(in_array($purchaseOrder->status?->value, ['draft', 'submitted']))
-                    @can('cancel', $purchaseOrder)
-                        <form method="POST" action="{{ route('purchasing.purchase-orders.cancel', $purchaseOrder) }}" onsubmit="return confirm('Yakin ingin membatalkan PO ini?')">
+                @if ($canEdit)
+                    <a href="{{ route('purchasing.purchase-orders.edit', $purchaseOrder) }}" class="btn btn-light-primary w-100 mb-3"><i class="ki-outline ki-pencil fs-5 me-2"></i>Edit PO</a>
+                    @if ($status === \App\Enums\PurchaseOrderStatus::DRAFT)
+                        <form method="POST" action="{{ route('purchasing.purchase-orders.submit', $purchaseOrder) }}" class="mb-3">
                             @csrf
-                            <button type="submit" class="btn btn-light-danger w-100">
-                                <i class="ki-outline ki-close fs-5 me-2"></i>Batalkan PO
-                            </button>
+                            <button class="btn btn-primary w-100"><i class="ki-outline ki-send fs-5 me-2"></i>Ajukan Persetujuan</button>
                         </form>
-                    @endcan
                     @endif
-                </div>
+                @endif
+
+                @if ($canApprove)
+                    <form method="POST" action="{{ route('purchasing.purchase-orders.approve', $purchaseOrder) }}" class="mb-3">
+                        @csrf
+                        <x-metronic.form-group name="notes" label="Catatan Persetujuan" help="Catatan akan disimpan pada histori approval PO.">
+                            <textarea name="notes" rows="2" class="form-control form-control-solid">{{ old('notes') }}</textarea>
+                        </x-metronic.form-group>
+                        <button class="btn btn-success w-100"><i class="ki-outline ki-check fs-5 me-2"></i>Setujui PO</button>
+                    </form>
+                @endif
+
+                @if ($canSend)
+                    <form method="POST" action="{{ route('purchasing.purchase-orders.send', $purchaseOrder) }}" class="mb-3">
+                        @csrf
+                        <div class="text-muted fs-8 mb-2">Tandai setelah dokumen resmi dikirim kepada supplier.</div>
+                        <button class="btn btn-info w-100"><i class="ki-outline ki-send fs-5 me-2"></i>Tandai Dikirim ke Supplier</button>
+                    </form>
+                @endif
+
+                @if ($canReceive)
+                    <a href="{{ route('warehouse.goods-receipts.create', ['purchase_order_id' => $purchaseOrder->id]) }}" class="btn btn-success w-100 mb-3"><i class="ki-outline ki-package fs-5 me-2"></i>Catat Penerimaan Barang</a>
+                @endif
+
+                @if ($canCancel)
+                    <div class="border-top pt-4 mt-2">
+                        <form method="POST" action="{{ route('purchasing.purchase-orders.cancel', $purchaseOrder) }}" onsubmit="return confirm('Yakin ingin membatalkan Purchase Order ini?')">
+                            @csrf
+                            <x-metronic.form-group name="reason" label="Alasan Pembatalan" required help="Pembatalan bersifat final dan alasannya disimpan pada audit status.">
+                                <textarea name="reason" rows="2" class="form-control form-control-solid" required>{{ old('reason') }}</textarea>
+                            </x-metronic.form-group>
+                            <button class="btn btn-light-danger w-100"><i class="ki-outline ki-cross fs-5 me-2"></i>Batalkan PO</button>
+                        </form>
+                    </div>
+                @endif
+
+                @unless ($hasAction)
+                    <div class="text-muted fs-7">Tidak ada aksi transaksi yang sesuai dengan permission dan status PO untuk akun Anda saat ini.</div>
+                @endunless
             </x-metronic.card>
 
-            {{-- Quick Stats --}}
-            <x-metronic.card title="Ringkasan" class="mt-6">
-                <div class="row g-3 text-center">
-                    <div class="col-6">
-                        <div class="border rounded p-3">
-                            <div class="fw-bold fs-3 text-primary">{{ $purchaseOrder->items->count() }}</div>
-                            <div class="text-muted fs-8">Total Item</div>
+            <x-metronic.card title="Riwayat Status" class="mt-5">
+                @forelse ($purchaseOrder->statusHistories as $history)
+                    @php
+                        $historyStatus = \App\Enums\PurchaseOrderStatus::tryFrom($history->to_status);
+                        $historyColor = $historyStatus?->badge() ?? 'secondary';
+                    @endphp
+                    <div class="d-flex gap-3 {{ $loop->last ? '' : 'mb-4 pb-4 border-bottom' }}">
+                        <span class="symbol symbol-35px bg-light-{{ $historyColor }}"><span class="symbol-label"><i class="ki-outline ki-check text-{{ $historyColor }}"></i></span></span>
+                        <div class="flex-grow-1">
+                            <div class="d-flex flex-wrap justify-content-between gap-2"><span class="fw-semibold">{{ $historyStatus?->label() ?: ucfirst($history->to_status) }}</span><span class="text-muted fs-8">{{ $history->created_at->format('d/m/Y H:i') }}</span></div>
+                            <div class="text-muted fs-8">Oleh {{ $history->actor?->name ?: 'Sistem' }}</div>
+                            @if ($history->notes)<div class="mt-1 fs-7">{{ $history->notes }}</div>@endif
                         </div>
                     </div>
-                    <div class="col-6">
-                        <div class="border rounded p-3">
-                            <div class="fw-bold fs-3 text-success">{{ qty($totalReceived) }}</div>
-                            <div class="text-muted fs-8">Sudah Diterima</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="border rounded p-3">
-                            <div class="fw-bold fs-3 text-warning">{{ qty($totalOutstanding) }}</div>
-                            <div class="text-muted fs-8">Outstanding</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="border rounded p-3">
-                            <div class="fw-bold fs-3 text-info">{{ $progressPercent > 0 ? number_format($progressPercent, 0) . '%' : '0%' }}</div>
-                            <div class="text-muted fs-8">Progress</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="separator my-4"></div>
-                <div class="text-center">
-                    <div class="text-muted fs-7 mb-1">Nilai Total</div>
-                    <div class="fw-bold fs-2 text-primary">Rp {{ number_format((float) $purchaseOrder->grand_total, 0, ',', '.') }}</div>
-                </div>
+                @empty
+                    <x-metronic.empty-state title="Belum ada riwayat" description="Perubahan status PO akan tampil di sini." />
+                @endforelse
             </x-metronic.card>
 
-            {{-- Related PO --}}
-            @if($purchaseOrder->purchaseRequest)
-            <x-metronic.card title="Purchase Request" class="mt-6">
-                <div class="text-center">
-                    <div class="mb-3">
-                        <i class="ki-outline ki-basket fs-2x text-primary"></i>
-                    </div>
-                    <div class="fw-bold fs-5">{{ $purchaseOrder->purchaseRequest->number }}</div>
-                    <div class="text-muted fs-7">{{ $purchaseOrder->purchaseRequest->created_at?->format('d M Y') }}</div>
-                </div>
-            </x-metronic.card>
+            @if ($purchaseOrder->approvals->isNotEmpty())
+                <x-metronic.card title="Catatan Approval" class="mt-5">
+                    @foreach ($purchaseOrder->approvals as $approval)
+                        <div class="{{ $loop->last ? '' : 'mb-4 pb-4 border-bottom' }}">
+                            <div class="d-flex justify-content-between gap-2"><span class="fw-semibold">{{ $approval->approver?->name ?: '-' }}</span><span class="badge badge-light-success">Disetujui</span></div>
+                            <div class="text-muted fs-8">{{ $approval->approved_at?->format('d/m/Y H:i') ?: '-' }}</div>
+                            @if ($approval->notes)<div class="mt-2 fs-7">{{ $approval->notes }}</div>@endif
+                        </div>
+                    @endforeach
+                </x-metronic.card>
             @endif
         </div>
     </div>

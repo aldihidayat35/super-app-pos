@@ -19,6 +19,7 @@ class UpdateGeneralSettingsRequest extends FormRequest
             'company_name' => ['required', 'string', 'max:255'],
             'company_address' => ['nullable', 'string'],
             'company_phone' => ['nullable', 'string', 'max:50'],
+            'company_email' => ['nullable', 'email', 'max:255'],
             'timezone' => ['required', Rule::in(['Asia/Jakarta'])],
             'locale' => ['required', Rule::in(['id'])],
             'currency' => ['required', Rule::in(['IDR'])],

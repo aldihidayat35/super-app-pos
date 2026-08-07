@@ -9,6 +9,30 @@ use Illuminate\Validation\Rule;
 
 class StoreCustomerRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $documents = [];
+        $inputDocuments = is_array($this->input('documents')) ? $this->input('documents') : [];
+        $fileDocuments = is_array($this->file('documents')) ? $this->file('documents') : [];
+
+        $indexes = array_unique(array_merge(array_keys($inputDocuments), array_keys($fileDocuments)));
+
+        foreach ($indexes as $index) {
+            $document = $inputDocuments[$index] ?? [];
+            $document = is_array($document) ? $document : [];
+            $hasFile = data_get($fileDocuments, "{$index}.file") !== null;
+            $hasDetails = collect($document)
+                ->except(['file', 'type'])
+                ->contains(fn (mixed $value): bool => filled($value));
+
+            if ($hasFile || $hasDetails) {
+                $documents[$index] = $document;
+            }
+        }
+
+        $this->merge(['documents' => $documents]);
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->can('customers.create') ?? false;
@@ -19,7 +43,6 @@ class StoreCustomerRequest extends FormRequest
     {
         return [
             'type' => ['required', Rule::enum(CustomerType::class)],
-            'code' => ['required', 'string', 'max:60', 'alpha_dash', 'unique:customers,code'],
             'business_name' => ['required', 'string', 'max:255'],
             'owner_name' => ['nullable', 'string', 'max:255'],
             'pic_name' => ['nullable', 'string', 'max:255'],
@@ -35,6 +58,14 @@ class StoreCustomerRequest extends FormRequest
             'account_status' => ['required', Rule::enum(CustomerStatus::class)],
             'notes' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['boolean'],
+            'documents' => ['array'],
+            'documents.*.type' => ['required', 'string', 'max:60'],
+            'documents.*.name' => ['nullable', 'string', 'max:255'],
+            'documents.*.document_number' => ['nullable', 'string', 'max:120'],
+            'documents.*.issued_at' => ['nullable', 'date'],
+            'documents.*.expires_at' => ['nullable', 'date', 'after_or_equal:documents.*.issued_at'],
+            'documents.*.file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:4096'],
+            'documents.*.notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

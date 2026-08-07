@@ -2,8 +2,10 @@
 
 namespace App\Services\Organization;
 
+use App\Enums\CustomerType;
 use App\Models\DocumentSequence;
 use App\Models\WorkLocation;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DocumentNumberService
@@ -65,6 +67,49 @@ class DocumentNumberService
         });
     }
 
+    public function nextCustomerCode(CustomerType|string $type, ?Carbon $date = null): string
+    {
+        $type = $type instanceof CustomerType ? $type : CustomerType::from((string) $type);
+        $date ??= now();
+        $prefix = $this->customerPrefix($type);
+        $datePart = $date->format('Ymd');
+        $year = (int) $date->format('Y');
+        $scopeKey = "customer:{$prefix}:{$datePart}";
+
+        return DB::transaction(function () use ($prefix, $datePart, $year, $scopeKey): string {
+            DocumentSequence::query()->insertOrIgnore([
+                'document_type' => 'customer_code',
+                'location_type' => null,
+                'location_id' => null,
+                'scope_key' => $scopeKey,
+                'year' => $year,
+                'prefix' => $prefix,
+                'next_number' => 1,
+                'padding' => 4,
+                'reset_yearly' => false,
+                'format' => '{prefix}-{date}-{sequence}',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $sequence = DocumentSequence::query()
+                ->where('document_type', 'customer_code')
+                ->where('scope_key', $scopeKey)
+                ->where('year', $year)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $number = strtr($sequence->format, [
+                '{prefix}' => $sequence->prefix,
+                '{date}' => $datePart,
+                '{sequence}' => str_pad((string) $sequence->next_number, $sequence->padding, '0', STR_PAD_LEFT),
+            ]);
+            $sequence->increment('next_number');
+
+            return $number;
+        });
+    }
+
     public function preview(DocumentSequence $sequence, ?WorkLocation $location = null): string
     {
         return $this->format($sequence, $location, $sequence->next_number);
@@ -86,5 +131,14 @@ class DocumentNumberService
     private function scopeKey(?WorkLocation $location): string
     {
         return $location ? "{$location->type}:{$location->id}" : 'global';
+    }
+
+    private function customerPrefix(CustomerType $type): string
+    {
+        return match ($type) {
+            CustomerType::GENERAL => 'UM',
+            CustomerType::RETAIL_CREDIT => 'RP-T',
+            CustomerType::B2B => 'B2B',
+        };
     }
 }

@@ -15,8 +15,15 @@ class StorePurchaseOrderRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        $workLocationIds = $this->user()?->permittedWorkLocationIds() ?? [];
+
         return [
-            'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('is_active', true)],
+            'warehouse_id' => [
+                'required',
+                Rule::exists('warehouses', 'id')->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->whereIn('work_location_id', $workLocationIds)),
+            ],
             'supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('is_active', true)],
             'purchase_request_id' => ['nullable', 'exists:purchase_requests,id'],
             'order_date' => ['required', 'date'],
@@ -33,6 +40,26 @@ class StorePurchaseOrderRequest extends FormRequest
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
             'items.*.tax_amount' => ['nullable', 'numeric', 'min:0'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'warehouse_id' => 'gudang tujuan',
+            'supplier_id' => 'supplier',
+            'purchase_request_id' => 'referensi permintaan pembelian',
+            'order_date' => 'tanggal pesanan',
+            'expected_at' => 'perkiraan tanggal tiba',
+            'payment_term_days' => 'termin pembayaran',
+            'header_discount' => 'diskon dokumen',
+            'freight_cost' => 'biaya pengiriman',
+            'additional_cost' => 'biaya tambahan',
+            'items.*.product_id' => 'produk',
+            'items.*.unit_id' => 'satuan pembelian',
+            'items.*.quantity_ordered' => 'jumlah dipesan',
+            'items.*.unit_price' => 'harga satuan',
         ];
     }
 }

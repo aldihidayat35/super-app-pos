@@ -6,17 +6,21 @@ use App\Enums\PaymentMethod;
 use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Retail\CancelPosHoldRequest;
+use App\Http\Requests\Retail\QuotePosItemRequest;
 use App\Http\Requests\Retail\StorePosHoldRequest;
 use App\Http\Requests\Retail\StorePosSaleRequest;
-use App\Models\Branch;
+use App\Models\CashShift;
 use App\Models\Customer;
 use App\Models\PosHold;
-use App\Models\Product;
-use App\Models\Stock;
+use App\Models\ProductBrand;
+use App\Models\ProductCategory;
+use App\Services\Retail\PosCatalogService;
 use App\Services\Retail\PosService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
 
 class PosController extends Controller
@@ -25,63 +29,90 @@ class PosController extends Controller
     {
         abort_unless($request->user()->can('pos.view'), 403);
 
-        $locationIds = $request->user()->permittedWorkLocationIds();
-        $branches = Branch::query()
-            ->where('is_active', true)
-            ->whereIn('work_location_id', $locationIds)
-            ->orderBy('name')
-            ->get();
-        $requestedBranchId = $request->integer('branch_id');
-        $selectedBranch = $branches->firstWhere('id', $requestedBranchId) ?? $branches->first();
-        $stockLocationIds = $selectedBranch ? [(int) $selectedBranch->work_location_id] : $locationIds;
-        $products = Product::query()
-            ->with(['baseUnit', 'barcodes'])
-            ->where('status', 'active')
-            ->when($request->filled('q'), function ($query) use ($request): void {
-                $term = '%'.$request->query('q').'%';
-                $query->where(function ($search) use ($term): void {
-                    $search->where('sku', 'like', $term)
-                        ->orWhere('name', 'like', $term)
-                        ->orWhereHas('barcodes', fn ($barcode) => $barcode->where('code', 'like', $term));
-                });
-            })
-            ->whereHas('stocks', fn ($query) => $query->whereIn('work_location_id', $stockLocationIds))
-            ->orderBy('name')
-            ->limit(80)
-            ->get();
+        $activeShift = $this->activeShift($request);
 
         return view('retail.pos.index', [
-            'branches' => $branches,
-            'selectedBranchId' => $selectedBranch?->id,
+            'activeShift' => $activeShift,
+            'branch' => $activeShift?->branch,
             'customers' => Customer::query()->where('is_active', true)->orderBy('business_name')->limit(200)->get(),
-            'products' => $products,
-            'stocks' => Stock::query()->whereIn('work_location_id', $stockLocationIds)->get()->keyBy('product_id'),
+            'categories' => ProductCategory::query()->where('is_active', true)->whereNull('parent_id')->orderBy('sort_order')->orderBy('name')->get(),
+            'brands' => ProductBrand::query()->where('is_active', true)->orderBy('name')->get(),
             'paymentMethods' => PaymentMethod::options(),
-            'filters' => $request->only(['q', 'branch_id']),
+            'holdCount' => $activeShift ? PosHold::query()->where('cash_shift_id', $activeShift->id)->where('cashier_user_id', $request->user()->id)->where('status', 'held')->count() : 0,
+            'resumeCart' => session('pos_resume_cart'),
         ]);
     }
 
-    public function store(StorePosSaleRequest $request, PosService $service): RedirectResponse
+    public function products(Request $request, PosCatalogService $catalog): JsonResponse
+    {
+        abort_unless($request->user()->can('pos.view'), 403);
+        $data = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'customer_id' => ['nullable', 'integer'],
+            'category_id' => ['nullable', 'integer'],
+            'brand_id' => ['nullable', 'integer'],
+            'in_stock' => ['nullable', 'boolean'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:12', 'max:48'],
+        ]);
+        try {
+            $shift = $this->requireActiveShift($request);
+
+            return response()->json($catalog->search($shift->branch, $request->user(), $data));
+        } catch (ServiceException $exception) {
+            return $this->serviceError($exception, 'products');
+        }
+    }
+
+    public function quote(QuotePosItemRequest $request, PosCatalogService $catalog): JsonResponse
     {
         try {
-            $sale = $service->checkout($request->validated(), $request->user());
+            $shift = $this->requireActiveShift($request);
+
+            return response()->json(['item' => $catalog->quote($shift->branch, $request->user(), $request->validated())]);
         } catch (ServiceException $exception) {
+            return $this->serviceError($exception, 'quote');
+        }
+    }
+
+    public function store(StorePosSaleRequest $request, PosService $service): RedirectResponse|JsonResponse
+    {
+        try {
+            $shift = $this->requireActiveShift($request);
+            $payload = $request->validated();
+            $payload['branch_id'] = $shift->branch_id;
+            $sale = $service->checkout($payload, $request->user());
+        } catch (ServiceException $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $exception->getMessage(), 'errors' => ['checkout' => [$exception->getMessage()]]], $exception->httpStatus);
+            }
             throw ValidationException::withMessages(['checkout' => $exception->getMessage()]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Transaksi berhasil disimpan.',
+                'sale' => [
+                    'id' => $sale->id,
+                    'number' => $sale->number,
+                    'grand_total' => $sale->grand_total_amount,
+                    'paid' => $sale->paid_amount,
+                    'change' => $sale->change_amount,
+                    'show_url' => route('retail.sales.show', $sale),
+                    'print_url' => route('retail.sales.print', $sale),
+                ],
+            ], Response::HTTP_CREATED);
         }
 
         return redirect()->route('retail.sales.show', $sale)
             ->with('notification', ['type' => 'success', 'message' => 'Transaksi POS berhasil disimpan dan stok sudah berkurang.']);
     }
 
-    public function checkout(Request $request): View
+    public function checkout(Request $request): RedirectResponse
     {
         abort_unless($request->user()->can('pos.create'), 403);
 
-        return view('retail.pos.checkout', [
-            'branches' => Branch::query()->where('is_active', true)->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())->orderBy('name')->get(),
-            'customers' => Customer::query()->where('is_active', true)->orderBy('business_name')->limit(200)->get(),
-            'paymentMethods' => PaymentMethod::options(),
-        ]);
+        return redirect()->route('retail.pos.index');
     }
 
     public function holds(Request $request): View
@@ -98,28 +129,74 @@ class PosController extends Controller
         ]);
     }
 
-    public function storeHold(StorePosHoldRequest $request, PosService $service): RedirectResponse
+    public function holdData(Request $request): JsonResponse
     {
         try {
-            $service->hold($request->validated(), $request->user());
+            $shift = $this->requireActiveShift($request);
         } catch (ServiceException $exception) {
+            return $this->serviceError($exception, 'hold');
+        }
+
+        $holds = PosHold::query()
+            ->with(['customer', 'cashier'])
+            ->where('cash_shift_id', $shift->id)
+            ->where('cashier_user_id', $request->user()->id)
+            ->where('status', 'held')
+            ->latest('id')->limit(30)->get()
+            ->map(fn (PosHold $hold): array => [
+                'id' => $hold->id,
+                'number' => $hold->number,
+                'customer' => $hold->customer?->business_name ?: 'Pelanggan Umum',
+                'item_count' => count((array) data_get($hold->cart_snapshot, 'items', $hold->cart_snapshot)),
+                'estimated_total' => $hold->estimated_total,
+                'cashier' => $hold->cashier?->name,
+                'time' => $hold->created_at?->format('H:i'),
+                'resume_url' => route('retail.pos.holds.resume', $hold),
+            ]);
+
+        return response()->json(['results' => $holds, 'count' => $holds->count()]);
+    }
+
+    public function storeHold(StorePosHoldRequest $request, PosService $service): RedirectResponse|JsonResponse
+    {
+        try {
+            $shift = $this->requireActiveShift($request);
+            $payload = $request->validated();
+            $payload['branch_id'] = $shift->branch_id;
+            $hold = $service->hold($payload, $request->user());
+        } catch (ServiceException $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $exception->getMessage(), 'errors' => ['hold' => [$exception->getMessage()]]], $exception->httpStatus);
+            }
             throw ValidationException::withMessages(['hold' => $exception->getMessage()]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Keranjang berhasil ditahan.', 'hold' => ['id' => $hold->id, 'number' => $hold->number]], Response::HTTP_CREATED);
         }
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Keranjang berhasil ditahan.']);
     }
 
-    public function resumeHold(Request $request, PosHold $hold, PosService $service): RedirectResponse
+    public function resumeHold(Request $request, PosHold $hold, PosService $service): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $hold);
 
         try {
-            $service->resumeHold($hold, $request->user());
+            $hold = $service->resumeHold($hold, $request->user());
         } catch (ServiceException $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $exception->getMessage(), 'errors' => ['hold' => [$exception->getMessage()]]], $exception->httpStatus);
+            }
             throw ValidationException::withMessages(['hold' => $exception->getMessage()]);
         }
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Transaksi hold siap dilanjutkan.', 'cart' => $hold->cart_snapshot]);
+        }
+
         return redirect()->route('retail.pos.index')
+            ->with('pos_resume_cart', $hold->cart_snapshot)
             ->with('notification', ['type' => 'success', 'message' => 'Keranjang hold ditandai untuk dilanjutkan.']);
     }
 
@@ -134,5 +211,34 @@ class PosController extends Controller
         }
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Keranjang hold dibatalkan.']);
+    }
+
+    private function activeShift(Request $request): ?CashShift
+    {
+        return CashShift::query()
+            ->with('branch.workLocation')
+            ->where('cashier_user_id', $request->user()->id)
+            ->where('status', 'open')
+            ->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())
+            ->latest('opened_at')
+            ->first();
+    }
+
+    private function requireActiveShift(Request $request): CashShift
+    {
+        $shift = $this->activeShift($request);
+        if (! $shift instanceof CashShift || ! $shift->branch?->is_active) {
+            throw ServiceException::validation('Kasir belum memiliki shift aktif. Buka shift sebelum memulai transaksi POS.');
+        }
+
+        return $shift;
+    }
+
+    private function serviceError(ServiceException $exception, string $key): JsonResponse
+    {
+        return response()->json([
+            'message' => $exception->getMessage(),
+            'errors' => [$key => [$exception->getMessage()]],
+        ], $exception->httpStatus);
     }
 }

@@ -81,6 +81,12 @@ class ReturnDocument extends Model
         return $this->hasMany(ReturnSettlement::class, 'return_id');
     }
 
+    /** @return HasMany<Attachment, $this> */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class, 'document_id')->where('document_type', 'return');
+    }
+
     /** @return HasMany<DocumentStatusHistory, $this> */
     public function statusHistories(): HasMany
     {
