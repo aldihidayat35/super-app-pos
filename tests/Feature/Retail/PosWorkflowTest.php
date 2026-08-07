@@ -4,6 +4,7 @@ namespace Tests\Feature\Retail;
 
 use App\Enums\CashShiftStatus;
 use App\Enums\PosSaleStatus;
+use App\Enums\ProductPriceStatus;
 use App\Exceptions\ServiceException;
 use App\Models\Branch;
 use App\Models\CashShift;
@@ -11,6 +12,8 @@ use App\Models\PosHold;
 use App\Models\PriceRule;
 use App\Models\Product;
 use App\Models\ProductBarcode;
+use App\Models\ProductImage;
+use App\Models\ProductPrice;
 use App\Models\ProductUnit;
 use App\Models\Stock;
 use App\Models\StockMutation;
@@ -71,6 +74,7 @@ class PosWorkflowTest extends TestCase
     public function test_p16_pages_can_be_opened_and_barcode_search_works(): void
     {
         $product = $this->stockedProduct('5');
+        $product->forceFill(['main_image_path' => 'products/gelas-pos.jpg'])->save();
         ProductBarcode::query()->create(['product_id' => $product->id, 'code' => '899POS001', 'type' => 'barcode', 'is_primary' => true, 'is_active' => true]);
         $sale = $this->checkoutSale($product, quantity: '1', paid: '200');
 
@@ -78,18 +82,29 @@ class PosWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('Kasir POS')
             ->assertSee('pos-scanner', false)
+            ->assertSee('autofocus', false)
+            ->assertSee('data-kt-app-sidebar-collapse=on', false)
+            ->assertSee('aria-expanded="false"', false)
+            ->assertSee('ki-arrow-right', false)
+            ->assertSee('modal-xl', false)
             ->assertSee('BAYAR');
         $this->actingAs($this->cashier)->getJson(route('retail.pos.products', ['q' => '899POS001']))
             ->assertOk()
             ->assertJsonPath('exact_match', true)
             ->assertJsonPath('results.0.sku', $product->sku)
+            ->assertJsonPath('results.0.image_url', '/storage/products/gelas-pos.jpg')
             ->assertJsonPath('results.0.stock', '4.0000')
             ->assertJsonMissingPath('results.0.pricing.hpp')
             ->assertJsonMissingPath('results.0.pricing.margin_amount');
         $this->actingAs($this->cashier)->get(route('retail.pos.checkout'))->assertRedirect(route('retail.pos.index'));
         $this->actingAs($this->cashier)->get(route('retail.pos.holds'))->assertOk()->assertSee('Transaksi Ditahan');
         $this->actingAs($this->cashier)->get(route('retail.sales.show', $sale))->assertOk()->assertSee($sale->number);
-        $this->actingAs($this->cashier)->get(route('retail.sales.print', $sale))->assertOk()->assertSee('Terima kasih');
+        $this->actingAs($this->cashier)->get(route('retail.sales.print', $sale))
+            ->assertOk()
+            ->assertSee('Terima kasih')
+            ->assertSee("window.addEventListener('afterprint'", false)
+            ->assertSee('window.close()', false)
+            ->assertDontSee('onload="window.print()"', false);
         $this->actingAs($this->supervisor)->get(route('retail.sales.void', $sale))->assertOk()->assertSee('Void/Pembatalan Transaksi');
         $this->actingAs($this->supervisor)->get(route('retail.sales.return', $sale))->assertOk()->assertSee('Retur Pelanggan POS');
     }
@@ -265,6 +280,51 @@ class PosWorkflowTest extends TestCase
         $this->actingAs($this->cashier)->getJson(route('retail.pos.products'))
             ->assertStatus(422)
             ->assertJsonPath('errors.products.0', 'Kasir belum memiliki shift aktif. Buka shift sebelum memulai transaksi POS.');
+    }
+
+    public function test_catalog_uses_primary_image_fallback_and_returns_compact_price_rings(): void
+    {
+        $product = $this->stockedProduct('5');
+        ProductImage::query()->create([
+            'product_id' => $product->id,
+            'path' => 'products/primary-fallback.webp',
+            'alt_text' => $product->name,
+            'sort_order' => 1,
+            'is_primary' => true,
+        ]);
+        ProductPrice::query()->create([
+            'product_id' => $product->id,
+            'branch_id' => $this->branch->id,
+            'channel' => 'pos',
+            'price_ring' => 'R1',
+            'min_price' => '120.00',
+            'recommended_price' => '150.00',
+            'max_price' => '200.00',
+            'minimum_qty' => 1,
+            'priority' => 1,
+            'status' => ProductPriceStatus::ACTIVE,
+        ]);
+        ProductPrice::query()->create([
+            'product_id' => $product->id,
+            'branch_id' => $this->branch->id,
+            'channel' => 'pos',
+            'price_ring' => 'R2',
+            'min_price' => '120.00',
+            'recommended_price' => '140.00',
+            'max_price' => '200.00',
+            'minimum_qty' => 1,
+            'priority' => 2,
+            'status' => ProductPriceStatus::ACTIVE,
+        ]);
+
+        $this->actingAs($this->cashier)->getJson(route('retail.pos.products', ['q' => $product->sku]))
+            ->assertOk()
+            ->assertJsonPath('results.0.image_url', '/storage/products/primary-fallback.webp')
+            ->assertJsonPath('results.0.pricing.rings.0.label', 'R1')
+            ->assertJsonPath('results.0.pricing.rings.0.price', '150.00')
+            ->assertJsonPath('results.0.pricing.rings.0.selected', true)
+            ->assertJsonPath('results.0.pricing.rings.1.label', 'R2')
+            ->assertJsonPath('results.0.pricing.rings.1.price', '140.00');
     }
 
     private function stockedProduct(string $quantity): Product

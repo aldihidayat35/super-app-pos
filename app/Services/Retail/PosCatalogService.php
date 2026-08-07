@@ -149,6 +149,7 @@ class PosCatalogService
             'status' => $status['code'],
             'status_label' => $status['label'],
             'status_message' => $status['message'],
+            'rings' => $this->priceRings($pricing),
         ];
         if ($showSensitive) {
             $pricingPayload['hpp'] = $pricing['hpp_unit'];
@@ -286,6 +287,39 @@ class PosCatalogService
         return $customer;
     }
 
+    /**
+     * @param  array<string, mixed>  $pricing
+     * @return list<array{label: string, price: string, selected: bool}>
+     */
+    private function priceRings(array $pricing): array
+    {
+        $factor = (string) $pricing['unit_factor'];
+        $selectedSource = (string) $pricing['selected_source'];
+
+        return collect((array) $pricing['candidates'])
+            ->map(function (mixed $candidate, int $index) use ($factor, $selectedSource): ?array {
+                if (! is_array($candidate) || ! isset($candidate['price_base'])) {
+                    return null;
+                }
+
+                $label = (string) ($candidate['ring_name'] ?? match ($candidate['source'] ?? null) {
+                    'customer_special' => 'Harga Khusus',
+                    'computed_minimum' => 'Harga POS',
+                    default => 'Ring Harga',
+                });
+
+                return [
+                    'label' => $label,
+                    'price' => Decimal::mul((string) $candidate['price_base'], $factor, 2, 6, 2),
+                    'selected' => $index === 0 && (string) ($candidate['source'] ?? '') === $selectedSource,
+                ];
+            })
+            ->filter()
+            ->unique(fn (array $ring): string => $ring['label'].'|'.$ring['price'])
+            ->values()
+            ->all();
+    }
+
     /** @return array<int|string, mixed> */
     private function productRelations(int $workLocationId): array
     {
@@ -293,6 +327,7 @@ class PosCatalogService
             'baseUnit',
             'category',
             'brand',
+            'images',
             'units' => fn (HasMany $query) => $query->with('unit')->where('is_active', true)->where('is_sellable', true),
             'stocks' => fn (HasMany $query) => $query->where('work_location_id', $workLocationId),
         ];

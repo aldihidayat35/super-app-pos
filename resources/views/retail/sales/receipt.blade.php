@@ -5,7 +5,7 @@
     <title>Struk {{ $sale->number }}</title>
     <style>body{font-family:monospace;max-width:320px;margin:0 auto}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between}</style>
 </head>
-<body onload="window.print()">
+<body>
     <div class="center"><strong>{{ config('app.name') }}</strong><br>{{ $sale->branch?->name }}<br>{{ $sale->number }}</div>
     <div class="line"></div>
     <div>{{ $sale->completed_at?->format('d/m/Y H:i') }} / {{ $sale->cashier?->name }}</div>
@@ -20,5 +20,18 @@
     <div class="row"><span>Kembali</span><span>{{ number_format((float) $sale->change_amount, 0, ',', '.') }}</span></div>
     <div class="line"></div>
     <div class="center">Terima kasih</div>
+    <script>
+        (() => {
+            const closePrintWindow = () => {
+                if (window.opener && !window.closed) window.close();
+            };
+
+            window.addEventListener('afterprint', closePrintWindow, { once: true });
+            window.addEventListener('load', () => window.setTimeout(() => {
+                window.print();
+                window.setTimeout(closePrintWindow, 300);
+            }, 150), { once: true });
+        })();
+    </script>
 </body>
 </html>

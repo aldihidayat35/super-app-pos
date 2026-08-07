@@ -2,6 +2,7 @@
 
 @section('title', 'Kasir POS - ' . config('app.name'))
 @section('page_title', 'Kasir POS')
+@section('body_attributes', 'data-kt-app-sidebar-collapse=on')
 
 @section('content')
     @if(!$activeShift || !$branch)
@@ -25,8 +26,9 @@
                     <div><span class="text-muted fs-8 d-block">TRANSAKSI</span><strong id="temporary-number">BARU</strong></div>
                 </div>
                 <div class="d-flex gap-2">
+                    <button type="button" id="pos-sidebar-toggle" class="btn btn-icon btn-light" title="Buka/tutup sidebar" aria-label="Buka atau tutup sidebar" aria-expanded="false"><i class="ki-outline ki-arrow-right fs-3"></i></button>
                     <button type="button" id="open-holds" class="btn btn-light-warning"><i class="ki-outline ki-time fs-5 me-1"></i>Hold (<span id="hold-count">{{ $holdCount }}</span>) <kbd>F6</kbd></button>
-                    <a href="{{ route('retail.shifts.current') }}" class="btn btn-light"><i class="ki-outline ki-information-2 fs-5"></i></a>
+                    <a href="{{ route('retail.shifts.current') }}" class="btn btn-icon btn-light" title="Detail shift" aria-label="Detail shift"><i class="ki-outline ki-information-2 fs-5"></i></a>
                 </div>
             </header>
 
@@ -37,7 +39,7 @@
                             <h2 id="product-finder-title" class="fs-4 fw-bold mb-3">Cari Produk</h2>
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text bg-light"><i class="ki-outline ki-search fs-2"></i></span>
-                                <input id="pos-scanner" type="search" class="form-control" autocomplete="off" placeholder="Scan barcode / Cari produk" aria-label="Scan barcode atau cari produk">
+                                <input id="pos-scanner" type="search" class="form-control" autocomplete="off" autofocus placeholder="Scan barcode / Cari produk" aria-label="Scan barcode atau cari produk">
                                 <span class="input-group-text bg-light"><kbd>F2</kbd></span>
                             </div>
                             <div id="scanner-message" class="fs-7 mt-2 text-muted" aria-live="polite">Scan barcode lalu Enter, atau ketik nama/SKU untuk mencari.</div>
@@ -81,11 +83,8 @@
                                 <div class="fw-bold fs-5 mt-4">Keranjang masih kosong</div>
                                 <div class="text-muted">Scan barcode atau pilih produk dari panel kiri.</div>
                             </div>
-                            <div id="cart-table-wrap" class="table-responsive d-none">
-                                <table class="table align-middle mb-0 pos-cart-table">
-                                    <thead class="position-sticky top-0 bg-body z-index-1"><tr><th>Produk</th><th class="text-center">Qty</th><th>Harga / Ring</th><th>Diskon</th><th class="text-end">Subtotal</th><th></th></tr></thead>
-                                    <tbody id="cart-items"></tbody>
-                                </table>
+                            <div id="cart-table-wrap" class="d-none p-3">
+                                <div id="cart-items" class="d-grid gap-2"></div>
                             </div>
                         </div>
 
@@ -112,23 +111,24 @@
         </div>
 
         <div class="modal fade" id="payment-modal" tabindex="-1" aria-labelledby="payment-title" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+            <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down"><div class="modal-content">
                 <div class="modal-header"><div><h2 id="payment-title" class="modal-title">Pembayaran</h2><div class="text-muted fs-7">Periksa ringkasan sebelum menyelesaikan transaksi.</div></div><button type="button" class="btn btn-sm btn-icon btn-light" data-bs-dismiss="modal" aria-label="Tutup"><i class="ki-outline ki-cross fs-3"></i></button></div>
                 <div class="modal-body">
-                    <div class="text-center border-bottom pb-5 mb-5"><div class="text-muted">GRAND TOTAL</div><div id="payment-grand-total" class="fs-2x fw-bold text-primary">Rp 0</div></div>
+                    <div class="text-center border-bottom pb-5 mb-5"><div class="text-muted fs-7">TOTAL BELANJA</div><div id="payment-grand-total" class="pos-payment-total fw-bold text-primary">Rp 0</div></div>
                     <div id="payment-price-warning" class="alert alert-danger d-none"></div>
                     <div class="row g-5">
-                        <div class="col-md-7">
+                        <div class="col-lg-8">
                             <div class="d-flex align-items-center justify-content-between mb-3"><h3 class="fs-5 mb-0">Metode Pembayaran</h3><button type="button" id="add-payment" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-plus fs-5"></i> Split</button></div>
                             <div id="payment-rows" class="d-grid gap-3"></div>
                             <div id="cash-quick-buttons" class="d-flex flex-wrap gap-2 mt-4"></div>
                         </div>
-                        <div class="col-md-5">
-                            <div class="bg-light rounded p-4">
-                                <div class="d-flex justify-content-between mb-2"><span>Total pembayaran</span><strong id="payment-paid">Rp 0</strong></div>
+                        <div class="col-lg-4">
+                            <div class="bg-light rounded p-5 pos-payment-summary">
+                                <div class="d-flex justify-content-between mb-3"><span>Total Belanja</span><strong id="payment-summary-total">Rp 0</strong></div>
+                                <div class="d-flex justify-content-between mb-3"><span>Dibayar</span><strong id="payment-paid">Rp 0</strong></div>
                                 <div class="d-flex justify-content-between mb-2"><span>Kekurangan</span><strong id="payment-shortage" class="text-danger">Rp 0</strong></div>
                                 <div class="separator my-3"></div>
-                                <div class="text-muted fs-8">KEMBALIAN</div><div id="payment-change" class="fs-2 fw-bold text-success">Rp 0</div>
+                                <div class="text-muted fs-8">KEMBALIAN</div><div id="payment-change" class="pos-payment-change fw-bold text-success">Rp 0</div>
                             </div>
                             <div class="mt-4 fs-7">
                                 <div><strong id="payment-item-count">0 item</strong></div>
@@ -151,7 +151,7 @@
 
         <div class="modal fade" id="success-modal" tabindex="-1" aria-labelledby="success-title" data-bs-backdrop="static" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered"><div class="modal-content text-center">
-                <div class="modal-body p-8"><i class="ki-outline ki-check-circle text-success fs-3x"></i><h2 id="success-title" class="mt-4">Transaksi Berhasil</h2><div id="success-number" class="text-muted fw-semibold"></div><div class="mt-5 text-muted">Total</div><div id="success-total" class="fs-2x fw-bold"></div><div class="mt-3 text-muted">Kembalian</div><div id="success-change" class="fs-2 fw-bold text-success"></div><div class="d-grid gap-3 mt-7"><a id="success-print" class="btn btn-primary" target="_blank"><i class="ki-outline ki-printer fs-4 me-2"></i>Cetak Struk</a><button type="button" id="new-transaction" class="btn btn-light-primary">Transaksi Baru</button><a id="success-detail" class="btn btn-light">Lihat Detail</a></div></div>
+                <div class="modal-body p-8"><i class="ki-outline ki-check-circle text-success fs-3x"></i><h2 id="success-title" class="mt-4">Transaksi Berhasil</h2><div id="success-number" class="text-muted fw-semibold"></div><div class="mt-5 text-muted">Total</div><div id="success-total" class="fs-2x fw-bold"></div><div class="mt-3 text-muted">Kembalian</div><div id="success-change" class="fs-2 fw-bold text-success"></div><div class="d-grid gap-3 mt-7"><button type="button" id="success-print" class="btn btn-primary"><i class="ki-outline ki-printer fs-4 me-2"></i>Cetak Struk</button><button type="button" id="new-transaction" class="btn btn-light-primary">Transaksi Baru</button><a id="success-detail" class="btn btn-light">Lihat Detail</a></div></div>
             </div></div>
         </div>
     @endif
@@ -159,32 +159,80 @@
 
 @push('styles')
 <style>
-    .pos-shell { min-height: calc(100vh - 190px); }
-    .pos-panel { min-height: calc(100vh - 285px); overflow: hidden; }
-    .pos-product-results { overflow-y: auto; max-height: calc(100vh - 485px); }
+    .pos-shell { min-height: calc(100vh - 175px); min-width: 0; }
+    .pos-panel { min-height: calc(100vh - 270px); overflow: hidden; min-width: 0; }
+    .pos-product-results { overflow-y: auto; max-height: calc(100vh - 465px); }
     .pos-product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .pos-product-card { border: 1px solid var(--bs-gray-300); border-radius: 6px; padding: 10px; min-width: 0; background: var(--bs-body-bg); }
     .pos-product-card:hover { border-color: var(--bs-primary); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-    .pos-product-image, .pos-cart-image { object-fit: cover; background: var(--bs-gray-100); border-radius: 5px; flex-shrink: 0; }
-    .pos-product-image { width: 72px; height: 72px; }
-    .pos-cart-image { width: 44px; height: 44px; }
+    .pos-product-image, .pos-cart-image { object-fit: contain; background: #fff; border: 1px solid var(--bs-gray-200); border-radius: 5px; flex-shrink: 0; }
+    .pos-product-image { width: 76px; height: 76px; }
+    .pos-cart-image { width: 48px; height: 48px; }
     .pos-image-placeholder { display: flex; align-items: center; justify-content: center; color: var(--bs-gray-500); }
-    .pos-cart-scroll { overflow-y: auto; max-height: calc(100vh - 515px); min-height: 260px; }
-    .pos-cart-table th { font-size: 11px; color: var(--bs-gray-600); white-space: nowrap; padding: 10px 8px; }
-    .pos-cart-table td { padding: 10px 8px; vertical-align: middle; }
+    .pos-product-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; min-height: 2.7em; overflow-wrap: anywhere; }
+    .pos-product-meta { min-width: 0; overflow: hidden; }
+    .pos-ring-list { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+    .pos-ring { font-size: 11px; white-space: nowrap; color: var(--bs-gray-700); }
+    .pos-ring.is-selected { color: var(--bs-primary); font-weight: 700; }
+    .pos-cart-scroll { overflow-y: auto; overflow-x: hidden; max-height: calc(100vh - 495px); min-height: 260px; }
+    .pos-cart-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "product qty action" "price discount subtotal"; align-items: center; gap: 10px 14px; border: 1px solid var(--bs-gray-300); border-left-width: 3px; border-radius: 6px; padding: 10px; min-width: 0; }
+    .pos-cart-product { grid-area: product; min-width: 0; }
+    .pos-cart-product .cart-unit { width: 110px; max-width: 100%; }
+    .pos-cart-qty { grid-area: qty; }
+    .pos-cart-price { grid-area: price; min-width: 0; }
+    .pos-cart-discount { grid-area: discount; width: 96px; }
+    .pos-cart-subtotal { grid-area: subtotal; min-width: 105px; text-align: right; }
+    .pos-cart-action { grid-area: action; }
+    .pos-cart-label { display: block; color: var(--bs-gray-600); font-size: 10px; font-weight: 600; margin-bottom: 3px; text-transform: uppercase; }
     .pos-qty-control { display: grid; grid-template-columns: 34px minmax(52px, 68px) 34px; }
     .pos-qty-control .btn, .pos-qty-control input { border-radius: 0; min-height: 38px; padding: 4px; }
-    .pos-price-input { min-width: 120px; }
+    .pos-price-input { width: min(170px, 100%); }
     .pos-customer-wrap { width: min(270px, 52vw); }
-    .pos-grand-total { font-size: 34px; line-height: 1.05; letter-spacing: 0; }
+    .pos-grand-total { font-size: 38px; line-height: 1.05; letter-spacing: 0; overflow-wrap: anywhere; }
     .pos-main-actions { grid-template-columns: 1fr 2fr; }
     .pos-category { white-space: nowrap; }
     .pos-price-safe { border-left: 3px solid var(--bs-success); }
     .pos-price-near { border-left: 3px solid var(--bs-warning); }
     .pos-price-below, .pos-price-above, .pos-price-approval { border-left: 3px solid var(--bs-danger); background: var(--bs-danger-light); }
+    .pos-payment-total { font-size: 42px; line-height: 1.1; letter-spacing: 0; }
+    .pos-payment-change { font-size: 34px; line-height: 1.1; letter-spacing: 0; overflow-wrap: anywhere; }
+    .pos-payment-row { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(190px, 1.2fr) minmax(130px, 1fr) 42px; gap: 10px; align-items: end; }
+    .payment-amount { font-size: 18px; font-weight: 700; }
+    .quick-cash { min-height: 44px; padding-inline: 16px; font-weight: 600; }
     kbd { font-size: 10px; font-weight: 600; color: var(--bs-gray-700); background: var(--bs-gray-200); margin-left: 4px; }
-    @media (max-width: 1199.98px) { .pos-panel { min-height: auto; } .pos-product-results, .pos-cart-scroll { max-height: 520px; } }
-    @media (max-width: 767.98px) { .pos-product-grid { grid-template-columns: 1fr; } .pos-main-actions { grid-template-columns: 1fr; } .pos-grand-total { font-size: 28px; } .pos-cart-table { min-width: 820px; } }
+    @media (min-width: 1600px) {
+        .pos-cart-item { grid-template-columns: minmax(210px, 1.6fr) auto minmax(145px, .9fr) 90px minmax(110px, .7fr) 38px; grid-template-areas: "product qty price discount subtotal action"; }
+    }
+    @media (max-width: 1399.98px) {
+        .pos-context-bar { padding: 10px 12px !important; }
+        .pos-context-bar > div:first-child { gap: 14px !important; }
+        .pos-product-image { width: 64px; height: 64px; }
+        .pos-product-results { padding: 10px !important; }
+        .pos-product-grid { gap: 8px; }
+    }
+    @media (max-width: 1199.98px) {
+        .pos-panel { min-height: auto; }
+        .pos-product-results, .pos-cart-scroll { max-height: 520px; }
+        .pos-product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 991.98px) {
+        .pos-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .pos-payment-row { grid-template-columns: 1fr 1.2fr 42px; }
+        .pos-payment-reference { grid-column: 1 / -1; }
+    }
+    @media (max-width: 767.98px) {
+        .pos-product-grid { grid-template-columns: 1fr; }
+        .pos-main-actions { grid-template-columns: 1fr; }
+        .pos-grand-total { font-size: 30px; }
+        .pos-customer-wrap { width: 100%; }
+        .pos-cart-item { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "product action" "qty subtotal" "price price" "discount discount"; }
+        .pos-cart-discount { width: 100%; }
+        .pos-price-input { width: 100%; }
+        .pos-payment-row { grid-template-columns: 1fr 42px; }
+        .pos-payment-method, .pos-payment-amount-wrap, .pos-payment-reference { grid-column: 1 / -1; }
+        .pos-payment-remove { grid-column: 2; grid-row: 1; }
+        .pos-payment-total { font-size: 34px; }
+    }
 </style>
 @endpush
 
@@ -224,12 +272,19 @@ const initializeScannerFirstPos = () => {
     let searchTimer = null;
     let requestSequence = 0;
     let idempotencyKey = makeUuid();
+    let receiptPrintUrl = null;
 
     const money = value => 'Rp ' + Number(value || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
     const qty = value => Number(value || 0).toLocaleString('id-ID', { maximumFractionDigits: 4 });
+    const rupiahValue = value => Number(String(value ?? '').replace(/[^0-9]/g, '')) || 0;
     const escapeHtml = value => { const node = document.createElement('div'); node.textContent = value ?? ''; return node.innerHTML; };
     const customerName = () => customerSelect.options[customerSelect.selectedIndex]?.text || 'Pelanggan Umum';
-    const focusScanner = () => window.setTimeout(() => { scanner.focus(); scanner.select(); }, 80);
+    const focusScanner = (force = false) => window.setTimeout(() => {
+        const active = document.activeElement;
+        const isEditing = active?.matches?.('input, select, textarea, [contenteditable="true"]');
+        if (!force && (document.querySelector('.modal.show') || isEditing)) return;
+        scanner.focus(); scanner.select();
+    }, 80);
 
     function makeUuid() {
         return window.crypto?.randomUUID?.() || `pos-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -249,6 +304,26 @@ const initializeScannerFirstPos = () => {
         const element = document.getElementById('scanner-message');
         element.className = `fs-7 mt-2 text-${type}`;
         element.textContent = message;
+    }
+
+    function showToast(message, icon = 'error') {
+        if (!window.Swal) return;
+        Swal.fire({ toast: true, position: 'top-end', icon, text: message, timer: 1800, showConfirmButton: false, timerProgressBar: true });
+    }
+
+    function imageMarkup(url, sizeClass, iconClass) {
+        return url
+            ? `<img src="${escapeHtml(url)}" class="${sizeClass}" alt="" loading="lazy">`
+            : `<div class="${sizeClass} pos-image-placeholder"><i class="ki-outline ki-package ${iconClass}"></i></div>`;
+    }
+
+    function bindImageFallback(root, sizeClass, iconClass) {
+        root.querySelectorAll(`img.${sizeClass}`).forEach(image => image.addEventListener('error', () => {
+            const fallback = document.createElement('div');
+            fallback.className = `${sizeClass} pos-image-placeholder`;
+            fallback.innerHTML = `<i class="ki-outline ki-package ${iconClass}"></i>`;
+            image.replaceWith(fallback);
+        }, { once: true }));
     }
 
     async function loadProducts(reset = true, immediateScan = false) {
@@ -276,7 +351,11 @@ const initializeScannerFirstPos = () => {
             renderProducts(data.results || [], reset);
             hasMoreProducts = data.pagination?.more === true;
             document.getElementById('load-more-products').classList.toggle('d-none', !hasMoreProducts);
-            if (immediateScan && !(data.results || []).length) showScannerMessage('Barcode/produk tidak ditemukan. Coba SKU atau nama lain.', 'danger');
+            if (immediateScan && !(data.results || []).length) {
+                showScannerMessage('Produk dengan barcode tersebut tidak ditemukan.', 'danger');
+                showToast('Produk dengan barcode tersebut tidak ditemukan.');
+                focusScanner(true);
+            }
         } catch (error) {
             if (sequence !== requestSequence) return;
             productResults.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
@@ -293,11 +372,14 @@ const initializeScannerFirstPos = () => {
         let grid = productResults.querySelector('.pos-product-grid');
         if (!grid) { grid = document.createElement('div'); grid.className = 'pos-product-grid'; productResults.appendChild(grid); }
         products.forEach(product => {
-            const image = product.image_url ? `<img src="${escapeHtml(product.image_url)}" class="pos-product-image" alt="">` : '<div class="pos-product-image pos-image-placeholder"><i class="ki-outline ki-package fs-2x"></i></div>';
+            const image = imageMarkup(product.image_url, 'pos-product-image', 'fs-2x');
             const stockClass = Number(product.stock) <= 0 ? 'danger' : (product.stock_low ? 'warning' : 'success');
+            const rings = (product.pricing.rings || [{ label: product.pricing.ring || 'Harga POS', price: product.pricing.recommended_price, selected: true }])
+                .map(ring => `<span class="pos-ring ${ring.selected ? 'is-selected' : ''}">${escapeHtml(ring.label)} <strong>${money(ring.price)}</strong></span>`).join('');
             const card = document.createElement('article');
             card.className = 'pos-product-card';
-            card.innerHTML = `<div class="d-flex gap-3">${image}<div class="min-w-0 flex-grow-1"><div class="text-muted fs-8 text-truncate">${escapeHtml(product.sku)}</div><div class="fw-bold text-truncate" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</div><div class="text-muted fs-8 text-truncate">${escapeHtml([product.category, product.brand].filter(Boolean).join(' / '))}</div></div></div><div class="d-flex justify-content-between align-items-end mt-3"><div><div class="fw-bold text-primary">${money(product.pricing.recommended_price)}</div><div class="text-muted fs-8">${escapeHtml(product.pricing.ring || 'Harga POS')}</div><div class="text-${stockClass} fs-8">Stok: ${qty(product.stock)} ${escapeHtml(product.unit)}${product.stock_low ? ' / menipis' : ''}</div></div><button type="button" class="btn btn-sm btn-primary add-product" ${Number(product.stock) <= 0 ? 'disabled' : ''}><i class="ki-outline ki-plus fs-5"></i> Tambah</button></div>`;
+            card.innerHTML = `<div class="d-flex gap-3">${image}<div class="pos-product-meta flex-grow-1"><div class="fw-bold pos-product-name" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</div><div class="text-muted fs-8 text-truncate mt-1">${escapeHtml(product.sku)} / ${escapeHtml(product.unit)}</div><div class="text-${stockClass} fs-8 mt-1">Stok ${qty(product.stock)}${product.stock_low ? ' / menipis' : ''}</div></div></div><div class="pos-ring-list mt-3">${rings}</div><button type="button" class="btn btn-sm btn-primary add-product w-100 mt-3" ${Number(product.stock) <= 0 ? 'disabled' : ''}><i class="ki-outline ki-plus fs-5"></i> Tambah</button>`;
+            bindImageFallback(card, 'pos-product-image', 'fs-2x');
             card.querySelector('.add-product').addEventListener('click', async () => { await addToCart(product); focusScanner(); });
             grid.appendChild(card);
         });
@@ -336,17 +418,20 @@ const initializeScannerFirstPos = () => {
         document.getElementById('cart-table-wrap').classList.toggle('d-none', empty);
         cartBody.innerHTML = '';
         cart.forEach((item, index) => {
-            const image = item.image_url ? `<img src="${escapeHtml(item.image_url)}" class="pos-cart-image" alt="">` : '<div class="pos-cart-image pos-image-placeholder"><i class="ki-outline ki-package fs-2"></i></div>';
+            const image = imageMarkup(item.image_url, 'pos-cart-image', 'fs-2');
             const pricing = item.pricing || {};
             const statusClass = pricing.status || (pricing.approval_required ? 'approval' : 'safe');
             const units = (item.units || [{ id: item.unit_id, text: item.unit }]).map(unit => `<option value="${unit.id}" ${Number(unit.id) === Number(item.unit_id) ? 'selected' : ''}>${escapeHtml(unit.text)}</option>`).join('');
-            const row = document.createElement('tr');
-            row.className = `pos-price-${statusClass}`;
-            row.innerHTML = `<td><div class="d-flex gap-2">${image}<div class="min-w-0"><div class="fw-bold text-truncate" style="max-width:170px" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div><div class="text-muted fs-8">${escapeHtml(item.sku)}</div><select class="form-select form-select-sm cart-unit mt-1" data-searchable="false">${units}</select><div class="fs-8 mt-1 ${item.stock_sufficient ? 'text-muted' : 'text-danger fw-bold'}">Stok ${qty(item.stock)} ${escapeHtml(item.unit)}</div></div></div></td><td><div class="pos-qty-control"><button type="button" class="btn btn-light cart-minus" aria-label="Kurangi qty"><i class="ki-outline ki-minus"></i></button><input type="number" min="0.0001" step="0.0001" class="form-control text-center cart-qty" value="${item.quantity}"><button type="button" class="btn btn-light cart-plus" aria-label="Tambah qty"><i class="ki-outline ki-plus"></i></button></div></td><td><input type="number" min="0" step="0.01" class="form-control form-control-sm pos-price-input cart-price" value="${item.selected_price || 0}"><div class="fs-8 mt-1"><strong>${escapeHtml(pricing.ring || '-')}</strong> / ${escapeHtml(pricing.status_label || 'Memuat')}</div><div class="text-muted fs-8">Saran ${money(pricing.recommended_price)} / ${money(pricing.minimum_price)} - ${money(pricing.maximum_price)}</div>${pricing.status_message ? `<div class="fs-8 ${pricing.approval_required ? 'text-danger fw-semibold' : 'text-muted'}">${escapeHtml(pricing.status_message)}</div>` : ''}${item.error ? `<div class="text-danger fs-8">${escapeHtml(item.error)}</div>` : ''}</td><td><div class="input-group input-group-sm" style="min-width:90px"><input type="number" min="0" max="100" step="0.01" class="form-control cart-discount" value="${item.discount_percent || 0}"><span class="input-group-text">%</span></div></td><td class="text-end fw-bold text-nowrap">${item.loading ? '<span class="spinner-border spinner-border-sm"></span>' : money(item.line_total)}</td><td><button type="button" class="btn btn-sm btn-icon btn-light-danger cart-remove" title="Hapus"><i class="ki-outline ki-trash"></i></button></td>`;
+            const row = document.createElement('article');
+            row.className = `pos-cart-item pos-price-${statusClass}`;
+            row.innerHTML = `<div class="pos-cart-product d-flex gap-2">${image}<div class="min-w-0"><div class="fw-bold pos-product-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div><div class="text-muted fs-8 text-truncate">SKU ${escapeHtml(item.sku)}</div><div class="d-flex flex-wrap align-items-center gap-2 mt-1"><select class="form-select form-select-sm cart-unit" data-searchable="false">${units}</select><span class="fs-8 ${item.stock_sufficient ? 'text-muted' : 'text-danger fw-bold'}">Stok ${qty(item.stock)}</span></div></div></div><div class="pos-cart-qty"><span class="pos-cart-label">Qty</span><div class="pos-qty-control"><button type="button" class="btn btn-light cart-minus" aria-label="Kurangi qty"><i class="ki-outline ki-minus"></i></button><input type="number" min="0.0001" step="0.0001" class="form-control text-center cart-qty" value="${item.quantity}"><button type="button" class="btn btn-light cart-plus" aria-label="Tambah qty"><i class="ki-outline ki-plus"></i></button></div></div><div class="pos-cart-price"><span class="pos-cart-label">Harga</span><input type="text" inputmode="numeric" class="form-control form-control-sm pos-price-input cart-price" value="${money(item.selected_price)}"><div class="fs-8 mt-1"><strong>${escapeHtml(pricing.ring || '-')}</strong> / ${escapeHtml(pricing.status_label || 'Memuat')}</div><div class="text-muted fs-8">Batas ${money(pricing.minimum_price)} - ${money(pricing.maximum_price)}</div>${pricing.status_message ? `<div class="fs-8 ${pricing.approval_required ? 'text-danger fw-semibold' : 'text-muted'}">${escapeHtml(pricing.status_message)}</div>` : ''}${item.error ? `<div class="text-danger fs-8">${escapeHtml(item.error)}</div>` : ''}</div><div class="pos-cart-discount"><span class="pos-cart-label">Diskon</span><div class="input-group input-group-sm"><input type="number" min="0" max="100" step="0.01" class="form-control cart-discount" value="${item.discount_percent || 0}"><span class="input-group-text">%</span></div></div><div class="pos-cart-subtotal"><span class="pos-cart-label">Subtotal</span><strong class="text-nowrap">${item.loading ? '<span class="spinner-border spinner-border-sm"></span>' : money(item.line_total)}</strong></div><div class="pos-cart-action"><button type="button" class="btn btn-sm btn-icon btn-light-danger cart-remove" title="Hapus" aria-label="Hapus produk"><i class="ki-outline ki-trash"></i></button></div>`;
+            bindImageFallback(row, 'pos-cart-image', 'fs-2');
             row.querySelector('.cart-minus').addEventListener('click', () => updateQuantity(item, Math.max(Number(item.quantity) - 1, 0)));
             row.querySelector('.cart-plus').addEventListener('click', () => updateQuantity(item, Number(item.quantity) + 1));
             row.querySelector('.cart-qty').addEventListener('change', event => updateQuantity(item, Number(event.target.value)));
-            row.querySelector('.cart-price').addEventListener('change', event => { item.manual_price = true; item.selected_price = Number(event.target.value); requote(item); });
+            row.querySelector('.cart-price').addEventListener('focus', event => event.target.select());
+            row.querySelector('.cart-price').addEventListener('input', event => event.target.value = money(rupiahValue(event.target.value)));
+            row.querySelector('.cart-price').addEventListener('change', event => { item.manual_price = true; item.selected_price = rupiahValue(event.target.value); requote(item); });
             row.querySelector('.cart-discount').addEventListener('change', event => { item.discount_percent = Number(event.target.value); requote(item); });
             row.querySelector('.cart-unit').addEventListener('change', event => { item.unit_id = Number(event.target.value); item.manual_price = false; requote(item); });
             row.querySelector('.cart-remove').addEventListener('click', () => { cart.splice(index, 1); renderCart(); focusScanner(); });
@@ -401,11 +486,12 @@ const initializeScannerFirstPos = () => {
     function renderPaymentRows() {
         const container = document.getElementById('payment-rows'); container.innerHTML = '';
         payments.forEach((payment, index) => {
-            const row = document.createElement('div'); row.className = 'row g-2 align-items-center';
+            const row = document.createElement('div'); row.className = 'pos-payment-row border rounded p-3';
             const options = Object.entries(paymentMethods).map(([value, label]) => `<option value="${value}" ${payment.method === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('');
-            row.innerHTML = `<div class="col-5"><select class="form-select payment-method" data-searchable="false">${options}</select></div><div class="col"><input type="number" min="0" step="0.01" class="form-control payment-amount" value="${payment.amount || ''}" placeholder="Nominal"></div><div class="col-3"><input class="form-control payment-reference" value="${escapeHtml(payment.reference_no || '')}" placeholder="Referensi"></div><div class="col-auto"><button type="button" class="btn btn-icon btn-light-danger remove-payment" aria-label="Hapus"><i class="ki-outline ki-trash"></i></button></div>`;
-            row.querySelector('.payment-method').addEventListener('change', event => { payment.method = event.target.value; updatePaymentSummary(); });
-            row.querySelector('.payment-amount').addEventListener('input', event => { payment.amount = Number(event.target.value); updatePaymentSummary(); });
+            row.innerHTML = `<div class="pos-payment-method"><label class="pos-cart-label">Metode</label><select class="form-select payment-method" data-searchable="false">${options}</select></div><div class="pos-payment-amount-wrap"><label class="pos-cart-label">Jumlah Dibayarkan</label><input type="text" inputmode="numeric" class="form-control payment-amount" value="${money(payment.amount)}" placeholder="Rp 0" autocomplete="off"></div><div class="pos-payment-reference"><label class="pos-cart-label">Referensi</label><input class="form-control payment-reference" value="${escapeHtml(payment.reference_no || '')}" placeholder="Opsional"></div><div class="pos-payment-remove"><button type="button" class="btn btn-icon btn-light-danger remove-payment" aria-label="Hapus"><i class="ki-outline ki-trash"></i></button></div>`;
+            row.querySelector('.payment-method').addEventListener('change', event => { payment.method = event.target.value; renderQuickCash(); updatePaymentSummary(); });
+            row.querySelector('.payment-amount').addEventListener('focus', event => event.target.select());
+            row.querySelector('.payment-amount').addEventListener('input', event => { payment.amount = rupiahValue(event.target.value); event.target.value = money(payment.amount); updatePaymentSummary(); });
             row.querySelector('.payment-reference').addEventListener('input', event => payment.reference_no = event.target.value);
             row.querySelector('.remove-payment').addEventListener('click', () => { if (payments.length > 1) payments.splice(index, 1); renderPaymentRows(); updatePaymentSummary(); });
             container.appendChild(row);
@@ -415,9 +501,12 @@ const initializeScannerFirstPos = () => {
 
     function renderQuickCash() {
         const grand = totals().grand;
-        const rounded = [50000, 100000, 200000].filter(amount => amount >= grand);
-        const values = [...new Set([grand, ...rounded])];
-        document.getElementById('cash-quick-buttons').innerHTML = values.map((amount, index) => `<button type="button" class="btn btn-sm btn-light-primary quick-cash" data-amount="${amount}">${index === 0 ? 'Uang pas' : money(amount)}</button>`).join('');
+        const container = document.getElementById('cash-quick-buttons');
+        if (!payments.some(payment => payment.method === 'cash')) { container.innerHTML = ''; return; }
+        const values = [{ amount: grand, label: 'Uang Pas' }, ...[10000, 20000, 50000, 100000, 200000, 1000000]
+            .filter(amount => amount !== grand)
+            .map(amount => ({ amount, label: money(amount) }))];
+        container.innerHTML = values.map((entry, index) => `<button type="button" class="btn btn-light-primary quick-cash" data-amount="${entry.amount}" ${index > 0 && entry.amount < grand ? 'disabled' : ''}>${entry.label}</button>`).join('');
         document.querySelectorAll('.quick-cash').forEach(button => button.addEventListener('click', () => {
             let cash = payments.find(row => row.method === 'cash');
             if (!cash) { cash = { method: 'cash', amount: 0, reference_no: '' }; payments.push(cash); }
@@ -431,6 +520,7 @@ const initializeScannerFirstPos = () => {
         const shortage = Math.max(grand - paid, 0);
         const change = Math.max(paid - grand, 0);
         document.getElementById('payment-paid').textContent = money(paid);
+        document.getElementById('payment-summary-total').textContent = money(grand);
         document.getElementById('payment-shortage').textContent = money(shortage);
         document.getElementById('payment-change').textContent = money(change);
         const issues = blockingIssues();
@@ -467,7 +557,7 @@ const initializeScannerFirstPos = () => {
             document.getElementById('success-number').textContent = data.sale.number;
             document.getElementById('success-total').textContent = money(data.sale.grand_total);
             document.getElementById('success-change').textContent = money(data.sale.change);
-            document.getElementById('success-print').href = data.sale.print_url;
+            receiptPrintUrl = data.sale.print_url;
             document.getElementById('success-detail').href = data.sale.show_url;
             successModal.show();
         } catch (error) {
@@ -517,6 +607,22 @@ const initializeScannerFirstPos = () => {
         renderCart(); loadProducts(true); focusScanner();
     }
 
+    function startNewTransaction() {
+        successModal.hide();
+        receiptPrintUrl = null;
+        clearTransaction();
+    }
+
+    function printReceipt() {
+        if (!receiptPrintUrl) return;
+        const printWindow = window.open(receiptPrintUrl, 'pos-receipt-print', 'popup=yes,width=420,height=720');
+        if (!printWindow) {
+            showToast('Popup cetak diblokir browser. Izinkan popup untuk mencetak struk.');
+            return;
+        }
+        startNewTransaction();
+    }
+
     scanner.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadProducts(true), 260); });
     scanner.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); clearTimeout(searchTimer); loadProducts(true, true); } });
     document.getElementById('brand-filter').addEventListener('change', () => loadProducts(true));
@@ -529,8 +635,18 @@ const initializeScannerFirstPos = () => {
     document.getElementById('confirm-payment').addEventListener('click', checkout);
     document.getElementById('hold-cart').addEventListener('click', holdCart);
     document.getElementById('open-holds').addEventListener('click', openHolds);
-    document.getElementById('new-transaction').addEventListener('click', () => { successModal.hide(); clearTransaction(); });
+    document.getElementById('new-transaction').addEventListener('click', startNewTransaction);
+    document.getElementById('success-print').addEventListener('click', printReceipt);
+    document.getElementById('payment-modal').addEventListener('shown.bs.modal', () => document.querySelector('.payment-amount')?.focus());
     document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('hidden.bs.modal', focusScanner));
+    document.getElementById('pos-sidebar-toggle').addEventListener('click', event => {
+        const collapsed = document.body.getAttribute('data-kt-app-sidebar-collapse') === 'on';
+        if (collapsed) document.body.removeAttribute('data-kt-app-sidebar-collapse');
+        else document.body.setAttribute('data-kt-app-sidebar-collapse', 'on');
+        event.currentTarget.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
+        event.currentTarget.querySelector('i').className = `ki-outline ${collapsed ? 'ki-arrow-left' : 'ki-arrow-right'} fs-3`;
+    });
+    window.addEventListener('focus', () => focusScanner());
     document.addEventListener('keydown', event => {
         if (event.key === 'F2') { event.preventDefault(); focusScanner(); }
         if (event.key === 'F4') { event.preventDefault(); if (window.jQuery && window.jQuery(customerSelect).hasClass('select2-hidden-accessible')) window.jQuery(customerSelect).select2('open'); else customerSelect.focus(); }
@@ -541,7 +657,7 @@ const initializeScannerFirstPos = () => {
     });
 
     document.getElementById('temporary-number').textContent = `BARU-${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
-    renderCart(); loadProducts(true); focusScanner();
+    renderCart(); loadProducts(true); focusScanner(true);
     if (resumeCart) restoreSnapshot(resumeCart);
 };
 

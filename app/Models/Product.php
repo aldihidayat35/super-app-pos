@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -140,10 +139,21 @@ class Product extends Model
      */
     public function getMainImageUrlAttribute(): ?string
     {
-        if (! $this->main_image_path) {
+        $path = $this->main_image_path;
+        if (! $path && $this->relationLoaded('images')) {
+            $image = $this->images->firstWhere('is_primary', true) ?? $this->images->sortBy('sort_order')->first();
+            $path = $image?->path;
+        }
+
+        if (! $path) {
             return null;
         }
 
-        return Storage::url($this->main_image_path);
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        // Relative URL follows the host currently used by the cashier (Laragon, artisan serve, or production).
+        return '/storage/'.ltrim($path, '/');
     }
 }
