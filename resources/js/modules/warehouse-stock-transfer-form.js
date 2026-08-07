@@ -74,6 +74,8 @@ const initializeStockTransferForm = () => {
         if (!window.$?.fn?.select2) return;
 
         window.$(select).select2({
+            theme: 'bootstrap5',
+            selectionCssClass: ':all:',
             width: '100%', allowClear: true, minimumInputLength: 0,
             placeholder: 'Cari SKU atau nama produk',
             ajax: {
@@ -100,20 +102,12 @@ const initializeStockTransferForm = () => {
         destroy(select);
         if (!window.$?.fn?.select2) return;
         window.$(select).select2({
-            width: '100%', allowClear: true, minimumInputLength: 0,
+            theme: 'bootstrap5',
+            selectionCssClass: ':all:',
+            width: '100%', allowClear: true, minimumResultsForSearch: 0,
             placeholder: 'Cari zona/rak/bin',
-            ajax: {
-                url: optionsUrl, dataType: 'json', delay: 250,
-                data: (params) => ({work_location_id: workLocationId, context, q: params.term || '', page: params.page || 1}),
-                processResults: (payload) => ({
-                    results: Array.isArray(payload.results) ? payload.results : [],
-                    pagination: payload.pagination || {more: false},
-                }),
-            },
             language: {
                 noResults: () => context === 'source' ? 'Gudang ini belum memiliki zona/rak/bin aktif' : 'Tujuan ini belum memiliki zona/rak/bin aktif',
-                searching: () => 'Mencari zona/rak/bin…',
-                errorLoading: () => 'Lokasi gudang gagal dimuat. Silakan coba kembali.',
             },
         });
     };
@@ -224,5 +218,3 @@ const initializeStockTransferForm = () => {
 window.initializeStockTransferForm = initializeStockTransferForm;
 
 export {initializeStockTransferForm};
-
-
