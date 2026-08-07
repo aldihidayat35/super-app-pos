@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="light">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="@yield('html_classes')" data-bs-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,7 +18,7 @@
         window.hostUrl = @json(asset('assets') . '/');
     </script>
 </head>
-<body id="kt_app_body" class="app-default" data-kt-app-header-fixed="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" @yield('body_attributes')>
+<body id="kt_app_body" class="app-default @yield('body_classes')" data-kt-app-header-fixed="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" @yield('body_attributes')>
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
         <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
             @include('layouts.metronic.partials.header')

@@ -2,6 +2,8 @@
 
 @section('title', 'Kasir POS - ' . config('app.name'))
 @section('page_title', 'Kasir POS')
+@section('html_classes', 'pos-page-root')
+@section('body_classes', 'pos-page')
 @section('body_attributes', 'data-kt-app-sidebar-collapse=on')
 
 @section('content')
@@ -32,7 +34,7 @@
                 </div>
             </header>
 
-            <div class="row g-4 align-items-stretch">
+            <div class="row g-4 align-items-stretch pos-workspace-row">
                 <section class="col-xl-5" aria-labelledby="product-finder-title">
                     <div class="pos-panel bg-body border rounded h-100 d-flex flex-column">
                         <div class="p-4 border-bottom">
@@ -159,34 +161,57 @@
 
 @push('styles')
 <style>
-    .pos-shell { min-height: calc(100vh - 175px); min-width: 0; }
-    .pos-panel { min-height: calc(100vh - 270px); overflow: hidden; min-width: 0; }
-    .pos-product-results { overflow-y: auto; max-height: calc(100vh - 465px); }
+    html.pos-page-root,
+    body.pos-page { width: 100%; height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+    body.pos-page #kt_app_root,
+    body.pos-page #kt_app_page,
+    body.pos-page #kt_app_wrapper { max-width: 100%; min-height: 0; overflow: hidden; }
+    body.pos-page #kt_app_toolbar,
+    body.pos-page #kt_app_footer { display: none !important; }
+    body.pos-page #kt_app_main { height: calc(100dvh - var(--gt-header-height)); max-height: calc(100dvh - var(--gt-header-height)); margin-top: 0 !important; overflow: hidden; }
+    body.pos-page #kt_app_main > .d-flex { height: 100%; min-height: 0; margin-top: 0 !important; overflow: hidden; }
+    body.pos-page #kt_app_content { height: 100%; min-height: 0; padding: 0 !important; overflow: hidden; }
+    body.pos-page #kt_app_content_container { height: 100%; max-width: 100%; min-height: 0; margin-top: 0 !important; padding-top: 8px !important; padding-bottom: 8px !important; overflow: hidden; }
+    .pos-shell { display: flex; flex-direction: column; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; }
+    .pos-context-bar { flex: 0 0 auto; }
+    .pos-workspace-row { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: hidden; }
+    .pos-workspace-row > section { height: 100%; min-width: 0; min-height: 0; }
+    .pos-panel { height: 100%; min-width: 0; min-height: 0; overflow: hidden; }
+    .pos-product-results { min-height: 0; overflow-x: hidden; overflow-y: auto; }
     .pos-product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .pos-product-card { border: 1px solid var(--bs-gray-300); border-radius: 6px; padding: 10px; min-width: 0; background: var(--bs-body-bg); }
     .pos-product-card:hover { border-color: var(--bs-primary); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
     .pos-product-image, .pos-cart-image { object-fit: contain; background: #fff; border: 1px solid var(--bs-gray-200); border-radius: 5px; flex-shrink: 0; }
     .pos-product-image { width: 76px; height: 76px; }
-    .pos-cart-image { width: 48px; height: 48px; }
+    .pos-cart-image { width: 74px; height: 74px; }
     .pos-image-placeholder { display: flex; align-items: center; justify-content: center; color: var(--bs-gray-500); }
     .pos-product-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; min-height: 2.7em; overflow-wrap: anywhere; }
     .pos-product-meta { min-width: 0; overflow: hidden; }
     .pos-ring-list { display: flex; flex-wrap: wrap; gap: 4px 8px; }
     .pos-ring { font-size: 11px; white-space: nowrap; color: var(--bs-gray-700); }
     .pos-ring.is-selected { color: var(--bs-primary); font-weight: 700; }
-    .pos-cart-scroll { overflow-y: auto; overflow-x: hidden; max-height: calc(100vh - 495px); min-height: 260px; }
-    .pos-cart-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "product qty action" "price discount subtotal"; align-items: center; gap: 10px 14px; border: 1px solid var(--bs-gray-300); border-left-width: 3px; border-radius: 6px; padding: 10px; min-width: 0; }
+    .pos-cart-scroll { min-height: 0; overflow-x: hidden; overflow-y: auto; }
+    .pos-cart-item { border: 1px solid var(--bs-gray-300); border-left-width: 3px; border-radius: 6px; padding: 14px; min-width: 0; background: var(--bs-body-bg); }
+    .pos-cart-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, 230px) 42px; grid-template-areas: "product qty action"; align-items: center; gap: 16px; min-width: 0; }
     .pos-cart-product { grid-area: product; min-width: 0; }
-    .pos-cart-product .cart-unit { width: 110px; max-width: 100%; }
-    .pos-cart-qty { grid-area: qty; }
+    .pos-cart-product .cart-unit { width: 128px; max-width: 100%; }
+    .pos-cart-qty { grid-area: qty; min-width: 0; }
+    .pos-cart-action { grid-area: action; align-self: center; }
+    .pos-cart-details { display: grid; grid-template-columns: minmax(150px, .9fr) minmax(180px, 1.4fr) 105px minmax(115px, .8fr); grid-template-areas: "price guidance discount subtotal"; align-items: center; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--bs-gray-300); min-width: 0; }
     .pos-cart-price { grid-area: price; min-width: 0; }
-    .pos-cart-discount { grid-area: discount; width: 96px; }
-    .pos-cart-subtotal { grid-area: subtotal; min-width: 105px; text-align: right; }
-    .pos-cart-action { grid-area: action; }
+    .pos-cart-guidance { grid-area: guidance; min-width: 0; padding-left: 14px; border-left: 1px solid var(--bs-gray-300); }
+    .pos-cart-discount { grid-area: discount; min-width: 0; }
+    .pos-cart-subtotal { grid-area: subtotal; min-width: 115px; padding-left: 14px; border-left: 1px solid var(--bs-gray-300); text-align: right; }
     .pos-cart-label { display: block; color: var(--bs-gray-600); font-size: 10px; font-weight: 600; margin-bottom: 3px; text-transform: uppercase; }
-    .pos-qty-control { display: grid; grid-template-columns: 34px minmax(52px, 68px) 34px; }
-    .pos-qty-control .btn, .pos-qty-control input { border-radius: 0; min-height: 38px; padding: 4px; }
-    .pos-price-input { width: min(170px, 100%); }
+    .pos-qty-control { display: grid; grid-template-columns: 44px minmax(72px, 1fr) 44px; }
+    .pos-qty-control .btn, .pos-qty-control input { border-radius: 0; min-height: 44px; padding: 4px; }
+    .pos-qty-control input { font-size: 18px; font-weight: 700; }
+    .pos-qty-control .btn:first-child { border-radius: 5px 0 0 5px; }
+    .pos-qty-control .btn:last-child { border-radius: 0 5px 5px 0; }
+    .pos-cart-price-editor { position: relative; }
+    .pos-cart-price-editor > i { position: absolute; left: 12px; top: 50%; z-index: 2; color: var(--bs-primary); transform: translateY(-50%); pointer-events: none; }
+    .pos-price-input { width: 100%; min-height: 44px; padding-left: 38px; font-size: 18px; font-weight: 700; color: var(--bs-gray-900); }
+    .pos-cart-subtotal strong { color: var(--bs-primary); font-size: 18px; }
     .pos-customer-wrap { width: min(270px, 52vw); }
     .pos-grand-total { font-size: 38px; line-height: 1.05; letter-spacing: 0; overflow-wrap: anywhere; }
     .pos-main-actions { grid-template-columns: 1fr 2fr; }
@@ -200,9 +225,7 @@
     .payment-amount { font-size: 18px; font-weight: 700; }
     .quick-cash { min-height: 44px; padding-inline: 16px; font-weight: 600; }
     kbd { font-size: 10px; font-weight: 600; color: var(--bs-gray-700); background: var(--bs-gray-200); margin-left: 4px; }
-    @media (min-width: 1600px) {
-        .pos-cart-item { grid-template-columns: minmax(210px, 1.6fr) auto minmax(145px, .9fr) 90px minmax(110px, .7fr) 38px; grid-template-areas: "product qty price discount subtotal action"; }
-    }
+    @media (min-width: 1600px) { .pos-cart-item { padding: 16px; } }
     @media (max-width: 1399.98px) {
         .pos-context-bar { padding: 10px 12px !important; }
         .pos-context-bar > div:first-child { gap: 14px !important; }
@@ -211,12 +234,14 @@
         .pos-product-grid { gap: 8px; }
     }
     @media (max-width: 1199.98px) {
-        .pos-panel { min-height: auto; }
-        .pos-product-results, .pos-cart-scroll { max-height: 520px; }
+        .pos-workspace-row { overflow-y: auto; }
+        .pos-workspace-row > section { height: auto; min-height: 560px; }
         .pos-product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 991.98px) {
         .pos-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .pos-cart-details { grid-template-columns: minmax(150px, 1fr) minmax(180px, 1.4fr) minmax(115px, .8fr); grid-template-areas: "price guidance guidance" "discount subtotal subtotal"; }
+        .pos-cart-discount { max-width: 130px; }
         .pos-payment-row { grid-template-columns: 1fr 1.2fr 42px; }
         .pos-payment-reference { grid-column: 1 / -1; }
     }
@@ -225,13 +250,22 @@
         .pos-main-actions { grid-template-columns: 1fr; }
         .pos-grand-total { font-size: 30px; }
         .pos-customer-wrap { width: 100%; }
-        .pos-cart-item { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "product action" "qty subtotal" "price price" "discount discount"; }
-        .pos-cart-discount { width: 100%; }
+        .pos-cart-main { grid-template-columns: minmax(0, 1fr) 42px; grid-template-areas: "product action" "qty qty"; }
+        .pos-cart-qty { max-width: 260px; }
+        .pos-cart-details { grid-template-columns: minmax(0, 1fr) minmax(120px, .65fr); grid-template-areas: "price price" "guidance guidance" "discount subtotal"; }
+        .pos-cart-guidance { padding-left: 0; border-left: 0; }
+        .pos-cart-discount { max-width: none; }
         .pos-price-input { width: 100%; }
         .pos-payment-row { grid-template-columns: 1fr 42px; }
         .pos-payment-method, .pos-payment-amount-wrap, .pos-payment-reference { grid-column: 1 / -1; }
         .pos-payment-remove { grid-column: 2; grid-row: 1; }
         .pos-payment-total { font-size: 34px; }
+    }
+    @media (max-width: 575.98px) {
+        .pos-cart-item { padding: 12px; }
+        .pos-cart-image { width: 58px; height: 58px; }
+        .pos-cart-details { grid-template-columns: 1fr; grid-template-areas: "price" "guidance" "discount" "subtotal"; }
+        .pos-cart-subtotal { padding-left: 0; border-left: 0; text-align: left; }
     }
 </style>
 @endpush
@@ -276,6 +310,10 @@ const initializeScannerFirstPos = () => {
 
     const money = value => 'Rp ' + Number(value || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
     const qty = value => Number(value || 0).toLocaleString('id-ID', { maximumFractionDigits: 4 });
+    const qtyInput = value => {
+        const number = Number(value || 0);
+        return Number.isInteger(number) ? String(number) : number.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+    };
     const rupiahValue = value => Number(String(value ?? '').replace(/[^0-9]/g, '')) || 0;
     const escapeHtml = value => { const node = document.createElement('div'); node.textContent = value ?? ''; return node.innerHTML; };
     const customerName = () => customerSelect.options[customerSelect.selectedIndex]?.text || 'Pelanggan Umum';
@@ -424,7 +462,18 @@ const initializeScannerFirstPos = () => {
             const units = (item.units || [{ id: item.unit_id, text: item.unit }]).map(unit => `<option value="${unit.id}" ${Number(unit.id) === Number(item.unit_id) ? 'selected' : ''}>${escapeHtml(unit.text)}</option>`).join('');
             const row = document.createElement('article');
             row.className = `pos-cart-item pos-price-${statusClass}`;
-            row.innerHTML = `<div class="pos-cart-product d-flex gap-2">${image}<div class="min-w-0"><div class="fw-bold pos-product-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div><div class="text-muted fs-8 text-truncate">SKU ${escapeHtml(item.sku)}</div><div class="d-flex flex-wrap align-items-center gap-2 mt-1"><select class="form-select form-select-sm cart-unit" data-searchable="false">${units}</select><span class="fs-8 ${item.stock_sufficient ? 'text-muted' : 'text-danger fw-bold'}">Stok ${qty(item.stock)}</span></div></div></div><div class="pos-cart-qty"><span class="pos-cart-label">Qty</span><div class="pos-qty-control"><button type="button" class="btn btn-light cart-minus" aria-label="Kurangi qty"><i class="ki-outline ki-minus"></i></button><input type="number" min="0.0001" step="0.0001" class="form-control text-center cart-qty" value="${item.quantity}"><button type="button" class="btn btn-light cart-plus" aria-label="Tambah qty"><i class="ki-outline ki-plus"></i></button></div></div><div class="pos-cart-price"><span class="pos-cart-label">Harga</span><input type="text" inputmode="numeric" class="form-control form-control-sm pos-price-input cart-price" value="${money(item.selected_price)}"><div class="fs-8 mt-1"><strong>${escapeHtml(pricing.ring || '-')}</strong> / ${escapeHtml(pricing.status_label || 'Memuat')}</div><div class="text-muted fs-8">Batas ${money(pricing.minimum_price)} - ${money(pricing.maximum_price)}</div>${pricing.status_message ? `<div class="fs-8 ${pricing.approval_required ? 'text-danger fw-semibold' : 'text-muted'}">${escapeHtml(pricing.status_message)}</div>` : ''}${item.error ? `<div class="text-danger fs-8">${escapeHtml(item.error)}</div>` : ''}</div><div class="pos-cart-discount"><span class="pos-cart-label">Diskon</span><div class="input-group input-group-sm"><input type="number" min="0" max="100" step="0.01" class="form-control cart-discount" value="${item.discount_percent || 0}"><span class="input-group-text">%</span></div></div><div class="pos-cart-subtotal"><span class="pos-cart-label">Subtotal</span><strong class="text-nowrap">${item.loading ? '<span class="spinner-border spinner-border-sm"></span>' : money(item.line_total)}</strong></div><div class="pos-cart-action"><button type="button" class="btn btn-sm btn-icon btn-light-danger cart-remove" title="Hapus" aria-label="Hapus produk"><i class="ki-outline ki-trash"></i></button></div>`;
+            row.innerHTML = `
+                <div class="pos-cart-main">
+                    <div class="pos-cart-product d-flex gap-3">${image}<div class="min-w-0"><div class="fw-bold fs-6 pos-product-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div><div class="text-muted fs-8 text-truncate">SKU ${escapeHtml(item.sku)}</div><div class="d-flex flex-wrap align-items-center gap-2 mt-2"><select class="form-select form-select-sm cart-unit" data-searchable="false">${units}</select><span class="fs-8 ${item.stock_sufficient ? 'text-muted' : 'text-danger fw-bold'}">Stok ${qty(item.stock)}</span></div></div></div>
+                    <div class="pos-cart-qty"><span class="pos-cart-label">Qty</span><div class="pos-qty-control"><button type="button" class="btn btn-light cart-minus" aria-label="Kurangi qty"><i class="ki-outline ki-minus fs-3"></i></button><input type="number" min="0.0001" step="0.0001" class="form-control text-center cart-qty" value="${qtyInput(item.quantity)}"><button type="button" class="btn btn-light cart-plus" aria-label="Tambah qty"><i class="ki-outline ki-plus fs-3"></i></button></div></div>
+                    <div class="pos-cart-action"><button type="button" class="btn btn-icon btn-light-danger cart-remove" title="Hapus" aria-label="Hapus produk"><i class="ki-outline ki-trash fs-3"></i></button></div>
+                </div>
+                <div class="pos-cart-details">
+                    <div class="pos-cart-price"><span class="pos-cart-label">Harga</span><div class="pos-cart-price-editor"><i class="ki-outline ki-tag fs-3"></i><input type="text" inputmode="numeric" class="form-control pos-price-input cart-price" value="${money(item.selected_price)}" aria-label="Harga jual ${escapeHtml(item.name)}"></div></div>
+                    <div class="pos-cart-guidance"><div class="fs-7"><strong>${escapeHtml(pricing.ring || '-')}</strong> / ${escapeHtml(pricing.status_label || 'Memuat')}</div><div class="text-muted fs-8 mt-1">Batas ${money(pricing.minimum_price)} - ${money(pricing.maximum_price)}</div>${pricing.status_message ? `<div class="fs-8 ${pricing.approval_required ? 'text-danger fw-semibold' : 'text-muted'}">${escapeHtml(pricing.status_message)}</div>` : ''}${item.error ? `<div class="text-danger fs-8">${escapeHtml(item.error)}</div>` : ''}</div>
+                    <div class="pos-cart-discount"><span class="pos-cart-label">Diskon</span><div class="input-group"><input type="number" min="0" max="100" step="0.01" class="form-control cart-discount" value="${item.discount_percent || 0}"><span class="input-group-text">%</span></div></div>
+                    <div class="pos-cart-subtotal"><span class="pos-cart-label">Subtotal</span><strong class="text-nowrap">${item.loading ? '<span class="spinner-border spinner-border-sm"></span>' : money(item.line_total)}</strong></div>
+                </div>`;
             bindImageFallback(row, 'pos-cart-image', 'fs-2');
             row.querySelector('.cart-minus').addEventListener('click', () => updateQuantity(item, Math.max(Number(item.quantity) - 1, 0)));
             row.querySelector('.cart-plus').addEventListener('click', () => updateQuantity(item, Number(item.quantity) + 1));
@@ -559,6 +608,7 @@ const initializeScannerFirstPos = () => {
             document.getElementById('success-change').textContent = money(data.sale.change);
             receiptPrintUrl = data.sale.print_url;
             document.getElementById('success-detail').href = data.sale.show_url;
+            clearTransaction();
             successModal.show();
         } catch (error) {
             window.Swal ? Swal.fire('Checkout gagal', error.message, 'error') : alert(error.message);
@@ -610,7 +660,7 @@ const initializeScannerFirstPos = () => {
     function startNewTransaction() {
         successModal.hide();
         receiptPrintUrl = null;
-        clearTransaction();
+        focusScanner();
     }
 
     function printReceipt() {
