@@ -28,9 +28,10 @@ return new class extends Migration
             if (! Schema::hasTable($table)) {
                 continue;
             }
-            $connection = Schema::getConnection();
-            $existing = $connection->select("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='{$table}' AND name='{$indexName}'");
-            if (empty($existing)) {
+            $indexExists = collect(Schema::getIndexes($table))
+                ->contains(fn (array $index): bool => ($index['name'] ?? null) === $indexName);
+
+            if (! $indexExists) {
                 Schema::table($table, function (Blueprint $table) use ($columns, $indexName): void {
                     $table->index($columns, $indexName);
                 });

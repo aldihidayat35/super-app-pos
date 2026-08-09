@@ -87,7 +87,7 @@ return new class extends Migration
             $table->decimal('amount', 18, 2);
             $table->timestamps();
 
-            $table->unique(['receivable_payment_id', 'receivable_id']);
+            $table->unique(['receivable_payment_id', 'receivable_id'], 'receivable_payment_receivable_unique');
         });
 
         Schema::create('collection_notes', function (Blueprint $table): void {

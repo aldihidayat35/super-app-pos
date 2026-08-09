@@ -104,7 +104,8 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
 
-            $table->index(['document_type', 'document_id', 'created_at']);
+            // MySQL membatasi panjang identifier hingga 64 karakter.
+            $table->index(['document_type', 'document_id', 'created_at'], 'doc_status_history_lookup_index');
         });
 
         Schema::create('approvals', function (Blueprint $table): void {
