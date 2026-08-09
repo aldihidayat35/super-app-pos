@@ -232,6 +232,40 @@ class ProductMasterTest extends TestCase
 
         $preview = session('product_import_preview');
         $this->assertNotEmpty($preview['errors']);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.products.import.index'))
+            ->assertOk()
+            ->assertSee('Masih ada error validasi')
+            ->assertSee('Baris 2');
+    }
+
+    public function test_valid_import_preview_survives_page_render_and_can_be_committed(): void
+    {
+        ProductCategory::factory()->create(['code' => 'UMUM']);
+        Unit::factory()->create(['code' => 'PCS']);
+        $file = UploadedFile::fake()->createWithContent('produk-valid.csv', "sku,name,category_code,brand_code,base_unit_code,status,minimum_order,minimum_stock,safety_stock\nPRD-IMPORT-VALID,Produk Import Valid,UMUM,,PCS,active,1,10,5\n");
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.products.import.preview'), ['file' => $file])
+            ->assertRedirect(route('admin.products.import.index'))
+            ->assertSessionHas('product_import_preview');
+
+        $this->get(route('admin.products.import.index'))
+            ->assertOk()
+            ->assertSee('Semua baris valid')
+            ->assertSee('Commit Import');
+
+        $this->post(route('admin.products.import.commit'))
+            ->assertRedirect(route('admin.products.import.index'))
+            ->assertSessionHas('notification.type', 'success')
+            ->assertSessionMissing('product_import_preview');
+
+        $this->assertDatabaseHas('products', [
+            'sku' => 'PRD-IMPORT-VALID',
+            'name' => 'Produk Import Valid',
+            'status' => 'active',
+        ]);
     }
 
     public function test_view_only_role_cannot_create_product(): void

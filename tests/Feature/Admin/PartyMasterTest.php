@@ -313,12 +313,48 @@ class PartyMasterTest extends TestCase
             ->assertRedirect(route('admin.parties.import.index', 'suppliers'))
             ->assertSessionHas('suppliers_import_preview');
         $this->assertNotEmpty(session('suppliers_import_preview')['errors']);
+        $this->get(route('admin.parties.import.index', 'suppliers'))
+            ->assertOk()
+            ->assertSee('Masih ada error validasi')
+            ->assertSee('Baris 2');
 
         $this->actingAs($this->admin)
             ->post(route('admin.parties.import.preview', 'customers'), ['file' => $customerFile])
             ->assertRedirect(route('admin.parties.import.index', 'customers'))
             ->assertSessionHas('customers_import_preview');
         $this->assertNotEmpty(session('customers_import_preview')['errors']);
+        $this->get(route('admin.parties.import.index', 'customers'))
+            ->assertOk()
+            ->assertSee('Masih ada error validasi')
+            ->assertSee('Baris 2');
+    }
+
+    public function test_valid_supplier_import_preview_survives_page_render_and_can_be_committed(): void
+    {
+        $file = UploadedFile::fake()->createWithContent(
+            'suppliers-valid.csv',
+            "code,name,contact_name,whatsapp_number,email,city,address,payment_term_days\nSUP-IMPORT-VALID,Supplier Import Valid,Admin,081234567890,supplier-import@example.test,Jakarta,Alamat Supplier,30\n",
+        );
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.parties.import.preview', 'suppliers'), ['file' => $file])
+            ->assertRedirect(route('admin.parties.import.index', 'suppliers'))
+            ->assertSessionHas('suppliers_import_preview');
+
+        $this->get(route('admin.parties.import.index', 'suppliers'))
+            ->assertOk()
+            ->assertSee('Semua baris valid')
+            ->assertSee('Commit Import');
+
+        $this->post(route('admin.parties.import.commit', 'suppliers'))
+            ->assertRedirect(route('admin.parties.import.index', 'suppliers'))
+            ->assertSessionHas('notification.type', 'success')
+            ->assertSessionMissing('suppliers_import_preview');
+
+        $this->assertDatabaseHas('suppliers', [
+            'code' => 'SUP-IMPORT-VALID',
+            'name' => 'Supplier Import Valid',
+        ]);
     }
 
     public function test_b2b_user_only_sees_own_customer(): void

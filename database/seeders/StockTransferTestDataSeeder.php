@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class StockTransferTestDataSeeder extends Seeder
 {
@@ -12,6 +12,6 @@ class StockTransferTestDataSeeder extends Seeder
      */
     public function run(): void
     {
-        \Illuminate\Support\Facades\DB::table('stock_transfers')->where('status', 'draft')->delete();
+        DB::table('stock_transfers')->where('status', 'draft')->delete();
     }
 }

@@ -99,7 +99,7 @@
                     <tbody id="transfer-items">
                         @foreach($initialItems as $index => $item)
                             <tr class="transfer-item-row">
-                                <td><select name="items[{{ $index }}][product_id]" class="form-select form-select-sm product-select" required><option value="">Pilih produk</option>@if($selectedProducts->has((int)($item['product_id'] ?? 0)))<option value="{{ $item['product_id'] }}" selected>{{ $selectedProducts->get((int)$item['product_id'])->sku }} — {{ $selectedProducts->get((int)$item['product_id'])->name }}</option>@endif</select></td>
+                                <td><select name="items[{{ $index }}][product_id]" class="form-select form-select-sm product-select" data-searchable="false" required><option value="">Pilih produk</option>@if($selectedProducts->has((int)($item['product_id'] ?? 0)))<option value="{{ $item['product_id'] }}" selected>{{ $selectedProducts->get((int)$item['product_id'])->sku }} — {{ $selectedProducts->get((int)$item['product_id'])->name }}</option>@endif</select></td>
                                 <td><input name="items[{{ $index }}][quantity_requested]" type="number" step="1" min="1" value="{{ $item['quantity_requested'] ?? 1 }}" class="form-control form-control-sm" required></td>
                                 <td><input name="items[{{ $index }}][quantity_approved]" type="number" step="1" min="0" value="{{ $item['quantity_approved'] ?? 1 }}" class="form-control form-control-sm"></td>
                                 <td><select name="items[{{ $index }}][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2" data-selected="{{ $item['source_warehouse_location_id'] ?? '' }}"><option value="">Gunakan default</option>@if($selectedWarehouseLocations->has((int)($item['source_warehouse_location_id'] ?? 0)))<option value="{{ $item['source_warehouse_location_id'] }}" selected>{{ $selectedWarehouseLocations->get((int)$item['source_warehouse_location_id'])->full_code }}</option>@endif</select></td>
@@ -118,7 +118,7 @@
 
     <template id="transfer-item-template">
         <tr class="transfer-item-row">
-            <td><select name="items[__INDEX__][product_id]" class="form-select form-select-sm product-select" required><option value="">Pilih produk</option></select></td>
+            <td><select name="items[__INDEX__][product_id]" class="form-select form-select-sm product-select" data-searchable="false" required><option value="">Pilih produk</option></select></td>
             <td><input name="items[__INDEX__][quantity_requested]" type="number" step="1" min="1" value="1" class="form-control form-control-sm" required></td>
             <td><input name="items[__INDEX__][quantity_approved]" type="number" step="1" min="0" value="1" class="form-control form-control-sm"></td>
             <td><select name="items[__INDEX__][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2"><option value="">Gunakan default</option></select></td>

@@ -4,7 +4,9 @@ namespace Tests\Feature\Admin;
 
 use App\DataTables\UsersDataTable;
 use App\Models\ApprovalRequest;
+use App\Models\PurchaseRequest;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Models\WorkLocation;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -271,6 +274,110 @@ class UserRbacManagementTest extends TestCase
         $this->actingAs($admin)->get(route('admin.users.export'))
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
+
+    #[Test]
+    public function super_admin_can_delete_an_unused_user_from_the_users_list(): void
+    {
+        Storage::fake('public');
+        $superAdmin = $this->createAdmin();
+        $target = User::factory()->create([
+            'email' => 'delete-target@example.test',
+            'avatar_path' => 'avatars/delete-target.jpg',
+        ]);
+        $target->assignRole(Role::findByName('kasir'));
+        Storage::disk('public')->put($target->avatar_path, 'avatar');
+
+        DB::table('sessions')->insert([
+            'id' => 'delete-target-session',
+            'user_id' => $target->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => 'test',
+            'last_activity' => now()->timestamp,
+        ]);
+        DB::table('password_reset_tokens')->insert([
+            'email' => $target->email,
+            'token' => 'test-token',
+            'created_at' => now(),
+        ]);
+
+        $dataTable = $this->actingAs($superAdmin)->getJson(route('admin.users.datatable', [
+            'start' => 0,
+            'length' => 15,
+        ]));
+        $actionHtml = collect($dataTable->json('data'))->firstWhere('id', $target->id)['action'];
+        $ownActionHtml = collect($dataTable->json('data'))->firstWhere('id', $superAdmin->id)['action'];
+
+        $dataTable->assertOk();
+        $this->assertStringContainsString('id="delete-user-'.$target->id.'"', $actionHtml);
+        $this->assertStringContainsString('data-confirm-form', $actionHtml);
+        $this->assertStringNotContainsString('id="delete-user-'.$superAdmin->id.'"', $ownActionHtml);
+
+        $this->actingAs($superAdmin)
+            ->delete(route('admin.users.destroy', $target))
+            ->assertRedirect(route('admin.users.index'))
+            ->assertSessionHas('notification.type', 'success');
+
+        $this->assertDatabaseMissing('users', ['id' => $target->id]);
+        $this->assertDatabaseMissing('model_has_roles', ['model_id' => $target->id, 'model_type' => User::class]);
+        $this->assertDatabaseMissing('sessions', ['user_id' => $target->id]);
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => $target->email]);
+        Storage::disk('public')->assertMissing('avatars/delete-target.jpg');
+    }
+
+    #[Test]
+    public function user_deletion_is_restricted_to_super_admin_and_cannot_target_the_current_account(): void
+    {
+        $superAdmin = $this->createAdmin();
+        $adminUser = User::factory()->create();
+        $adminUser->assignRole(Role::findByName('admin_user'));
+        $target = User::factory()->create();
+
+        $adminDataTable = $this->actingAs($adminUser)->getJson(route('admin.users.datatable', [
+            'start' => 0,
+            'length' => 15,
+        ]));
+        $targetActionHtml = collect($adminDataTable->json('data'))->firstWhere('id', $target->id)['action'];
+
+        $adminDataTable->assertOk();
+        $this->assertStringNotContainsString('id="delete-user-'.$target->id.'"', $targetActionHtml);
+
+        $this->actingAs($adminUser)
+            ->delete(route('admin.users.destroy', $target))
+            ->assertForbidden();
+
+        $this->actingAs($superAdmin)
+            ->delete(route('admin.users.destroy', $superAdmin))
+            ->assertSessionHasErrors('user');
+
+        $this->assertDatabaseHas('users', ['id' => $target->id]);
+        $this->assertDatabaseHas('users', ['id' => $superAdmin->id]);
+    }
+
+    #[Test]
+    public function user_with_transaction_history_cannot_be_deleted(): void
+    {
+        $superAdmin = $this->createAdmin();
+        $target = User::factory()->create();
+        $target->assignRole(Role::findByName('purchasing'));
+        $warehouse = Warehouse::factory()->create(['manager_user_id' => $superAdmin->id]);
+        PurchaseRequest::query()->create([
+            'number' => 'PR-DELETE-GUARD',
+            'warehouse_id' => $warehouse->id,
+            'requester_user_id' => $target->id,
+            'priority' => 'normal',
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->from(route('admin.users.index'))
+            ->delete(route('admin.users.destroy', $target))
+            ->assertRedirect(route('admin.users.index'))
+            ->assertSessionHas('notification.type', 'danger');
+
+        $this->assertDatabaseHas('users', ['id' => $target->id]);
+        $this->assertTrue($target->fresh()->hasRole('purchasing'));
     }
 
     #[Test]

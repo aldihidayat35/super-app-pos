@@ -110,6 +110,19 @@ class Product extends Model
         return $this->hasMany(Stock::class);
     }
 
+    /**
+     * Accessor for total_stock: computes from stock records in real-time.
+     * Falls back to the stored column if stocks is already loaded.
+     */
+    public function getTotalStockAttribute(mixed $value): string
+    {
+        if ($this->relationLoaded('stocks')) {
+            return (string) $this->stocks->sum('quantity_on_hand');
+        }
+
+        return (string) $this->getRawOriginal('total_stock');
+    }
+
     /** @return HasMany<ProductPrice, $this> */
     public function prices(): HasMany
     {

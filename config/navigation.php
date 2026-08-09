@@ -368,14 +368,20 @@ return [
                 'permission' => 'pos.create',
             ],
             [
-                'label' => 'Permintaan Restock',
+                'label' => 'Permintaan Restok',
                 'route' => 'retail.restock-requests.index',
                 'active' => ['retail.restock-requests.*'],
                 'permission' => 'stock_transfers.create',
             ],
             [
-                'label' => 'Terima Transfer',
+                'label' => 'Daftar Transfer',
                 'route' => 'warehouse.stock-transfers.index',
+                'active' => ['warehouse.stock-transfers.*'],
+                'permission' => 'stock_transfers.view',
+            ],
+            [
+                'label' => 'Terima Transfer',
+                'route' => 'retail.stock-transfers.receiving',
                 'active' => ['retail.stock-transfers.*'],
                 'permission' => 'stock_transfers.receive',
             ],

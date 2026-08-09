@@ -26,6 +26,11 @@ class UserPolicy
         return $user->can('admin.users.update');
     }
 
+    public function delete(User $user, User $model): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
     public function assignLocations(User $user, User $model): bool
     {
         return $user->can('admin.users.assign_locations');

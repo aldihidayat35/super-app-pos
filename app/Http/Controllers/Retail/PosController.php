@@ -16,6 +16,7 @@ use App\Models\ProductBrand;
 use App\Models\ProductCategory;
 use App\Services\Retail\PosCatalogService;
 use App\Services\Retail\PosService;
+use App\Support\Decimal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -119,14 +120,22 @@ class PosController extends Controller
     {
         abort_unless($request->user()->can('pos.create'), 403);
 
-        return view('retail.pos.holds', [
-            'holds' => PosHold::query()
-                ->with(['branch', 'customer', 'cashier'])
-                ->where('cashier_user_id', $request->user()->id)
-                ->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())
-                ->latest('id')
-                ->paginate(15),
-        ]);
+        $holds = PosHold::query()
+            ->with(['branch', 'customer', 'cashier'])
+            ->where('cashier_user_id', $request->user()->id)
+            ->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())
+            ->latest('id')
+            ->paginate(15);
+        $holds->getCollection()->each(function (PosHold $hold): void {
+            $items = collect((array) data_get($hold->cart_snapshot, 'items', $hold->cart_snapshot));
+            $hold->setAttribute('snapshot_item_count', $items->count());
+            $hold->setAttribute('snapshot_total_qty', $items->reduce(
+                fn (string $carry, mixed $item): string => Decimal::add($carry, (string) data_get($item, 'quantity', 0)),
+                '0.0000',
+            ));
+        });
+
+        return view('retail.pos.holds', ['holds' => $holds]);
     }
 
     public function holdData(Request $request): JsonResponse

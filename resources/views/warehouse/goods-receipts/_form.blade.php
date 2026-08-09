@@ -19,7 +19,7 @@
 </form>
 
 @if($selectedPo)
-    <form method="POST" action="{{ $action }}" enctype="multipart/form-data">
+    <form id="goods-receipt-form" method="POST" action="{{ $action }}" enctype="multipart/form-data">
         @csrf
         @if(($method ?? 'POST') !== 'POST') @method($method) @endif
         <input type="hidden" name="purchase_order_id" value="{{ $selectedPo->id }}">
@@ -91,8 +91,8 @@
             </div>
             @if($errors->any())<div class="alert alert-danger mt-4">Periksa kembali form penerimaan. Total QC harus sama dengan qty datang dan accepted tidak boleh melebihi outstanding.</div>@endif
             <div class="d-flex justify-content-end gap-3">
-                <button name="action" value="draft" class="btn btn-light">Simpan Draft</button>
-                <button name="action" value="post" class="btn btn-primary" id="goods-receipt-post" data-confirm="Posting receipt akan menambah stok dan memperbarui HPP. Lanjutkan?">Simpan & Posting</button>
+                <button name="action" value="draft" class="btn btn-light" id="goods-receipt-draft">Simpan Draft</button>
+                <button name="action" value="post" class="btn btn-primary" id="goods-receipt-post" data-confirm="Posting receipt akan menambah stok dan memperbarui HPP. Lanjutkan?" data-confirm-form="goods-receipt-form" data-confirm-title="Konfirmasi Posting Receipt" data-confirm-icon="warning" data-confirm-button="Ya, Posting">Simpan & Posting</button>
             </div>
         </x-metronic.card>
     </form>
@@ -156,6 +156,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     rows.forEach((row) => row.querySelectorAll('.qc-received, .qc-category').forEach((input) => input.addEventListener('input', refresh)));
     refresh();
+
+    // Submit feedback: show loading state on form submission
+    const form = document.getElementById('goods-receipt-form');
+    const draftBtn = document.getElementById('goods-receipt-draft');
+    const postBtn = document.getElementById('goods-receipt-post');
+
+    if (form) {
+        form.addEventListener('submit', (event) => {
+            const isPost = form.action.includes('goods-receipts') && (
+                (event.submitter && event.submitter.value === 'post') ||
+                (postBtn && postBtn === event.submitter)
+            );
+
+            // Disable both buttons to prevent double-submit
+            if (draftBtn) draftBtn.disabled = true;
+            if (postBtn) postBtn.disabled = true;
+
+            // Show loading state
+            const submitBtn = event.submitter || (isPost ? postBtn : draftBtn);
+            if (submitBtn) {
+                const originalText = submitBtn.textContent;
+                submitBtn.dataset.originalText = originalText;
+                submitBtn.textContent = isPost ? 'Memposting...' : 'Menyimpan...';
+                submitBtn.addEventListener('click', (e) => e.preventDefault());
+            }
+
+            // Re-enable on error (handled by server validation)
+            window.addEventListener('error', () => {
+                if (draftBtn) draftBtn.disabled = false;
+                if (postBtn) postBtn.disabled = false;
+                [draftBtn, postBtn].forEach(btn => {
+                    if (btn && btn.dataset.originalText) {
+                        btn.textContent = btn.dataset.originalText;
+                    }
+                });
+            }, { once: true });
+        });
+    }
 });
 </script>
 @endpush

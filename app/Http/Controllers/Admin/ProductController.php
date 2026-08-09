@@ -45,12 +45,16 @@ class ProductController extends Controller
         ];
 
         $products = Product::query()
-            ->with(['category', 'brand', 'baseUnit'])
+            ->with(['category', 'brand', 'baseUnit', 'stocks'])
             ->when($filters['q'] !== '', fn ($query) => $query->where(fn ($inner) => $inner->where('sku', 'like', "%{$filters['q']}%")->orWhere('name', 'like', "%{$filters['q']}%")))
             ->when($filters['category_id'], fn ($query, $value) => $query->where('category_id', $value))
             ->when($filters['brand_id'], fn ($query, $value) => $query->where('brand_id', $value))
             ->when($filters['status'], fn ($query, $value) => $query->where('status', $value))
-            ->when($filters['stock_filter'] === 'minimum', fn ($query) => $query->whereColumn('total_stock', '<=', 'minimum_stock'))
+            ->when($filters['stock_filter'] === 'minimum', function ($query) {
+                $query->whereRaw(
+                    '(SELECT COALESCE(SUM(quantity_on_hand), 0) FROM stocks WHERE stocks.product_id = products.id) <= minimum_stock'
+                );
+            })
             ->orderBy('name')
             ->paginate(15)
             ->withQueryString();

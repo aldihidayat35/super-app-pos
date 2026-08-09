@@ -43,10 +43,10 @@
         </div>
         <button class="btn btn-light-primary">Filter</button>
     </form>
-    <div class="table-responsive"><table class="table table-row-dashed align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Kode</th><th>Nama</th><th>Kategori</th><th>Merek</th><th>Satuan</th><th>Status</th><th>Stok Total</th><th>HPP</th><th>Harga Minimum</th><th class="text-end">Aksi</th></tr></thead><tbody>
+    <div class="table-responsive"><table class="table table-row-dashed align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Kode</th><th>Nama</th><th>Kategori</th><th>Merek</th><th>Satuan</th><th>Status</th><th class="text-end">Stok Total</th><th>HPP</th><th>Harga Minimum</th><th class="text-end">Aksi</th></tr></thead><tbody>
     @forelse($products as $product)
         <tr>
-            <td class="fw-bold">{{ $product->sku }}</td><td><a href="{{ route('admin.products.show', $product) }}" class="fw-bold text-gray-900 text-hover-primary">{{ $product->name }}</a></td><td>{{ $product->category?->name }}</td><td>{{ $product->brand?->name ?: '-' }}</td><td>{{ $product->baseUnit?->symbol }}</td><td><x-metronic.status-badge :status="$product->status->value" :label="$product->status->label()" /></td><td>{{ $product->total_stock }}</td>
+            <td class="fw-bold">{{ $product->sku }}</td><td><a href="{{ route('admin.products.show', $product) }}" class="fw-bold text-gray-900 text-hover-primary">{{ $product->name }}</a></td><td>{{ $product->category?->name }}</td><td>{{ $product->brand?->name ?: '-' }}</td><td>{{ $product->baseUnit?->symbol }}</td><td><x-metronic.status-badge :status="$product->status->value" :label="$product->status->label()" /></td><td class="text-end fw-bold">{{ intval($product->total_stock) }}</td>
             <td>@can('viewSensitiveMargin', App\Models\Product::class){{ App\Support\CurrencyFormatter::rupiah($product->cost_price) }}@else - @endcan</td>
             <td>@can('viewSensitiveMargin', App\Models\Product::class){{ App\Support\CurrencyFormatter::rupiah($product->minimum_price) }}@else - @endcan</td>
             <td class="text-end"><a href="{{ route('admin.products.show', $product) }}" class="btn btn-sm btn-light">Detail</a> @can('update', $product)<a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-light-primary">Edit</a>@endcan</td>

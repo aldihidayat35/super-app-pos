@@ -86,17 +86,20 @@ class UsersDataTable
 
         $recordsFiltered = (clone $query)->count();
         $rows = $query->offset($start)->limit($length)->get();
+        $actor = $this->request->user();
+        $canDeleteUsers = $actor?->hasRole('super_admin') === true;
+        $actorId = $actor ? (int) $actor->getKey() : null;
 
         return [
             'draw' => $draw,
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
-            'data' => $rows->map(fn (User $u) => $this->row($u))->all(),
+            'data' => $rows->map(fn (User $u) => $this->row($u, $canDeleteUsers, $actorId))->all(),
         ];
     }
 
     /** @return array<string, int|string> */
-    private function row(User $user): array
+    private function row(User $user, bool $canDeleteUsers, ?int $actorId): array
     {
         $primary = $user->workLocations
             ->first(fn (WorkLocation $location): bool => (bool) ($location->pivot->is_default ?? false));
@@ -126,6 +129,19 @@ class UsersDataTable
 
         $actions = '<a href="'.$detailUrl.'" class="btn btn-sm btn-light me-1">Detail</a>'
             .'<a href="'.$editUrl.'" class="btn btn-sm btn-light-primary me-1">Edit</a>';
+
+        if ($canDeleteUsers && $actorId !== (int) $user->getKey()) {
+            $formId = 'delete-user-'.$user->getKey();
+            $deleteUrl = route('admin.users.destroy', $user);
+            $confirmation = 'Hapus akun '.$user->name.' secara permanen? Tindakan ini tidak dapat dibatalkan.';
+            $actions .= '<form id="'.$formId.'" method="POST" action="'.$deleteUrl.'" class="d-inline">'
+                .'<input type="hidden" name="_token" value="'.csrf_token().'">'
+                .'<input type="hidden" name="_method" value="DELETE">'
+                .'<button type="button" class="btn btn-sm btn-icon btn-light-danger" title="Hapus akun" aria-label="Hapus akun '.e($user->name).'"'
+                .' data-confirm data-confirm-form="'.$formId.'" data-confirm-title="Hapus akun?"'
+                .' data-confirm-text="'.e($confirmation).'" data-confirm-button="Ya, hapus akun">'
+                .'<i class="ki-outline ki-trash fs-5"></i></button></form>';
+        }
 
         return [
             'id' => $user->id,

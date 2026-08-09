@@ -13,13 +13,18 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductImportController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('import', Product::class);
+        $preview = $request->session()->get('product_import_preview');
+
+        if (is_array($preview)) {
+            $request->session()->keep('product_import_preview');
+        }
 
         return view('admin.products.import', [
-            'preview' => session('product_import_preview'),
-            'result' => session('product_import_result'),
+            'preview' => $preview,
+            'result' => $request->session()->get('product_import_result'),
         ]);
     }
 
@@ -33,7 +38,7 @@ class ProductImportController extends Controller
     public function commit(Request $request, ProductImportService $service): RedirectResponse
     {
         $this->authorize('import', Product::class);
-        $preview = session('product_import_preview');
+        $preview = $request->session()->get('product_import_preview');
 
         if (! is_array($preview) || filled($preview['errors'] ?? [])) {
             return back()->with('notification', ['type' => 'danger', 'message' => 'Import belum dapat diproses karena masih ada error validasi.']);
@@ -41,6 +46,7 @@ class ProductImportController extends Controller
 
         $result = $service->commit($preview['rows'] ?? []);
         activity()->causedBy($request->user())->log('product.import.committed');
+        $request->session()->forget('product_import_preview');
 
         return redirect()->route('admin.products.import.index')->with('product_import_result', $result)->with('notification', ['type' => 'success', 'message' => 'Import produk berhasil diproses.']);
     }

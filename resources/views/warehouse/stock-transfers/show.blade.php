@@ -116,7 +116,7 @@
                     <div class="col-md-3"><div class="text-muted">Tujuan</div><div class="fw-bold">{{ $transfer->destinationWorkLocation?->name }}</div></div>
                     <div class="col-md-3"><div class="text-muted">Tanggal</div><div>{{ $transfer->transfer_date?->format('d/m/Y') }}</div></div>
                     <div class="col-md-3"><div class="text-muted">Status</div><x-metronic.status-badge :status="$transfer->status" /></div>
-                    <div class="col-md-3"><div class="text-muted">Request Asal</div><div>{{ $transfer->restockRequest?->number ?: '-' }}</div></div>
+                    <div class="col-md-3"><div class="text-muted">Sumber Permintaan</div><div>@if($transfer->restockRequest)<a href="{{ route('retail.restock-requests.show', $transfer->restockRequest) }}" class="fw-bold">{{ $transfer->restockRequest->number }}</a>@else-@endif</div></div>
                     <div class="col-md-3"><div class="text-muted">Pengirim</div><div>{{ $transfer->shipper?->name ?: '-' }}</div></div>
                     <div class="col-md-3"><div class="text-muted">Penerima</div><div>{{ $transfer->receiver?->name ?: '-' }}</div></div>
                     <div class="col-md-3"><div class="text-muted">Resi/Kendaraan</div><div>{{ $transfer->tracking_number ?: $transfer->vehicle_number ?: '-' }}</div></div>

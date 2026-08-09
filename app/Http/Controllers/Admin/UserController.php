@@ -11,12 +11,14 @@ use App\Models\User;
 use App\Models\WorkLocation;
 use DateTimeInterface;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
@@ -276,6 +278,66 @@ class UserController extends Controller
         ]);
     }
 
+    public function destroy(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('delete', $user);
+
+        $actor = $request->user();
+        abort_unless($actor?->hasRole('super_admin'), 403);
+
+        if ($actor->is($user)) {
+            throw ValidationException::withMessages([
+                'user' => 'Anda tidak dapat menghapus akun yang sedang digunakan.',
+            ]);
+        }
+
+        if ($user->hasRole('super_admin') && User::role('super_admin')->count() <= 1) {
+            throw ValidationException::withMessages([
+                'user' => 'Super admin terakhir tidak dapat dihapus.',
+            ]);
+        }
+
+        $avatarPath = $user->avatar_path;
+
+        try {
+            DB::transaction(function () use ($request, $user): void {
+                $this->audit($request, $user, 'admin.user.deleted', [
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'roles' => $user->roles()->pluck('name')->all(),
+                ]);
+
+                $user->syncRoles([]);
+                $user->syncPermissions([]);
+                $user->workLocations()->detach();
+                $user->customers()->detach();
+                DB::table('sessions')->where('user_id', $user->id)->delete();
+                DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+                $user->delete();
+            });
+        } catch (QueryException $exception) {
+            if (! $this->isForeignKeyConstraintViolation($exception)) {
+                throw $exception;
+            }
+
+            return back()->with('notification', [
+                'type' => 'danger',
+                'message' => 'Akun tidak dapat dihapus karena masih terkait dengan histori transaksi atau data operasional. Nonaktifkan akun agar histori tetap utuh.',
+            ]);
+        }
+
+        if ($avatarPath) {
+            Storage::disk('public')->delete($avatarPath);
+        }
+
+        return redirect()->route('admin.users.index')->with('notification', [
+            'type' => 'success',
+            'message' => 'Akun pengguna berhasil dihapus secara permanen.',
+        ]);
+    }
+
     public function sendPasswordReset(Request $request, User $user): RedirectResponse
     {
         abort_unless($request->user()?->can('admin.users.reset_password'), 403);
@@ -399,5 +461,13 @@ class UserController extends Controller
         $location = $user->workLocations->first();
 
         return $location?->getRelationValue('pivot')?->getAttribute($key);
+    }
+
+    private function isForeignKeyConstraintViolation(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'foreign key constraint')
+            || str_contains($message, 'violates foreign key constraint');
     }
 }

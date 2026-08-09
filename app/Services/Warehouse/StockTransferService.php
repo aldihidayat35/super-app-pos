@@ -78,28 +78,71 @@ class StockTransferService
         });
     }
 
-    public function createFromRestockRequest(RestockRequest $request, User $actor): StockTransfer
+    /** @param array<string, mixed> $data */
+    public function createFromRestockRequest(RestockRequest $request, User $actor, array $data = []): StockTransfer
     {
-        return DB::transaction(function () use ($request, $actor): StockTransfer {
+        return DB::transaction(function () use ($request, $actor, $data): StockTransfer {
             $request = RestockRequest::query()->with(['items.product.baseUnit', 'branch.workLocation', 'sourceWarehouse.workLocation'])->lockForUpdate()->findOrFail($request->id);
-
-            if ($request->status !== RestockRequestStatus::APPROVED) {
-                throw ServiceException::validation('Request restock harus approved sebelum dibuat transfer.');
+            $existing = StockTransfer::query()->where('restock_request_id', $request->id)->first();
+            if ($existing instanceof StockTransfer) {
+                return $existing->load(['items.product', 'restockRequest', 'sourceWorkLocation', 'destinationWorkLocation']);
             }
 
-            if (! $request->sourceWarehouse?->workLocation || ! $request->branch?->workLocation) {
-                throw ServiceException::validation('Lokasi sumber/tujuan request belum lengkap.');
+            if ($request->status !== RestockRequestStatus::APPROVED) {
+                throw ServiceException::validation('Permintaan restok belum disetujui.');
+            }
+
+            $sourceWarehouseId = (int) ($data['source_warehouse_id'] ?? $request->source_warehouse_id);
+            $sourceWarehouse = Warehouse::query()->with('workLocation')->where('is_active', true)->find($sourceWarehouseId);
+            if (! $sourceWarehouse?->workLocation) {
+                throw ServiceException::validation('Gudang sumber belum dipilih.');
+            }
+            if (! $request->branch?->workLocation) {
+                throw ServiceException::validation('Lokasi tujuan cabang belum lengkap.');
+            }
+
+            $sourceLocation = null;
+            if (filled($data['source_warehouse_location_id'] ?? null)) {
+                $sourceLocation = WarehouseLocation::query()
+                    ->whereKey((int) $data['source_warehouse_location_id'])
+                    ->where('warehouse_id', $sourceWarehouse->id)
+                    ->where('is_active', true)
+                    ->first();
+                if (! $sourceLocation instanceof WarehouseLocation) {
+                    throw ServiceException::validation('Lokasi ambil tidak sesuai dengan gudang sumber.');
+                }
             }
 
             $items = $request->items
-                ->filter(fn (RestockRequestItem $item): bool => Decimal::compare((string) $item->quantity_approved, '0') > 0)
-                ->map(fn (RestockRequestItem $item): array => [
-                    'restock_request_item_id' => $item->id,
-                    'product_id' => $item->product_id,
-                    'unit_id' => $item->product?->base_unit_id,
-                    'quantity_requested' => $item->quantity_requested,
-                    'quantity_approved' => $item->quantity_approved,
-                ])
+                ->map(function (RestockRequestItem $item) use ($data, $sourceWarehouse, $sourceLocation): ?array {
+                    $transferQuantity = Decimal::normalize($data['items'][$item->id]['quantity_transfer'] ?? $item->quantity_approved);
+                    if (Decimal::compare($transferQuantity, '0') <= 0) {
+                        return null;
+                    }
+                    if (Decimal::compare($transferQuantity, (string) $item->quantity_approved) > 0) {
+                        throw ServiceException::validation("Qty transfer {$item->product?->sku} melebihi qty yang disetujui.");
+                    }
+
+                    $stock = Stock::query()
+                        ->where('product_id', $item->product_id)
+                        ->where('work_location_id', $sourceWarehouse->work_location_id)
+                        ->when($sourceLocation, fn ($query) => $query->where('warehouse_location_id', $sourceLocation->id), fn ($query) => $query->whereNull('warehouse_location_id'))
+                        ->first();
+                    $available = $stock instanceof Stock ? (string) $stock->available_quantity : '0';
+                    if (Decimal::compare($available, $transferQuantity) < 0) {
+                        throw ServiceException::validation("Stok sumber {$item->product?->sku} tidak mencukupi. Tersedia ".qty($available).', diperlukan '.qty($transferQuantity).'.');
+                    }
+
+                    return [
+                        'restock_request_item_id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'unit_id' => $item->product?->base_unit_id,
+                        'source_warehouse_location_id' => $sourceLocation?->id,
+                        'quantity_requested' => $item->quantity_requested,
+                        'quantity_approved' => $transferQuantity,
+                    ];
+                })
+                ->filter()
                 ->values()
                 ->all();
 
@@ -109,7 +152,8 @@ class StockTransferService
 
             $transfer = $this->create([
                 'restock_request_id' => $request->id,
-                'source_work_location_id' => $request->sourceWarehouse->work_location_id,
+                'source_work_location_id' => $sourceWarehouse->work_location_id,
+                'source_warehouse_location_id' => $sourceLocation?->id,
                 'destination_work_location_id' => $request->branch->work_location_id,
                 'transfer_date' => now()->toDateString(),
                 'notes' => "Dari request {$request->number}",
@@ -117,7 +161,7 @@ class StockTransferService
                 'action' => 'submit',
             ], $actor);
 
-            $request->forceFill(['status' => RestockRequestStatus::CONVERTED])->save();
+            $request->forceFill(['status' => RestockRequestStatus::CONVERTED, 'source_warehouse_id' => $sourceWarehouse->id])->save();
 
             return $transfer->fresh(['items.product', 'restockRequest', 'sourceWorkLocation', 'destinationWorkLocation']);
         });
@@ -314,8 +358,27 @@ class StockTransferService
         return DB::transaction(function () use ($transfer, $data, $actor): StockTransfer {
             $transfer = StockTransfer::query()->with(['items.product', 'destinationWorkLocation', 'sourceWorkLocation'])->lockForUpdate()->findOrFail($transfer->id);
 
+            if (filled($data['idempotency_key'] ?? null)) {
+                $existingReceipt = StockTransferReceipt::query()->where('idempotency_key', $data['idempotency_key'])->first();
+                if ($existingReceipt instanceof StockTransferReceipt) {
+                    return $transfer->fresh(['items.product', 'receipts.items']);
+                }
+            }
+
             if (! $transfer->status->canReceive()) {
-                throw ServiceException::validation('Transfer belum bisa diterima.');
+                throw ServiceException::validation("Transfer belum dapat diterima karena masih berstatus {$transfer->status->label()}.");
+            }
+
+            $fromStatus = $transfer->status;
+            $accountedNow = collect((array) ($data['items'] ?? []))->reduce(function (string $carry, mixed $item): string {
+                if (! is_array($item)) {
+                    return $carry;
+                }
+
+                return Decimal::add($carry, Decimal::add(Decimal::add((string) ($item['quantity_received'] ?? 0), (string) ($item['quantity_damaged'] ?? 0)), (string) ($item['quantity_discrepancy'] ?? 0)));
+            }, '0.0000');
+            if (Decimal::compare($accountedNow, '0') <= 0) {
+                throw ServiceException::validation('Minimal satu qty penerimaan harus lebih dari nol.');
             }
 
             $receipt = $transfer->receipts()->create([
@@ -368,7 +431,7 @@ class StockTransferService
             $notes = $hasDiscrepancy
                 ? 'Penerimaan mencatat discrepancy dan wajib ditinjau sebelum transfer dapat diselesaikan.'
                 : ($status === StockTransferStatus::FULLY_RECEIVED ? 'Transfer diterima penuh.' : 'Transfer diterima sebagian.');
-            $this->history($transfer, StockTransferStatus::SHIPPED, $status, $actor, $notes);
+            $this->history($transfer, $fromStatus, $status, $actor, $notes);
 
             return $transfer->fresh(['items.product', 'receipts.items', 'stockMutations']);
         });

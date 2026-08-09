@@ -67,6 +67,7 @@ const initializeStockTransferForm = () => {
         const selectedOption = preserveSelected && select.value
             ? new Option(select.selectedOptions[0]?.text || '', select.value, true, true)
             : null;
+        const resultIdPrefix = `stock-transfer-product-${select.name.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
         destroy(select);
         select.innerHTML = '<option value="">Cari SKU atau nama produk</option>';
         if (selectedOption) select.add(selectedOption);
@@ -85,8 +86,59 @@ const initializeStockTransferForm = () => {
                     warehouse_location_id: effectiveSourceBin(row),
                     context: 'product', q: params.term || '', page: params.page || 1,
                 }),
+                transport: (params, success, failure) => {
+                    const controller = new AbortController();
+                    const query = new URLSearchParams();
+                    Object.entries(params.data || {}).forEach(([key, value]) => query.set(key, String(value ?? '')));
+                    let timedOut = false;
+                    const timeout = window.setTimeout(() => {
+                        timedOut = true;
+                        controller.abort();
+                    }, 10000);
+
+                    window.appFetch(`${optionsUrl}?${query}`, {signal: controller.signal})
+                        .then(async (response) => {
+                            const payload = await response.json().catch(() => null);
+                            if (!response.ok) {
+                                throw new Error(payload?.message || `Produk gagal dimuat (HTTP ${response.status}).`);
+                            }
+                            if (!payload || !Array.isArray(payload.results)) {
+                                throw new Error('Format data produk tidak valid.');
+                            }
+
+                            return payload;
+                        })
+                        .then((payload) => {
+                            hideFeedback();
+                            success(payload);
+                        })
+                        .catch((error) => {
+                            if (error?.name === 'AbortError' && !timedOut) return;
+                            const message = timedOut
+                                ? 'Pencarian produk melewati batas waktu. Silakan buka ulang pilihan produk.'
+                                : (error?.message || 'Produk gagal dimuat. Silakan coba kembali.');
+                            showFeedback(message);
+                            failure(error);
+                        })
+                        .finally(() => window.clearTimeout(timeout));
+
+                    return {
+                        abort: () => {
+                            window.clearTimeout(timeout);
+                            controller.abort();
+                        },
+                    };
+                },
                 processResults: (payload) => ({
-                    results: Array.isArray(payload.results) ? payload.results : [],
+                    // Select2 4.1 AjaxAdapter calls _normalizeItem without binding `this`.
+                    // A stable result id bypasses its broken `this.container` branch.
+                    results: Array.isArray(payload.results)
+                        ? payload.results.map((item) => ({
+                            ...item,
+                            id: String(item.id),
+                            _resultId: `${resultIdPrefix}-${item.id}`,
+                        }))
+                        : [],
                     pagination: payload.pagination || {more: false},
                 }),
             },

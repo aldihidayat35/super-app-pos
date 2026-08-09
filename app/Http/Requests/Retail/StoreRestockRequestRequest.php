@@ -40,10 +40,16 @@ class StoreRestockRequestRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
             'action' => ['nullable', 'in:draft,submit'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', Rule::exists('products', 'id')->where('status', 'active')],
+            'items.*.product_id' => ['required', 'distinct', Rule::exists('products', 'id')->where('status', 'active')],
             'items.*.quantity_requested' => ['required', 'numeric', 'gt:0'],
             'items.*.priority' => ['nullable', Rule::in(['low', 'normal', 'high', 'urgent'])],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
         ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return ['items.*.product_id.distinct' => 'Produk yang sama tidak boleh ditambahkan lebih dari satu kali.'];
     }
 }

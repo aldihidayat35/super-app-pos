@@ -68,7 +68,7 @@ class StockTransferWorkflowTest extends TestCase
         $transfer = $this->makeApprovedTransfer($warehouse, $branch, $product, $sourceBin, $destinationBin, '3');
 
         $this->actingAs($this->warehouseHead);
-        $this->get(route('retail.restock-requests.index'))->assertOk()->assertSee('Permintaan Restock Cabang');
+        $this->get(route('retail.restock-requests.index'))->assertOk()->assertSee('Permintaan Restok')->assertSee('Rekomendasi');
         $this->get(route('warehouse.stock-transfers.index'))->assertOk()->assertSee('Daftar Transfer Stok')->assertSee($transfer->number);
         $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertSee('Form dan Persetujuan Transfer');
         $this->get(route('warehouse.stock-transfers.show', $transfer))->assertOk()->assertSee('Detail Transfer dan Timeline');
@@ -108,6 +108,120 @@ class StockTransferWorkflowTest extends TestCase
         $completed = $this->transfers->complete($full, $this->storeHead);
         $this->assertSame(StockTransferStatus::COMPLETED, $completed->status);
         $this->assertSame('6.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
+    }
+
+    public function test_restock_conversion_uses_selected_bin_is_traceable_and_idempotent(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '10', $this->warehouseHead);
+        $restock = $this->restocks->create($this->restockPayload($branch, $warehouse, $product, '6'), $this->storeHead);
+        $restock = $this->restocks->approve($restock, $this->warehouseHead);
+        $payload = [
+            'source_warehouse_id' => $warehouse->id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'items' => [$restock->items->firstOrFail()->id => ['quantity_transfer' => '6']],
+        ];
+
+        $this->actingAs($this->warehouseHead)
+            ->get(route('retail.restock-requests.convert-form', $restock))
+            ->assertOk()
+            ->assertSee('Buat Transfer Stok')
+            ->assertSee($sourceBin->full_code);
+        $this->post(route('retail.restock-requests.convert', $restock), $payload)->assertRedirect();
+
+        $transfer = StockTransfer::query()->where('restock_request_id', $restock->id)->firstOrFail();
+        $this->assertSame($sourceBin->id, $transfer->source_warehouse_location_id);
+        $this->assertSame($sourceBin->id, $transfer->items()->firstOrFail()->source_warehouse_location_id);
+        $this->post(route('retail.restock-requests.convert', $restock), $payload)
+            ->assertRedirect(route('warehouse.stock-transfers.show', $transfer));
+        $this->assertSame(1, StockTransfer::query()->where('restock_request_id', $restock->id)->count());
+        $this->get(route('retail.restock-requests.show', $restock))->assertOk()->assertSee($transfer->number);
+        $this->get(route('warehouse.stock-transfers.show', $transfer))->assertOk()->assertSee($restock->number);
+    }
+
+    public function test_convert_business_error_returns_feedback_instead_of_server_error(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $restock = $this->restocks->create($this->restockPayload($branch, $warehouse, $product, '2'), $this->storeHead);
+
+        $this->actingAs($this->warehouseHead)
+            ->from(route('retail.restock-requests.index'))
+            ->post(route('retail.restock-requests.convert', $restock), [
+                'source_warehouse_id' => $warehouse->id,
+                'source_warehouse_location_id' => $sourceBin->id,
+                'items' => [$restock->items->firstOrFail()->id => ['quantity_transfer' => '2']],
+            ])
+            ->assertRedirect(route('retail.restock-requests.index'))
+            ->assertSessionHas('notification.message', 'Permintaan restok belum disetujui.');
+        $this->assertDatabaseCount('stock_transfers', 0);
+    }
+
+    public function test_duplicate_restock_product_is_rejected_as_form_validation(): void
+    {
+        [$warehouse, $branch, $product] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+
+        $this->actingAs($this->storeHead)->post(route('retail.restock-requests.store'), [
+            'branch_id' => $branch->id,
+            'source_warehouse_id' => $warehouse->id,
+            'priority' => 'normal',
+            'action' => 'submit',
+            'items' => [
+                ['product_id' => $product->id, 'quantity_requested' => 1],
+                ['product_id' => $product->id, 'quantity_requested' => 2],
+            ],
+        ])->assertSessionHasErrors('items.1.product_id');
+        $this->assertDatabaseCount('restock_requests', 0);
+    }
+
+    public function test_receiving_page_only_lists_eligible_destination_and_empty_receipt_is_rejected(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '5', $this->warehouseHead);
+        $transfer = $this->makeApprovedTransfer($warehouse, $branch, $product, $sourceBin, $destinationBin, '2');
+        $this->transfers->pack($transfer, ['items' => [$transfer->items->firstOrFail()->id => ['quantity_picked' => '2']]], $this->warehouseStaff);
+        $transfer = $this->transfers->ship($transfer, [], $this->warehouseStaff);
+        $item = $transfer->items->firstOrFail();
+
+        $this->actingAs($this->storeHead)->get(route('retail.stock-transfers.receiving'))
+            ->assertOk()->assertSee('Terima Transfer')->assertSee($transfer->number)->assertSee('Terima Barang');
+        $this->from(route('retail.stock-transfers.receive-form', $transfer))
+            ->post(route('retail.stock-transfers.receive', $transfer), [
+                'idempotency_key' => 'empty-receipt',
+                'items' => [$item->id => ['quantity_received' => 0, 'quantity_damaged' => 0, 'quantity_discrepancy' => 0]],
+            ])
+            ->assertRedirect(route('retail.stock-transfers.receive-form', $transfer))
+            ->assertSessionHas('notification.message', 'Minimal satu qty penerimaan harus lebih dari nol.');
+        $this->assertDatabaseCount('stock_transfer_receipts', 0);
+    }
+
+    public function test_duplicate_receiving_submit_does_not_add_destination_stock_twice(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '5', $this->warehouseHead);
+        $transfer = $this->makeApprovedTransfer($warehouse, $branch, $product, $sourceBin, $destinationBin, '2');
+        $this->transfers->pack($transfer, ['items' => [$transfer->items->firstOrFail()->id => ['quantity_picked' => '2']]], $this->warehouseStaff);
+        $transfer = $this->transfers->ship($transfer, [], $this->warehouseStaff);
+        $item = $transfer->items->firstOrFail();
+        $payload = [
+            'idempotency_key' => 'duplicate-receipt',
+            'items' => [$item->id => ['quantity_received' => '2', 'quantity_damaged' => '0', 'quantity_discrepancy' => '0']],
+        ];
+
+        $this->transfers->receive($transfer, $payload, $this->storeHead);
+        $this->transfers->receive($transfer, $payload, $this->storeHead);
+
+        $this->assertDatabaseCount('stock_transfer_receipts', 1);
+        $this->assertSame('2.0000', Stock::query()
+            ->where('product_id', $product->id)
+            ->where('work_location_id', $branch->work_location_id)
+            ->where('warehouse_location_id', $destinationBin->id)
+            ->firstOrFail()
+            ->quantity_on_hand);
     }
 
     public function test_cancel_approved_transfer_releases_reservation(): void
@@ -420,6 +534,7 @@ class StockTransferWorkflowTest extends TestCase
 
         $createHtml = $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertDontSee('@foreach($products', false)->getContent();
         $this->assertStringContainsString('data-options-url=', $createHtml);
+        $this->assertStringContainsString('class="form-select form-select-sm product-select" data-searchable="false"', $createHtml);
         $cascadeScript = file_get_contents(resource_path('js/modules/warehouse-stock-transfer-form.js'));
         $this->assertIsString($cascadeScript);
         $this->assertStringContainsString('Memuat zona/rak/bin ${label}...', $cascadeScript);
@@ -428,6 +543,9 @@ class StockTransferWorkflowTest extends TestCase
         $this->assertStringContainsString('resetProduct(row, true)', $cascadeScript);
         $this->assertStringContainsString('bindSelectChange(source, \'stock-transfer-source\'', $cascadeScript);
         $this->assertStringContainsString('bindDelegatedSelectChange(body, \'.source-bin-select\', \'stock-transfer-row-source-bin\'', $cascadeScript);
+        $this->assertStringContainsString('transport: (params, success, failure)', $cascadeScript);
+        $this->assertStringContainsString('Pencarian produk melewati batas waktu.', $cascadeScript);
+        $this->assertStringContainsString('_resultId: `${resultIdPrefix}-${item.id}`', $cascadeScript);
         $this->assertStringNotContainsString("source.addEventListener('change'", $cascadeScript);
         $this->assertStringNotContainsString("document.addEventListener('DOMContentLoaded', initializeStockTransferForm", $cascadeScript);
 

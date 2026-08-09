@@ -14,11 +14,17 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PartyImportController extends Controller
 {
-    public function index(string $type): View
+    public function index(Request $request, string $type): View
     {
         $this->authorizeImport($type);
+        $previewKey = "{$type}_import_preview";
+        $preview = $request->session()->get($previewKey);
 
-        return view('admin.parties.import', ['type' => $type, 'preview' => session("{$type}_import_preview"), 'result' => session("{$type}_import_result")]);
+        if (is_array($preview)) {
+            $request->session()->keep($previewKey);
+        }
+
+        return view('admin.parties.import', ['type' => $type, 'preview' => $preview, 'result' => $request->session()->get("{$type}_import_result")]);
     }
 
     public function preview(PreviewPartyImportRequest $request, string $type, PartyImportService $service): RedirectResponse
@@ -31,12 +37,14 @@ class PartyImportController extends Controller
     public function commit(Request $request, string $type, PartyImportService $service): RedirectResponse
     {
         $this->authorizeImport($type);
-        $preview = session("{$type}_import_preview");
+        $previewKey = "{$type}_import_preview";
+        $preview = $request->session()->get($previewKey);
         if (! is_array($preview) || filled($preview['errors'] ?? [])) {
             return back()->with('notification', ['type' => 'danger', 'message' => 'Import belum dapat diproses karena masih ada error validasi.']);
         }
         $result = $service->commit($type, $preview['rows'] ?? []);
         activity()->causedBy($request->user())->log("{$type}.import.committed");
+        $request->session()->forget($previewKey);
 
         return redirect()->route('admin.parties.import.index', $type)->with("{$type}_import_result", $result)->with('notification', ['type' => 'success', 'message' => 'Import berhasil diproses.']);
     }

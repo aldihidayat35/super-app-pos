@@ -82,6 +82,7 @@ use App\Http\Controllers\Retail\PosSaleController;
 use App\Http\Controllers\Retail\RestockRequestController;
 use App\Http\Controllers\Returns\InventoryLossController;
 use App\Http\Controllers\Returns\ReturnController;
+use App\Http\Controllers\Returns\ReturnSourceController;
 use App\Http\Controllers\ShipmentController;
 use App\Http\Controllers\ShipmentProofController;
 use App\Http\Controllers\System\HealthController;
@@ -314,6 +315,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::put('/users/{user}', [UserController::class, 'update'])
             ->middleware('permission:admin.users.update')
             ->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])
+            ->middleware('role:super_admin')
+            ->name('users.destroy');
         Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])
             ->middleware('permission:admin.users.update')
             ->name('users.deactivate');
@@ -1025,13 +1029,13 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     Route::get('/returns/export', [ReturnController::class, 'export'])
         ->middleware('permission:reports.export|returns.view')
         ->name('returns.export');
-    Route::get('/returns/source-documents', [\App\Http\Controllers\Returns\ReturnSourceController::class, 'documents'])
+    Route::get('/returns/source-documents', [ReturnSourceController::class, 'documents'])
         ->middleware('permission:returns.create')
         ->name('returns.source-documents');
-    Route::get('/returns/source-items', [\App\Http\Controllers\Returns\ReturnSourceController::class, 'items'])
+    Route::get('/returns/source-items', [ReturnSourceController::class, 'items'])
         ->middleware('permission:returns.create')
         ->name('returns.source-items');
-    Route::get('/returns/locations', [\App\Http\Controllers\Returns\ReturnSourceController::class, 'locations'])
+    Route::get('/returns/locations', [ReturnSourceController::class, 'locations'])
         ->middleware('permission:returns.create')
         ->name('returns.locations');
     Route::get('/returns/create', [ReturnController::class, 'create'])
@@ -1204,9 +1208,18 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/restock-requests/{restockRequest}/reject', [RestockRequestController::class, 'reject'])
             ->middleware('permission:stock_transfers.approve')
             ->name('restock-requests.reject');
+        Route::get('/restock-requests/{restockRequest}/convert', [RestockRequestController::class, 'convertForm'])
+            ->middleware('permission:stock_transfers.approve')
+            ->name('restock-requests.convert-form');
         Route::post('/restock-requests/{restockRequest}/convert', [RestockRequestController::class, 'convert'])
             ->middleware('permission:stock_transfers.approve')
             ->name('restock-requests.convert');
+        Route::get('/restock-requests/{restockRequest}', [RestockRequestController::class, 'show'])
+            ->middleware('permission:stock_transfers.view|stock_transfers.create')
+            ->name('restock-requests.show');
+        Route::get('/stock-transfers/receiving', [StockTransferController::class, 'receiving'])
+            ->middleware('permission:stock_transfers.receive')
+            ->name('stock-transfers.receiving');
         Route::get('/stock-transfers/{stockTransfer}/receive', [StockTransferController::class, 'receiveForm'])
             ->middleware('permission:stock_transfers.receive')
             ->name('stock-transfers.receive-form');

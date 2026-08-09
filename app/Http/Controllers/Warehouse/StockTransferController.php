@@ -37,7 +37,7 @@ class StockTransferController extends Controller
             'transfers' => $this->query($request)->paginate(15)->withQueryString(),
             'statuses' => StockTransferStatus::options(),
             'workLocations' => WorkLocation::query()->whereIn('id', $request->user()?->permittedWorkLocationIds() ?? [])->where('is_active', true)->orderBy('name')->get(),
-            'filters' => $request->only(['status', 'source_work_location_id', 'destination_work_location_id']),
+            'filters' => $request->only(['q', 'status', 'source_work_location_id', 'destination_work_location_id', 'date_from', 'date_to', 'source_reference']),
         ]);
     }
 
@@ -247,11 +247,27 @@ class StockTransferController extends Controller
         return redirect()->route('warehouse.stock-transfers.show', $stockTransfer)->with('notification', ['type' => 'success', 'message' => 'Transfer berhasil dikirim.']);
     }
 
+    public function receiving(Request $request): View
+    {
+        abort_unless($request->user()->can('stock_transfers.receive'), 403);
+        $destinationIds = $request->user()->permittedWorkLocationIds();
+
+        return view('retail.stock-transfers.receiving', [
+            'transfers' => StockTransfer::query()
+                ->with(['sourceWorkLocation', 'destinationWorkLocation', 'shipper', 'items'])
+                ->whereIn('destination_work_location_id', $destinationIds)
+                ->whereIn('status', [StockTransferStatus::SHIPPED->value, StockTransferStatus::PARTIALLY_RECEIVED->value])
+                ->latest('shipped_at')
+                ->paginate(15)
+                ->withQueryString(),
+        ]);
+    }
+
     public function receiveForm(StockTransfer $stockTransfer): View
     {
         $this->authorize('receive', $stockTransfer);
 
-        return view('retail.stock-transfers.receive', ['transfer' => $stockTransfer->load(['items.product', 'destinationWorkLocation'])]);
+        return view('retail.stock-transfers.receive', ['transfer' => $stockTransfer->load(['items.product', 'sourceWorkLocation', 'destinationWorkLocation', 'shipper'])]);
     }
 
     public function receive(ReceiveStockTransferRequest $request, StockTransfer $stockTransfer, StockTransferService $service): RedirectResponse
@@ -268,7 +284,14 @@ class StockTransferController extends Controller
             return back()->withInput()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
         }
 
-        return redirect()->route('warehouse.stock-transfers.show', $stockTransfer)->with('notification', ['type' => 'success', 'message' => 'Penerimaan transfer berhasil disimpan.']);
+        $received = '0.0000';
+        foreach ((array) $data['items'] as $item) {
+            if (is_array($item)) {
+                $received = Decimal::add($received, (string) ($item['quantity_received'] ?? 0));
+            }
+        }
+
+        return redirect()->route('retail.stock-transfers.receiving')->with('notification', ['type' => 'success', 'message' => qty($received).' unit berhasil diterima.']);
     }
 
     public function complete(Request $request, StockTransfer $stockTransfer, StockTransferService $service): RedirectResponse
@@ -326,12 +349,16 @@ class StockTransferController extends Controller
     private function query(Request $request): mixed
     {
         return StockTransfer::query()
-            ->with(['sourceWorkLocation', 'destinationWorkLocation', 'requester', 'shipper', 'receiver', 'items'])
+            ->with(['sourceWorkLocation', 'destinationWorkLocation', 'requester', 'shipper', 'receiver', 'items', 'restockRequest'])
             ->where(function ($query) use ($request): void {
                 $ids = $request->user()?->permittedWorkLocationIds() ?? [];
                 $query->whereIn('source_work_location_id', $ids)->orWhereIn('destination_work_location_id', $ids);
             })
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
+            ->when($request->filled('q'), fn ($query) => $query->where('number', 'like', '%'.trim((string) $request->query('q')).'%'))
+            ->when($request->filled('source_reference'), fn ($query) => $query->whereHas('restockRequest', fn ($restock) => $restock->where('number', 'like', '%'.trim((string) $request->query('source_reference')).'%')))
+            ->when($request->filled('date_from'), fn ($query) => $query->whereDate('transfer_date', '>=', $request->date('date_from')))
+            ->when($request->filled('date_to'), fn ($query) => $query->whereDate('transfer_date', '<=', $request->date('date_to')))
             ->when($request->integer('source_work_location_id') > 0, fn ($query) => $query->where('source_work_location_id', $request->integer('source_work_location_id')))
             ->when($request->integer('destination_work_location_id') > 0, fn ($query) => $query->where('destination_work_location_id', $request->integer('destination_work_location_id')))
             ->latest('transfer_date')

@@ -32,14 +32,14 @@
                 <li>Preview ditampilkan berupa tabel dengan kolom: SKU, Nama, Kategori, Merek, Satuan, Status.</li>
                 <li>Jika ada error validasi, daftar error ditampilkan per baris. Perbaiki file lalu upload ulang.</li>
                 <li>Jika semua valid, klik tombol <strong>"Commit Import"</strong> untuk menyimpan semua produk sekaligus.</li>
-                <li>Proses commit dijalankan dalam <strong>1 transaksi database</strong> — semua berhasil atau semua gagal.</li>
+                <li>Proses commit dijalankan dalam <strong>1 transaksi database</strong> â€” semua berhasil atau semua gagal.</li>
             </ol>
         </x-slot:parts>
         <x-slot:impacts>
             <p class="mb-3"><strong>Dampak import terhadap data dan modul lain:</strong></p>
             <ul class="mb-0">
                 <li><strong>Produk baru:</strong> Produk baru otomatis ditambahkan ke daftar produk dan tersedia di Kasir/POS jika status=Aktif.</li>
-                <li><strong>Produk sudah ada (SKU duplikat):</strong> Sistem akan melakukan <strong>UPSERT</strong> — memperbarui data produk yang sudah ada (mengupdate nama, kategori, harga, dll) tapi tidak menghapus histori transaksi.</li>
+                <li><strong>Produk sudah ada (SKU duplikat):</strong> Sistem akan melakukan <strong>UPSERT</strong> â€” memperbarui data produk yang sudah ada (mengupdate nama, kategori, harga, dll) tapi tidak menghapus histori transaksi.</li>
                 <li><strong>Kategori:</strong> Jika kategori yang direferensikan tidak ada, baris tersebut akan gagal validasi.</li>
                 <li><strong>Merek:</strong> Jika merek tidak ada, baris tersebut akan gagal validasi.</li>
                 <li><strong>Satuan:</strong> Jika satuan dasar tidak ada, baris tersebut akan gagal validasi.</li>
@@ -97,12 +97,12 @@
         </x-slot:warnings>
         <x-slot:example>
             <p class="mb-3"><strong>Contoh Penggunaan Nyata:</strong></p>
-            <p><strong>Skenario — Mengimpor Katalog Supplier Baru (100 Produk):</strong></p>
+            <p><strong>Skenario â€” Mengimpor Katalog Supplier Baru (100 Produk):</strong></p>
             <ol>
                 <li>Admin download template CSV.</li>
                 <li>Admin kirim template ke supplier, supplier mengisi 100 produk di Excel.</li>
                 <li>Admin menerima file dari supplier, upload ke halaman import.</li>
-                <li>Sistem memvalidasi — tidak ada error karena semua kategori dan merek sudah ada di sistem.</li>
+                <li>Sistem memvalidasi â€” tidak ada error karena semua kategori dan merek sudah ada di sistem.</li>
                 <li>Admin klik "Commit Import".</li>
                 <li>100 produk berhasil dibuat (jika SKU baru) atau diupdate (jika SKU duplikat).</li>
             </ol>
@@ -127,7 +127,7 @@
     <x-metronic.card title="Preview Import" class="mt-6">
         @if(filled($preview['errors'] ?? []))
             <div class="alert alert-danger">Masih ada error validasi. Perbaiki file lalu upload ulang.</div>
-            <ul>@foreach($preview['errors'] as $row => $errors)<li>Baris {{ $row }}: {{ implode(', ', $errors) }}</li>@endforeach</ul>
+            <ul>@foreach($preview['errors'] as $row => $rowErrors)<li>Baris {{ $row }}: {{ implode(', ', $rowErrors) }}</li>@endforeach</ul>
         @else
             <div class="alert alert-success">Semua baris valid. Klik commit untuk menyimpan dalam transaksi database.</div>
             <form method="POST" action="{{ route('admin.products.import.commit') }}">@csrf<button class="btn btn-success">Commit Import</button></form>

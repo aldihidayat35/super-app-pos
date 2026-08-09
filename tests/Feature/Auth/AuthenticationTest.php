@@ -62,6 +62,31 @@ class AuthenticationTest extends TestCase
     }
 
     #[Test]
+    public function login_is_case_insensitive_for_mixed_case_username_and_email(): void
+    {
+        $user = $this->createUserWithDashboardRole('owner', [
+            'email' => 'Mael-Gudang@Example.test',
+            'username' => 'Mael-Gudang',
+            'password' => 'Mael-Gudang',
+        ]);
+
+        $this->post(route('login.store'), [
+            'login' => 'mael-gudang',
+            'password' => 'Mael-Gudang',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+        Auth::logout();
+
+        $this->post(route('login.store'), [
+            'login' => 'mael-gudang@example.test',
+            'password' => 'Mael-Gudang',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    #[Test]
     public function remember_me_sets_recaller_cookie(): void
     {
         $this->createUserWithDashboardRole('owner', [

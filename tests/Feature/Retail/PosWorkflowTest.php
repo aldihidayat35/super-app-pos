@@ -263,6 +263,12 @@ class PosWorkflowTest extends TestCase
         $this->assertSame(1, $hold->cart_snapshot['version']);
         $this->assertSame($product->id, $hold->cart_snapshot['items'][0]['product_id']);
 
+        $this->actingAs($this->cashier)->get(route('retail.pos.holds'))
+            ->assertOk()
+            ->assertSee('Total Qty')
+            ->assertSee('Lanjutkan Transaksi')
+            ->assertSee('Rp 240');
+
         $this->actingAs($this->cashier)->getJson(route('retail.pos.holds.data'))
             ->assertOk()
             ->assertJsonPath('count', 1)

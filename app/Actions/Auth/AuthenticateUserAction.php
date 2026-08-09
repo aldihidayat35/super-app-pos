@@ -34,8 +34,8 @@ final class AuthenticateUserAction
         }
 
         $user = User::query()
-            ->where('email', $login)
-            ->orWhere('username', $login)
+            ->whereRaw('LOWER(email) = ?', [$login])
+            ->orWhereRaw('LOWER(username) = ?', [$login])
             ->first();
 
         if (! $user || ! Hash::check((string) $request->string('password'), $user->password)) {

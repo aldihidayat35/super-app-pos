@@ -6,22 +6,22 @@
 @section('page_guide')
     <x-metronic.page-guide id="admin-users" title="Panduan Halaman Daftar Pengguna">
         <x-slot:function>
-            <p>Halaman ini menampilkan daftar pengguna sistem dengan DataTable interaktif. Super Admin menggunakannya untuk mencari, memfilter berdasarkan role dan lokasi, serta mengakses halaman detail pengguna. Aksi edit dilakukan dari halaman detail pengguna.</p>
+            <p>Halaman ini menampilkan daftar pengguna sistem dengan DataTable interaktif. Super Admin menggunakannya untuk mencari, memfilter berdasarkan role dan lokasi, membuka detail, mengubah, atau menghapus akun yang belum memiliki histori operasional.</p>
         </x-slot:function>
         <x-slot:workflow>
-            <ol><li>Pengguna memfilter tabel berdasarkan nama, role, lokasi, dan status.</li><li>Tabel menampilkan data dari server secara dinamis.</li><li>Klik nama pengguna untuk membuka halaman detail.</li></ol>
+            <ol><li>Pengguna memfilter tabel berdasarkan nama, role, lokasi, dan status.</li><li>Tabel menampilkan data dari server secara dinamis.</li><li>Klik nama pengguna untuk membuka halaman detail.</li><li>Super Admin dapat memakai ikon hapus pada akun target dan mengonfirmasi tindakan.</li></ol>
         </x-slot:workflow>
         <x-slot:parts>
-            <ul><li><strong>Cari nama/username/email:</strong> pencarian pengguna.</li><li><strong>Filter Role:</strong> filter berdasarkan peran.</li><li><strong>Filter Lokasi:</strong> filter berdasarkan gudang/cabang.</li><li><strong>Filter Status:</strong> aktif/nonaktif.</li><li><strong>Terapkan Filter:</strong> menjalankan filter.</li><li><strong>Reset:</strong> menghapus filter aktif.</li><li><strong>Tabel:</strong> menampilkan data pengguna berbasis server-side.</li><li><strong>Tambah Pengguna/Export:</strong> toolbar actions.</li></ul>
+            <ul><li><strong>Cari nama/username/email:</strong> pencarian pengguna.</li><li><strong>Filter Role:</strong> filter berdasarkan peran.</li><li><strong>Filter Lokasi:</strong> filter berdasarkan gudang/cabang.</li><li><strong>Filter Status:</strong> aktif/nonaktif.</li><li><strong>Terapkan Filter:</strong> menjalankan filter.</li><li><strong>Reset:</strong> menghapus filter aktif.</li><li><strong>Tabel:</strong> menampilkan data pengguna berbasis server-side.</li><li><strong>Aksi:</strong> membuka detail, mengubah, dan khusus Super Admin menghapus akun.</li><li><strong>Tambah Pengguna/Export:</strong> toolbar actions.</li></ul>
         </x-slot:parts>
         <x-slot:impacts>
-            <p>Filter hanya memengaruhi tampilan tabel. Export mengunduh data sesuai filter aktif.</p>
+            <p>Filter hanya memengaruhi tampilan tabel. Export mengunduh data sesuai filter aktif. Penghapusan menghapus akun, relasi akses, sesi, token reset password, dan avatar secara permanen.</p>
         </x-slot:impacts>
         <x-slot:operation>
             <ol><li>Isi form pencarian dan filter.</li><li>Klik Terapkan Filter.</li><li>Klik nama pengguna untuk detail.</li></ol>
         </x-slot:operation>
         <x-slot:warnings>
-            <div class="alert alert-warning mb-0"><ul><li>Gunakan DataTable dengan filter minimal untuk performa optimal.</li></ul></div>
+            <div class="alert alert-warning mb-0"><ul><li>Akun sendiri tidak dapat dihapus.</li><li>Akun yang sudah terkait histori transaksi harus dinonaktifkan agar jejak operasional tetap utuh.</li></ul></div>
         </x-slot:warnings>
         <x-slot:example>
             <p>Filter role "Staff Gudang", lokasi "Gudang Pusat", status "Aktif". Klik nama Budi untuk melihat detail.</p>
@@ -77,7 +77,7 @@
                         <th>Lokasi Utama</th>
                         <th>Status</th>
                         <th>Login Terakhir</th>
-                        <th class="text-end" style="width: 150px">Aksi</th>
+                        <th class="text-end" style="width: 200px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

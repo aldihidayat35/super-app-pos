@@ -146,6 +146,11 @@ class RestockRequestService
             throw ServiceException::validation('Minimal satu item request restock wajib diisi.');
         }
 
+        $productIds = collect($items)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id);
+        if ($productIds->duplicates()->isNotEmpty()) {
+            throw ServiceException::validation('Produk yang sama tidak boleh ditambahkan lebih dari satu kali.');
+        }
+
         $request->items()->delete();
 
         foreach ($items as $itemData) {

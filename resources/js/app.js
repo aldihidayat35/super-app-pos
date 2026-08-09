@@ -323,6 +323,8 @@ const initializeConfirmations = () => {
         if (!trigger) return;
 
         event.preventDefault();
+        event.stopPropagation();
+
         const result = await window.Swal.fire({
             title: trigger.dataset.confirmTitle || 'Konfirmasi tindakan',
             text: trigger.dataset.confirmText || 'Tindakan ini akan diproses.',
@@ -340,8 +342,24 @@ const initializeConfirmations = () => {
         if (!result.isConfirmed) return;
 
         const formId = trigger.dataset.confirmForm;
-        if (formId) document.getElementById(formId)?.submit();
-        else if (trigger.href) window.location.assign(trigger.href);
+        if (formId) {
+            const form = document.getElementById(formId);
+            if (form) {
+                // Disable the trigger button to prevent double-submit
+                trigger.disabled = true;
+                form.submit();
+                return;
+            }
+        }
+
+        // Fallback: submit the parent form or navigate
+        const form = trigger.closest('form');
+        if (form) {
+            trigger.disabled = true;
+            form.submit();
+        } else if (trigger.href) {
+            window.location.assign(trigger.href);
+        }
     });
 };
 

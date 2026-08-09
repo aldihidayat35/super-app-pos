@@ -13,10 +13,12 @@ use App\Http\Requests\Retail\SubmitCashShiftClosingRequest;
 use App\Models\Branch;
 use App\Models\CashShift;
 use App\Models\ShiftExpense;
+use App\Services\Attendance\AttendanceService;
 use App\Services\Retail\CashShiftService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -61,20 +63,33 @@ class CashShiftController extends Controller
         }, 'cash-shifts.csv');
     }
 
-    public function open(Request $request): View
+    public function open(Request $request, AttendanceService $attendanceService): View
     {
         abort_unless($request->user()->can('cash_shifts.create'), 403);
 
         $branches = Branch::query()
+            ->with('workLocation')
             ->where('is_active', true)
             ->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())
             ->orderBy('name')
             ->get();
         $requestedBranchId = $request->integer('branch_id');
 
+        $attendanceStates = $branches->mapWithKeys(function (Branch $branch) use ($request, $attendanceService): array {
+            try {
+                $attendance = $attendanceService->activeAttendanceForCashShift($request->user(), $branch->workLocation);
+
+                return [$branch->id => ['ready' => true, 'message' => 'Sudah check-in sejak '.Carbon::parse((string) $attendance->check_in_at)->format('H:i')]];
+            } catch (ServiceException $exception) {
+                return [$branch->id => ['ready' => false, 'message' => $exception->getMessage()]];
+            }
+        });
+
         return view('retail.shifts.open', [
             'branches' => $branches,
             'selectedBranchId' => $branches->contains('id', $requestedBranchId) ? $requestedBranchId : null,
+            'attendanceStates' => $attendanceStates,
+            'canOverrideAttendance' => $request->user()->can('attendance.approve') || $request->user()->can('cash_shifts.approve'),
         ]);
     }
 
@@ -96,7 +111,7 @@ class CashShiftController extends Controller
         $shift = $service->current($request->user());
 
         return view('retail.shifts.current', [
-            'shift' => $shift?->load(['branch', 'cashier', 'expenses']),
+            'shift' => $shift?->load(['branch', 'cashier', 'attendance', 'expenses']),
             'summary' => $shift instanceof CashShift ? $service->summary($shift) : null,
         ]);
     }
