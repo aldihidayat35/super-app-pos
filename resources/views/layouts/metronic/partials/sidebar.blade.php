@@ -167,7 +167,9 @@
                         <div class="menu-item menu-accordion {{ $isOpen ? 'here show' : '' }}"
                             data-kt-menu-trigger="click">
                             <span class="menu-link {{ $isOpen ? 'active' : '' }}">
-                                <span class="menu-icon {{ $item['icon'] }}"></span>
+                                <span class="menu-icon">
+                                    <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+                                </span>
                                 <span class="menu-title">{{ $item['label'] }}</span>
                                 <span class="menu-arrow"></span>
                             </span>
@@ -186,7 +188,9 @@
                     @else
                         <div class="menu-item">
                             <a class="menu-link {{ $isOpen ? 'active' : '' }}" href="{{ route($item['route']) }}">
-                                <span class="menu-icon {{ $item['icon'] }}"></span>
+                                <span class="menu-icon">
+                                    <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+                                </span>
                                 <span class="menu-title">{{ $item['label'] }}</span>
                             </a>
                         </div>

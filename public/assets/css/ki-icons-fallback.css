@@ -2,14 +2,13 @@
  * Local KeenIcons-compatible fallback.
  *
  * Source Metronic yang tersedia pada proyek ini tidak menyertakan font KeenIcons.
- * Semua ikon aplikasi karena itu dirender sebagai SVG mask lokal: tajam, mengikuti
- * currentColor, tidak membutuhkan CDN, dan tidak berubah menjadi bullet saat class
- * ikon baru belum memiliki pemetaan khusus.
+ * Semua ikon aplikasi dirender sebagai SVG mask lokal: tajam, mengikuti
+ * currentColor, tidak membutuhkan CDN, dan konsisten dengan skin Metronic 8.
  */
 
-/* Sidebar mempertahankan ikon emoji yang sudah familier bagi pengguna. */
+/* Sidebar: tampilkan ikon SVG mask sesuai skin Metronic 8 */
 #kt_app_sidebar .menu-icon .ki-outline {
-    display: none !important;
+    display: inline-flex !important;
 }
 
 #kt_app_sidebar .menu-icon {
@@ -28,31 +27,6 @@
     transition: background-color .2s ease, color .2s ease;
     width: 30px;
 }
-
-#kt_app_sidebar .menu-icon::after {
-    content: "";
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-    font-size: inherit;
-    line-height: inherit;
-}
-
-#kt_app_sidebar .menu-icon.ki-home-2::after { content: "\1F3E0"; }
-#kt_app_sidebar .menu-icon.ki-chart-line-up::after { content: "\1F4C8"; }
-#kt_app_sidebar .menu-icon.ki-security-user::after { content: "\1F465"; }
-#kt_app_sidebar .menu-icon.ki-setting-2::after { content: "\2699"; }
-#kt_app_sidebar .menu-icon.ki-parcel::after { content: "\1F4E6"; }
-#kt_app_sidebar .menu-icon.ki-people::after { content: "\1F465"; }
-#kt_app_sidebar .menu-icon.ki-delivery-3::after { content: "\1F69A"; }
-#kt_app_sidebar .menu-icon.ki-purchase::after { content: "\1F6D2"; }
-#kt_app_sidebar .menu-icon.ki-price-tag::after { content: "\1F3F7"; }
-#kt_app_sidebar .menu-icon.ki-arrow-left-right::after { content: "\21C4"; }
-#kt_app_sidebar .menu-icon.ki-shop::after { content: "\1F3EA"; }
-#kt_app_sidebar .menu-icon.ki-calendar-tick::after { content: "\1F4C5"; }
-#kt_app_sidebar .menu-icon.ki-shield-tick::after { content: "\1F6E1"; }
-#kt_app_sidebar .menu-icon.ki-bill::after { content: "\1F4DC"; }
-#kt_app_sidebar .menu-icon.ki-chart-pie-4::after { content: "\1F4CA"; }
-#kt_app_sidebar .menu-icon.ki-basket::after { content: "\1F6D2"; }
-
 :root {
     --ki-svg-default: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='black'%3E%3Crect x='3' y='3' width='7' height='7' rx='2'/%3E%3Crect x='14' y='3' width='7' height='7' rx='2'/%3E%3Crect x='3' y='14' width='7' height='7' rx='2'/%3E%3Crect x='14' y='14' width='7' height='7' rx='2'/%3E%3C/g%3E%3C/svg%3E");
     --ki-svg-arrow-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 19V5m-6 6 6-6 6 6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -178,22 +152,26 @@ i.ki-chart-line-down,
 i.ki-chart-line-up,
 i.ki-chart-line-up-2,
 i.ki-chart-simple,
+i.ki-chart-pie-4,
 i.ki-graph,
 i.ki-graph-up,
 i.ki-pulse { --ki-mask: var(--ki-svg-chart); }
 i.ki-user,
 i.ki-user-tick,
+i.ki-security-user,
 i.ki-profile-circle,
 i.ki-profile-user { --ki-mask: var(--ki-svg-user); }
 i.ki-people { --ki-mask: var(--ki-svg-users); }
 i.ki-setting-2 { --ki-mask: var(--ki-svg-settings); }
 i.ki-box,
 i.ki-cube-2,
+i.ki-parcel,
 i.ki-package,
 i.ki-element-11,
 i.ki-element-contents { --ki-mask: var(--ki-svg-package); }
 i.ki-delivery,
 i.ki-delivery-2,
+i.ki-delivery-3,
 i.ki-truck { --ki-mask: var(--ki-svg-truck); }
 i.ki-basket,
 i.ki-handcart { --ki-mask: var(--ki-svg-cart); }
@@ -201,7 +179,8 @@ i.ki-tag,
 i.ki-discount,
 i.ki-price-tag,
 i.ki-category { --ki-mask: var(--ki-svg-tag); }
-i.ki-calendar { --ki-mask: var(--ki-svg-calendar); }
+i.ki-calendar,
+i.ki-calendar-tick { --ki-mask: var(--ki-svg-calendar); }
 i.ki-clock,
 i.ki-time { --ki-mask: var(--ki-svg-clock); }
 
@@ -212,6 +191,7 @@ i.ki-shield-cross,
 i.ki-shield-tick,
 i.ki-security-check { --ki-mask: var(--ki-svg-shield); }
 i.ki-document,
+i.ki-bill,
 i.ki-file,
 i.ki-input,
 i.ki-note,

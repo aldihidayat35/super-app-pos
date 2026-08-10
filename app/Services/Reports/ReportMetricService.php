@@ -20,6 +20,7 @@ use App\Enums\StockOpnameStatus;
 use App\Enums\StockTransferStatus;
 use App\Models\Stock;
 use App\Models\User;
+use App\Models\WorkLocation;
 use App\Support\Decimal;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
@@ -44,7 +45,19 @@ class ReportMetricService
         $end = Carbon::parse($input['end_date'] ?? now('Asia/Jakarta')->toDateString(), 'Asia/Jakarta')->endOfDay();
         $permitted = $user->permittedWorkLocationIds();
         $requestedLocation = isset($input['work_location_id']) && $input['work_location_id'] !== '' ? (int) $input['work_location_id'] : null;
-        $locationIds = $requestedLocation !== null ? array_values(array_intersect($permitted, [$requestedLocation])) : $permitted;
+        $reportScope = in_array($input['report_scope'] ?? 'all', ['all', 'retail', 'warehouse'], true)
+            ? $input['report_scope'] ?? 'all'
+            : 'all';
+        $scopedLocationIds = $reportScope === 'all'
+            ? $permitted
+            : WorkLocation::query()
+                ->whereIn('id', $permitted)
+                ->where('type', $reportScope === 'retail' ? 'branch' : 'warehouse')
+                ->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $selectedLocation = $requestedLocation !== null && in_array($requestedLocation, $scopedLocationIds, true)
+            ? $requestedLocation
+            : null;
+        $locationIds = $selectedLocation !== null ? [$selectedLocation] : $scopedLocationIds;
         $allowedRanges = ['daily', 'monthly', 'yearly'];
         $range = $input['range'] ?? 'daily';
         if (! in_array($range, $allowedRanges, true)) {
@@ -58,7 +71,7 @@ class ReportMetricService
             'end_date' => $end->toDateString(),
             'previous_start' => $start->copy()->subDays($start->diffInDays($end) + 1)->startOfDay(),
             'previous_end' => $start->copy()->subSecond(),
-            'work_location_id' => $requestedLocation,
+            'work_location_id' => $selectedLocation,
             'location_ids' => $locationIds,
             'channel' => $input['channel'] ?? null,
             'status' => $input['status'] ?? null,
@@ -68,6 +81,7 @@ class ReportMetricService
             'customer_id' => $input['customer_id'] ?? null,
             'user_id' => $input['user_id'] ?? null,
             'range' => $range,
+            'report_scope' => $reportScope,
             'last_updated_at' => now('Asia/Jakarta'),
         ];
     }
@@ -116,6 +130,8 @@ class ReportMetricService
                     'slow_products' => $this->slowMovingProducts($filters)->take(10)->values()->all(),
                     'aging' => $receivable['aging'],
                 ],
+                'stores' => $this->storePerformance($filters),
+                'warehouses' => $this->warehousePerformance($filters),
                 'alerts' => $this->alerts(),
                 'last_updated_at' => $filters['last_updated_at'],
             ];
@@ -249,8 +265,22 @@ class ReportMetricService
      */
     public function report(string $type, User $user, array $filters): array
     {
+        if ($type === 'daily') {
+            $data = $this->dailyReport($filters);
+
+            return [
+                'type' => $type,
+                'filters' => $filters,
+                'definitions' => $this->definitions($type),
+                'summary' => $data['summary'],
+                'rows' => $data['rows'],
+                'charts' => $data['charts'],
+                'sections' => $data['sections'],
+                'last_updated_at' => $filters['last_updated_at'],
+            ];
+        }
+
         $data = match ($type) {
-            'daily' => $this->dailyReport($filters),
             'warehouse' => $this->warehouseReport($filters),
             'retail' => $this->retailReport($filters),
             'b2b' => $this->b2bReport($filters),
@@ -268,22 +298,160 @@ class ReportMetricService
             'definitions' => $this->definitions($type),
             'summary' => $data['summary'],
             'rows' => $data['rows'],
+            'charts' => [],
+            'sections' => [],
             'last_updated_at' => $filters['last_updated_at'],
         ];
     }
 
     /**
      * @param  ReportFilters  $filters
-     * @return array{summary: array<string, mixed>, rows: list<ReportRow>}
+     * @return array{summary: array<string, mixed>, rows: list<ReportRow>, charts: array<string, mixed>, sections: array<string, mixed>}
      */
     private function dailyReport(array $filters): array
     {
+        if ($filters['report_scope'] === 'retail') {
+            $dashboard = $this->retailDashboard(new User, $filters);
+            $detail = $this->retailReport($filters);
+            $range = $filters['range'];
+
+            return [
+                'summary' => $dashboard['kpis'],
+                'rows' => $detail['rows'],
+                'charts' => [
+                    'revenue' => $dashboard['charts'][$range.'_revenue'],
+                    'transactions' => $dashboard['charts'][$range.'_transactions'],
+                    'payment_methods' => $dashboard['charts']['payment_methods'],
+                ],
+                'sections' => [
+                    'stores' => $this->storePerformance($filters),
+                    'top_products' => $dashboard['charts']['top_products'],
+                    'slow_products' => $dashboard['charts']['slow_products'],
+                    'stock_alerts' => $dashboard['stock_alerts'],
+                    'recent_sales' => $dashboard['recent_sales'],
+                    'active_shifts' => $dashboard['active_shifts'],
+                ],
+            ];
+        }
+
+        if ($filters['report_scope'] === 'warehouse') {
+            $dashboard = $this->warehouseDashboard(new User, $filters);
+            $detail = $this->warehouseReport($filters);
+
+            return [
+                'summary' => $dashboard['kpis'],
+                'rows' => $detail['rows'],
+                'charts' => [
+                    'movement' => $dashboard['charts'][$filters['range'].'_movement'],
+                    'warehouse_stock' => $this->warehousePerformance($filters),
+                ],
+                'sections' => [
+                    'warehouses' => $this->warehousePerformance($filters),
+                    'top_movers' => $dashboard['top_movers'],
+                    'stock_alerts' => $dashboard['stock_alerts'],
+                    'large_mutations' => $dashboard['large_mutations'],
+                    'dead_stock' => $dashboard['dead_stock'],
+                    'top_stocked_products' => $dashboard['top_stocked_products'],
+                    'restock_needed' => $dashboard['restock_needed'],
+                ],
+            ];
+        }
+
         $owner = $this->ownerDashboard(new User, $filters);
+        $revenue = match ($filters['range']) {
+            'monthly' => $this->monthlyRevenue($filters),
+            'yearly' => $this->yearlyRevenue($filters),
+            default => $owner['charts']['daily_revenue'],
+        };
 
         return [
             'summary' => $owner['kpis'],
-            'rows' => $owner['charts']['daily_revenue'],
+            'rows' => $revenue,
+            'charts' => [
+                'revenue' => $revenue,
+                'channel_mix' => $owner['charts']['channel_mix'],
+                'branch_margin' => $owner['charts']['branch_margin'],
+            ],
+            'sections' => [
+                'stores' => $owner['stores'],
+                'warehouses' => $owner['warehouses'],
+                'top_products' => $owner['charts']['top_products'],
+                'slow_products' => $owner['charts']['slow_products'],
+                'aging' => $owner['charts']['aging'],
+                'alerts' => $owner['alerts'],
+                'stock_alerts' => $this->stockHealth($filters)['alerts'],
+                'recent_sales' => $this->recentRetailSales($filters),
+                'active_shifts' => $this->activeRetailShifts($filters),
+                'recent_b2b_orders' => $this->recentB2bOrders($filters),
+                'overdue_receivables' => $this->overdueReceivables($filters),
+                'pending_approvals' => $this->pendingApprovals($filters),
+            ],
         ];
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function recentB2bOrders(array $filters): array
+    {
+        return DB::table('b2b_orders')
+            ->leftJoin('customers', 'customers.id', '=', 'b2b_orders.customer_id')
+            ->whereBetween('b2b_orders.submitted_at', [$filters['start'], $filters['end']])
+            ->whereNotIn('b2b_orders.status', [B2bOrderStatus::CANCELLED->value, B2bOrderStatus::REJECTED->value])
+            ->select('b2b_orders.number', 'b2b_orders.status', 'b2b_orders.grand_total_amount', 'b2b_orders.submitted_at', 'customers.business_name as customer')
+            ->latest('b2b_orders.submitted_at')->limit(8)->get()
+            ->map(fn ($row): array => [
+                'number' => $row->number,
+                'customer' => $row->customer,
+                'status' => $row->status,
+                'amount' => $this->money($row->grand_total_amount),
+                'submitted_at' => $row->submitted_at,
+            ])->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function overdueReceivables(array $filters): array
+    {
+        return DB::table('receivables')
+            ->leftJoin('customers', 'customers.id', '=', 'receivables.customer_id')
+            ->leftJoin('work_locations', 'work_locations.id', '=', 'receivables.work_location_id')
+            ->whereIn('receivables.work_location_id', $filters['location_ids'])
+            ->whereDate('receivables.due_date', '<', now('Asia/Jakarta')->toDateString())
+            ->where('receivables.outstanding_amount', '>', 0)
+            ->whereNotIn('receivables.status', [ReceivableStatus::CANCELLED->value, ReceivableStatus::WRITTEN_OFF->value])
+            ->select('receivables.number', 'receivables.due_date', 'receivables.outstanding_amount', 'receivables.aging_bucket', 'customers.business_name as customer', 'work_locations.name as location')
+            ->orderByDesc('receivables.outstanding_amount')->limit(8)->get()
+            ->map(fn ($row): array => [
+                'number' => $row->number,
+                'customer' => $row->customer,
+                'location' => $row->location,
+                'due_date' => $row->due_date,
+                'outstanding' => $this->money($row->outstanding_amount),
+                'aging_bucket' => $row->aging_bucket,
+            ])->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function pendingApprovals(array $filters): array
+    {
+        return DB::table('approval_requests')
+            ->leftJoin('users as requesters', 'requesters.id', '=', 'approval_requests.requester_user_id')
+            ->leftJoin('work_locations', 'work_locations.id', '=', 'approval_requests.work_location_id')
+            ->where('approval_requests.current_status', ApprovalRequestStatus::PENDING->value)
+            ->where(function (Builder $query) use ($filters): void {
+                $query->whereNull('approval_requests.work_location_id')
+                    ->orWhereIn('approval_requests.work_location_id', $filters['location_ids']);
+            })
+            ->select('approval_requests.id', 'approval_requests.module', 'approval_requests.approval_type', 'approval_requests.risk_level', 'approval_requests.risk_value', 'approval_requests.reason', 'approval_requests.created_at', 'requesters.name as requester', 'work_locations.name as location')
+            ->orderByDesc('approval_requests.risk_value')->latest('approval_requests.created_at')->limit(8)->get()
+            ->map(fn ($row): array => (array) $row)->all();
     }
 
     /**
@@ -778,6 +946,92 @@ class ReportMetricService
 
     /**
      * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function storePerformance(array $filters): array
+    {
+        $sales = DB::table('pos_sales')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+            ->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value])
+            ->selectRaw('work_location_id, COUNT(*) as transactions, COALESCE(SUM(grand_total_amount),0) as revenue, COALESCE(SUM(total_margin_amount),0) as margin')
+            ->groupBy('work_location_id')
+            ->get()->keyBy('work_location_id');
+
+        $stocks = $this->locationStockMetrics($filters);
+
+        return DB::table('work_locations')
+            ->whereIn('id', $filters['location_ids'])->where('type', 'branch')->where('is_active', true)
+            ->orderBy('name')->get(['id', 'code', 'name'])
+            ->map(function ($location) use ($sales, $stocks): array {
+                $sale = $sales->get($location->id);
+                $stock = $stocks->get($location->id);
+                $revenue = $this->money(data_get($sale, 'revenue', 0));
+                $margin = $this->money(data_get($sale, 'margin', 0));
+                $transactions = (int) data_get($sale, 'transactions', 0);
+
+                return [
+                    'id' => (int) $location->id, 'code' => $location->code, 'name' => $location->name,
+                    'revenue' => $revenue, 'margin' => $margin,
+                    'margin_percent' => $this->percent($margin, $revenue),
+                    'transactions' => $transactions,
+                    'average_ticket' => $this->divideMoney($revenue, max(1, $transactions)),
+                    'stock_value' => $this->money(data_get($stock, 'stock_value', 0)),
+                    'available_quantity' => $this->quantity(data_get($stock, 'available_quantity', 0)),
+                    'critical_count' => (int) data_get($stock, 'critical_count', 0),
+                ];
+            })->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return list<ReportRow>
+     */
+    private function warehousePerformance(array $filters): array
+    {
+        $stocks = $this->locationStockMetrics($filters);
+        $movements = DB::table('stock_mutations')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
+            ->selectRaw("work_location_id, COUNT(*) as movement_count, COALESCE(SUM(CASE WHEN direction = 'in' THEN ABS(quantity_on_hand_change) ELSE 0 END),0) as incoming, COALESCE(SUM(CASE WHEN direction = 'out' THEN ABS(quantity_on_hand_change) ELSE 0 END),0) as outgoing")
+            ->groupBy('work_location_id')->get()->keyBy('work_location_id');
+
+        return DB::table('work_locations')
+            ->whereIn('id', $filters['location_ids'])->where('type', 'warehouse')->where('is_active', true)
+            ->orderBy('name')->get(['id', 'code', 'name'])
+            ->map(function ($location) use ($stocks, $movements): array {
+                $stock = $stocks->get($location->id);
+                $movement = $movements->get($location->id);
+
+                return [
+                    'id' => (int) $location->id, 'code' => $location->code, 'name' => $location->name,
+                    'stock_value' => $this->money(data_get($stock, 'stock_value', 0)),
+                    'on_hand_quantity' => $this->quantity(data_get($stock, 'on_hand_quantity', 0)),
+                    'available_quantity' => $this->quantity(data_get($stock, 'available_quantity', 0)),
+                    'critical_count' => (int) data_get($stock, 'critical_count', 0),
+                    'empty_count' => (int) data_get($stock, 'empty_count', 0),
+                    'movement_count' => (int) data_get($movement, 'movement_count', 0),
+                    'incoming' => $this->quantity(data_get($movement, 'incoming', 0)),
+                    'outgoing' => $this->quantity(data_get($movement, 'outgoing', 0)),
+                ];
+            })->all();
+    }
+
+    /**
+     * @param  ReportFilters  $filters
+     * @return Collection<int|string, \stdClass>
+     */
+    private function locationStockMetrics(array $filters): Collection
+    {
+        return DB::table('stocks')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->whereIn('stocks.work_location_id', $filters['location_ids'])
+            ->selectRaw('stocks.work_location_id, COALESCE(SUM(stocks.quantity_on_hand),0) as on_hand_quantity, COALESCE(SUM(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged),0) as available_quantity, COALESCE(SUM('.Stock::inventoryValueSql().'),0) as stock_value, COUNT(DISTINCT CASE WHEN (stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock THEN products.id END) as critical_count, COUNT(DISTINCT CASE WHEN (stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= 0 THEN products.id END) as empty_count')
+            ->groupBy('stocks.work_location_id')->get()->keyBy('work_location_id');
+    }
+
+    /**
+     * @param  ReportFilters  $filters
      * @return Collection<int, array{sku: mixed, product: mixed, quantity: string, revenue: string}>
      */
     private function topProducts(array $filters): Collection
@@ -933,10 +1187,14 @@ class ReportMetricService
      */
     private function monthlyStockMovement(array $filters): array
     {
+        $dateSelect = DB::connection()->getDriverName() === 'mysql'
+            ? "DATE_FORMAT(occurred_at, '%Y-%m') as date"
+            : "strftime('%Y-%m', occurred_at) as date";
+
         return DB::table('stock_mutations')
             ->whereIn('work_location_id', $filters['location_ids'])
             ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-            ->selectRaw("strftime('%Y-%m', occurred_at) as date, SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing")
+            ->selectRaw($dateSelect.', SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing')
             ->groupBy('date')
             ->orderBy('date')
             ->get()
@@ -950,10 +1208,14 @@ class ReportMetricService
      */
     private function yearlyStockMovement(array $filters): array
     {
+        $dateSelect = DB::connection()->getDriverName() === 'mysql'
+            ? "DATE_FORMAT(occurred_at, '%Y') as date"
+            : "CAST(strftime('%Y', occurred_at) AS INTEGER) as date";
+
         return DB::table('stock_mutations')
             ->whereIn('work_location_id', $filters['location_ids'])
             ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-            ->selectRaw("CAST(strftime('%Y', occurred_at) AS INTEGER) as date, SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing")
+            ->selectRaw($dateSelect.', SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing')
             ->groupBy('date')
             ->orderBy('date')
             ->get()

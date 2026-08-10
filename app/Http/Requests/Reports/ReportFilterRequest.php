@@ -27,6 +27,7 @@ class ReportFilterRequest extends FormRequest
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'range' => ['nullable', 'string', 'in:daily,monthly,yearly'],
+            'report_scope' => ['nullable', 'string', 'in:all,retail,warehouse'],
         ];
     }
 }

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Reports\ReportMetricService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -29,6 +30,12 @@ class DashboardController extends Controller
                 'filters' => $filters,
                 'dashboard' => $reports->ownerDashboard($user, $filters),
                 'definitions' => $reports->definitions('daily'),
+                'workLocations' => DB::table('work_locations')
+                    ->whereIn('id', $user->permittedWorkLocationIds())
+                    ->where('is_active', true)
+                    ->orderBy('type')
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'type']),
             ]);
         }
 

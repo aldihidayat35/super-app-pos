@@ -38,6 +38,8 @@ class DashboardReportTest extends TestCase
 
     private WorkLocation $otherLocation;
 
+    private WorkLocation $warehouseLocation;
+
     private Branch $branch;
 
     protected function setUp(): void
@@ -54,8 +56,8 @@ class DashboardReportTest extends TestCase
 
         $this->branchLocation = WorkLocation::factory()->create(['type' => 'branch', 'code' => 'TKO-RPT', 'name' => 'Toko Report']);
         $this->otherLocation = WorkLocation::factory()->create(['type' => 'branch', 'code' => 'TKO-OTH', 'name' => 'Toko Lain']);
-        $warehouseLocation = WorkLocation::factory()->create(['type' => 'warehouse', 'code' => 'GDG-RPT']);
-        $warehouse = Warehouse::factory()->create(['work_location_id' => $warehouseLocation->id]);
+        $this->warehouseLocation = WorkLocation::factory()->create(['type' => 'warehouse', 'code' => 'GDG-RPT']);
+        $warehouse = Warehouse::factory()->create(['work_location_id' => $this->warehouseLocation->id]);
         $this->branch = Branch::factory()->create(['work_location_id' => $this->branchLocation->id, 'primary_warehouse_id' => $warehouse->id]);
 
         $this->retail->workLocations()->sync([$this->branchLocation->id => ['is_default' => true, 'is_active' => true]]);
@@ -136,6 +138,89 @@ class DashboardReportTest extends TestCase
         $this->actingAs($this->owner)->get(route('owner.dashboard'))->assertOk();
 
         $this->assertLessThan(60, count(DB::getQueryLog()));
+    }
+
+    public function test_daily_report_scope_filters_locations_by_operational_type(): void
+    {
+        $reports = app(ReportMetricService::class);
+
+        $retailFilters = $reports->filters($this->owner, ['report_scope' => 'retail']);
+        $this->assertSame('retail', $retailFilters['report_scope']);
+        $this->assertEqualsCanonicalizing(
+            [$this->branchLocation->id, $this->otherLocation->id],
+            $retailFilters['location_ids'],
+        );
+
+        $warehouseFilters = $reports->filters($this->owner, ['report_scope' => 'warehouse']);
+        $this->assertSame([$this->warehouseLocation->id], $warehouseFilters['location_ids']);
+
+        $mismatchedFilters = $reports->filters($this->owner, [
+            'report_scope' => 'retail',
+            'work_location_id' => $this->warehouseLocation->id,
+        ]);
+        $this->assertNull($mismatchedFilters['work_location_id']);
+        $this->assertEqualsCanonicalizing(
+            [$this->branchLocation->id, $this->otherLocation->id],
+            $mismatchedFilters['location_ids'],
+        );
+    }
+
+    public function test_daily_report_defaults_to_today(): void
+    {
+        $today = now('Asia/Jakarta')->toDateString();
+
+        $this->actingAs($this->owner)
+            ->get(route('reports.daily.index'))
+            ->assertOk()
+            ->assertSee('name="start_date" value="'.$today.'"', false)
+            ->assertSee('name="end_date" value="'.$today.'"', false);
+    }
+
+    public function test_daily_report_renders_distinct_retail_and_warehouse_views(): void
+    {
+        $this->actingAs($this->owner)
+            ->get(route('reports.daily.index', ['report_scope' => 'all']))
+            ->assertOk()
+            ->assertSee('Piutang Jatuh Tempo')
+            ->assertSee('Approval Prioritas')
+            ->assertSee('Order B2B Terbaru')
+            ->assertSee('Produk Terlaris')
+            ->assertSee('Shift Kasir Aktif');
+
+        $this->actingAs($this->owner)
+            ->get(route('reports.daily.index', ['report_scope' => 'retail']))
+            ->assertOk()
+            ->assertSee('Laporan Toko/Cabang')
+            ->assertSee('Detail Penjualan per Kasir')
+            ->assertSee('Transaksi Terbaru')
+            ->assertSee('Stok Toko Kritis')
+            ->assertSee('Produk Slow Moving')
+            ->assertSee('Semua toko/cabang');
+
+        $this->actingAs($this->owner)
+            ->get(route('reports.daily.index', ['report_scope' => 'warehouse']))
+            ->assertOk()
+            ->assertSee('Laporan Gudang')
+            ->assertSee('Detail Saldo Persediaan')
+            ->assertSee('Prioritas Restock')
+            ->assertSee('Mutasi Besar')
+            ->assertSee('Dead Stock')
+            ->assertSee('Semua gudang');
+    }
+
+    public function test_daily_report_chart_ranges_render_for_all_scopes(): void
+    {
+        foreach (['monthly', 'yearly'] as $range) {
+            $this->actingAs($this->owner)
+                ->get(route('reports.daily.index', ['report_scope' => 'all', 'range' => $range]))
+                ->assertOk()
+                ->assertSee('Laporan Utama');
+
+            $this->actingAs($this->owner)
+                ->get(route('reports.daily.index', ['report_scope' => 'warehouse', 'range' => $range]))
+                ->assertOk()
+                ->assertSee('Arus Stok');
+        }
     }
 
     public function test_critical_stock_kpi_counts_products_not_stock_rows(): void

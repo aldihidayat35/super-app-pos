@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Reports\ReportFilterRequest;
 use App\Services\Reports\ReportMetricService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -13,11 +14,25 @@ class ReportController extends Controller
     {
         abort_unless($request->user()->can('reports.view') || $this->canViewSpecialReport($request->user(), $type), 403);
 
-        $filters = $reports->filters($request->user(), $request->validated());
+        $input = $request->validated();
+        if ($type === 'daily') {
+            $today = now('Asia/Jakarta')->toDateString();
+            $input['start_date'] ??= $today;
+            $input['end_date'] ??= $today;
+        }
 
-        return view('reports.generic', [
+        $filters = $reports->filters($request->user(), $input);
+
+        $view = $type === 'daily' ? 'reports.daily' : 'reports.generic';
+
+        return view($view, [
             'report' => $reports->report($type, $request->user(), $filters),
             'labels' => $reports->reportLabels(),
+            'workLocations' => DB::table('work_locations')
+                ->whereIn('id', $request->user()->permittedWorkLocationIds())
+                ->where('is_active', true)
+                ->orderBy('type')->orderBy('name')
+                ->get(['id', 'code', 'name', 'type']),
         ]);
     }
 
