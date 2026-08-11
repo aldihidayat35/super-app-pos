@@ -25,6 +25,14 @@ if [[ -f .env ]]; then
     cp .env "$backup_dir/env-before-git-$(date +%Y%m%d-%H%M%S).backup"
 fi
 
+# Percobaan setup yang terputus dapat meninggalkan direktori .git yang tidak
+# valid. Simpan sebagai backup agar setup berikutnya dapat dimulai dengan aman.
+if [[ -e .git ]] && ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    broken_git_backup="$APP_DIR/.git-invalid-$(date +%Y%m%d-%H%M%S)"
+    mv "$APP_DIR/.git" "$broken_git_backup"
+    echo "Metadata Git yang tidak valid dipindahkan ke: $broken_git_backup"
+fi
+
 if [[ ! -d .git ]]; then
     git init
     git symbolic-ref HEAD "refs/heads/$BRANCH"
