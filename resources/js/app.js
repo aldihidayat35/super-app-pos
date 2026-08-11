@@ -363,12 +363,6 @@ const initializeConfirmations = () => {
     });
 };
 
-const initializeSidebarToggle = () => {
-    const toggle = document.getElementById('kt_app_sidebar_mobile_toggle');
-    const sidebar = document.getElementById('kt_app_sidebar');
-    toggle?.addEventListener('click', () => sidebar?.classList.toggle('drawer-on'));
-};
-
 const initializePasswordToggles = () => {
     document.querySelectorAll('[data-password-toggle]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -395,7 +389,6 @@ const initializeApplication = () => {
     initializeTableSearch();
     initializeModalSubmissions();
     initializeConfirmations();
-    initializeSidebarToggle();
     initializePasswordToggles();
 };
 

@@ -27,4 +27,20 @@ class NavigationTest extends TestCase
             ->assertSee('class="menu-link active"', false)
             ->assertDontSee('Kesehatan Sistem');
     }
+
+    #[Test]
+    public function mobile_sidebar_uses_the_metronic_drawer_toggle(): void
+    {
+        $permission = Permission::findOrCreate('dashboard.view');
+        $role = Role::findOrCreate('kepala_toko');
+        $role->givePermissionTo($permission);
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-kt-drawer-activate="{default: true, lg: false}"', false)
+            ->assertSee('data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle"', false)
+            ->assertSee('aria-controls="kt_app_sidebar"', false);
+    }
 }

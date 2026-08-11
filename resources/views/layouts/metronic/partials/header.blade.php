@@ -3,7 +3,7 @@
 
         {{-- Left: mobile toggle + brand (logo & app name) --}}
         <div class="d-flex align-items-center">
-            <button type="button" class="btn btn-icon btn-active-color-primary w-30px h-30px d-lg-none ms-n3 me-2" id="kt_app_sidebar_mobile_toggle" aria-label="Buka menu">
+            <button type="button" class="btn btn-icon btn-active-color-primary w-30px h-30px d-lg-none ms-n3 me-2" id="kt_app_sidebar_mobile_toggle" aria-label="Buka menu" aria-controls="kt_app_sidebar">
                 <i class="ki-outline ki-abstract-14 fs-1"></i>
             </button>
 

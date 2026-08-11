@@ -36,7 +36,9 @@
 @endphp
 
 <aside id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar"
-    aria-label="Navigasi utama">
+    data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true"
+    data-kt-drawer-width="280px" data-kt-drawer-direction="start"
+    data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle" aria-label="Navigasi utama">
     <div class="app-sidebar-menu overflow-hidden flex-column-fluid">
         <div class="app-sidebar-wrapper hover-scroll-overlay-y my-3 px-3" data-kt-scroll="true"
             data-kt-scroll-height="100%" data-kt-scroll-save-state="true">
