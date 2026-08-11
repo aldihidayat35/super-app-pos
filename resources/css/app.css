@@ -407,6 +407,12 @@
     text-align: center;
 }
 
+.auth-login-header > * {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .auth-brand-mark {
     align-items: center;
     background: linear-gradient(145deg, #fff, #f3f7f5);
@@ -414,41 +420,38 @@
     border-radius: 50%;
     box-shadow: 0 .35rem .8rem rgb(11 45 29 / 8%);
     display: inline-flex;
-    flex: 0 0 90px;
-    height: 90px;
+    flex: 0 0 120px;
+    height: 120px;
     justify-content: center;
-    margin-bottom: 1.35rem;
-    max-width: 90px;
-    min-width: 90px;
+    margin-bottom: 1.5rem;
+    max-width: 120px;
+    min-width: 120px;
     overflow: hidden;
-    width: 90px;
+    width: 120px;
 }
 
 .auth-brand-mark svg {
     fill: none;
-    flex: 0 0 56px;
-    height: 56px;
-    max-height: 56px;
-    max-width: 56px;
-    min-height: 56px;
-    min-width: 56px;
+    flex: 0 0 90px;
+    height: 90px;
+    max-height: 90px;
+    max-width: 90px;
+    min-height: 90px;
+    min-width: 90px;
     stroke: var(--auth-green);
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 4;
-    width: 56px;
+    width: 90px;
 }
 
 .auth-brand-logo-img {
-    border-radius: 50%;
-    flex: 0 0 56px;
-    height: 56px;
-    max-height: 56px;
-    max-width: 56px;
-    min-height: 56px;
-    min-width: 56px;
-    object-fit: contain;
-    width: 56px;
+    display: block;
+    height: auto;
+    margin-bottom: 1.25rem;
+    max-height: 120px;
+    max-width: 240px;
+    width: auto;
 }
 
 .auth-login-header h1 {
@@ -801,15 +804,19 @@
     }
 
     .auth-brand-mark {
-        height: 72px;
+        height: 90px;
         margin-bottom: 1rem;
-        width: 72px;
+        width: 90px;
     }
 
     .auth-brand-mark svg,
     .auth-brand-logo-img {
-        height: 45px;
-        width: 45px;
+        height: 70px;
+        max-height: 70px;
+        max-width: 70px;
+        min-height: 70px;
+        min-width: 70px;
+        width: 70px;
     }
 
     .auth-login-header {
