@@ -369,6 +369,20 @@ const initializeSidebarToggle = () => {
     toggle?.addEventListener('click', () => sidebar?.classList.toggle('drawer-on'));
 };
 
+const initializePasswordToggles = () => {
+    document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.dataset.passwordToggle);
+            if (!input) return;
+
+            const passwordIsVisible = input.type === 'text';
+            input.type = passwordIsVisible ? 'password' : 'text';
+            button.setAttribute('aria-pressed', passwordIsVisible ? 'false' : 'true');
+            button.setAttribute('aria-label', passwordIsVisible ? 'Tampilkan kata sandi' : 'Sembunyikan kata sandi');
+        });
+    });
+};
+
 const initializeApplication = () => {
     initializeTheme();
     initializeSelect2();
@@ -382,6 +396,7 @@ const initializeApplication = () => {
     initializeModalSubmissions();
     initializeConfirmations();
     initializeSidebarToggle();
+    initializePasswordToggles();
 };
 
 if (document.readyState === 'loading') {
