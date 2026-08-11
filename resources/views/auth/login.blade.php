@@ -10,16 +10,16 @@
         @csrf
         <header class="auth-login-header">
             @php $logo = \App\Models\SystemSetting::getCompanyLogo(); @endphp
-            @if ($logo)
-                <img src="{{ $logo }}" alt="Logo {{ $companyName }}" class="auth-brand-logo" aria-label="Logo {{ $companyName }}">
-            @else
-                <span class="auth-brand-mark" aria-hidden="true">
+            <span class="auth-brand-mark" aria-hidden="true">
+                @if ($logo)
+                    <img src="{{ $logo }}" alt="Logo {{ $companyName }}" class="auth-brand-logo-img" loading="lazy">
+                @else
                     <svg viewBox="0 0 64 64" role="img">
                         <path d="M10 27 32 13l22 14M14 27h36M17 27v24m30-24v24" />
                         <path d="M22 34h20v17H22zM27 34v7h10v-7" />
                     </svg>
-                </span>
-            @endif
+                @endif
+            </span>
             <h1>Masuk ke {{ $companyName }}</h1>
             <p>Gunakan email atau username yang diberikan administrator.</p>
         </header>
