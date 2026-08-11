@@ -430,6 +430,18 @@
     width: 56px;
 }
 
+.auth-brand-logo {
+    border-radius: 50%;
+    box-shadow: 0 0.35rem 0.8rem rgb(11 45 29 / 8%);
+    height: 90px;
+    margin-bottom: 1.35rem;
+    max-width: 180px;
+    object-fit: contain;
+    padding: 8px;
+    background: linear-gradient(145deg, #fff, #f3f7f5);
+    border: 1px solid #e4e9e7;
+}
+
 .auth-login-header h1 {
     color: var(--auth-ink);
     font-size: clamp(1.6rem, 3vw, 2rem);
@@ -788,6 +800,13 @@
     .auth-brand-mark svg {
         height: 45px;
         width: 45px;
+    }
+
+    .auth-brand-logo {
+        height: 72px;
+        max-width: 140px;
+        margin-bottom: 1rem;
+        padding: 6px;
     }
 
     .auth-login-header {
