@@ -52,22 +52,24 @@
             'shipped' => 4, 'partially_received', 'fully_received' => 5, 'completed' => 6,
             default => -1,
         };
-        $nextStep = match($transfer->status->value) {
-            'draft' => 'Periksa item lalu ajukan dokumen untuk persetujuan.',
-            'pending_approval' => 'Menunggu pemeriksaan dan persetujuan Kepala Gudang.',
-            'approved' => 'Stok sumber sudah dialokasikan. Lanjutkan ke pengambilan dan pengemasan.',
-            'packing' => 'Selesaikan jumlah yang berhasil diambil, lalu kirim barang.',
-            'shipped' => 'Barang sedang dalam perjalanan dan menunggu konfirmasi penerimaan tujuan.',
-            'partially_received' => 'Masih ada barang yang belum dipertanggungjawabkan. Lanjutkan penerimaan berikutnya.',
-            'fully_received' => 'Seluruh barang sudah dipertanggungjawabkan. Transfer dapat diselesaikan.',
-            'completed' => 'Transfer telah selesai dan tidak memerlukan tindakan lanjutan.',
-            'cancelled' => 'Transfer dibatalkan. Tidak ada tindakan lanjutan pada dokumen ini.',
-            default => 'Periksa status dokumen sebelum melanjutkan.',
-        };
         $hasDamaged = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare((string)$item->quantity_damaged, '0') > 0);
         $hasDiscrepancy = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare($item->unresolvedDiscrepancyQuantity(), '0') > 0);
         $hasTransit = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare($item->inTransitQuantity(), '0') > 0);
         $hasShort = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare((string)$item->quantity_short, '0') > 0);
+        $nextStep = match($transfer->status->value) {
+            'draft' => ['title' => 'Ajukan untuk Persetujuan', 'description' => 'Periksa kembali item transfer, lalu ajukan dokumen agar Kepala Gudang dapat melakukan persetujuan.', 'action' => 'submit'],
+            'pending_approval' => ['title' => 'Periksa dan Setujui Transfer', 'description' => 'Kepala Gudang sumber perlu memeriksa jumlah yang diminta serta kecukupan stok sebelum melakukan alokasi.', 'action' => 'approval'],
+            'approved' => ['title' => 'Mulai Picking dan Packing', 'description' => 'Stok sumber sudah dialokasikan. Petugas gudang harus mengambil barang dari rak dan mencatat hasil pengemasan.', 'action' => 'packing'],
+            'packing' => ['title' => 'Konfirmasi Pengiriman', 'description' => 'Barang sudah masuk proses packing. Lengkapi hasil picking bila perlu, kemudian catat kendaraan atau kurir dan kirim barang.', 'action' => 'shipping'],
+            'shipped' => ['title' => 'Terima Barang di Lokasi Tujuan', 'description' => 'Barang sedang dalam perjalanan. Petugas tujuan harus memeriksa jumlah diterima, rusak, dan selisih saat barang tiba.', 'action' => 'receiving'],
+            'partially_received' => $hasDiscrepancy
+                ? ['title' => 'Selesaikan Selisih Penerimaan', 'description' => 'Ada selisih yang belum dipertanggungjawabkan. Tentukan penyelesaian dan unggah bukti sebelum transfer dapat dilanjutkan.', 'action' => 'discrepancy']
+                : ['title' => 'Lanjutkan Penerimaan Barang', 'description' => 'Sebagian barang telah diterima, tetapi masih ada barang dalam perjalanan yang harus dicatat saat tiba.', 'action' => 'receiving'],
+            'fully_received' => ['title' => 'Tutup Transfer', 'description' => 'Seluruh barang telah dipertanggungjawabkan. Penanggung jawab tujuan dapat menyelesaikan dokumen transfer.', 'action' => 'complete'],
+            'completed' => ['title' => 'Transfer Selesai', 'description' => 'Tidak ada tindakan operasional berikutnya. Dokumen dapat dicetak atau ditinjau melalui daftar transfer.', 'action' => 'finished'],
+            'cancelled' => ['title' => 'Transfer Dibatalkan', 'description' => 'Tidak ada tindakan lanjutan pada dokumen ini. Buat transfer baru jika pengiriman tetap diperlukan.', 'action' => 'cancelled'],
+            default => ['title' => 'Periksa Status Transfer', 'description' => 'Status dokumen belum memiliki arahan proses berikutnya.', 'action' => 'none'],
+        };
     @endphp
 
     <x-metronic.card title="Perjalanan Transfer" class="mb-5">
@@ -91,8 +93,90 @@
     </x-metronic.card>
 
     <div class="row g-5 mb-5">
-        <div class="col-lg-5"><x-metronic.card title="Langkah Berikutnya" class="h-100"><div class="d-flex gap-3"><i class="ki-outline ki-route fs-2 text-primary"></i><div class="text-gray-800">{{ $nextStep }}</div></div></x-metronic.card></div>
         <div class="col-lg-7">
+            <x-metronic.card title="Langkah Berikutnya" class="h-100">
+                <div class="d-flex align-items-start gap-4 mb-5">
+                    <div class="symbol symbol-50px flex-shrink-0">
+                        <span class="symbol-label bg-light-primary"><i class="ki-outline ki-route fs-2x text-primary"></i></span>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold text-gray-900 mb-1">{{ $nextStep['title'] }}</div>
+                        <div class="text-gray-700">{{ $nextStep['description'] }}</div>
+                    </div>
+                </div>
+
+                <div class="rounded border border-dashed border-gray-300 bg-light-primary p-4 mb-5">
+                    <div class="text-muted text-uppercase fs-8 fw-bold mb-2">Penanggung Jawab Berikutnya</div>
+                    <div class="fw-bold text-gray-900">{{ $nextResponsibility['role'] }}</div>
+                    @if($nextResponsibility['location'])
+                        <div class="text-muted fs-7"><i class="ki-outline ki-geolocation me-1"></i>{{ $nextResponsibility['location'] }}</div>
+                    @endif
+                    @if($nextResponsibility['users'])
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            @foreach($nextResponsibility['users'] as $responsibleUser)
+                                <span class="badge badge-light-primary"><i class="ki-outline ki-user me-1"></i>{{ $responsibleUser }}</span>
+                            @endforeach
+                        </div>
+                    @elseif(!in_array($transfer->status->value, ['completed', 'cancelled'], true))
+                        <div class="text-warning fs-8 mt-2">Belum ada user aktif dengan role dan penempatan lokasi yang sesuai.</div>
+                    @endif
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    @if($nextStep['action'] === 'packing')
+                        @can('pack', $transfer)
+                            <a href="{{ route('warehouse.stock-transfers.packing', $transfer) }}" class="btn btn-primary"><i class="ki-outline ki-package"></i>Buka Halaman Packing</a>
+                        @else
+                            <span class="btn btn-light disabled">Menunggu Petugas Gudang</span>
+                        @endcan
+                    @elseif($nextStep['action'] === 'shipping')
+                        @can('ship', $transfer)
+                            <a href="{{ route('warehouse.stock-transfers.ship-form', $transfer) }}" class="btn btn-primary"><i class="ki-outline ki-delivery"></i>Buka Halaman Pengiriman</a>
+                            @can('pack', $transfer)<a href="{{ route('warehouse.stock-transfers.packing', $transfer) }}" class="btn btn-light-primary">Perbarui Packing</a>@endcan
+                        @else
+                            <span class="btn btn-light disabled">Menunggu Petugas Pengiriman</span>
+                        @endcan
+                    @elseif($nextStep['action'] === 'receiving')
+                        @can('receive', $transfer)
+                            <a href="{{ route('retail.stock-transfers.receive-form', $transfer) }}" class="btn btn-primary"><i class="ki-outline ki-delivery-3"></i>Buka Halaman Penerimaan</a>
+                        @else
+                            <span class="btn btn-light disabled">Menunggu Petugas Lokasi Tujuan</span>
+                        @endcan
+                    @elseif($nextStep['action'] === 'discrepancy')
+                        @can('resolveDiscrepancy', $transfer)
+                            <a href="#penyelesaian-selisih" class="btn btn-warning"><i class="ki-outline ki-information-2"></i>Buka Penyelesaian Selisih</a>
+                        @else
+                            <span class="btn btn-light disabled">Menunggu Penanggung Jawab Selisih</span>
+                        @endcan
+                    @elseif($nextStep['action'] === 'submit')
+                        @can('update', $transfer)
+                            <a href="#aksi-dokumen" class="btn btn-primary"><i class="ki-outline ki-down"></i>Buka Aksi Pengajuan</a>
+                        @else
+                            <span class="btn btn-light disabled">Menunggu Pembuat Transfer</span>
+                        @endcan
+                    @elseif($nextStep['action'] === 'approval')
+                        @can('approve', $transfer)
+                            <a href="#aksi-dokumen" class="btn btn-primary"><i class="ki-outline ki-down"></i>Buka Aksi Persetujuan</a>
+                        @else
+                            <span class="btn btn-light disabled">Menunggu Kepala Gudang</span>
+                        @endcan
+                    @elseif($nextStep['action'] === 'complete')
+                        @can('complete', $transfer)
+                            <a href="#aksi-dokumen" class="btn btn-primary"><i class="ki-outline ki-down"></i>Buka Aksi Penyelesaian</a>
+                        @else
+                            <span class="btn btn-light disabled">Menunggu Penanggung Jawab Tujuan</span>
+                        @endcan
+                    @elseif($nextStep['action'] === 'finished')
+                        <a href="{{ route('warehouse.stock-transfers.print', $transfer) }}" class="btn btn-light-success"><i class="ki-outline ki-printer"></i>Cetak Surat Jalan</a>
+                        <a href="{{ route('warehouse.stock-transfers.index') }}" class="btn btn-light-primary">Kembali ke Daftar</a>
+                    @elseif($nextStep['action'] === 'cancelled')
+                        <a href="{{ route('warehouse.stock-transfers.create') }}" class="btn btn-primary"><i class="ki-outline ki-plus"></i>Buat Transfer Baru</a>
+                        <a href="{{ route('warehouse.stock-transfers.index') }}" class="btn btn-light-primary">Kembali ke Daftar</a>
+                    @endif
+                </div>
+            </x-metronic.card>
+        </div>
+        <div class="col-lg-5">
             <x-metronic.card title="Perhatian Operasional" class="h-100">
                 @if(!$hasDamaged && !$hasDiscrepancy && !$hasTransit && !$hasShort)
                     <div class="alert alert-success mb-0">Tidak ada kerusakan, selisih pengiriman, kekurangan pengambilan, atau barang dalam perjalanan yang perlu ditindaklanjuti.</div>
@@ -144,8 +228,16 @@
             </x-metronic.card>
         </div>
         <div class="col-lg-4">
-            <x-metronic.card title="Aksi Dokumen">
+            <x-metronic.card title="Aksi Dokumen" id="aksi-dokumen">
                 <div class="d-grid gap-3">
+                    @can('update', $transfer)
+                        @if($transfer->status === \App\Enums\StockTransferStatus::DRAFT)
+                            <form method="POST" action="{{ route('warehouse.stock-transfers.submit', $transfer) }}" onsubmit="return confirm('Ajukan transfer ini untuk persetujuan Kepala Gudang?');">
+                                @csrf
+                                <button class="btn btn-primary w-100"><i class="ki-outline ki-send"></i>Ajukan untuk Persetujuan</button>
+                            </form>
+                        @endif
+                    @endcan
                     @can('approve', $transfer)
                         @php($approvalBlocked = $approvalStocks->contains(fn($row) => !$row['enough']))
                         <div class="border rounded p-3">
@@ -161,7 +253,7 @@
                 </div>
             </x-metronic.card>
             @if($hasDiscrepancy)
-                <x-metronic.card title="Penyelesaian Selisih" class="mt-5">
+                <x-metronic.card title="Penyelesaian Selisih" class="mt-5" id="penyelesaian-selisih">
                     @can('resolveDiscrepancy', $transfer)
                         @foreach($transfer->items as $item)
                             @if(\App\Support\Decimal::compare($item->unresolvedDiscrepancyQuantity(), '0') > 0)

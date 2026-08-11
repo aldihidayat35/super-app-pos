@@ -26,6 +26,131 @@ Contoh path:
 
 Pastikan `storage/` dan `bootstrap/cache/` writable oleh user PHP-FPM.
 
+## Shared hosting cPanel dengan document root terpisah
+
+Pada shared hosting, source Laravel dapat berada di luar `public_html`, sedangkan domain diarahkan ke folder khusus di dalam `public_html`.
+
+Contoh:
+
+```text
+/home/pinp7981/pos-super                                      # source Laravel
+/home/pinp7981/public_html/super-app-kedaung.demokan.online  # document root domain
+```
+
+Document root domain harus berisi **seluruh isi** folder `public`, bukan hanya `index.php` dan symlink `storage`. Minimal harus tersedia:
+
+```text
+index.php
+.htaccess
+build/manifest.json
+assets/css/ki-icons-fallback.css
+assets/vendor/metronic/css/style.bundle.css
+```
+
+Symlink `storage` hanya membuka file upload dari `storage/app/public`. Symlink tersebut tidak menyediakan CSS, JavaScript, gambar bawaan Metronic, atau hasil build Vite.
+
+### Sinkronisasi asset ke document root
+
+Jalankan dari Terminal cPanel setelah source terbaru diunggah:
+
+```bash
+APP_DIR=/home/pinp7981/pos-super
+DOCROOT=/home/pinp7981/public_html/super-app-kedaung.demokan.online
+
+cd "$APP_DIR"
+
+# Hapus penanda Vite development yang tidak boleh berada di production
+rm -f "$APP_DIR/public/hot" "$DOCROOT/hot"
+
+# Jika Node.js tersedia di hosting
+npm ci
+npm run build
+
+mkdir -p "$DOCROOT/assets" "$DOCROOT/build"
+cp -a "$APP_DIR/public/assets/." "$DOCROOT/assets/"
+cp -a "$APP_DIR/public/build/." "$DOCROOT/build/"
+cp "$APP_DIR/public/.htaccess" "$DOCROOT/.htaccess"
+
+test -f "$DOCROOT/assets/css/ki-icons-fallback.css"
+test -f "$DOCROOT/assets/vendor/metronic/css/style.bundle.css"
+test -f "$DOCROOT/build/manifest.json"
+test ! -f "$DOCROOT/hot"
+```
+
+Jika Node.js tidak tersedia di shared hosting, jalankan `npm ci && npm run build` di komputer lokal/CI lalu upload folder `public/build` hasil build bersama folder `public/assets`.
+
+### Front controller cPanel
+
+`index.php` pada document root harus memuat autoloader dan bootstrap dari source aplikasi:
+
+```php
+require '/home/pinp7981/pos-super/vendor/autoload.php';
+$app = require_once '/home/pinp7981/pos-super/bootstrap/app.php';
+$app->usePublicPath(__DIR__);
+$app->handleRequest(Illuminate\Http\Request::capture());
+```
+
+Versi aplikasi terbaru juga mendeteksi direktori front controller secara otomatis. Baris `usePublicPath(__DIR__)` tetap disarankan agar konfigurasi document root eksplisit.
+
+### Storage dan cache
+
+```bash
+APP_DIR=/home/pinp7981/pos-super
+DOCROOT=/home/pinp7981/public_html/super-app-kedaung.demokan.online
+
+cd "$APP_DIR"
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+test -L "$DOCROOT/storage" || ln -s "$APP_DIR/storage/app/public" "$DOCROOT/storage"
+chmod -R ug+rwX "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
+```
+
+Pastikan environment production memuat URL yang sama dengan domain:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://super-app-kedaung.demokan.online
+ASSET_URL=https://super-app-kedaung.demokan.online
+```
+
+### Pemeriksaan HTTP setelah deploy
+
+```bash
+curl -I https://super-app-kedaung.demokan.online/login
+curl -I https://super-app-kedaung.demokan.online/assets/css/ki-icons-fallback.css
+curl -I https://super-app-kedaung.demokan.online/build/manifest.json
+```
+
+Respons login harus `200`, sedangkan asset CSS dan manifest harus dapat ditemukan tanpa `404`.
+
+HTML production juga tidak boleh menunjuk ke Vite development server. Periksa dengan:
+
+```bash
+if curl -fsS https://super-app-kedaung.demokan.online/login | grep -Eq '(:5173|@vite/client)'; then
+    echo "ERROR: halaman production masih memakai Vite development server" >&2
+    exit 1
+fi
+```
+
+Jika ditemukan URL seperti `http://[::1]:5173`, hapus `hot` dari source dan document root, lalu bersihkan cache:
+
+```bash
+APP_DIR=/home/pinp7981/pos-super
+DOCROOT=/home/pinp7981/public_html/super-app-kedaung.demokan.online
+
+rm -f "$APP_DIR/public/hot" "$DOCROOT/hot"
+cd "$APP_DIR"
+php artisan optimize:clear
+php artisan config:cache
+php artisan view:cache
+```
+
+File `hot` hanya berisi alamat Vite development server. File ini tidak berhubungan dengan data aplikasi maupun file upload, sehingga aman dihapus pada production.
+
 ## Environment production
 
 1. Copy `.env.production.example` ke `.env`.
@@ -90,6 +215,16 @@ Langkah utama:
 export APP_DIR=/var/www/gudangtoko/current
 bash scripts/deploy-production.sh
 ```
+
+Untuk shared hosting cPanel dengan document root terpisah, isi juga `PUBLIC_DIR`:
+
+```bash
+export APP_DIR=/home/pinp7981/pos-super
+export PUBLIC_DIR=/home/pinp7981/public_html/super-app-kedaung.demokan.online
+bash scripts/deploy-production.sh
+```
+
+Script menghapus file `hot` dari kedua lokasi, membangun asset, lalu menyalin `assets`, `build`, dan `.htaccess` ke document root.
 
 Urutan script:
 

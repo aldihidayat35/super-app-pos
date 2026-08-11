@@ -36,12 +36,13 @@ class CashShiftController extends Controller
                 ->when($request->filled('branch_id'), fn ($query) => $query->where('branch_id', $request->integer('branch_id')))
                 ->when($request->filled('date_from'), fn ($query) => $query->whereDate('opened_at', '>=', $request->query('date_from')))
                 ->when($request->filled('date_to'), fn ($query) => $query->whereDate('opened_at', '<=', $request->query('date_to')))
+                ->when($request->boolean('has_difference'), fn ($query) => $query->where('difference_amount', '!=', 0))
                 ->latest('opened_at')
                 ->paginate(15)
                 ->withQueryString(),
             'branches' => Branch::query()->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())->orderBy('name')->get(),
             'statuses' => CashShiftStatus::cases(),
-            'filters' => $request->only(['status', 'branch_id', 'date_from', 'date_to']),
+            'filters' => $request->only(['status', 'branch_id', 'date_from', 'date_to', 'has_difference']),
         ]);
     }
 

@@ -1,6 +1,6 @@
 # Guide Book GudangToko
 
-Dokumen ini adalah buku panduan penggunaan aplikasi GudangToko untuk lima kelompok akun pokok. Akun turunan dimasukkan ke bagian akun pokok yang paling dekat dengan pekerjaan hariannya.
+Dokumen ini adalah buku panduan penggunaan aplikasi GudangToko untuk seluruh kelompok akun pokok. Akun turunan dimasukkan ke bagian akun pokok yang paling dekat dengan pekerjaan hariannya. Versi di dalam aplikasi tersedia melalui menu **Dokumentasi Panduan** dan otomatis disaring berdasarkan role user yang login.
 
 ## Versi HTML lengkap
 
@@ -10,19 +10,25 @@ Versi paling detail dan siap dibuka di browser/cetak tersedia di:
 
 ## Pembagian guide
 
-1. [Owner](owner.md)  
+1. [Panduan Umum](umum.md)
+   Untuk seluruh user. Fokus pada login, navigasi, role, permission, status dokumen, keamanan, troubleshooting, dan eskalasi.
+
+2. [Owner](owner.md)
    Untuk `owner_viewer` dan `owner_approver`. Fokus pada kontrol bisnis, dashboard, approval, audit, margin, laporan, piutang, dan keputusan strategis.
 
-2. [Super Admin](super-admin.md)  
+3. [Super Admin](super-admin.md)
    Untuk `super_admin`, `admin_user`, dan `admin_config`. Fokus pada akun, role, permission, lokasi kerja, master organisasi, konfigurasi sistem, backup, health check, import awal, dan go-live.
 
-3. [Gudang](gudang.md)  
-   Untuk `kepala_gudang`, `staff_gudang`, `picker_packer`, dan `purchasing`. Fokus pada pembelian, penerimaan barang, stok, mutasi, transfer, opname, retur, loss, fulfillment B2B, pengiriman, dan HPP.
+4. [Gudang](gudang.md)
+   Untuk `kepala_gudang`, `staff_gudang`, dan `picker_packer`. Fokus pada penerimaan barang, stok, mutasi, transfer, opname, retur, loss, fulfillment B2B, pengiriman, dan HPP.
 
-4. [Toko Internal](toko-internal.md)  
+5. [Purchasing & Supplier](purchasing-supplier.md)
+   Untuk `purchasing`. Fokus pada master supplier, permintaan pembelian, PO, koordinasi receipt, HPP, selisih, dan evaluasi supplier.
+
+6. [Toko Internal](toko-internal.md)
    Untuk `kepala_toko`, `kasir`, `supervisor_shift`, dan karyawan toko. Fokus pada POS, shift kasir, closing, restock, terima transfer, retur toko, piutang toko, dan kehadiran.
 
-5. [Langganan/B2B](langganan-b2b.md)  
+7. [Langganan/B2B](langganan-b2b.md)
    Untuk `langganan_owner` dan `langganan_staff`. Fokus pada portal pelanggan: katalog, keranjang, checkout, order, invoice, pembayaran, pengiriman, bukti terima, reorder, profil usaha, dan komplain.
 
 ## Akun demo lokal

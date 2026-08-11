@@ -45,6 +45,8 @@ npm run build
 
 Pastikan web server mengarah ke folder `public/` dan user web server dapat menulis ke `storage/` serta `bootstrap/cache/`.
 
+Untuk shared hosting cPanel dengan source Laravel di luar `public_html`, document root wajib menerima seluruh isi `public/` termasuk `assets/` dan hasil Vite `build/`. Symlink `storage` saja tidak menyediakan asset aplikasi. Ikuti bagian **Shared hosting cPanel dengan document root terpisah** pada [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## Database, cache, session, dan queue
 
 Default contoh memakai database:

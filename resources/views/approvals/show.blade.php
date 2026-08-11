@@ -20,10 +20,117 @@
                 </dl>
             </x-metronic.card>
             <x-metronic.card title="Before / After" class="mt-5">
-                <div class="row">
-                    <div class="col-md-6"><h6>Sebelum</h6><pre class="bg-light p-3 rounded small">{{ json_encode($approval->before_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre></div>
-                    <div class="col-md-6"><h6>Sesudah</h6><pre class="bg-light p-3 rounded small">{{ json_encode($approval->after_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre></div>
-                </div>
+                @php
+                    $beforePayload = $approval->before_payload ?? [];
+                    $afterPayload = $approval->after_payload ?? [];
+                    $allKeys = array_unique(array_merge(array_keys($beforePayload), array_keys($afterPayload)));
+                @endphp
+                @if(count($allKeys) > 0)
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless diff-table">
+                            <thead>
+                                <tr class="text-muted small text-uppercase fw-semibold">
+                                    <th class="ps-3" style="width:25%">Field</th>
+                                    <th class="text-danger" style="width:37.5%"><i class="mdi mdi-arrow-left me-1"></i>Sebelum</th>
+                                    <th class="pe-3 text-success" style="width:37.5%">Sesudah<i class="mdi mdi-arrow-right ms-1"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($allKeys as $key)
+                                    @php
+                                        $beforeVal = $beforePayload[$key] ?? null;
+                                        $afterVal = $afterPayload[$key] ?? null;
+                                        $beforeStr = $beforeVal === null ? 'null' : (is_array($beforeVal) ? json_encode($beforeVal) : $beforeVal);
+                                        $afterStr = $afterVal === null ? 'null' : (is_array($afterVal) ? json_encode($afterVal) : $afterVal);
+                                        $changed = (string)$beforeVal !== (string)$afterVal;
+                                        $added = !array_key_exists($key, $beforePayload);
+                                        $removed = !array_key_exists($key, $afterPayload);
+                                    @endphp
+                                    <tr class="{{ $changed || $added || $removed ? 'diff-highlight' : '' }}">
+                                        <td class="ps-3 align-top">
+                                            <span class="fw-bold text-primary field-name">{{ e($key) }}</span>
+                                            @if($added)
+                                                <span class="badge bg-success-subtle text-success ms-1 badge-pill" style="font-size: 0.65rem;">baru</span>
+                                            @endif
+                                            @if($removed)
+                                                <span class="badge bg-danger-subtle text-danger ms-1 badge-pill" style="font-size: 0.65rem;">hapus</span>
+                                            @endif
+                                            @if($changed && !$added && !$removed)
+                                                <span class="badge bg-warning-subtle text-warning-emphasis ms-1 badge-pill" style="font-size: 0.65rem;">ubah</span>
+                                            @endif
+                                        </td>
+                                        <td class="align-top">
+                                            <code class="d-block p-2 rounded small diff-before">{{ e($beforeStr) }}</code>
+                                        </td>
+                                        <td class="pe-3 align-top">
+                                            @if($removed)
+                                                <code class="d-block p-2 rounded small text-decoration-line-through diff-removed">{{ e($afterStr) }}</code>
+                                            @elseif($added)
+                                                <code class="d-block p-2 rounded small fw-bold diff-added">{{ e($afterStr) }}</code>
+                                            @elseif($changed)
+                                                <code class="d-block p-2 rounded small fw-bold diff-changed">{{ e($afterStr) }}</code>
+                                            @else
+                                                <code class="d-block p-2 rounded small text-muted diff-same">{{ e($afterStr) }}</code>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="text-muted small fst-italic">Tidak ada data payload</div>
+                @endif
+                <style>
+                    .diff-table th {
+                        border-bottom: 2px solid var(--bs-border-color);
+                        font-size: 0.75rem;
+                    }
+                    .diff-table td {
+                        vertical-align: top;
+                        padding: 0.75rem 0.5rem;
+                    }
+                    .field-name {
+                        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+                        font-size: 0.85rem;
+                    }
+                    .badge-pill {
+                        border-radius: 20px !important;
+                        padding: 0.25em 0.6em;
+                    }
+                    .diff-highlight {
+                        background-color: rgba(var(--bs-success-rgb), 0.05);
+                    }
+                    .diff-highlight:hover td {
+                        background-color: rgba(var(--bs-success-rgb), 0.1);
+                    }
+                    code.small {
+                        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+                        font-size: 0.8rem;
+                        line-height: 1.4;
+                        display: block;
+                        min-height: 2em;
+                    }
+                    .diff-before {
+                        background-color: var(--bs-danger-bg-subtle);
+                        color: var(--bs-danger-text-emphasis);
+                    }
+                    .diff-changed,
+                    .diff-added {
+                        background-color: var(--bs-success-bg-subtle);
+                        color: var(--bs-success-text-emphasis);
+                        font-weight: 600;
+                    }
+                    .diff-removed {
+                        background-color: var(--bs-secondary-bg-subtle);
+                        color: var(--bs-secondary-text-emphasis);
+                    }
+                    .diff-same {
+                        background-color: var(--bs-light-bg-subtle);
+                        color: var(--bs-secondary-text-emphasis);
+                        opacity: 0.7;
+                    }
+                </style>
             </x-metronic.card>
         </div>
         <div class="col-lg-5">

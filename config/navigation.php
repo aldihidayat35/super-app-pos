@@ -681,4 +681,10 @@ return [
             ],
         ],
     ],
+    [
+        'label' => 'Dokumentasi Panduan',
+        'icon' => 'ki-outline ki-book-open',
+        'route' => 'guides.index',
+        'active' => ['guides.*'],
+    ],
 ];

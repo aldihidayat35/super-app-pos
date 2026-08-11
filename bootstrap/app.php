@@ -15,7 +15,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
@@ -44,3 +44,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+
+// Pada shared hosting, front controller dapat berada di public_html sementara
+// source aplikasi berada di direktori lain. Gunakan direktori index.php yang
+// benar sebagai public path agar Vite manifest dan asset statis ditemukan.
+if (PHP_SAPI !== 'cli' && isset($_SERVER['SCRIPT_FILENAME']) && is_string($_SERVER['SCRIPT_FILENAME'])) {
+    $frontController = realpath($_SERVER['SCRIPT_FILENAME']);
+
+    if ($frontController !== false && is_file($frontController)) {
+        $app->usePublicPath(dirname($frontController));
+    }
+}
+
+return $app;

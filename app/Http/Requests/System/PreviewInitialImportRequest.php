@@ -17,8 +17,18 @@ class PreviewInitialImportRequest extends FormRequest
     {
         return [
             'type' => ['required', 'string', Rule::in(['suppliers', 'customers', 'products', 'opening_stocks', 'users', 'locations'])],
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:4096'],
+            'file' => ['required', 'file', 'mimes:xlsx', 'max:4096'],
             'dry_run' => ['nullable', 'boolean'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'type' => 'jenis data',
+            'file' => 'file Excel XLSX',
+            'dry_run' => 'mode dry-run',
         ];
     }
 }

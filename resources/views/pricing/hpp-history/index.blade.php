@@ -9,10 +9,10 @@
 
 @section('page_guide')
     <x-metronic.page-guide id="pricing-hpp-history" title="Panduan Histori HPP">
-        <x-slot:function><p>Menjelaskan perubahan biaya modal rata-rata produk setelah penerimaan barang. HPP bukan harga jual; HPP adalah biaya modal rata-rata produk.</p></x-slot:function>
+        <x-slot:function><p>Menjelaskan perubahan biaya modal produk dari stok awal maupun penerimaan barang. HPP bukan harga jual; HPP adalah biaya modal rata-rata produk.</p></x-slot:function>
         <x-slot:workflow><ol><li>Pilih produk, supplier, atau rentang tanggal.</li><li>Periksa ringkasan perubahan terbaru.</li><li>Lihat tren kronologis.</li><li>Buka dokumen penerimaan untuk menelusuri sumber biaya.</li></ol></x-slot:workflow>
         <x-slot:parts><ul><li><strong>Nilai Stok Lama:</strong> jumlah lama dikalikan HPP sebelum.</li><li><strong>Harga Barang Masuk:</strong> biaya barang yang diterima sebelum biaya alokasi.</li><li><strong>Biaya Dialokasikan:</strong> bagian ongkir dan biaya tambahan yang dibebankan ke item.</li><li><strong>HPP Sesudah:</strong> biaya modal rata-rata baru.</li></ul></x-slot:parts>
-        <x-slot:impacts><p>Histori terbentuk ketika penerimaan diposting dan tidak mengubah harga jual secara langsung.</p></x-slot:impacts>
+        <x-slot:impacts><p>Histori terbentuk ketika stok awal di-commit atau penerimaan diposting dan tidak mengubah harga jual secara langsung.</p></x-slot:impacts>
         <x-slot:operation><ol><li>Terapkan filter.</li><li>Bandingkan HPP terbaru dan sebelumnya.</li><li>Periksa komponen biaya.</li><li>Buka nomor penerimaan bila perlu audit.</li></ol></x-slot:operation>
         <x-slot:warnings><div class="alert alert-warning mb-0">Kenaikan HPP dapat memengaruhi margin, tetapi perubahan harga jual tetap mengikuti modul harga dan persetujuannya.</div></x-slot:warnings>
         <x-slot:example><p>Stok lama bernilai Rp1.000.000, barang dan biaya masuk Rp500.000, lalu total dibagi jumlah setelah penerimaan untuk memperoleh HPP baru.</p></x-slot:example>
@@ -40,13 +40,13 @@
         <div class="col-6 col-xl-3"><x-metronic.card><div class="text-muted fs-7">HPP Terbaru</div><div class="fs-4 fw-bold">{{ \App\Support\CurrencyFormatter::rupiah($latest?->hpp_after ?? 0) }}</div><div class="text-muted fs-8">{{ $latest?->product?->name ?: 'Belum ada data' }}</div></x-metronic.card></div>
         <div class="col-6 col-xl-3"><x-metronic.card><div class="text-muted fs-7">HPP Sebelumnya</div><div class="fs-4 fw-bold">{{ \App\Support\CurrencyFormatter::rupiah($previous?->hpp_after ?? 0) }}</div><div class="text-muted fs-8">Rekaman sebelumnya pada filter aktif</div></x-metronic.card></div>
         <div class="col-6 col-xl-3"><x-metronic.card><div class="text-muted fs-7">Perubahan</div><div class="fs-4 fw-bold {{ \App\Support\Decimal::compare($summary['difference'], '0', 2) > 0 ? 'text-danger' : 'text-success' }}">{{ \App\Support\CurrencyFormatter::rupiah($summary['difference']) }}</div><div class="text-muted fs-8">{{ $summary['percentage'] }}%</div></x-metronic.card></div>
-        <div class="col-6 col-xl-3"><x-metronic.card><div class="text-muted fs-7">Sumber Terakhir</div><div class="fw-bold">{{ $latest?->supplier?->name ?: '-' }}</div><div class="text-muted fs-8">{{ $latest?->goodsReceipt?->number ?: '-' }} · {{ $latest?->effective_at?->format('d/m/Y H:i') ?: '-' }}</div></x-metronic.card></div>
+        <div class="col-6 col-xl-3"><x-metronic.card><div class="text-muted fs-7">Sumber Terakhir</div><div class="fw-bold">{{ $latest?->source_type === 'opening_stock' ? 'Stok Awal' : ($latest?->supplier?->name ?: '-') }}</div><div class="text-muted fs-8">{{ $latest?->goodsReceipt?->number ?: ($latest?->source_reference ?: '-') }} · {{ $latest?->effective_at?->format('d/m/Y H:i') ?: '-' }}</div></x-metronic.card></div>
     </div>
 
     <x-metronic.card title="Tren HPP Berdasarkan Filter Aktif" class="mb-6">
         <div class="alert alert-light-info">Grafik menampilkan maksimal 40 perubahan terbaru dalam hasil filter aktif, lalu menyusunnya secara kronologis. Setiap produk mempunyai garis sendiri. Arahkan kursor ke titik untuk melihat produk, supplier, tanggal, dan HPP.</div>
         <div id="hpp-trend-chart" style="min-height: 320px"></div>
-        @if($chartHistories->isEmpty())<x-metronic.empty-state title="Belum ada tren HPP" description="Ubah filter atau posting penerimaan barang terlebih dahulu." />@endif
+        @if($chartHistories->isEmpty())<x-metronic.empty-state title="Belum ada tren HPP" description="Commit stok awal atau posting penerimaan barang terlebih dahulu." />@endif
     </x-metronic.card>
 
     <x-metronic.card title="Rincian Perubahan Biaya">
@@ -57,7 +57,7 @@
                     $goodsCost = \App\Support\Decimal::sub((string) $history->incoming_cost, (string) $history->landed_cost_allocated, 2);
                 @endphp
                 <tr>
-                    <td class="fw-bold">{{ $history->product?->sku }} — {{ $history->product?->name }}<div class="text-muted fs-8">{{ $history->supplier?->name ?: '-' }} · @if($history->goodsReceipt)<a href="{{ route('warehouse.goods-receipts.show', $history->goodsReceipt) }}">{{ $history->goodsReceipt->number }}</a>@else-@endif</div></td>
+                    <td class="fw-bold">{{ $history->product?->sku }} — {{ $history->product?->name }}<div class="text-muted fs-8">{{ $history->source_type === 'opening_stock' ? 'Stok Awal' : ($history->supplier?->name ?: '-') }} · @if($history->goodsReceipt)<a href="{{ route('warehouse.goods-receipts.show', $history->goodsReceipt) }}">{{ $history->goodsReceipt->number }}</a>@else{{ $history->source_reference ?: '-' }}@endif</div></td>
                     <td>{{ qty($history->qty_before) }} + {{ qty($history->qty_incoming) }} = <strong>{{ qty($history->qty_after) }}</strong></td>
                     <td class="text-end">{{ \App\Support\CurrencyFormatter::rupiah($oldValue) }}</td>
                     <td class="text-end">{{ \App\Support\CurrencyFormatter::rupiah($goodsCost) }}</td>
@@ -66,7 +66,7 @@
                     <td class="text-end">{{ \App\Support\CurrencyFormatter::rupiah($history->hpp_before) }} → <strong>{{ \App\Support\CurrencyFormatter::rupiah($history->hpp_after) }}</strong></td>
                     <td>{{ $history->effective_at?->format('d/m/Y H:i') }}</td>
                 </tr>
-            @empty<tr><td colspan="8"><x-metronic.empty-state title="Belum ada histori HPP" description="Histori terbentuk ketika barang yang diterima diposting." /></td></tr>@endforelse
+            @empty<tr><td colspan="8"><x-metronic.empty-state title="Belum ada histori HPP" description="Histori terbentuk ketika stok awal di-commit atau barang yang diterima diposting." /></td></tr>@endforelse
         </tbody></table></div>
         {{ $histories->links() }}
     </x-metronic.card>

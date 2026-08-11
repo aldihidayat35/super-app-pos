@@ -25,7 +25,7 @@ Panduan ini untuk `kepala_gudang`, `staff_gudang`, `picker_packer`, dan `purchas
 | Permintaan Pembelian | `/purchasing/requests` | Request pembelian manual/rekomendasi reorder. |
 | Purchase Order | `/purchasing/purchase-orders` | PO ke supplier. |
 | Penerimaan Barang | `/warehouse/goods-receipts` | Receipt dari PO dan QC. |
-| Histori HPP | `/pricing/hpp-history` | Perubahan HPP akibat receipt. |
+| Histori HPP | `/pricing/hpp-history` | Perubahan HPP dari stok awal dan receipt. |
 | Performa Supplier | `/reports/suppliers` | Evaluasi supplier. |
 | Permintaan Restock Cabang | `/retail/restock-requests` | Antrian permintaan restock dari toko. |
 | Transfer Stok | `/warehouse/stock-transfers` | Transfer gudang ke cabang. |
@@ -332,12 +332,13 @@ Cara kerja di belakang layar:
 ### 12.1 Histori HPP
 
 1. Buka `/pricing/hpp-history`.
-2. Filter produk, supplier, receipt, atau tanggal.
+2. Filter produk, supplier, sumber, atau tanggal.
 3. Periksa HPP sebelum/sesudah, incoming cost, landed cost, dan metode.
 
 Cara kerja di belakang layar:
 
 - Minimal metode yang dipakai adalah moving weighted average.
+- Stok awal dicatat sebagai sumber `opening_stock` tanpa Goods Receipt.
 - HPP dihitung dengan decimal, bukan float.
 - HPP transaksi lama tidak berubah karena disimpan snapshot.
 

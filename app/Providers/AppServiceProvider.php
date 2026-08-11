@@ -82,10 +82,12 @@ use App\Policies\UserPolicy;
 use App\Policies\WarehouseLocationPolicy;
 use App\Policies\WarehousePolicy;
 use App\Policies\WorkLocationPolicy;
+use Illuminate\Foundation\Vite;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -104,6 +106,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->shouldUseBuiltAssets()) {
+            // Abaikan public/hot yang mungkin tertinggal/terunggah dari mesin
+            // development. Domain publik harus selalu memakai manifest build.
+            $this->app->make(Vite::class)
+                ->useHotFile(storage_path('framework/vite-production.hot'));
+        }
+
         Paginator::useBootstrapFive();
 
         Gate::before(fn (User $user, string $ability): ?bool => $user->hasRole('super_admin') ? true : null);
@@ -159,5 +168,23 @@ class AppServiceProvider extends ServiceProvider
         Blade::component('metronic.status-badge', 'components.metronic.status-badge');
         Blade::component('metronic.filter-drawer', 'components.metronic.filter-drawer');
         Blade::component('metronic.form-group', 'components.metronic.form-group');
+    }
+
+    private function shouldUseBuiltAssets(): bool
+    {
+        if ($this->app->isProduction()) {
+            return true;
+        }
+
+        if (! $this->app->bound('request')) {
+            return false;
+        }
+
+        $request = $this->app->make('request');
+        $host = Str::lower($request->getHost());
+
+        return $host !== ''
+            && ! in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+            && ! Str::endsWith($host, ['.test', '.localhost', '.local']);
     }
 }

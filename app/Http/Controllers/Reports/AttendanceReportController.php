@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Reports;
 
+use App\Enums\AttendanceStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\CashShift;
@@ -24,6 +25,7 @@ class AttendanceReportController extends Controller
             ->with(['employee', 'workLocation'])
             ->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())
             ->whereBetween('attendance_date', [$from, $to])
+            ->when(in_array($request->query('status'), array_column(AttendanceStatus::cases(), 'value'), true), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->filled('work_location_id'), fn ($query) => $query->where('work_location_id', $request->integer('work_location_id')))
             ->when($request->filled('employee_id'), fn ($query) => $query->where('employee_id', $request->integer('employee_id')));
 
@@ -32,7 +34,8 @@ class AttendanceReportController extends Controller
             'summary' => (clone $base)->select('status', DB::raw('COUNT(*) as total'))->groupBy('status')->pluck('total', 'status'),
             'locations' => WorkLocation::query()->whereIn('id', $request->user()->permittedWorkLocationIds())->orderBy('name')->get(),
             'employees' => Employee::query()->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())->orderBy('name')->get(),
-            'filters' => compact('from', 'to'),
+            'statuses' => AttendanceStatus::cases(),
+            'filters' => ['from' => $from, 'to' => $to, 'status' => $request->query('status')],
         ]);
     }
 

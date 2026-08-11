@@ -80,6 +80,12 @@ class StockTransfer extends Model
     }
 
     /** @return BelongsTo<User, $this> */
+    public function picker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'picker_by');
+    }
+
+    /** @return BelongsTo<User, $this> */
     public function shipper(): BelongsTo
     {
         return $this->belongsTo(User::class, 'shipper_by');

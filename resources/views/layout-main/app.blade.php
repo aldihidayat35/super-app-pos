@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{{ asset('assets/plugins/custom/fullcalendar/fullcalendar.bundle.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/plugins/global/plugins.bundle.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.bundle.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/ki-icons-fallback.css') }}?v={{ filemtime(public_path('assets/css/ki-icons-fallback.css')) }}">
+    <link rel="stylesheet" href="{{ versioned_asset('assets/css/ki-icons-fallback.css') }}">
     @stack('styles')
 
     @include('partials.trackers._ga-tag-manager-for-head')

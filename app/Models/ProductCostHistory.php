@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductCostHistory extends Model
 {
-    protected $fillable = ['product_id', 'supplier_id', 'goods_receipt_id', 'goods_receipt_item_id', 'method', 'qty_before', 'qty_incoming', 'qty_after', 'hpp_before', 'incoming_cost', 'landed_cost_allocated', 'hpp_after', 'effective_at'];
+    protected $fillable = ['product_id', 'supplier_id', 'goods_receipt_id', 'goods_receipt_item_id', 'method', 'source_type', 'source_reference', 'changed_by', 'reason', 'qty_before', 'qty_incoming', 'qty_after', 'hpp_before', 'incoming_cost', 'landed_cost_allocated', 'hpp_after', 'effective_at'];
 
     protected function casts(): array
     {
@@ -39,5 +39,11 @@ class ProductCostHistory extends Model
     public function goodsReceipt(): BelongsTo
     {
         return $this->belongsTo(GoodsReceipt::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function changedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'changed_by');
     }
 }

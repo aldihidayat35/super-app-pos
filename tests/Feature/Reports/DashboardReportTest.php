@@ -68,7 +68,18 @@ class DashboardReportTest extends TestCase
     {
         $this->seedFixtureSale('300000.00', '75000.00', $this->branchLocation);
 
-        $this->actingAs($this->owner)->get(route('owner.dashboard'))->assertOk()->assertSee('Dashboard Owner')->assertSee('Omzet');
+        $this->actingAs($this->owner)->get(route('owner.dashboard'))
+            ->assertOk()
+            ->assertSee('Dashboard Owner')
+            ->assertSee('Omzet')
+            ->assertSee('Buka Approval')
+            ->assertSee('Tinjau Anomali')
+            ->assertSee('Cek Persediaan')
+            ->assertSee('Lihat Kehadiran')
+            ->assertSee('Periksa Selisih Kas')
+            ->assertSee(route('approvals.index', ['status' => 'pending']), false)
+            ->assertSee(route('audit.anomalies.index', ['status' => 'open']), false)
+            ->assertSee(route('warehouse.stocks.index', ['status' => 'critical']), false);
         $this->actingAs($this->owner)->get(route('warehouse.dashboard'))->assertOk()->assertSee('Dashboard Gudang')->assertSee('Nilai Persediaan');
         $this->actingAs($this->retail)->get(route('retail.dashboard'))->assertOk()->assertSee('Dashboard Cabang')->assertSee('Rata-rata Nota');
         $this->actingAs($this->owner)->get(route('reports.daily.index'))->assertOk()->assertSee('Laporan Harian Owner');

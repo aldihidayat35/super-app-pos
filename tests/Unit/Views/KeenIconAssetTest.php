@@ -54,7 +54,8 @@ class KeenIconAssetTest extends TestCase
             $content = file_get_contents($this->projectPath($layout));
 
             self::assertIsString($content);
-            self::assertStringContainsString("asset('assets/css/ki-icons-fallback.css')", $content, $layout);
+            self::assertStringContainsString("versioned_asset('assets/css/ki-icons-fallback.css')", $content, $layout);
+            self::assertStringNotContainsString("filemtime(public_path('assets/css/ki-icons-fallback.css'))", $content, $layout);
         }
     }
 

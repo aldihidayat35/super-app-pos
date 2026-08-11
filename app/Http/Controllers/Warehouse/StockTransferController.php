@@ -16,6 +16,7 @@ use App\Models\Product;
 use App\Models\RestockRequest;
 use App\Models\Stock;
 use App\Models\StockTransfer;
+use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
@@ -150,7 +151,7 @@ class StockTransferController extends Controller
             'items.discrepancyResolutions.resolver', 'items.discrepancyResolutions.inventoryLoss',
             'discrepancyResolutions.item', 'discrepancyResolutions.resolver', 'discrepancyResolutions.inventoryLoss',
             'sourceWorkLocation', 'destinationWorkLocation', 'restockRequest', 'requester',
-            'approver', 'shipper', 'receiver', 'packages.checker', 'receipts.items.stockTransferItem',
+            'approver', 'picker', 'shipper', 'receiver', 'packages.checker', 'receipts.items.stockTransferItem',
             'stockMutations.product', 'statusHistories.actor',
         ]);
         $sourceBalances = Stock::query()
@@ -177,6 +178,7 @@ class StockTransferController extends Controller
         return view('warehouse.stock-transfers.show', [
             'transfer' => $transfer,
             'approvalStocks' => $approvalStocks,
+            'nextResponsibility' => $this->nextResponsibility($transfer),
             'timeline' => DocumentStatusHistory::query()->with('actor')->where('document_type', 'stock_transfer')->where('document_id', $stockTransfer->id)->orderBy('created_at')->get(),
         ]);
     }
@@ -197,6 +199,19 @@ class StockTransferController extends Controller
         }
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Transfer disetujui dan stok sumber di-reserve.']);
+    }
+
+    public function submit(Request $request, StockTransfer $stockTransfer, StockTransferService $service): RedirectResponse
+    {
+        $this->authorize('update', $stockTransfer);
+
+        try {
+            $service->submit($stockTransfer, $request->user());
+        } catch (ServiceException $exception) {
+            return back()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
+        }
+
+        return back()->with('notification', ['type' => 'success', 'message' => 'Transfer berhasil diajukan kepada Kepala Gudang untuk persetujuan.']);
     }
 
     public function packing(StockTransfer $stockTransfer): View
@@ -363,6 +378,70 @@ class StockTransferController extends Controller
             ->when($request->integer('destination_work_location_id') > 0, fn ($query) => $query->where('destination_work_location_id', $request->integer('destination_work_location_id')))
             ->latest('transfer_date')
             ->latest('id');
+    }
+
+    /** @return array{role: string, location: ?string, users: list<string>} */
+    private function nextResponsibility(StockTransfer $transfer): array
+    {
+        $status = $transfer->status;
+
+        if ($status === StockTransferStatus::DRAFT) {
+            return [
+                'role' => 'Pembuat transfer',
+                'location' => $transfer->sourceWorkLocation?->name,
+                'users' => array_values(array_filter([$transfer->requester?->name])),
+            ];
+        }
+
+        if ($status === StockTransferStatus::PENDING_APPROVAL) {
+            return $this->responsibleUsers(['kepala_gudang'], $transfer->sourceWorkLocation, 'Kepala Gudang');
+        }
+
+        if (in_array($status, [StockTransferStatus::APPROVED, StockTransferStatus::PACKING], true)) {
+            $responsibility = $this->responsibleUsers(['staff_gudang', 'kepala_gudang'], $transfer->sourceWorkLocation, 'Staff/Kepala Gudang');
+            if ($transfer->picker) {
+                $responsibility['users'] = [$transfer->picker->name];
+            }
+
+            return $responsibility;
+        }
+
+        if (in_array($status, [StockTransferStatus::SHIPPED, StockTransferStatus::PARTIALLY_RECEIVED, StockTransferStatus::FULLY_RECEIVED], true)) {
+            $isBranch = $transfer->destinationWorkLocation?->type === 'branch';
+            $roles = $isBranch ? ['kepala_toko'] : ['staff_gudang', 'kepala_gudang'];
+            $label = $isBranch ? 'Kepala Toko/Penerima Tujuan' : 'Staff/Kepala Gudang Tujuan';
+            $responsibility = $this->responsibleUsers($roles, $transfer->destinationWorkLocation, $label);
+            if ($transfer->receiver) {
+                $responsibility['users'] = [$transfer->receiver->name];
+            }
+
+            return $responsibility;
+        }
+
+        return ['role' => 'Tidak ada penanggung jawab berikutnya', 'location' => null, 'users' => []];
+    }
+
+    /**
+     * @param  list<string>  $roles
+     * @return array{role: string, location: ?string, users: list<string>}
+     */
+    private function responsibleUsers(array $roles, ?WorkLocation $workLocation, string $label): array
+    {
+        if (! $workLocation) {
+            return ['role' => $label, 'location' => null, 'users' => []];
+        }
+
+        $users = User::query()
+            ->where('is_active', true)
+            ->role($roles)
+            ->whereHas('workLocations', fn ($query) => $query
+                ->where('work_locations.id', $workLocation->id)
+                ->where('user_work_locations.is_active', true))
+            ->orderBy('name')
+            ->pluck('name')
+            ->all();
+
+        return ['role' => $label, 'location' => $workLocation->name, 'users' => $users];
     }
 
     /** @return array<string, mixed> */

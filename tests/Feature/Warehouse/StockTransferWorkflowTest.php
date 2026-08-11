@@ -71,7 +71,14 @@ class StockTransferWorkflowTest extends TestCase
         $this->get(route('retail.restock-requests.index'))->assertOk()->assertSee('Permintaan Restok')->assertSee('Rekomendasi');
         $this->get(route('warehouse.stock-transfers.index'))->assertOk()->assertSee('Daftar Transfer Stok')->assertSee($transfer->number);
         $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertSee('Form dan Persetujuan Transfer');
-        $this->get(route('warehouse.stock-transfers.show', $transfer))->assertOk()->assertSee('Detail Transfer dan Timeline');
+        $this->get(route('warehouse.stock-transfers.show', $transfer))
+            ->assertOk()
+            ->assertSee('Detail Transfer dan Timeline')
+            ->assertSee('Penanggung Jawab Berikutnya')
+            ->assertSee('Staff/Kepala Gudang')
+            ->assertSee($this->warehouseStaff->name)
+            ->assertSee('Buka Halaman Packing')
+            ->assertSee(route('warehouse.stock-transfers.packing', $transfer), false);
         $this->get(route('warehouse.stock-transfers.packing', $transfer))->assertOk()->assertSee('Picking dan Packing');
     }
 
@@ -108,6 +115,41 @@ class StockTransferWorkflowTest extends TestCase
         $completed = $this->transfers->complete($full, $this->storeHead);
         $this->assertSame(StockTransferStatus::COMPLETED, $completed->status);
         $this->assertSame('6.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
+    }
+
+    public function test_draft_can_be_submitted_from_detail_page(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+
+        $transfer = $this->transfers->create([
+            'source_work_location_id' => $warehouse->work_location_id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'destination_work_location_id' => $branch->work_location_id,
+            'destination_warehouse_location_id' => $destinationBin->id,
+            'transfer_date' => now()->toDateString(),
+            'items' => [[
+                'product_id' => $product->id,
+                'quantity_requested' => '2',
+                'quantity_approved' => '2',
+                'source_warehouse_location_id' => $sourceBin->id,
+                'destination_warehouse_location_id' => $destinationBin->id,
+            ]],
+            'action' => 'draft',
+        ], $this->warehouseStaff);
+
+        $this->actingAs($this->warehouseStaff)
+            ->get(route('warehouse.stock-transfers.show', $transfer))
+            ->assertOk()
+            ->assertSee('Ajukan untuk Persetujuan')
+            ->assertSee(route('warehouse.stock-transfers.submit', $transfer), false);
+
+        $this->actingAs($this->warehouseStaff)
+            ->post(route('warehouse.stock-transfers.submit', $transfer))
+            ->assertRedirect()
+            ->assertSessionHas('notification.type', 'success');
+
+        $this->assertSame(StockTransferStatus::PENDING_APPROVAL, $transfer->fresh()->status);
     }
 
     public function test_restock_conversion_uses_selected_bin_is_traceable_and_idempotent(): void

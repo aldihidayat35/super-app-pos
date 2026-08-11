@@ -49,6 +49,7 @@ use App\Http\Controllers\Control\ApprovalInboxController;
 use App\Http\Controllers\Control\AuditLogController;
 use App\Http\Controllers\Control\SecurityAuditController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Guide\RoleGuideController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\Notifications\AlertRuleController;
 use App\Http\Controllers\Notifications\NotificationChannelController;
@@ -197,6 +198,9 @@ Route::middleware(['auth', 'active.user', 'b2b.customer'])->prefix('langganan')-
 });
 
 Route::middleware(['auth', 'active.user'])->group(function (): void {
+    Route::get('/panduan', [RoleGuideController::class, 'index'])->name('guides.index');
+    Route::get('/panduan/{guide}', [RoleGuideController::class, 'show'])->name('guides.show');
+
     Route::get('/invoices', [InvoiceController::class, 'index'])
         ->middleware('permission:invoices.view|receivables.view')
         ->name('invoices.index');
@@ -379,6 +383,7 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             Route::get('/imports', [OperationsController::class, 'imports'])->name('imports.index');
             Route::get('/imports/templates/{type}', [OperationsController::class, 'downloadImportTemplate'])->name('imports.templates.download');
             Route::post('/imports/preview', [OperationsController::class, 'previewImport'])->name('imports.preview');
+            Route::post('/imports/commit', [OperationsController::class, 'commitImport'])->name('imports.commit');
             Route::get('/maintenance', [OperationsController::class, 'maintenance'])->name('maintenance.index');
             Route::post('/maintenance', [OperationsController::class, 'runMaintenance'])->name('maintenance.run');
         });
@@ -828,6 +833,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/stock-transfers', [StockTransferController::class, 'index'])
             ->middleware('permission:stock_transfers.view')
             ->name('stock-transfers.index');
+        Route::post('/stock-transfers/{stockTransfer}/submit', [StockTransferController::class, 'submit'])
+            ->middleware('permission:stock_transfers.create')
+            ->name('stock-transfers.submit');
         Route::post('/stock-transfers/{stockTransfer}/approve', [StockTransferController::class, 'approve'])
             ->middleware('permission:stock_transfers.approve')
             ->name('stock-transfers.approve');

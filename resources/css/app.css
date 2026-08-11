@@ -410,3 +410,131 @@
 .page-guide-content p:last-child {
     margin-bottom: 0;
 }
+
+/* Approval Diff View Styles */
+.diff-table-wrapper {
+    overflow-x: auto;
+}
+
+.diff-table {
+    min-width: 600px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    overflow: hidden;
+}
+
+.diff-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: var(--bs-gray-100);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+[data-bs-theme='dark'] .diff-header {
+    background: var(--bs-gray-800);
+}
+
+.diff-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-bottom: 1px solid var(--bs-border-color);
+    transition: background-color 0.15s ease;
+}
+
+.diff-row:last-child {
+    border-bottom: none;
+}
+
+.diff-row:hover {
+    background: var(--bs-gray-50);
+}
+
+[data-bs-theme='dark'] .diff-row:hover {
+    background: var(--bs-gray-800);
+}
+
+.diff-row.odd {
+    background: var(--bs-gray-50);
+}
+
+[data-bs-theme='dark'] .diff-row.odd {
+    background: var(--bs-gray-900);
+}
+
+.diff-col {
+    padding: 1rem;
+}
+
+.diff-field {
+    background: var(--bs-gray-100);
+    border-right: 1px solid var(--bs-border-color);
+}
+
+[data-bs-theme='dark'] .diff-field {
+    background: var(--bs-gray-800);
+}
+
+.diff-field-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.diff-before {
+    background: var(--bs-danger-bg-subtle);
+    border-right: 1px solid var(--bs-border-color);
+}
+
+.diff-after {
+    background: var(--bs-success-bg-subtle);
+}
+
+.diff-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+.diff-before-label {
+    color: var(--bs-danger);
+}
+
+.diff-after-label {
+    color: var(--bs-success);
+}
+
+.diff-cell {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.diff-before-cell {
+    text-decoration: line-through;
+    opacity: 0.75;
+}
+
+.diff-after-cell {
+    font-weight: 500;
+}
+
+@media (max-width: 767.98px) {
+    .diff-table {
+        min-width: 100%;
+    }
+
+    .diff-col {
+        padding: 0.75rem;
+    }
+
+    .diff-field-name {
+        font-size: 0.75rem;
+    }
+}

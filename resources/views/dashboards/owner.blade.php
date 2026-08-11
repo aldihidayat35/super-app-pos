@@ -7,6 +7,13 @@
     $stores = $dashboard['stores'];
     $warehouses = $dashboard['warehouses'];
     $totalTransactions = collect($stores)->sum('transactions');
+    $selectedLocationId = $filters['work_location_id'] ?? null;
+    $attentionItems = [
+        ['label' => 'Pending approval', 'value' => $kpis['pending_approval'], 'color' => 'warning', 'icon' => 'ki-check-square', 'url' => route('approvals.index', ['status' => 'pending']), 'button' => 'Buka Approval', 'permission' => 'approvals.view'],
+        ['label' => 'Anomali terbuka', 'value' => $kpis['anomaly_open'], 'color' => 'danger', 'icon' => 'ki-shield-cross', 'url' => route('audit.anomalies.index', ['status' => 'open']), 'button' => 'Tinjau Anomali', 'permission' => 'audit.view'],
+        ['label' => 'Stok kritis', 'value' => $kpis['critical_stock_count'], 'color' => 'danger', 'icon' => 'ki-package', 'url' => route('warehouse.stocks.index', array_filter(['status' => 'critical', 'work_location_id' => $selectedLocationId])), 'button' => 'Cek Persediaan', 'permission' => 'stock.view'],
+        ['label' => 'Kehadiran terlambat', 'value' => $kpis['attendance_late'], 'color' => 'warning', 'icon' => 'ki-time', 'url' => route('reports.attendance.index', array_filter(['status' => 'late', 'from' => $filters['start_date'], 'to' => $filters['end_date'], 'work_location_id' => $selectedLocationId])), 'button' => 'Lihat Kehadiran', 'permission' => 'reports.view'],
+    ];
 @endphp
 
 @section('title', 'Dashboard Owner - ' . config('app.name'))
@@ -29,6 +36,9 @@
     .metric-label { color:#8a94a8; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }
     .progress-thin { height:6px; }
     .owner-table thead th { color:#8a94a8; font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; border-bottom-color:#edf0f5; }
+    .owner-attention-row { border:1px solid #edf0f5; border-radius:.85rem; padding:1rem; transition:border-color .2s ease,background-color .2s ease; }
+    .owner-attention-row:hover { border-color:#cbd6f5; background:#f8faff; }
+    .owner-attention-icon { width:38px; height:38px; border-radius:.7rem; display:grid; place-items:center; flex:0 0 auto; }
     [data-bs-theme="dark"] .owner-section-title { color:#f1f3f8; }
     [data-bs-theme="dark"] .owner-store-card { border-color:#2b3245; }
 </style>
@@ -74,7 +84,7 @@
 
     <div class="row g-5 mb-7">
         @foreach([
-            ['Omzet Perusahaan', CurrencyFormatter::rupiah($kpis['revenue']), 'ki-chart-simple-2', 'primary', 'Retail + B2B'],
+            ['Omzet Perusahaan', CurrencyFormatter::rupiah($kpis['revenue']), 'ki-chart-simple', 'primary', 'Retail + B2B'],
             ['Laba Kotor', CurrencyFormatter::rupiah($kpis['gross_margin']), 'ki-arrow-up', 'success', $kpis['margin_percent'].'% margin'],
             ['Nilai Persediaan', CurrencyFormatter::rupiah($kpis['stock_value']), 'ki-package', 'warning', $kpis['critical_stock_count'].' produk kritis'],
             ['Piutang Berjalan', CurrencyFormatter::rupiah($kpis['receivable_outstanding']), 'ki-wallet', 'info', CurrencyFormatter::rupiah($kpis['overdue_receivable']).' lewat tempo'],
@@ -99,7 +109,37 @@
 
     <div class="row g-5 mb-7">
         <div class="col-xl-8"><div class="card owner-panel h-100"><div class="card-header border-0 pt-5"><div><div class="owner-section-title">Kesehatan Setiap Gudang</div><div class="text-muted">Posisi persediaan dan arus barang selama periode aktif</div></div></div><div class="card-body pt-2"><div class="table-responsive"><table class="table owner-table align-middle"><thead><tr><th>Gudang</th><th class="text-end">Nilai Stok</th><th class="text-end">Tersedia</th><th class="text-end">Masuk / Keluar</th><th class="text-end">Risiko</th></tr></thead><tbody>@forelse($warehouses as $warehouse)<tr><td><div class="fw-bold text-gray-900">{{ $warehouse['name'] }}</div><div class="text-muted fs-8">{{ $warehouse['code'] }} · {{ $warehouse['movement_count'] }} mutasi</div></td><td class="text-end fw-bold">{{ CurrencyFormatter::rupiah($warehouse['stock_value']) }}</td><td class="text-end">{{ qty($warehouse['available_quantity']) }}</td><td class="text-end"><span class="text-success">+{{ qty($warehouse['incoming']) }}</span> <span class="text-muted">/</span> <span class="text-danger">-{{ qty($warehouse['outgoing']) }}</span></td><td class="text-end"><span class="badge badge-light-{{ $warehouse['empty_count'] ? 'danger' : ($warehouse['critical_count'] ? 'warning' : 'success') }}">{{ $warehouse['empty_count'] }} kosong · {{ $warehouse['critical_count'] }} kritis</span></td></tr>@empty<tr><td colspan="5"><x-metronic.empty-state title="Belum ada data gudang" description="Gudang dalam cakupan akses akan tampil di sini." /></td></tr>@endforelse</tbody></table></div></div></div></div>
-        <div class="col-xl-4"><div class="card owner-panel h-100"><div class="card-header border-0 pt-5"><div class="owner-section-title">Perlu Perhatian</div></div><div class="card-body pt-2">@foreach([['Pending approval',$kpis['pending_approval'],'warning'],['Anomali terbuka',$kpis['anomaly_open'],'danger'],['Stok kritis',$kpis['critical_stock_count'],'danger'],['Kehadiran terlambat',$kpis['attendance_late'],'warning']] as [$label,$value,$color])<div class="d-flex align-items-center justify-content-between py-3 border-bottom"><div class="d-flex align-items-center gap-3"><span class="bullet bullet-dot bg-{{ $color }} h-10px w-10px"></span><span class="fw-semibold">{{ $label }}</span></div><span class="badge badge-light-{{ $color }}">{{ $value }}</span></div>@endforeach<div class="rounded bg-light-primary p-4 mt-5"><div class="text-muted fs-8 mb-1">Selisih kas</div><div class="fw-bold fs-4 text-primary">{{ CurrencyFormatter::rupiah($kpis['cash_difference']) }}</div></div></div></div></div>
+        <div class="col-xl-4">
+            <div class="card owner-panel h-100">
+                <div class="card-header border-0 pt-5"><div><div class="owner-section-title">Perlu Perhatian</div><div class="text-muted fs-8">Buka halaman penanganan untuk setiap temuan</div></div></div>
+                <div class="card-body pt-2">
+                    <div class="d-grid gap-3">
+                        @foreach($attentionItems as $item)
+                            <div class="owner-attention-row">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="owner-attention-icon bg-light-{{ $item['color'] }}"><i class="ki-outline {{ $item['icon'] }} fs-2 text-{{ $item['color'] }}"></i></div>
+                                    <div class="flex-grow-1"><div class="fw-semibold text-gray-900">{{ $item['label'] }}</div><div class="text-muted fs-8">{{ $item['value'] }} data perlu ditinjau</div></div>
+                                    <span class="badge badge-light-{{ $item['color'] }} fs-7">{{ $item['value'] }}</span>
+                                </div>
+                                @can($item['permission'])
+                                    <a href="{{ $item['url'] }}" class="btn btn-sm btn-light-{{ $item['color'] }} w-100">{{ $item['button'] }}<i class="ki-outline ki-arrow-right ms-2"></i></a>
+                                @else
+                                    <button class="btn btn-sm btn-light w-100" disabled>Tidak memiliki akses</button>
+                                @endcan
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="rounded bg-light-primary p-4 mt-4">
+                        <div class="d-flex align-items-center justify-content-between gap-3 mb-3"><div><div class="text-muted fs-8 mb-1">Selisih kas</div><div class="fw-bold fs-4 text-primary">{{ CurrencyFormatter::rupiah($kpis['cash_difference']) }}</div></div><div class="owner-attention-icon bg-white"><i class="ki-outline ki-wallet fs-2 text-primary"></i></div></div>
+                        @can('cash_shifts.view')
+                            <a href="{{ route('retail.shifts.index', ['has_difference' => 1, 'date_from' => $filters['start_date'], 'date_to' => $filters['end_date']]) }}" class="btn btn-sm btn-primary w-100">Periksa Selisih Kas<i class="ki-outline ki-arrow-right ms-2"></i></a>
+                        @else
+                            <button class="btn btn-sm btn-light w-100" disabled>Tidak memiliki akses</button>
+                        @endcan
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-5 mb-5"><div class="col-xl-7"><div class="card owner-panel h-100"><div class="card-header border-0 pt-5"><div class="owner-section-title">Produk Terlaris</div></div><div class="card-body pt-0"><div class="table-responsive"><table class="table owner-table align-middle"><thead><tr><th>Produk</th><th class="text-end">Terjual</th><th class="text-end">Omzet</th></tr></thead><tbody>@forelse($charts['top_products'] as $index=>$row)<tr><td><div class="d-flex align-items-center gap-3"><div class="owner-rank">{{ $index+1 }}</div><div><div class="fw-bold text-gray-900">{{ $row['product'] }}</div><div class="text-muted fs-8">{{ $row['sku'] }}</div></div></div></td><td class="text-end fw-semibold">{{ qty($row['quantity']) }}</td><td class="text-end fw-bold text-primary">{{ CurrencyFormatter::rupiah($row['revenue']) }}</td></tr>@empty<tr><td colspan="3"><x-metronic.empty-state title="Belum ada produk terjual" description="Data akan muncul setelah transaksi selesai." /></td></tr>@endforelse</tbody></table></div></div></div></div><div class="col-xl-5"><div class="card owner-panel h-100"><div class="card-header border-0 pt-5"><div><div class="owner-section-title">Margin per Toko</div><div class="text-muted">Omzet dibanding laba kotor</div></div></div><div class="card-body pt-2"><div id="owner-margin-chart" style="height:310px"></div></div></div></div></div>

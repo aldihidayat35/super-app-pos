@@ -45,8 +45,8 @@ class HppHistoryController extends Controller
                     'y' => (string) $history->hpp_after,
                     'dateLabel' => $effectiveAt instanceof \DateTimeInterface ? $effectiveAt->format('d/m/Y H:i') : '-',
                     'product' => $history->product?->name ?: 'Tanpa nama',
-                    'supplier' => $history->supplier?->name ?: '-',
-                    'receipt' => $history->goodsReceipt?->number ?: '-',
+                    'supplier' => $history->source_type === 'opening_stock' ? 'Stok Awal' : ($history->supplier?->name ?: '-'),
+                    'receipt' => $history->goodsReceipt?->number ?: ($history->source_reference ?: '-'),
                 ];
             })->values(),
             'summary' => [
@@ -67,14 +67,14 @@ class HppHistoryController extends Controller
 
         return response()->streamDownload(function () use ($request): void {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Produk', 'Supplier', 'Receipt', 'Metode', 'Qty Sebelum', 'Qty Masuk', 'Qty Setelah', 'HPP Sebelum', 'Incoming Cost', 'Landed Cost', 'HPP Setelah', 'Tanggal']);
+            fputcsv($handle, ['Produk', 'Supplier', 'Sumber', 'Metode', 'Qty Sebelum', 'Qty Masuk', 'Qty Setelah', 'HPP Sebelum', 'Incoming Cost', 'Landed Cost', 'HPP Setelah', 'Tanggal']);
 
             $this->query($request)->chunk(200, function ($histories) use ($handle): void {
                 foreach ($histories as $history) {
                     fputcsv($handle, [
                         $history->product?->name,
                         $history->supplier?->name,
-                        $history->goodsReceipt?->number,
+                        $history->goodsReceipt?->number ?: $history->source_reference,
                         $history->method,
                         $history->qty_before,
                         $history->qty_incoming,

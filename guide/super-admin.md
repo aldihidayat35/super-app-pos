@@ -277,11 +277,17 @@ Aturan aman:
 ### 8.4 Import data awal
 
 1. Buka `/admin/system/imports`.
-2. Unduh template sesuai tipe data.
-3. Isi data di template.
-4. Upload untuk preview.
-5. Periksa error baris.
-6. Commit hanya jika preview valid.
+2. Pilih jenis data dan unduh template XLSX resmi.
+3. Isi sheet pertama tanpa mengubah urutan atau nama header.
+4. Simpan tetap sebagai Excel Workbook `.xlsx`.
+5. Upload file dan jalankan preview dry-run.
+6. Periksa jumlah baris valid dan seluruh pesan error.
+7. Koreksi file sumber lalu preview ulang bila ada error.
+8. Untuk stok awal, cocokkan SKU, lokasi, jumlah, HPP, dan alasan.
+9. Ketik konfirmasi commit hanya jika preview benar dan backup tersedia.
+10. Setelah commit, periksa saldo stok, nilai persediaan, kartu stok, dan Histori HPP.
+
+HPP stok awal disimpan sebagai HPP aktif produk, direkonsiliasi ke nilai persediaan, dan dicatat pada Histori HPP dengan sumber Stok Awal. Commit ulang dengan qty yang sama dapat dipakai untuk koreksi HPP tanpa membuat mutasi qty baru.
 
 Jangan import langsung ke database tanpa validasi aplikasi.
 
