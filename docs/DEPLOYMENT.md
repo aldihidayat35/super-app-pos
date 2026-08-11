@@ -49,6 +49,32 @@ assets/vendor/metronic/css/style.bundle.css
 
 Symlink `storage` hanya membuka file upload dari `storage/app/public`. Symlink tersebut tidak menyediakan CSS, JavaScript, gambar bawaan Metronic, atau hasil build Vite.
 
+### Setup repository Git satu kali
+
+Repository Git ditempatkan di `/home/pinp7981/pos-super`. Folder domain di `public_html` tetap hanya menjadi document root dan tidak dijadikan repository.
+
+Upload satu kali file `scripts/setup-cpanel-repository.sh` dan `scripts/deploy-cpanel.sh` ke source aplikasi, lalu jalankan dari Terminal cPanel:
+
+```bash
+export APP_DIR=/home/pinp7981/pos-super
+bash "$APP_DIR/scripts/setup-cpanel-repository.sh"
+```
+
+Script setup akan:
+
+1. Membuat backup `.env` di `storage/app/deployment-backups`.
+2. Menghubungkan source ke `https://github.com/aldihidayat35/super-app-pos.git` branch `main`.
+3. Mendaftarkan keadaan repository tanpa menimpa file source server.
+4. Menampilkan file server yang berbeda dari GitHub dan berhenti jika masih ada perbedaan.
+
+Jika setup selesai tanpa perbedaan, update berikutnya cukup:
+
+```bash
+bash /home/pinp7981/pos-super/scripts/deploy-cpanel.sh
+```
+
+Jangan menjalankan `git pull` di `/home/pinp7981/public_html/super-app-kedaung.demokan.online`. Sinkronisasi isi `public/assets`, `public/build`, dan `.htaccess` ke document root dilakukan oleh script deployment.
+
 ### Sinkronisasi asset ke document root
 
 Jalankan dari Terminal cPanel setelah source terbaru diunggah:
