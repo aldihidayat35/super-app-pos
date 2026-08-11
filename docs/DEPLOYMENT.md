@@ -75,6 +75,27 @@ bash /home/pinp7981/pos-super/scripts/deploy-cpanel.sh
 
 Jangan menjalankan `git pull` di `/home/pinp7981/public_html/super-app-kedaung.demokan.online`. Sinkronisasi isi `public/assets`, `public/build`, dan `.htaccess` ke document root dilakukan oleh script deployment.
 
+### Auto-deploy setelah `git pull`
+
+Untuk membuat setiap `git pull` pada repository otomatis membangun dan menyalin
+asset ke document root, jalankan instalasi hook satu kali:
+
+```bash
+APP_DIR=/home/pinp7981/pos-super \
+PUBLIC_DIR=/home/pinp7981/public_html/super-app-kedaung.demokan.online \
+bash /home/pinp7981/pos-super/scripts/install-cpanel-auto-deploy.sh
+```
+
+Setelah aktif, update dapat dijalankan dari folder mana pun dengan satu command:
+
+```bash
+git -C /home/pinp7981/pos-super pull --ff-only
+```
+
+Hook `post-merge` otomatis menjalankan Composer, build Vite, sinkronisasi
+`public/assets` dan `public/build`, migrasi, serta cache Laravel. Document root
+domain tidak perlu dan tidak boleh menjadi repository Git kedua.
+
 ### Sinkronisasi asset ke document root
 
 Jalankan dari Terminal cPanel setelah source terbaru diunggah:

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${GUDANGTOKO_SKIP_POST_MERGE:-0}" == "1" ]]; then
+    exit 0
+fi
+
+APP_DIR="$(git rev-parse --show-toplevel)"
+PUBLIC_DIR="$(git config --get gudangtoko.publicDir || true)"
+
+if [[ -z "$PUBLIC_DIR" ]]; then
+    echo "Auto-deploy belum dikonfigurasi. Jalankan scripts/install-cpanel-auto-deploy.sh." >&2
+    exit 1
+fi
+
+exec bash "$APP_DIR/scripts/sync-cpanel-after-pull.sh" "$PUBLIC_DIR"

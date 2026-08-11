@@ -12,7 +12,7 @@ cd "$APP_DIR"
 
 "$PHP_BIN" artisan down --render="errors::503" || true
 
-git pull --ff-only
+GUDANGTOKO_SKIP_POST_MERGE=1 git pull --ff-only
 "$COMPOSER_BIN" install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 rm -f "$SOURCE_PUBLIC_DIR/hot" "$PUBLIC_DIR/hot"
 "$NPM_BIN" ci
