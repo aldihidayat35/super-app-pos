@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Notifications\Auth\ResetPasswordNotification;
 use Illuminate\Auth\Events\PasswordReset;
@@ -22,6 +23,21 @@ use Tests\TestCase;
 class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
+
+    #[Test]
+    public function login_company_logo_uses_inline_hosting_safe_styles(): void
+    {
+        SystemSetting::create([
+            'key' => 'logo_path',
+            'value' => 'logos/company.png',
+            'group' => 'general',
+        ]);
+
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('max-width: 240px; max-height: 120px;', false)
+            ->assertSee('object-fit: contain;', false);
+    }
 
     #[Test]
     public function user_can_login_and_see_role_dashboard(): void

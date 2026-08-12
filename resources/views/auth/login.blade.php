@@ -11,7 +11,8 @@
         <header class="auth-login-header">
             @php $logo = \App\Models\SystemSetting::getCompanyLogo(); @endphp
             @if ($logo)
-                <img src="{{ $logo }}" alt="Logo {{ $companyName }}" class="auth-brand-logo-img" loading="lazy">
+                <img src="{{ $logo }}" alt="Logo {{ $companyName }}" loading="eager"
+                    style="display: block; width: auto; height: auto; max-width: 240px; max-height: 120px; margin: 0 auto 1.25rem; object-fit: contain;">
             @else
                 <span class="auth-brand-mark" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img">
