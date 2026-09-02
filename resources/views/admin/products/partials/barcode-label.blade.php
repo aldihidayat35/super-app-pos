@@ -1,6 +1,6 @@
 <div class="barcode-label-shell" data-barcode-label>
     <div class="barcode-product-name">{{ $label['product_name'] }}</div>
-    <table class="barcode-meta">
+    <table class="barcode-meta" data-mobile-table="off">
         <tr>
             <td>SKU: {{ $label['sku'] }} &nbsp;|&nbsp; Satuan: {{ $label['unit'] }}</td>
         </tr>

@@ -2,7 +2,7 @@
     @foreach($labelPages as $labels)
         <section class="barcode-page barcode-page--{{ $paperSize === \App\Enums\BarcodePaperSize::A4 ? 'a4' : 'thermal' }} {{ $loop->first ? '' : 'barcode-page--break-before' }}">
             @if($paperSize === \App\Enums\BarcodePaperSize::A4)
-                <table class="barcode-label-grid">
+                <table class="barcode-label-grid" data-mobile-table="off">
                     <tbody>
                     @foreach(array_chunk($labels, $paperSize->columns()) as $row)
                         <tr>

@@ -999,3 +999,396 @@ body::-webkit-scrollbar {
         font-size: 0.75rem;
     }
 }
+
+/*
+ * Tabel responsif GudangToko
+ * Desktop mempertahankan markup tabel asli. Di bawah 768px, setiap baris menjadi
+ * kartu ringkas yang dapat dibuka tanpa menggandakan form, tautan, atau tombol.
+ */
+.gt-mobile-card-trigger,
+.gt-mobile-detail-label {
+    display: none;
+}
+
+.gt-mobile-cell-value,
+.gt-mobile-detail-content {
+    display: contents;
+}
+
+@media (max-width: 767.98px) {
+    html,
+    body {
+        max-width: 100%;
+        overflow-x: clip;
+    }
+
+    #kt_app_wrapper {
+        margin-top: 0 !important;
+    }
+
+    #kt_app_header {
+        overflow-x: hidden;
+    }
+
+    #kt_app_toolbar_container {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+
+    #kt_app_toolbar_container > .d-flex:last-child {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 100%;
+        margin-left: auto;
+    }
+
+    #kt_app_toolbar_container,
+    #kt_app_content_container {
+        padding-right: 0.75rem !important;
+        padding-left: 0.75rem !important;
+    }
+
+    #kt_app_content_container {
+        margin-top: 0.5rem !important;
+    }
+
+    #kt_app_content {
+        padding-bottom: 0.75rem !important;
+    }
+
+    #kt_app_content_container .card {
+        border-radius: 0.65rem;
+    }
+
+    #kt_app_content_container .card > .card-header {
+        min-height: 3.25rem;
+        padding-right: 0.75rem;
+        padding-left: 0.75rem;
+    }
+
+    #kt_app_content_container .card > .card-body {
+        padding: 0.75rem !important;
+    }
+
+    #kt_app_content_container .card-body > form.mb-5 {
+        margin-bottom: 0.75rem !important;
+    }
+
+    #kt_app_content_container .card-body > form.gap-3,
+    #kt_app_content_container .card-body > form .gap-3 {
+        gap: 0.5rem !important;
+    }
+
+    #kt_app_content_container .card-body > form.row.g-3 {
+        --bs-gutter-x: 0.5rem;
+        --bs-gutter-y: 0.5rem;
+    }
+
+    .table-responsive.gt-mobile-table-wrapper,
+    .dt-scroll-body:has(> table.gt-mobile-ready) {
+        overflow-x: hidden !important;
+        max-width: 100%;
+    }
+
+    table.gt-mobile-ready {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin-bottom: 0;
+    }
+
+    table.gt-mobile-ready > thead {
+        display: none !important;
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+    }
+
+    table.gt-mobile-ready > tbody {
+        display: grid;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    table.gt-mobile-ready > tbody > tr {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: 100%;
+        min-width: 0;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.75rem;
+        background: var(--bs-body-bg);
+        box-shadow: 0 0.125rem 0.5rem rgba(15, 23, 42, 0.06);
+        outline: 0.16rem solid transparent;
+        outline-offset: -0.16rem;
+        overflow: hidden;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease, outline-color 0.18s ease;
+    }
+
+    table.gt-mobile-ready > tbody > tr.is-mobile-expanded {
+        border-color: rgba(var(--bs-primary-rgb), 0.65);
+        outline-color: rgba(var(--bs-primary-rgb), 0.65);
+        box-shadow:
+            0 0 0 0.16rem rgba(var(--bs-primary-rgb), 0.13),
+            0 0.25rem 0.75rem rgba(15, 23, 42, 0.1);
+    }
+
+    table.gt-mobile-ready > tbody > tr[hidden],
+    table.gt-mobile-ready > tbody > tr.d-none,
+    table.gt-mobile-ready > tbody > tr[style*='display: none'] {
+        display: none !important;
+    }
+
+    table.gt-mobile-ready > tbody > tr > td {
+        display: none;
+        grid-column: 1 / -1;
+        min-width: 0;
+        padding: 0.55rem 0.75rem;
+        border: 0 !important;
+        border-top: 1px solid var(--bs-border-color-translucent) !important;
+        text-align: left !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+    }
+
+    table.gt-mobile-ready > tbody > tr > td.gt-mobile-summary-host {
+        display: block;
+        grid-column: 1 / -1;
+        padding: 0;
+        border-top: 0 !important;
+    }
+
+    .gt-mobile-card-trigger {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        padding: 0.65rem 0.75rem;
+        border: 0;
+        border-radius: inherit;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .gt-mobile-card-trigger:hover {
+        background: var(--bs-tertiary-bg);
+    }
+
+    .gt-mobile-card-trigger:focus-visible {
+        outline: 3px solid rgba(var(--bs-primary-rgb), 0.28);
+        outline-offset: -3px;
+    }
+
+    .gt-mobile-card-top,
+    .gt-mobile-card-footer {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+    }
+
+    .gt-mobile-card-top {
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .gt-mobile-card-identity {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        gap: 0.05rem;
+    }
+
+    .gt-mobile-card-primary,
+    .gt-mobile-card-secondary,
+    .gt-mobile-card-subtitle,
+    .gt-mobile-card-highlight {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .gt-mobile-card-primary {
+        color: var(--bs-emphasis-color);
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    .gt-mobile-card-secondary {
+        color: var(--bs-secondary-color);
+        font-size: 0.83rem;
+        line-height: 1.35;
+    }
+
+    .gt-mobile-card-footer {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+        margin-top: 0.45rem;
+        padding-top: 0.4rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+    }
+
+    .gt-mobile-card-subtitle {
+        grid-column: span 2;
+        color: var(--bs-secondary-color);
+        font-size: 0.76rem;
+        line-height: 1.35;
+    }
+
+    .gt-mobile-card-highlight {
+        grid-column: 3;
+        color: var(--bs-emphasis-color);
+        font-size: 0.88rem;
+        font-weight: 700;
+        line-height: 1.25;
+        text-align: right;
+    }
+
+    .gt-mobile-card-highlight[data-label]::before {
+        display: block;
+        margin-bottom: 0.12rem;
+        color: var(--bs-secondary-color);
+        content: attr(data-label);
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .gt-mobile-card-chevron {
+        display: inline-flex;
+        flex: 0 0 auto;
+        width: 1.35rem;
+        height: 1.35rem;
+        color: var(--bs-secondary-color);
+        transition: transform 0.18s ease;
+    }
+
+    .gt-mobile-card-chevron svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .gt-mobile-card-trigger[aria-expanded='true'] .gt-mobile-card-chevron {
+        transform: rotate(180deg);
+    }
+
+    table.gt-mobile-ready > tbody > tr:not(.is-mobile-expanded) > td.gt-mobile-summary-host > .gt-mobile-cell-value {
+        display: none;
+    }
+
+    table.gt-mobile-ready > tbody > tr.is-mobile-expanded > td:not(.gt-mobile-summary-host) {
+        display: block;
+        animation: gt-mobile-detail-in 0.16s ease-out;
+    }
+
+    table.gt-mobile-ready > tbody > tr.is-mobile-expanded > td.gt-mobile-summary-host > .gt-mobile-cell-value {
+        display: flex;
+        padding: 0.55rem 0.75rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+        animation: gt-mobile-detail-in 0.16s ease-out;
+    }
+
+    table.gt-mobile-ready > tbody > tr.is-mobile-expanded > td.gt-mobile-summary-duplicate:not(.gt-mobile-summary-host),
+    table.gt-mobile-ready > tbody > tr.is-mobile-expanded > td.gt-mobile-summary-host.gt-mobile-summary-duplicate > .gt-mobile-cell-value {
+        display: none;
+    }
+
+    table.gt-mobile-ready > tbody > tr.is-mobile-expanded .gt-mobile-cell-value .gt-mobile-summary-source {
+        display: none !important;
+    }
+
+    .gt-mobile-cell-value {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        gap: 0.22rem;
+    }
+
+    .gt-mobile-detail-label {
+        display: block;
+        color: var(--bs-secondary-color);
+        font-size: 0.66rem;
+        font-weight: 700;
+        letter-spacing: 0.045em;
+        line-height: 1.25;
+        text-transform: uppercase;
+    }
+
+    .gt-mobile-detail-content {
+        display: block;
+        min-width: 0;
+        color: var(--bs-body-color);
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+
+    td.gt-mobile-actions .gt-mobile-detail-content {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    td.gt-mobile-actions .gt-mobile-detail-content > form {
+        display: inline-flex;
+    }
+
+    table.gt-mobile-ready > tbody > tr.gt-mobile-spanning-row {
+        display: block;
+    }
+
+    table.gt-mobile-ready > tbody > tr.gt-mobile-spanning-row > td {
+        display: block;
+        width: 100%;
+        border-top: 0 !important;
+    }
+
+    @keyframes gt-mobile-detail-in {
+        from {
+            opacity: 0;
+            transform: translateY(-0.2rem);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+@media (max-width: 359.98px) {
+    .gt-mobile-card-trigger,
+    table.gt-mobile-ready > tbody > tr > td {
+        padding-right: 0.75rem;
+        padding-left: 0.75rem;
+    }
+
+    .gt-mobile-card-footer {
+        gap: 0.35rem;
+    }
+
+    .gt-mobile-card-subtitle {
+        font-size: 0.7rem;
+    }
+
+    .gt-mobile-card-highlight {
+        font-size: 0.8rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gt-mobile-card-chevron,
+    table.gt-mobile-ready > tbody > tr,
+    table.gt-mobile-ready > tbody > tr.is-mobile-expanded > td {
+        animation: none;
+        transition: none;
+    }
+}

@@ -77,12 +77,12 @@
                 <tbody>
                 @forelse ($stocks as $stock)
                     <tr>
-                        <td><span class="fw-bold">{{ $stock->product?->sku }}</span><div class="text-muted">{{ $stock->product?->name }}</div></td>
-                        <td>{{ $stock->workLocation?->name }}<div class="text-muted">{{ $stock->warehouseLocation?->full_code ?: 'Tanpa bin' }}</div></td>
+                        <td><span class="fw-bold" data-mobile-primary>{{ $stock->product?->sku }}</span><div class="text-muted" data-mobile-secondary>{{ $stock->product?->name }}</div></td>
+                        <td><span data-mobile-subtitle>{{ $stock->workLocation?->name }}</span><div class="text-muted">{{ $stock->warehouseLocation?->full_code ?: 'Tanpa bin' }}</div></td>
                         <td>{{ qty($stock->quantity_on_hand) }}</td>
                         <td>{{ qty($stock->quantity_reserved) }}</td>
                         <td>{{ qty($stock->quantity_damaged) }}</td>
-                        <td class="fw-bold">{{ qty($stock->available_quantity) }}</td>
+                        <td class="fw-bold"><span data-mobile-highlight data-mobile-highlight-label="Available">{{ qty($stock->available_quantity) }}</span></td>
                         <td>{{ qty($stock->product?->minimum_stock) }} / {{ qty($stock->product?->safety_stock) }}</td>
                         <td>{{ \App\Support\CurrencyFormatter::rupiah($stock->inventory_value) }}</td>
                         <td class="text-end"><a class="btn btn-sm btn-light" href="{{ route('warehouse.stock-card.index', ['product_id' => $stock->product_id, 'work_location_id' => $stock->work_location_id, 'warehouse_location_id' => $stock->warehouse_location_id]) }}">Kartu Stok</a></td>

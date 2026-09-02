@@ -86,14 +86,11 @@
     </x-metronic.card>
 
 @push('scripts')
-<script src="https://cdn.datatables.net/1.13.11/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.datatables.net/1.13.11/js/dataTables.bootstrap5.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js" crossorigin="anonymous"></script>
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    if (typeof $.fn.DataTable === 'undefined') {
+    var $ = window.jQuery;
+
+    if (!$ || typeof $.fn.DataTable === 'undefined') {
         console.warn('jQuery DataTables library not loaded.');
         return;
     }
@@ -145,6 +142,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         recordsFiltered: json.recordsFiltered,
                         data:            rows,
                     });
+
+                    window.GudangTokoResponsiveTables?.refresh(document.getElementById('usersDatatable'));
                 },
             });
         },

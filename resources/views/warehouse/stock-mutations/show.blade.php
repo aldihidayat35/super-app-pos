@@ -394,7 +394,7 @@
                     </div>
                 @else
                     <div class="table-responsive">
-                        <table class="table table-sm table-borderless align-middle mb-0">
+                        <table class="table table-sm table-borderless align-middle mb-0" data-mobile-table="off">
                             <tbody>
                             @foreach($meta as $key => $value)
                                 <tr class="border-bottom border-gray-100">

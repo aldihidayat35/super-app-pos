@@ -1,6 +1,7 @@
 import './vendor';
 import './bootstrap';
 import { initializeStockTransferForm } from './modules/warehouse-stock-transfer-form';
+import { initializeResponsiveTables, refreshResponsiveTable } from './modules/responsive-mobile-tables';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 const loadingOverlay = document.querySelector('[data-app-loading]');
@@ -390,6 +391,12 @@ const initializeApplication = () => {
     initializeModalSubmissions();
     initializeConfirmations();
     initializePasswordToggles();
+    initializeResponsiveTables();
+};
+
+window.GudangTokoResponsiveTables = {
+    initialize: initializeResponsiveTables,
+    refresh: refreshResponsiveTable,
 };
 
 if (document.readyState === 'loading') {
