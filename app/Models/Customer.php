@@ -7,6 +7,7 @@ use App\Enums\CustomerType;
 use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -17,7 +18,7 @@ class Customer extends Model
     /** @use HasFactory<CustomerFactory> */
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['type', 'code', 'business_name', 'owner_name', 'pic_name', 'whatsapp_number', 'email', 'business_address', 'city', 'price_category', 'minimum_order', 'payment_term_days', 'credit_limit', 'receivable_balance', 'verification_status', 'account_status', 'status_reason', 'notes', 'is_active'];
+    protected $fillable = ['sales_user_id', 'type', 'code', 'business_name', 'tax_number', 'tax_identity_type', 'owner_name', 'pic_name', 'whatsapp_number', 'email', 'business_address', 'tax_address', 'is_pkp', 'city', 'price_category', 'minimum_order', 'payment_term_days', 'credit_limit', 'receivable_balance', 'verification_status', 'account_status', 'status_reason', 'notes', 'is_active'];
 
     protected function casts(): array
     {
@@ -30,6 +31,7 @@ class Customer extends Model
             'verification_status' => CustomerStatus::class,
             'account_status' => CustomerStatus::class,
             'is_active' => 'boolean',
+            'is_pkp' => 'boolean',
         ];
     }
 
@@ -37,6 +39,12 @@ class Customer extends Model
     public function addresses(): HasMany
     {
         return $this->hasMany(CustomerAddress::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function sales(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sales_user_id');
     }
 
     /** @return HasOne<CustomerAddress, $this> */

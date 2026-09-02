@@ -389,7 +389,7 @@ class StockTransferController extends Controller
             return [
                 'role' => 'Pembuat transfer',
                 'location' => $transfer->sourceWorkLocation?->name,
-                'users' => array_values(array_filter([$transfer->requester?->name])),
+                'users' => array_filter([$transfer->requester?->name]),
             ];
         }
 

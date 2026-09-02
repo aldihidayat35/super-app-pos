@@ -21,6 +21,10 @@ if (typeof $.fn.select2 === 'function') {
     $.fn.select2.defaults.set('selectionCssClass', ':all:');
 }
 
-window.metronicReady = import('./vendor/metronic/scripts.bundle.js').catch((error) => {
-    console.error('Runtime Metronic gagal dimuat.', error);
-});
+const usesMetronicLayout = !document.body?.classList.contains('auth-page');
+
+window.metronicReady = usesMetronicLayout
+    ? import('./vendor/metronic/scripts.bundle.js').catch((error) => {
+        console.error('Runtime Metronic gagal dimuat.', error);
+    })
+    : Promise.resolve();

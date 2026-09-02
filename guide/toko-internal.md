@@ -8,7 +8,7 @@ Panduan ini untuk `kepala_toko`, `kasir`, `supervisor_shift`, dan karyawan toko.
 |---|---|
 | `kepala_toko` | Mengawasi cabang, stok toko, restock, POS, shift, retur, piutang, dan karyawan. |
 | `kasir` | Membuka shift, melakukan transaksi POS, menerima pembayaran, dan submit closing. |
-| `supervisor_shift` | Memeriksa closing, approval void/selisih, dan memantau shift. |
+| `supervisor_shift` | Memantau closing, void, dan operasional shift tanpa otoritas approval kepala bagian. |
 | Karyawan toko | Check-in/out, jadwal, izin, dan aktivitas toko sesuai tugas. |
 
 ## 2. Menu utama Toko Internal
@@ -118,7 +118,7 @@ Cara kerja di belakang layar:
 1. Buka `/retail/sales/{id}/void`.
 2. Isi alasan void.
 3. Submit.
-4. Jika butuh approval, tunggu supervisor/owner.
+4. Jika kebijakan mensyaratkan persetujuan, tunggu kepala toko atau owner untuk eskalasi sensitif.
 
 Cara kerja di belakang layar:
 
@@ -154,11 +154,11 @@ Cara kerja di belakang layar:
 Cara kerja di belakang layar:
 
 - Setelah closing submitted, shift terkunci sebagian.
-- Supervisor memeriksa selisih.
+- Supervisor dapat memantau selisih, sedangkan keputusan approve/reject dilakukan kepala toko.
 - Jika approved/closed, transaksi shift tidak boleh diedit.
 - Selisih besar bisa memicu approval.
 
-### 4.3 Approval closing oleh supervisor/kepala toko
+### 4.3 Approval closing oleh kepala toko
 
 1. Buka `/retail/shifts`.
 2. Pilih shift dengan status menunggu verifikasi.

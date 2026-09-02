@@ -15,7 +15,11 @@
                     <tr><td colspan="4"><x-metronic.empty-state title="Belum ada riwayat produk" description="Setelah order pertama, produk akan muncul untuk reorder cepat." /></td></tr>
                 @endforelse
             </tbody></table></div>
-            @if($items->isNotEmpty())@slot('footer')<button class="btn btn-primary">Tambahkan ke Keranjang</button>@endslot@endif
+            @if ($items->isNotEmpty())
+                <x-slot:footer>
+                    <button class="btn btn-primary">Tambahkan ke Keranjang</button>
+                </x-slot:footer>
+            @endif
         </x-metronic.card>
     </form>
 @endsection

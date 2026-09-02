@@ -18,6 +18,7 @@ use App\Models\CreditNote;
 use App\Models\Customer;
 use App\Models\Receivable;
 use App\Services\Receivables\ReceivableService;
+use App\Support\Decimal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,19 +31,165 @@ class ReceivableController extends Controller
         $this->authorize('viewAny', Receivable::class);
         $service->refreshAging();
 
-        $base = Receivable::query()->where('outstanding_amount', '>', 0);
+        $channel = in_array($request->string('channel')->toString(), ['warehouse', 'retail'], true)
+            ? $request->string('channel')->toString()
+            : null;
+        $rangeDays = in_array($request->integer('range'), [7, 30, 90], true) ? $request->integer('range') : 30;
+        $today = now()->startOfDay();
+        $periodStart = $today->copy()->subDays($rangeDays - 1);
+
+        $base = Receivable::query()
+            ->where('outstanding_amount', '>', 0)
+            ->when($channel, fn ($query, $value) => $query->where('channel', $value));
+
+        $total = (string) (clone $base)->sum('outstanding_amount');
+        $notDue = (string) (clone $base)->where('aging_bucket', 'not_due')->sum('outstanding_amount');
+        $overdue = (string) (clone $base)->whereNot('aging_bucket', 'not_due')->sum('outstanding_amount');
+
+        $agingAggregates = (clone $base)
+            ->select('aging_bucket', DB::raw('COUNT(*) as document_count'), DB::raw('SUM(outstanding_amount) as total'))
+            ->groupBy('aging_bucket')
+            ->get()
+            ->keyBy('aging_bucket');
+        $agingRows = collect([
+            'not_due' => ['label' => 'Belum jatuh tempo', 'tone' => 'success'],
+            '1_7' => ['label' => 'Terlambat 1–7 hari', 'tone' => 'warning'],
+            '8_30' => ['label' => 'Terlambat 8–30 hari', 'tone' => 'orange'],
+            '31_60' => ['label' => 'Terlambat 31–60 hari', 'tone' => 'danger'],
+            'over_60' => ['label' => 'Terlambat > 60 hari', 'tone' => 'dark'],
+        ])->map(function (array $meta, string $bucket) use ($agingAggregates, $total): array {
+            $aggregate = $agingAggregates->get($bucket);
+            $amount = (string) data_get($aggregate, 'total', '0');
+
+            return [
+                'bucket' => $bucket,
+                'label' => $meta['label'],
+                'tone' => $meta['tone'],
+                'amount' => $amount,
+                'document_count' => (int) data_get($aggregate, 'document_count', 0),
+                'percentage' => $this->percentage($amount, $total),
+            ];
+        })->values();
+
+        $channelAggregates = (clone $base)
+            ->select('channel', DB::raw('COUNT(*) as document_count'), DB::raw('SUM(outstanding_amount) as total'))
+            ->groupBy('channel')
+            ->get()
+            ->keyBy('channel');
+        $channelRows = collect([
+            'warehouse' => ['label' => 'Gudang / B2B', 'tone' => 'primary'],
+            'retail' => ['label' => 'Toko Internal', 'tone' => 'info'],
+        ])->map(function (array $meta, string $key) use ($channelAggregates, $total): array {
+            $aggregate = $channelAggregates->get($key);
+            $amount = (string) data_get($aggregate, 'total', '0');
+
+            return [
+                'key' => $key,
+                'label' => $meta['label'],
+                'tone' => $meta['tone'],
+                'amount' => $amount,
+                'document_count' => (int) data_get($aggregate, 'document_count', 0),
+                'percentage' => $this->percentage($amount, $total),
+            ];
+        })->values();
+
+        $flowQuery = DB::table('receivable_entries')
+            ->join('receivables', 'receivables.id', '=', 'receivable_entries.receivable_id')
+            ->whereIn('receivable_entries.entry_type', ['invoice', 'payment'])
+            ->whereBetween('receivable_entries.occurred_at', [$periodStart, $today->copy()->endOfDay()])
+            ->when($channel, fn ($query, $value) => $query->where('receivables.channel', $value));
+        $flowRows = (clone $flowQuery)
+            ->selectRaw('DATE(receivable_entries.occurred_at) as flow_date')
+            ->selectRaw("SUM(CASE WHEN receivable_entries.entry_type = 'invoice' THEN ABS(receivable_entries.amount) ELSE 0 END) as invoiced")
+            ->selectRaw("SUM(CASE WHEN receivable_entries.entry_type = 'payment' THEN ABS(receivable_entries.amount) ELSE 0 END) as paid")
+            ->groupByRaw('DATE(receivable_entries.occurred_at)')
+            ->get()
+            ->keyBy('flow_date');
+        $flowTrend = collect(range(0, $rangeDays - 1))->map(function (int $offset) use ($periodStart, $flowRows): array {
+            $date = $periodStart->copy()->addDays($offset);
+            $row = $flowRows->get($date->toDateString());
+
+            return [
+                'date' => $date->translatedFormat('d M'),
+                'invoiced' => (string) data_get($row, 'invoiced', '0'),
+                'paid' => (string) data_get($row, 'paid', '0'),
+            ];
+        });
+        $periodInvoiced = (string) (clone $flowQuery)->where('receivable_entries.entry_type', 'invoice')->sum(DB::raw('ABS(receivable_entries.amount)'));
+        $periodPaid = (string) (clone $flowQuery)->where('receivable_entries.entry_type', 'payment')->sum(DB::raw('ABS(receivable_entries.amount)'));
+
+        $priorityReceivables = (clone $base)
+            ->with('customer')
+            ->whereDate('due_date', '<=', $today->toDateString())
+            ->orderBy('due_date')
+            ->orderByDesc('outstanding_amount')
+            ->limit(7)
+            ->get();
+
+        $riskCustomers = Receivable::query()
+            ->with('customer')
+            ->where('outstanding_amount', '>', 0)
+            ->whereDate('due_date', '<', $today->toDateString())
+            ->when($channel, fn ($query, $value) => $query->where('channel', $value))
+            ->select('customer_id', DB::raw('COUNT(*) as document_count'), DB::raw('SUM(outstanding_amount) as overdue_total'), DB::raw('MIN(due_date) as oldest_due_date'))
+            ->groupBy('customer_id')
+            ->orderByDesc('overdue_total')
+            ->limit(6)
+            ->get();
+
+        $followUpQuery = CollectionNote::query()
+            ->whereNotNull('next_follow_up_date')
+            ->whereDate('next_follow_up_date', '<=', $today->toDateString())
+            ->when($channel, fn ($query, $value) => $query->whereHas('receivable', fn ($receivable) => $receivable->where('channel', $value)));
+        $followUpCount = (clone $followUpQuery)->count();
+        $followUps = $followUpQuery
+            ->with(['customer', 'receivable'])
+            ->orderBy('next_follow_up_date')
+            ->limit(6)
+            ->get();
+
+        $overLimitCustomers = Customer::query()
+            ->whereColumn('receivable_balance', '>', 'credit_limit')
+            ->when($channel, fn ($query, $value) => $query->whereHas('receivables', fn ($receivable) => $receivable->where('channel', $value)->where('outstanding_amount', '>', 0)))
+            ->count();
 
         return view('receivables.dashboard', [
-            'total' => (clone $base)->sum('outstanding_amount'),
-            'notDue' => (clone $base)->where('aging_bucket', 'not_due')->sum('outstanding_amount'),
-            'overdue' => (clone $base)->whereNot('aging_bucket', 'not_due')->sum('outstanding_amount'),
-            'todayDue' => (clone $base)->whereDate('due_date', now()->toDateString())->sum('outstanding_amount'),
-            'paidToday' => DB::table('receivable_entries')->where('entry_type', 'payment')->whereDate('occurred_at', now()->toDateString())->sum(DB::raw('ABS(amount)')),
-            'warehouseTotal' => (clone $base)->where('channel', 'warehouse')->sum('outstanding_amount'),
-            'retailTotal' => (clone $base)->where('channel', 'retail')->sum('outstanding_amount'),
-            'aging' => (clone $base)->select('aging_bucket', DB::raw('SUM(outstanding_amount) as total'))->groupBy('aging_bucket')->pluck('total', 'aging_bucket'),
-            'overLimitCustomers' => Customer::query()->whereColumn('receivable_balance', '>', 'credit_limit')->count(),
+            'filters' => ['channel' => $channel, 'range' => $rangeDays],
+            'summary' => [
+                'total' => $total,
+                'not_due' => $notDue,
+                'overdue' => $overdue,
+                'overdue_percentage' => $this->percentage($overdue, $total),
+                'due_today' => (string) (clone $base)->whereDate('due_date', $today->toDateString())->sum('outstanding_amount'),
+                'due_next_7_days' => (string) (clone $base)->whereBetween('due_date', [$today->copy()->addDay()->toDateString(), $today->copy()->addDays(7)->toDateString()])->sum('outstanding_amount'),
+                'paid_today' => (string) DB::table('receivable_entries')->join('receivables', 'receivables.id', '=', 'receivable_entries.receivable_id')->where('receivable_entries.entry_type', 'payment')->whereDate('receivable_entries.occurred_at', $today->toDateString())->when($channel, fn ($query, $value) => $query->where('receivables.channel', $value))->sum(DB::raw('ABS(receivable_entries.amount)')),
+                'period_paid' => $periodPaid,
+                'period_invoiced' => $periodInvoiced,
+                'collection_ratio' => $this->percentage($periodPaid, $periodInvoiced),
+                'open_documents' => (clone $base)->count(),
+                'open_customers' => (clone $base)->distinct()->count('customer_id'),
+                'over_limit_customers' => $overLimitCustomers,
+                'follow_ups_due' => $followUpCount,
+            ],
+            'agingRows' => $agingRows,
+            'channelRows' => $channelRows,
+            'flowTrend' => $flowTrend,
+            'priorityReceivables' => $priorityReceivables,
+            'riskCustomers' => $riskCustomers,
+            'followUps' => $followUps,
+            'refreshedAt' => now(),
         ]);
+    }
+
+    private function percentage(string $part, string $whole): string
+    {
+        if (! Decimal::isPositive($whole, 2)) {
+            return '0.0';
+        }
+
+        $ratio = Decimal::div($part, $whole, 2, 2, 4);
+
+        return Decimal::mul($ratio, '100', 4, 0, 1);
     }
 
     public function index(Request $request, ReceivableService $service): View

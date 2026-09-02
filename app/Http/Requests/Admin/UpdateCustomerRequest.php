@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\CustomerStatus;
 use App\Enums\CustomerType;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,6 +19,16 @@ class UpdateCustomerRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'sales_user_id' => [
+                'nullable',
+                'integer',
+                Rule::prohibitedIf(! ($this->user()?->can('sales.customers.assign') ?? false)),
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($value !== null && ! User::query()->whereKey((int) $value)->role('sales')->exists()) {
+                        $fail('Pengguna yang dipilih tidak memiliki role Sales.');
+                    }
+                },
+            ],
             'type' => ['required', Rule::enum(CustomerType::class)],
             'code' => ['required', 'string', 'max:60', 'alpha_dash', Rule::unique('customers', 'code')->ignore($this->route('customer'))],
             'business_name' => ['required', 'string', 'max:255'],

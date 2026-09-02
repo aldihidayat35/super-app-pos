@@ -84,10 +84,17 @@ use App\Http\Controllers\Retail\RestockRequestController;
 use App\Http\Controllers\Returns\InventoryLossController;
 use App\Http\Controllers\Returns\ReturnController;
 use App\Http\Controllers\Returns\ReturnSourceController;
+use App\Http\Controllers\Sales\AdminController as SalesAdminController;
+use App\Http\Controllers\Sales\CustomerController as SalesCustomerController;
+use App\Http\Controllers\Sales\DashboardController as SalesDashboardController;
+use App\Http\Controllers\Sales\OrderController as SalesOrderController;
+use App\Http\Controllers\Sales\StockController as SalesStockController;
+use App\Http\Controllers\Sales\TargetBonusController as SalesTargetBonusController;
 use App\Http\Controllers\ShipmentController;
 use App\Http\Controllers\ShipmentProofController;
 use App\Http\Controllers\System\HealthController;
 use App\Http\Controllers\System\OperationsController;
+use App\Http\Controllers\Tax\TaxComplianceController;
 use App\Http\Controllers\Warehouse\B2bOrderController as WarehouseB2bOrderController;
 use App\Http\Controllers\Warehouse\GoodsReceiptController;
 use App\Http\Controllers\Warehouse\LocationTransferController;
@@ -243,6 +250,40 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])
         ->middleware('password.confirm')
         ->name('profile.password.update');
+
+    Route::prefix('sales')->name('sales.')->group(function (): void {
+        Route::get('/dashboard', SalesDashboardController::class)->middleware('permission:sales.dashboard.view')->name('dashboard');
+        Route::get('/customers', [SalesCustomerController::class, 'index'])->middleware('permission:sales.customers.view_own')->name('customers.index');
+        Route::get('/customers/{customer}', [SalesCustomerController::class, 'show'])->middleware('permission:sales.customers.view_own')->name('customers.show');
+        Route::get('/orders', [SalesOrderController::class, 'index'])->middleware('permission:sales.orders.view_own')->name('orders.index');
+        Route::get('/orders/create', [SalesOrderController::class, 'create'])->middleware('permission:sales.orders.create')->name('orders.create');
+        Route::post('/orders', [SalesOrderController::class, 'store'])->middleware('permission:sales.orders.create')->name('orders.store');
+        Route::get('/orders/{order}', [SalesOrderController::class, 'show'])->middleware('permission:sales.orders.view_own')->name('orders.show');
+        Route::get('/stocks', [SalesStockController::class, 'index'])->middleware('permission:sales.stock.view')->name('stocks.index');
+        Route::get('/targets', [SalesTargetBonusController::class, 'index'])->middleware('permission:sales.targets.view_own')->name('targets.index');
+
+        Route::get('/performance', [SalesAdminController::class, 'performance'])->middleware('permission:sales.performance.view')->name('performance');
+        Route::get('/admin/targets', [SalesAdminController::class, 'targets'])->middleware('permission:sales.targets.manage')->name('admin.targets.index');
+        Route::post('/admin/targets', [SalesAdminController::class, 'storeTarget'])->middleware('permission:sales.targets.manage')->name('admin.targets.store');
+        Route::get('/assignments', [SalesAdminController::class, 'assignments'])->middleware('permission:sales.customers.assign')->name('assignments.index');
+        Route::put('/assignments/{customer}', [SalesAdminController::class, 'assign'])->middleware('permission:sales.customers.assign')->name('assignments.update');
+    });
+
+    Route::prefix('tax')->name('tax.')->group(function (): void {
+        Route::get('/', [TaxComplianceController::class, 'index'])->middleware('permission:tax.access')->name('index');
+        Route::get('/settings', [TaxComplianceController::class, 'settings'])->middleware('permission:tax.manage')->name('settings');
+        Route::post('/settings/profile', [TaxComplianceController::class, 'storeProfile'])->middleware('permission:tax.manage')->name('profile.store');
+        Route::post('/settings/rules', [TaxComplianceController::class, 'storeRule'])->middleware('permission:tax.manage')->name('rules.store');
+        Route::put('/settings/products/{product}', [TaxComplianceController::class, 'updateProduct'])->middleware('permission:tax.manage')->name('products.update');
+        Route::put('/settings/counterparties', [TaxComplianceController::class, 'updateCounterparty'])->middleware('permission:tax.manage')->name('counterparties.update');
+        Route::post('/documents', [TaxComplianceController::class, 'storeDocument'])->middleware('permission:tax.manage')->name('documents.store');
+        Route::post('/documents/{taxDocument}/reconcile', [TaxComplianceController::class, 'reconcile'])->middleware('permission:tax.manage')->name('documents.reconcile');
+        Route::post('/documents/{taxDocument}/reverse', [TaxComplianceController::class, 'reverse'])->middleware('permission:tax.manage')->name('documents.reverse');
+        Route::post('/sync', [TaxComplianceController::class, 'sync'])->middleware('permission:tax.manage')->name('sync');
+        Route::put('/periods/{taxPeriod}', [TaxComplianceController::class, 'updatePeriod'])->middleware('permission:tax.manage')->name('periods.update');
+        Route::post('/periods/{taxPeriod}/transition', [TaxComplianceController::class, 'transition'])->middleware('permission:tax.approve')->name('periods.transition');
+        Route::get('/periods/{taxPeriod}/export', [TaxComplianceController::class, 'export'])->middleware('permission:tax.export')->name('periods.export');
+    });
 
     Route::get('/confirm-password', [PasswordConfirmationController::class, 'create'])->name('password.confirm');
     Route::post('/confirm-password', [PasswordConfirmationController::class, 'store'])->name('password.confirm.store');

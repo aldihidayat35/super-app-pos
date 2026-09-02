@@ -92,6 +92,64 @@ class DashboardReportTest extends TestCase
         $this->actingAs($this->owner)->get(route('reports.exports.index'))->assertOk()->assertSee('Pusat Export');
     }
 
+    public function test_operational_reports_render_decision_sections_and_charts(): void
+    {
+        foreach ([
+            'reports.warehouse.index',
+            'reports.retail.index',
+            'reports.b2b.index',
+            'reports.pricing.index',
+            'reports.receivables.index',
+        ] as $routeName) {
+            $this->actingAs($this->owner)->get(route($routeName))
+                ->assertOk()
+                ->assertSee('Perlu Perhatian')
+                ->assertSee('Rincian Data')
+                ->assertSee('id="report-primary-chart"', false)
+                ->assertSee('id="report-secondary-chart"', false);
+        }
+
+        $this->actingAs($this->owner)->get(route('reports.suppliers.index'))
+            ->assertOk()
+            ->assertSee('Performa Supplier')
+            ->assertSee('id="supplier-score-trend"', false)
+            ->assertSee('id="supplier-ranking-chart"', false);
+
+        $this->actingAs($this->owner)->get(route('reports.attendance.index'))
+            ->assertOk()
+            ->assertSee('Lokasi yang Perlu Perhatian')
+            ->assertSee('id="attendance-trend-chart"', false)
+            ->assertSee('id="attendance-status-chart"', false);
+    }
+
+    public function test_pricing_report_masks_sensitive_margin_for_users_without_permission(): void
+    {
+        $product = Product::factory()->create();
+        DB::table('price_histories')->insert([
+            'priceable_type' => Product::class,
+            'priceable_id' => $product->id,
+            'product_id' => $product->id,
+            'channel' => 'retail',
+            'old_price' => '100000.00',
+            'new_price' => '120000.00',
+            'hpp_snapshot' => '43210.00',
+            'minimum_price_snapshot' => '50000.00',
+            'source' => 'manual',
+            'reason' => 'Pengujian laporan',
+            'created_at' => now('Asia/Jakarta'),
+            'updated_at' => now('Asia/Jakarta'),
+        ]);
+
+        $this->actingAs($this->owner)->get(route('reports.pricing.index'))
+            ->assertOk()
+            ->assertSee('Rp43.210');
+
+        $this->actingAs($this->cashier)->get(route('reports.pricing.index'))
+            ->assertOk()
+            ->assertSee('Akses terbatas')
+            ->assertDontSee('Rp43.210');
+    }
+
     public function test_owner_kpi_excludes_void_and_branch_scope_is_enforced(): void
     {
         $this->seedFixtureSale('300000.00', '75000.00', $this->branchLocation);

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\CustomerStatus;
 use App\Enums\CustomerType;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -42,6 +43,16 @@ class StoreCustomerRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'sales_user_id' => [
+                'nullable',
+                'integer',
+                Rule::prohibitedIf(! ($this->user()?->can('sales.customers.assign') ?? false)),
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($value !== null && ! User::query()->whereKey((int) $value)->role('sales')->exists()) {
+                        $fail('Pengguna yang dipilih tidak memiliki role Sales.');
+                    }
+                },
+            ],
             'type' => ['required', Rule::enum(CustomerType::class)],
             'business_name' => ['required', 'string', 'max:255'],
             'owner_name' => ['nullable', 'string', 'max:255'],

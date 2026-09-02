@@ -6,7 +6,13 @@ use App\Enums\InvoiceStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property InvoiceStatus $status
+ * @property Carbon|null $issue_date
+ * @property Carbon|null $issued_at
+ */
 class Invoice extends Model
 {
     protected $fillable = ['number', 'source_type', 'b2b_order_id', 'customer_id', 'status', 'issue_date', 'due_date', 'subtotal_amount', 'discount_amount', 'shipping_amount', 'tax_amount', 'total_amount', 'paid_amount', 'outstanding_amount', 'issued_at', 'paid_at', 'cancelled_at', 'created_by', 'issued_by', 'notes', 'metadata'];

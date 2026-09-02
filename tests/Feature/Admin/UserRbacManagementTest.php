@@ -470,11 +470,29 @@ class UserRbacManagementTest extends TestCase
         $cashier->assignRole(Role::findByName('kasir'));
         $warehouseHead = User::factory()->create();
         $warehouseHead->assignRole(Role::findByName('kepala_gudang'));
+        $storeHead = User::factory()->create();
+        $storeHead->assignRole(Role::findByName('kepala_toko'));
+        $shiftSupervisor = User::factory()->create();
+        $shiftSupervisor->assignRole(Role::findByName('supervisor_shift'));
 
         $this->assertFalse($ownerViewer->can('approvals.approve'));
         $this->assertTrue($ownerApprover->can('approvals.approve'));
         $this->assertFalse($cashier->can('margins.view_sensitive'));
         $this->assertFalse($warehouseHead->can('pos.view'));
+        $this->assertTrue($warehouseHead->can('stock_transfers.approve'));
+        $this->assertTrue($warehouseHead->can('stock_adjustments.approve'));
+        $this->assertTrue($warehouseHead->can('purchase_orders.approve'));
+        $this->assertTrue($warehouseHead->can('b2b_orders.approve'));
+        $this->assertFalse($warehouseHead->can('approvals.approve'));
+        $this->assertTrue($storeHead->can('cash_shifts.approve'));
+        $this->assertTrue($storeHead->can('attendance.approve'));
+        $this->assertTrue($storeHead->can('stock_adjustments.approve'));
+        $this->assertTrue($storeHead->can('returns.approve'));
+        $this->assertFalse($storeHead->can('purchase_orders.approve'));
+        $this->assertFalse($storeHead->can('b2b_orders.approve'));
+        $this->assertFalse($storeHead->can('approvals.approve'));
+        $this->assertFalse($shiftSupervisor->can('cash_shifts.approve'));
+        $this->assertFalse($shiftSupervisor->can('attendance.approve'));
     }
 
     #[Test]

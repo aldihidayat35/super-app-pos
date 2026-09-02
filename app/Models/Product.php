@@ -27,6 +27,9 @@ class Product extends Model
         'material',
         'description',
         'base_unit_id',
+        'tax_rule_id',
+        'tax_category_code',
+        'is_taxable',
         'status',
         'minimum_order',
         'minimum_stock',
@@ -54,6 +57,7 @@ class Product extends Model
         'minimum_price' => 'decimal:2',
         'attributes' => 'array',
         'has_transactions' => 'boolean',
+        'is_taxable' => 'boolean',
     ];
 
     /** @return BelongsTo<ProductCategory, $this> */
@@ -78,6 +82,12 @@ class Product extends Model
     public function baseUnit(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'base_unit_id');
+    }
+
+    /** @return BelongsTo<TaxRule, $this> */
+    public function taxRule(): BelongsTo
+    {
+        return $this->belongsTo(TaxRule::class);
     }
 
     /** @return BelongsTo<Warehouse, $this> */

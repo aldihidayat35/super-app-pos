@@ -6,8 +6,12 @@ use App\Enums\PosReturnStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
-/** @property PosReturnStatus $status */
+/**
+ * @property PosReturnStatus $status
+ * @property Carbon|null $completed_at
+ */
 class PosReturn extends Model
 {
     protected $fillable = [

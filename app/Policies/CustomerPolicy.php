@@ -9,13 +9,17 @@ class CustomerPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('customers.view') || $user->can('customers.view_own');
+        return $user->can('customers.view') || $user->can('customers.view_own') || $user->can('sales.customers.view_own');
     }
 
     public function view(User $user, Customer $customer): bool
     {
         if ($user->can('customers.view')) {
             return true;
+        }
+
+        if ($user->can('sales.customers.view_own')) {
+            return (int) $customer->sales_user_id === (int) $user->id;
         }
 
         return $user->can('customers.view_own')

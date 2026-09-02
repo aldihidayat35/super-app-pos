@@ -134,7 +134,14 @@ class ReceivableLedgerTest extends TestCase
         $invoice = $this->issueInvoice($this->reservedOrder('credit', 2));
         $receivable = Receivable::query()->where('invoice_id', $invoice->id)->firstOrFail();
 
-        $this->actingAs($this->warehouseHead)->get(route('receivables.dashboard'))->assertOk()->assertSee('Dashboard Piutang');
+        $this->actingAs($this->warehouseHead)
+            ->get(route('receivables.dashboard', ['channel' => 'warehouse', 'range' => 7]))
+            ->assertOk()
+            ->assertSee('Dashboard Piutang')
+            ->assertSee('Arus Tagihan dan Pembayaran')
+            ->assertSee('Komposisi Aging')
+            ->assertSee('Dokumen Prioritas Ditagih')
+            ->assertSee('Pelanggan dengan Risiko Tertinggi');
         $this->actingAs($this->warehouseHead)->get(route('receivables.index'))->assertOk()->assertSee($receivable->number);
         $this->actingAs($this->warehouseHead)->get(route('receivables.customers.show', $this->customer))->assertOk()->assertSee('Kartu Piutang');
         $this->actingAs($this->warehouseHead)->get(route('receivables.payments.create', ['customer_id' => $this->customer->id]))->assertOk()->assertSee('Input Pembayaran Piutang');

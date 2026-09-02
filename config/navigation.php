@@ -160,6 +160,22 @@ return [
         ],
     ],
     [
+        'label' => 'Sales',
+        'icon' => 'ki-outline ki-chart-line-up-2',
+        'active' => ['sales.*'],
+        'children' => [
+            ['label' => 'Dashboard', 'route' => 'sales.dashboard', 'active' => ['sales.dashboard'], 'permission' => 'sales.dashboard.view'],
+            ['label' => 'Customer Saya', 'route' => 'sales.customers.index', 'active' => ['sales.customers.*'], 'permission' => 'sales.customers.view_own'],
+            ['label' => 'Buat Order', 'route' => 'sales.orders.create', 'active' => ['sales.orders.create'], 'permission' => 'sales.orders.create'],
+            ['label' => 'Order Saya', 'route' => 'sales.orders.index', 'active' => ['sales.orders.index', 'sales.orders.show'], 'permission' => 'sales.orders.view_own'],
+            ['label' => 'Cek Stok', 'route' => 'sales.stocks.index', 'active' => ['sales.stocks.*'], 'permission' => 'sales.stock.view'],
+            ['label' => 'Target & Bonus', 'route' => 'sales.targets.index', 'active' => ['sales.targets.*'], 'permission' => 'sales.targets.view_own'],
+            ['label' => 'Performance Sales', 'route' => 'sales.performance', 'active' => ['sales.performance'], 'permission' => 'sales.performance.view'],
+            ['label' => 'Target Sales', 'route' => 'sales.admin.targets.index', 'active' => ['sales.admin.targets.*'], 'permission' => 'sales.targets.manage'],
+            ['label' => 'Assignment Customer', 'route' => 'sales.assignments.index', 'active' => ['sales.assignments.*'], 'permission' => 'sales.customers.assign'],
+        ],
+    ],
+    [
         'label' => 'Gudang & Stok',
         'icon' => 'ki-outline ki-delivery-3',
         'children' => [
@@ -552,6 +568,24 @@ return [
                 'route' => 'retail.receivables.index',
                 'active' => ['retail.receivables.*'],
                 'permission' => 'receivables.view',
+            ],
+        ],
+    ],
+    [
+        'label' => 'Pajak & Kepatuhan',
+        'icon' => 'ki-outline ki-calculator',
+        'children' => [
+            [
+                'label' => 'Laporan Masa Pajak',
+                'route' => 'tax.index',
+                'active' => ['tax.index', 'tax.documents.*', 'tax.periods.*'],
+                'permission' => 'tax.access',
+            ],
+            [
+                'label' => 'Pengaturan Pajak',
+                'route' => 'tax.settings',
+                'active' => ['tax.settings', 'tax.profile.*', 'tax.rules.*', 'tax.products.*', 'tax.counterparties.*'],
+                'permission' => 'tax.manage',
             ],
         ],
     ],

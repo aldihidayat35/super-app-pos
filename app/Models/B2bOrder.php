@@ -6,10 +6,11 @@ use App\Enums\B2bOrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class B2bOrder extends Model
 {
-    protected $fillable = ['number', 'customer_id', 'requested_by', 'approved_by', 'customer_address_id', 'status', 'requested_delivery_date', 'delivery_method', 'courier_name', 'payment_preference', 'terms_accepted', 'subtotal_amount', 'discount_amount', 'tax_amount', 'shipping_cost_amount', 'grand_total_amount', 'credit_limit_snapshot', 'receivable_balance_snapshot', 'notes', 'idempotency_key', 'submitted_at', 'approved_at', 'cancelled_at', 'reservation_expires_at', 'packed_at', 'shipped_at', 'received_at', 'completed_at', 'rejected_at', 'cancel_reason', 'reject_reason', 'internal_note'];
+    protected $fillable = ['number', 'customer_id', 'sales_user_id', 'requested_by', 'approved_by', 'customer_address_id', 'status', 'requested_delivery_date', 'delivery_method', 'courier_name', 'payment_preference', 'terms_accepted', 'subtotal_amount', 'discount_amount', 'tax_amount', 'shipping_cost_amount', 'grand_total_amount', 'credit_limit_snapshot', 'receivable_balance_snapshot', 'notes', 'idempotency_key', 'submitted_at', 'approved_at', 'cancelled_at', 'reservation_expires_at', 'packed_at', 'shipped_at', 'received_at', 'completed_at', 'rejected_at', 'cancel_reason', 'reject_reason', 'internal_note'];
 
     protected function casts(): array
     {
@@ -40,6 +41,12 @@ class B2bOrder extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function sales(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sales_user_id');
     }
 
     /** @return BelongsTo<User, $this> */
@@ -94,5 +101,11 @@ class B2bOrder extends Model
     public function shipments(): HasMany
     {
         return $this->hasMany(Shipment::class);
+    }
+
+    /** @return HasOne<Shipment, $this> */
+    public function latestShipment(): HasOne
+    {
+        return $this->hasOne(Shipment::class)->latestOfMany();
     }
 }

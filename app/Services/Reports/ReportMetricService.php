@@ -284,7 +284,7 @@ class ReportMetricService
             'warehouse' => $this->warehouseReport($filters),
             'retail' => $this->retailReport($filters),
             'b2b' => $this->b2bReport($filters),
-            'pricing' => $this->pricingReport($filters),
+            'pricing' => $this->pricingReport($filters, $user),
             'suppliers' => $this->supplierReport($filters),
             'attendance' => $this->attendanceReport($filters),
             'receivables' => $this->receivableReport($filters),
@@ -298,8 +298,8 @@ class ReportMetricService
             'definitions' => $this->definitions($type),
             'summary' => $data['summary'],
             'rows' => $data['rows'],
-            'charts' => [],
-            'sections' => [],
+            'charts' => $data['charts'] ?? [],
+            'sections' => $data['sections'] ?? [],
             'last_updated_at' => $filters['last_updated_at'],
         ];
     }
@@ -460,8 +460,11 @@ class ReportMetricService
      */
     private function warehouseReport(array $filters): array
     {
+        $dashboard = $this->warehouseDashboard(new User, $filters);
+        $range = $filters['range'];
+
         return [
-            'summary' => $this->warehouseDashboard(new User, $filters)['kpis'],
+            'summary' => $dashboard['kpis'],
             'rows' => DB::table('stocks')->join('products', 'products.id', '=', 'stocks.product_id')
                 ->leftJoin('work_locations', 'work_locations.id', '=', 'stocks.work_location_id')
                 ->whereIn('stocks.work_location_id', $filters['location_ids'])
@@ -471,6 +474,20 @@ class ReportMetricService
                 ->get()
                 ->map(fn ($row): array => (array) $row)
                 ->all(),
+            'charts' => [
+                'movement' => $dashboard['charts'][$range.'_movement'],
+                'stock_composition' => [
+                    ['label' => 'Tersedia', 'value' => $dashboard['kpis']['available_quantity']],
+                    ['label' => 'Direservasi', 'value' => $dashboard['kpis']['reserved_quantity']],
+                    ['label' => 'Rusak', 'value' => $dashboard['kpis']['damaged_quantity']],
+                ],
+                'top_stocked_products' => $dashboard['top_stocked_products'],
+            ],
+            'sections' => [
+                'alerts' => $dashboard['stock_alerts'],
+                'restock_needed' => $dashboard['restock_needed'],
+                'dead_stock' => $dashboard['dead_stock'],
+            ],
         ];
     }
 
@@ -480,8 +497,11 @@ class ReportMetricService
      */
     private function retailReport(array $filters): array
     {
+        $dashboard = $this->retailDashboard(new User, $filters);
+        $range = $filters['range'];
+
         return [
-            'summary' => $this->retailDashboard(new User, $filters)['kpis'],
+            'summary' => $dashboard['kpis'],
             'rows' => DB::table('pos_sales')
                 ->leftJoin('users', 'users.id', '=', 'pos_sales.cashier_user_id')
                 ->leftJoin('work_locations', 'work_locations.id', '=', 'pos_sales.work_location_id')
@@ -494,6 +514,16 @@ class ReportMetricService
                 ->get()
                 ->map(fn ($row): array => (array) $row)
                 ->all(),
+            'charts' => [
+                'revenue' => $dashboard['charts'][$range.'_revenue'],
+                'transactions' => $dashboard['charts'][$range.'_transactions'],
+                'payment_methods' => $dashboard['charts']['payment_methods'],
+                'top_products' => $dashboard['charts']['top_products'],
+            ],
+            'sections' => [
+                'stock_alerts' => $dashboard['stock_alerts'],
+                'active_shifts' => $dashboard['active_shifts'],
+            ],
         ];
     }
 
@@ -503,11 +533,39 @@ class ReportMetricService
      */
     private function b2bReport(array $filters): array
     {
+        $summary = $this->b2bSummary($filters);
+        $summary['average_order'] = $this->divideMoney($summary['revenue'], max(1, $summary['order_count']));
+        $summary['active_customers'] = DB::table('b2b_orders')
+            ->whereBetween('submitted_at', [$filters['start'], $filters['end']])
+            ->when($filters['customer_id'], fn (Builder $query, $customerId) => $query->where('customer_id', $customerId))
+            ->when($filters['status'], fn (Builder $query, $status) => $query->where('status', $status))
+            ->whereNotIn('status', [B2bOrderStatus::CANCELLED->value, B2bOrderStatus::REJECTED->value])
+            ->distinct()
+            ->count('customer_id');
+        $summary['pending_fulfillment'] = DB::table('b2b_orders')
+            ->whereBetween('submitted_at', [$filters['start'], $filters['end']])
+            ->when($filters['customer_id'], fn (Builder $query, $customerId) => $query->where('customer_id', $customerId))
+            ->when($filters['status'], fn (Builder $query, $status) => $query->where('status', $status))
+            ->whereIn('status', [B2bOrderStatus::WAREHOUSE_VALIDATION->value, B2bOrderStatus::RESERVED->value, B2bOrderStatus::PACKING->value, B2bOrderStatus::SHIPPED->value])
+            ->count();
+        $statusDistribution = DB::table('b2b_orders')
+            ->whereBetween('submitted_at', [$filters['start'], $filters['end']])
+            ->when($filters['customer_id'], fn (Builder $query, $customerId) => $query->where('customer_id', $customerId))
+            ->when($filters['status'], fn (Builder $query, $status) => $query->where('status', $status))
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row): array => ['label' => $row->status, 'value' => (int) $row->total])
+            ->all();
+
         return [
-            'summary' => $this->b2bSummary($filters),
+            'summary' => $summary,
             'rows' => DB::table('b2b_orders')
                 ->leftJoin('customers', 'customers.id', '=', 'b2b_orders.customer_id')
                 ->whereBetween('b2b_orders.submitted_at', [$filters['start'], $filters['end']])
+                ->when($filters['customer_id'], fn (Builder $query, $customerId) => $query->where('b2b_orders.customer_id', $customerId))
+                ->when($filters['status'], fn (Builder $query, $status) => $query->where('b2b_orders.status', $status))
                 ->whereNotIn('b2b_orders.status', [B2bOrderStatus::CANCELLED->value, B2bOrderStatus::REJECTED->value])
                 ->selectRaw('customers.business_name as customer, b2b_orders.status, COUNT(*) as order_count, COALESCE(SUM(b2b_orders.grand_total_amount),0) as revenue')
                 ->groupBy('customers.business_name', 'b2b_orders.status')
@@ -515,6 +573,14 @@ class ReportMetricService
                 ->get()
                 ->map(fn ($row): array => (array) $row)
                 ->all(),
+            'charts' => [
+                'revenue' => match ($filters['range']) {
+                    'monthly' => $this->monthlyRevenue($filters, 'b2b'),
+                    'yearly' => $this->yearlyRevenue($filters, 'b2b'),
+                    default => $this->dailyRevenue($filters, 'b2b'),
+                },
+                'status_distribution' => $statusDistribution,
+            ],
         ];
     }
 
@@ -522,23 +588,70 @@ class ReportMetricService
      * @param  ReportFilters  $filters
      * @return array{summary: array<string, mixed>, rows: list<ReportRow>}
      */
-    private function pricingReport(array $filters): array
+    private function pricingReport(array $filters, User $user): array
     {
+        $canViewSensitiveMargin = $user->can('margins.view_sensitive');
+        $rows = DB::table('price_histories')
+            ->leftJoin('products', 'products.id', '=', 'price_histories.product_id')
+            ->whereBetween('price_histories.created_at', [$filters['start'], $filters['end']])
+            ->when($filters['channel'], fn (Builder $query, $channel) => $query->where('price_histories.channel', $channel))
+            ->selectRaw('products.sku, products.name as product, price_histories.channel, price_histories.old_price, price_histories.new_price, price_histories.hpp_snapshot, price_histories.minimum_price_snapshot, price_histories.reason, price_histories.created_at')
+            ->latest('price_histories.created_at')
+            ->limit(200)
+            ->get()
+            ->map(function ($row) use ($canViewSensitiveMargin): array {
+                $newPrice = $this->money($row->new_price);
+                $hpp = $this->money($row->hpp_snapshot);
+                $margin = Decimal::sub($newPrice, $hpp, 2);
+
+                return [
+                    'sku' => $row->sku,
+                    'product' => $row->product,
+                    'channel' => $row->channel,
+                    'old_price' => $this->money($row->old_price),
+                    'new_price' => $newPrice,
+                    'price_change_percent' => $this->percent(Decimal::sub($newPrice, $this->money($row->old_price), 2), $this->money($row->old_price)),
+                    'hpp_snapshot' => $canViewSensitiveMargin ? $hpp : null,
+                    'margin_percent' => $canViewSensitiveMargin ? $this->percent($margin, $newPrice) : null,
+                    'minimum_price_snapshot' => $canViewSensitiveMargin ? $this->money($row->minimum_price_snapshot) : null,
+                    'reason' => $row->reason,
+                    'created_at' => $row->created_at,
+                ];
+            })
+            ->all();
+        $history = collect($rows);
+        $trend = $history
+            ->groupBy(fn (array $row): string => Carbon::parse($row['created_at'])->toDateString())
+            ->map(fn (Collection $items, string $date): array => [
+                'date' => $date,
+                'count' => $items->count(),
+                'average_change' => Decimal::normalize((string) $items->avg(fn (array $row): float => (float) $row['price_change_percent']), 2),
+            ])
+            ->sortBy('date')
+            ->values()
+            ->all();
+        $channelDistribution = $history
+            ->groupBy('channel')
+            ->map(fn (Collection $items, string $channel): array => ['label' => $channel, 'value' => $items->count()])
+            ->values()
+            ->all();
+
         return [
             'summary' => [
-                'price_changes' => DB::table('price_histories')->whereBetween('created_at', [$filters['start'], $filters['end']])->count(),
+                'price_changes' => count($rows),
                 'pending_approvals' => DB::table('price_approval_requests')->where('status', 'pending')->count(),
                 'sensitive_anomalies' => DB::table('anomaly_alerts')->where('rule_key', 'pricing_sensitive')->where('status', AnomalyStatus::OPEN->value)->count(),
+                'average_price_change' => Decimal::normalize((string) ($history->avg(fn (array $row): float => (float) $row['price_change_percent']) ?? 0), 2),
+                'average_margin' => $canViewSensitiveMargin
+                    ? Decimal::normalize((string) ($history->whereNotNull('margin_percent')->avg(fn (array $row): float => (float) $row['margin_percent']) ?? 0), 2)
+                    : null,
             ],
-            'rows' => DB::table('price_histories')
-                ->leftJoin('products', 'products.id', '=', 'price_histories.product_id')
-                ->whereBetween('price_histories.created_at', [$filters['start'], $filters['end']])
-                ->selectRaw('products.sku, products.name as product, price_histories.channel, price_histories.old_price, price_histories.new_price, price_histories.hpp_snapshot, price_histories.minimum_price_snapshot, price_histories.reason, price_histories.created_at')
-                ->latest('price_histories.created_at')
-                ->limit(200)
-                ->get()
-                ->map(fn ($row): array => (array) $row)
-                ->all(),
+            'rows' => $rows,
+            'charts' => [
+                'trend' => $trend,
+                'channel_distribution' => $channelDistribution,
+            ],
+            'sections' => ['can_view_sensitive_margin' => $canViewSensitiveMargin],
         ];
     }
 
@@ -603,6 +716,32 @@ class ReportMetricService
     private function receivableReport(array $filters): array
     {
         $summary = $this->receivableSummary($filters);
+        $summary['open_accounts'] = DB::table('receivables')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->when($filters['customer_id'], fn (Builder $query, $customerId) => $query->where('customer_id', $customerId))
+            ->when($filters['channel'], fn (Builder $query, $channel) => $query->where('channel', $channel))
+            ->when($filters['status'], fn (Builder $query, $status) => $query->where('status', $status))
+            ->whereIn('status', [ReceivableStatus::OPEN->value, ReceivableStatus::PARTIAL->value, ReceivableStatus::OVERDUE->value])
+            ->count();
+        $summary['overdue_accounts'] = DB::table('receivables')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->when($filters['customer_id'], fn (Builder $query, $customerId) => $query->where('customer_id', $customerId))
+            ->when($filters['channel'], fn (Builder $query, $channel) => $query->where('channel', $channel))
+            ->when($filters['status'], fn (Builder $query, $status) => $query->where('status', $status))
+            ->whereDate('due_date', '<', now('Asia/Jakarta')->toDateString())
+            ->where('outstanding_amount', '>', 0)
+            ->count();
+        $channelDistribution = DB::table('receivables')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->when($filters['customer_id'], fn (Builder $query, $customerId) => $query->where('customer_id', $customerId))
+            ->when($filters['channel'], fn (Builder $query, $channel) => $query->where('channel', $channel))
+            ->when($filters['status'], fn (Builder $query, $status) => $query->where('status', $status))
+            ->whereNotIn('status', [ReceivableStatus::CANCELLED->value, ReceivableStatus::WRITTEN_OFF->value])
+            ->selectRaw('channel, COALESCE(SUM(outstanding_amount),0) as total')
+            ->groupBy('channel')
+            ->get()
+            ->map(fn ($row): array => ['label' => $row->channel, 'value' => $this->money($row->total)])
+            ->all();
 
         return [
             'summary' => $summary,
@@ -610,12 +749,19 @@ class ReportMetricService
                 ->leftJoin('customers', 'customers.id', '=', 'receivables.customer_id')
                 ->leftJoin('work_locations', 'work_locations.id', '=', 'receivables.work_location_id')
                 ->whereIn('receivables.work_location_id', $filters['location_ids'])
+                ->when($filters['customer_id'], fn (Builder $query, $customerId) => $query->where('receivables.customer_id', $customerId))
+                ->when($filters['channel'], fn (Builder $query, $channel) => $query->where('receivables.channel', $channel))
+                ->when($filters['status'], fn (Builder $query, $status) => $query->where('receivables.status', $status))
                 ->selectRaw('receivables.number, customers.business_name as customer, work_locations.name as location, receivables.channel, receivables.issue_date, receivables.due_date, receivables.principal_amount, receivables.paid_amount, receivables.outstanding_amount, receivables.aging_bucket, receivables.status')
                 ->orderByDesc('receivables.due_date')
                 ->limit(200)
                 ->get()
                 ->map(fn ($row): array => (array) $row)
                 ->all(),
+            'charts' => [
+                'aging' => collect($summary['aging'])->map(fn (string $value, string $label): array => ['label' => $label, 'value' => $value])->values()->all(),
+                'channel_distribution' => $channelDistribution,
+            ],
         ];
     }
 
@@ -667,8 +813,10 @@ class ReportMetricService
      */
     private function b2bSummary(array $filters, ?int $customerId = null): array
     {
+        $customerId ??= $filters['customer_id'];
         $query = DB::table('b2b_orders')
             ->when($customerId, fn (Builder $query) => $query->where('customer_id', $customerId))
+            ->when($filters['status'], fn (Builder $query, $status) => $query->where('status', $status))
             ->whereBetween('submitted_at', [$filters['start'], $filters['end']])
             ->whereNotIn('status', [B2bOrderStatus::CANCELLED->value, B2bOrderStatus::REJECTED->value]);
 
@@ -821,9 +969,12 @@ class ReportMetricService
      */
     private function receivableSummary(array $filters, ?int $customerId = null): array
     {
+        $customerId ??= $filters['customer_id'];
         $query = DB::table('receivables')
             ->when($customerId, fn (Builder $query) => $query->where('customer_id', $customerId))
             ->when($customerId === null, fn (Builder $query) => $query->whereIn('work_location_id', $filters['location_ids']))
+            ->when($filters['channel'], fn (Builder $query, $channel) => $query->where('channel', $channel))
+            ->when($filters['status'], fn (Builder $query, $status) => $query->where('status', $status))
             ->whereNotIn('status', [ReceivableStatus::CANCELLED->value, ReceivableStatus::WRITTEN_OFF->value]);
 
         $aging = (clone $query)
@@ -898,7 +1049,7 @@ class ReportMetricService
             };
         }
 
-        $pos = DB::table('pos_sales')
+        $pos = $channel === 'b2b' ? collect() : DB::table('pos_sales')
             ->whereIn('work_location_id', $filters['location_ids'])
             ->whereBetween('completed_at', [$filters['start'], $filters['end']])
             ->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value])
@@ -907,6 +1058,8 @@ class ReportMetricService
             ->get();
         $b2b = $channel === 'retail' ? collect() : DB::table('b2b_orders')
             ->whereBetween('submitted_at', [$filters['start'], $filters['end']])
+            ->when($filters['customer_id'], fn (Builder $query, $customerId) => $query->where('customer_id', $customerId))
+            ->when($filters['status'], fn (Builder $query, $status) => $query->where('status', $status))
             ->whereNotIn('status', [B2bOrderStatus::CANCELLED->value, B2bOrderStatus::REJECTED->value])
             ->selectRaw($b2bSelect.', 0 as retail, COALESCE(SUM(grand_total_amount),0) as b2b')
             ->groupBy('date')

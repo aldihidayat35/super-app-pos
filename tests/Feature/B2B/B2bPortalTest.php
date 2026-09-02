@@ -76,6 +76,22 @@ class B2bPortalTest extends TestCase
             ->assertRedirect(route('langganan.dashboard'));
     }
 
+    public function test_super_admin_can_access_customer_portal_without_customer_user_relation(): void
+    {
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole(Role::findOrCreate('super_admin'));
+
+        $this->assertDatabaseMissing('customer_users', [
+            'customer_id' => $this->customer->id,
+            'user_id' => $superAdmin->id,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('langganan.dashboard'))
+            ->assertOk()
+            ->assertSee($this->customer->business_name);
+    }
+
     public function test_catalog_uses_customer_price_and_hides_sensitive_cost(): void
     {
         CustomerPriceOverride::query()->create([
@@ -96,6 +112,28 @@ class B2bPortalTest extends TestCase
             ->assertSee('Rp9.000')
             ->assertDontSeeText('HPP')
             ->assertDontSeeText('Margin');
+    }
+
+    public function test_reorder_page_renders_the_footer_when_order_history_exists(): void
+    {
+        $this->actingAs($this->owner)->post(route('langganan.keranjang.add'), [
+            'product_id' => $this->product->id,
+            'unit_id' => $this->unit->id,
+            'quantity' => 2,
+        ])->assertRedirect(route('langganan.keranjang.index'));
+
+        $this->actingAs($this->owner)->post(route('langganan.checkout.store'), [
+            'customer_address_id' => $this->customer->addresses()->firstOrFail()->id,
+            'delivery_method' => 'courier',
+            'payment_preference' => 'credit',
+            'terms_accepted' => 1,
+            'idempotency_key' => 'checkout-reorder-page-test',
+        ])->assertRedirect();
+
+        $this->actingAs($this->owner)
+            ->get(route('langganan.reorder.index'))
+            ->assertOk()
+            ->assertSeeText('Tambahkan ke Keranjang');
     }
 
     public function test_moq_cart_price_refresh_and_checkout_create_scoped_order(): void

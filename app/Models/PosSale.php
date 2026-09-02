@@ -6,8 +6,12 @@ use App\Enums\PosSaleStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
-/** @property PosSaleStatus $status */
+/**
+ * @property PosSaleStatus $status
+ * @property Carbon|null $completed_at
+ */
 class PosSale extends Model
 {
     protected $fillable = [

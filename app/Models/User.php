@@ -9,6 +9,7 @@ use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -96,6 +97,24 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->belongsToMany(Customer::class, 'customer_users')
             ->withPivot('role', 'is_active', 'blocked_at', 'blocked_reason')
             ->withTimestamps();
+    }
+
+    /** @return HasMany<Customer, $this> */
+    public function assignedSalesCustomers(): HasMany
+    {
+        return $this->hasMany(Customer::class, 'sales_user_id');
+    }
+
+    /** @return HasMany<B2bOrder, $this> */
+    public function salesOrders(): HasMany
+    {
+        return $this->hasMany(B2bOrder::class, 'sales_user_id');
+    }
+
+    /** @return HasMany<SalesTarget, $this> */
+    public function salesTargets(): HasMany
+    {
+        return $this->hasMany(SalesTarget::class, 'sales_user_id');
     }
 
     public function hasOnlyB2bPortalRoles(): bool

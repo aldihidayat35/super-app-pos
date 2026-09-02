@@ -33,6 +33,11 @@ class ReportController extends Controller
                 ->where('is_active', true)
                 ->orderBy('type')->orderBy('name')
                 ->get(['id', 'code', 'name', 'type']),
+            'customers' => DB::table('customers')
+                ->where('is_active', true)
+                ->orderBy('business_name')
+                ->limit(300)
+                ->get(['id', 'code', 'business_name']),
         ]);
     }
 

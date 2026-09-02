@@ -60,6 +60,18 @@
                     <input name="whatsapp_number" value="{{ old('whatsapp_number', $customer->whatsapp_number) }}" class="form-control @error('whatsapp_number') is-invalid @enderror">
                 </x-metronic.form-group>
             </div>
+            @can('sales.customers.assign')
+                <div class="col-md-4">
+                    <x-metronic.form-group name="sales_user_id" label="Sales Penanggung Jawab" help="Sales hanya dapat membuka customer yang ditugaskan kepadanya.">
+                        <select name="sales_user_id" class="form-select">
+                            <option value="">Belum ditentukan</option>
+                            @foreach($salesUsers as $sales)
+                                <option value="{{ $sales->id }}" @selected((string) old('sales_user_id', $customer->sales_user_id) === (string) $sales->id)>{{ $sales->name }}</option>
+                            @endforeach
+                        </select>
+                    </x-metronic.form-group>
+                </div>
+            @endcan
             <div class="col-md-4">
                 <x-metronic.form-group name="email" label="Email">
                     <input name="email" value="{{ old('email', $customer->email) }}" class="form-control @error('email') is-invalid @enderror">

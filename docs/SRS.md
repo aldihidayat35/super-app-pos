@@ -57,7 +57,7 @@ Sasaran utama:
 | `purchasing` | Supplier, PO, harga beli sesuai izin | Organisasi/gudang yang ditugaskan |
 | `kepala_toko` | Stok, POS, retur, piutang, karyawan, laporan cabang | Cabang yang dipimpin |
 | `kasir` | POS, penerimaan pembayaran, buka/tutup shift | Cabang dan shift aktif |
-| `supervisor_shift` | Verifikasi shift, approval diskon/void sesuai threshold | Cabang/shift yang ditugaskan |
+| `supervisor_shift` | Memantau shift dan operasional tanpa otoritas approval kepala bagian | Cabang/shift yang ditugaskan |
 | `langganan_owner` | Profil usaha, user B2B, order, invoice, pembayaran | Akun B2B sendiri |
 | `langganan_staff` | Katalog dan order sesuai delegasi | Akun B2B sendiri |
 | `karyawan_toko` | Jadwal, check-in/out, izin, riwayat kehadiran | Data pribadi dan cabang penempatan |
@@ -222,5 +222,12 @@ Ownership rules:
 
 ## 12. Definition of Done kontrak
 
-Analisis dianggap disepakati setelah pemilik bisnis menyetujui scope MVP, glossary, matriks permission, state machine, ERD ownership, backlog/acceptance criteria, serta memberi keputusan atau secara eksplisit menunda setiap pertanyaan terbuka yang memblokir fase aktif.
+### Modul Pajak & Kepatuhan
 
+- Profil PKP, NPWP, NITKU, alamat pajak, serta penandatangan dapat dikonfigurasi.
+- Aturan pajak menyimpan tarif, faktor DPP, arah transaksi, dan masa berlaku.
+- POS dan B2B menyimpan snapshot pajak untuk transaksi baru saat kalkulasi diaktifkan.
+- Register pajak mendukung PPN keluaran, PPN masukan, PPh, retur, rekonsiliasi, reversal, ekspor, dan penguncian masa.
+- Akses awal dibatasi untuk `owner_approver` dan `super_admin`.
+
+Analisis dianggap disepakati setelah pemilik bisnis menyetujui scope MVP, glossary, matriks permission, state machine, ERD ownership, backlog/acceptance criteria, serta memberi keputusan atau secara eksplisit menunda setiap pertanyaan terbuka yang memblokir fase aktif.

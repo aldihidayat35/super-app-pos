@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Reports\RetailDashboardController;
+use App\Http\Controllers\Sales\DashboardController as SalesDashboardController;
 use App\Http\Controllers\Warehouse\WarehouseDashboardController;
 use App\Models\User;
 use App\Services\Reports\ReportMetricService;
+use App\Services\Sales\SalesPerformanceService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,10 @@ class DashboardController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        if ($user->hasRole('sales')) {
+            return app(SalesDashboardController::class)($request, app(SalesPerformanceService::class));
+        }
+
         $filters = $reports->filters($user, $request->query());
 
         $view = match (true) {

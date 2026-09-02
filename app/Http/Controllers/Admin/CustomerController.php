@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Models\Shipment;
 use App\Models\SystemSetting;
+use App\Models\User;
 use App\Services\Organization\DocumentNumberService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -229,7 +230,14 @@ class CustomerController extends Controller
     /** @return array<string, mixed> */
     private function formData(Customer $customer): array
     {
-        return ['customer' => $customer, 'types' => CustomerType::options(), 'statuses' => CustomerStatus::options(), 'priceCategories' => $this->priceCategories(), 'documentTypes' => $this->documentTypes()];
+        return [
+            'customer' => $customer,
+            'types' => CustomerType::options(),
+            'statuses' => CustomerStatus::options(),
+            'priceCategories' => $this->priceCategories(),
+            'documentTypes' => $this->documentTypes(),
+            'salesUsers' => User::query()->role('sales')->where('is_active', true)->orderBy('name')->get(),
+        ];
     }
 
     private function nextAvailableCustomerCode(DocumentNumberService $numbers, CustomerType|string $type): string

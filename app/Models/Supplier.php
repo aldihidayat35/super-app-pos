@@ -13,11 +13,11 @@ class Supplier extends Model
     /** @use HasFactory<SupplierFactory> */
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['code', 'name', 'contact_name', 'phone_number', 'whatsapp_number', 'email', 'address', 'city', 'tax_number', 'bank_name', 'bank_account_name', 'bank_account_number', 'payment_term_days', 'last_price', 'performance_score', 'notes', 'is_active'];
+    protected $fillable = ['code', 'name', 'contact_name', 'phone_number', 'whatsapp_number', 'email', 'address', 'tax_address', 'city', 'tax_number', 'tax_identity_type', 'is_pkp', 'bank_name', 'bank_account_name', 'bank_account_number', 'payment_term_days', 'last_price', 'performance_score', 'notes', 'is_active'];
 
     protected function casts(): array
     {
-        return ['payment_term_days' => 'integer', 'last_price' => 'decimal:2', 'performance_score' => 'decimal:2', 'is_active' => 'boolean'];
+        return ['payment_term_days' => 'integer', 'last_price' => 'decimal:2', 'performance_score' => 'decimal:2', 'is_active' => 'boolean', 'is_pkp' => 'boolean'];
     }
 
     /** @return HasMany<SupplierContact, $this> */

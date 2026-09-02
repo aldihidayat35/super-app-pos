@@ -1,0 +1,14 @@
+@extends('layouts.metronic.app')
+
+@section('title', $order->number)
+@section('page_title', 'Detail Order Saya')
+@section('content')
+    <x-metronic.page-title :title="$order->number" description="Detail order B2B dan perkembangan fulfillment."><x-slot:actions><a href="{{ route('sales.orders.index') }}" class="btn btn-light">Kembali</a></x-slot:actions></x-metronic.page-title>
+    <div class="row g-5 mb-5">
+        <div class="col-lg-4"><x-metronic.card title="Ringkasan"><div class="mb-2">Customer: <strong>{{ $order->customer?->business_name }}</strong></div><div class="mb-2">Tanggal: <strong>{{ $order->submitted_at?->format('d/m/Y H:i') }}</strong></div><div class="mb-2">Total: <strong>{{ App\Support\CurrencyFormatter::rupiah($order->grand_total_amount) }}</strong></div><div>Status: <x-metronic.status-badge :status="$order->status->value" :label="$order->status->label()" /></div></x-metronic.card></div>
+        <div class="col-lg-4"><x-metronic.card title="Pengiriman"><div class="mb-2">Metode: <strong>{{ ucfirst($order->delivery_method) }}</strong></div><div class="mb-2">Kurir: <strong>{{ $order->courier_name ?: '-' }}</strong></div><div>Status: <strong>{{ $order->latestShipment?->status?->label() ?? '-' }}</strong></div></x-metronic.card></div>
+        <div class="col-lg-4"><x-metronic.card title="Pembayaran & Kredit"><div class="mb-2">Metode: <strong>{{ ucfirst($order->payment_preference) }}</strong></div><div class="mb-2">Limit saat order: <strong>{{ App\Support\CurrencyFormatter::rupiah($order->credit_limit_snapshot) }}</strong></div><div>Piutang saat order: <strong>{{ App\Support\CurrencyFormatter::rupiah($order->receivable_balance_snapshot) }}</strong></div></x-metronic.card></div>
+    </div>
+    <x-metronic.card title="Item Order" class="mb-5"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Produk</th><th>Satuan</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>@foreach($order->items as $item)<tr><td><div class="fw-bold">{{ $item->product_name_snapshot }}</div><div class="text-muted">{{ $item->sku_snapshot }}</div></td><td>{{ $item->unit_name_snapshot }}</td><td>{{ qty($item->quantity) }}</td><td>{{ App\Support\CurrencyFormatter::rupiah($item->selected_price) }}</td><td class="fw-bold">{{ App\Support\CurrencyFormatter::rupiah($item->line_total) }}</td></tr>@endforeach</tbody></table></div></x-metronic.card>
+    <x-metronic.card title="Riwayat Status"><div class="timeline-label">@foreach($order->statusHistories as $history)<div class="timeline-item mb-4"><div class="timeline-label fw-bold fs-7">{{ $history->created_at->format('d/m H:i') }}</div><div class="timeline-badge"><i class="fa fa-genderless text-primary fs-1"></i></div><div class="ps-3">{{ str_replace('_', ' ', ucfirst($history->to_status)) }}<div class="text-muted">{{ $history->note }} · {{ $history->actor?->name ?: 'Sistem' }}</div></div></div>@endforeach</div></x-metronic.card>
+@endsection

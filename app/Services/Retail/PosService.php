@@ -26,6 +26,7 @@ use App\Services\Inventory\InventoryService;
 use App\Services\Organization\DocumentNumberService;
 use App\Services\Pricing\PriceResolverService;
 use App\Services\Receivables\ReceivableService;
+use App\Services\Tax\TaxComplianceService;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 
@@ -36,6 +37,7 @@ class PosService
         private readonly InventoryService $inventory,
         private readonly PriceResolverService $prices,
         private readonly ReceivableService $receivables,
+        private readonly TaxComplianceService $taxes,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -91,7 +93,7 @@ class PosService
                 'status' => PosSaleStatus::COMPLETED,
                 'subtotal_amount' => $calculated['subtotal'],
                 'discount_amount' => $calculated['discount'],
-                'tax_amount' => '0.00',
+                'tax_amount' => $calculated['tax'],
                 'grand_total_amount' => $calculated['grand_total'],
                 'paid_amount' => $payments['paid'],
                 'change_amount' => $payments['change'],
@@ -120,11 +122,11 @@ class PosService
                     'selected_price' => $itemData['selected_price'],
                     'discount_percent' => $itemData['discount_percent'],
                     'discount_amount' => $itemData['discount_amount'],
-                    'tax_amount' => '0.00',
+                    'tax_amount' => $itemData['tax_amount'],
                     'line_total' => $itemData['line_total'],
                     'margin_amount' => $itemData['margin_amount'],
                     'price_source' => $itemData['price']['selected_source'],
-                    'price_snapshot' => $itemData['price'],
+                    'price_snapshot' => [...$itemData['price'], 'tax' => $itemData['tax_snapshot']],
                 ]);
 
                 $this->inventory->issue(
@@ -454,12 +456,13 @@ class PosService
 
     /**
      * @param  array<int, mixed>  $items
-     * @return array{subtotal: string, discount: string, grand_total: string, margin: string, items: list<array<string, mixed>>}
+     * @return array{subtotal: string, discount: string, tax: string, grand_total: string, margin: string, items: list<array<string, mixed>>}
      */
     private function calculateItems(array $items, Branch $branch, ?Customer $customer, User $cashier): array
     {
         $subtotal = '0.00';
         $discountTotal = '0.00';
+        $taxTotal = '0.00';
         $grandTotal = '0.00';
         $marginTotal = '0.00';
         $rows = [];
@@ -505,12 +508,15 @@ class PosService
             $discountedPrice = (string) $price['discounted_price'];
             $baseQuantity = (string) $price['quantity_base'];
             $lineSubtotal = Decimal::mul($quantity, $selectedPrice, 4, 2, 2);
-            $lineTotal = Decimal::mul($quantity, $discountedPrice, 4, 2, 2);
-            $discountAmount = Decimal::sub($lineSubtotal, $lineTotal, 2);
+            $lineNet = Decimal::mul($quantity, $discountedPrice, 4, 2, 2);
+            $discountAmount = Decimal::sub($lineSubtotal, $lineNet, 2);
+            $tax = $this->taxes->calculate($product, $lineNet);
+            $lineTotal = $tax['total_amount'];
             $marginAmount = Decimal::mul($quantity, (string) $price['margin_amount'], 4, 2, 2);
 
             $subtotal = Decimal::add($subtotal, $lineSubtotal, 2);
             $discountTotal = Decimal::add($discountTotal, $discountAmount, 2);
+            $taxTotal = Decimal::add($taxTotal, Decimal::add($tax['tax_amount'], $tax['luxury_tax_amount'], 2), 2);
             $grandTotal = Decimal::add($grandTotal, $lineTotal, 2);
             $marginTotal = Decimal::add($marginTotal, $marginAmount, 2);
 
@@ -525,12 +531,20 @@ class PosService
                 'selected_price' => $selectedPrice,
                 'discount_percent' => $discountPercent,
                 'discount_amount' => $discountAmount,
+                'tax_amount' => $tax['tax_amount'],
+                'tax_snapshot' => [
+                    'rule_id' => $tax['rule']?->id,
+                    'rate' => $tax['tax_rate'],
+                    'dpp_factor' => $tax['dpp_factor'],
+                    'dpp_amount' => $tax['dpp_amount'],
+                    'luxury_tax_amount' => $tax['luxury_tax_amount'],
+                ],
                 'line_total' => $lineTotal,
                 'margin_amount' => $marginAmount,
             ];
         }
 
-        return ['subtotal' => $subtotal, 'discount' => $discountTotal, 'grand_total' => $grandTotal, 'margin' => $marginTotal, 'items' => $rows];
+        return ['subtotal' => $subtotal, 'discount' => $discountTotal, 'tax' => $taxTotal, 'grand_total' => $grandTotal, 'margin' => $marginTotal, 'items' => $rows];
     }
 
     /**

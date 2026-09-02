@@ -19,7 +19,9 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Services\Organization\DocumentNumberService;
 use App\Services\Pricing\PriceResolverService;
+use App\Services\Tax\TaxComplianceService;
 use App\Support\Decimal;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 
@@ -28,19 +30,27 @@ class B2bPortalService
     public function __construct(
         private readonly PriceResolverService $prices,
         private readonly DocumentNumberService $numbers,
+        private readonly TaxComplianceService $taxes,
     ) {}
 
     public function activeCustomerFor(User $user): Customer
     {
-        $customer = $user->customers()
+        $activeCustomers = Customer::query()
             ->where('customers.type', 'b2b')
             ->where('customers.is_active', true)
             ->where('customers.verification_status', CustomerStatus::ACTIVE->value)
             ->where('customers.account_status', CustomerStatus::ACTIVE->value)
-            ->wherePivot('is_active', true)
-            ->whereNull('customer_users.blocked_at')
-            ->orderBy('customers.id')
-            ->first();
+            ->orderBy('customers.id');
+
+        $customer = $user->hasRole('super_admin')
+            ? $activeCustomers->first()
+            : $activeCustomers
+                ->whereHas('users', function ($query) use ($user): void {
+                    $query->where('users.id', $user->id)
+                        ->where('customer_users.is_active', true)
+                        ->whereNull('customer_users.blocked_at');
+                })
+                ->first();
 
         if (! $customer instanceof Customer) {
             throw ServiceException::validation('Akun langganan belum aktif, belum terverifikasi, atau sedang diblokir.');
@@ -198,6 +208,7 @@ class B2bPortalService
             $order = B2bOrder::query()->create([
                 'number' => $this->numbers->next('order'),
                 'customer_id' => $customer->id,
+                'sales_user_id' => $user->hasRole('sales') ? $user->id : $customer->sales_user_id,
                 'requested_by' => $user->id,
                 'customer_address_id' => $address?->id,
                 'status' => B2bOrderStatus::PENDING_CONFIRMATION,
@@ -208,7 +219,7 @@ class B2bPortalService
                 'terms_accepted' => (bool) ($data['terms_accepted'] ?? false),
                 'subtotal_amount' => $totals['subtotal'],
                 'discount_amount' => '0.00',
-                'tax_amount' => '0.00',
+                'tax_amount' => $totals['tax_amount'],
                 'shipping_cost_amount' => $shippingCost,
                 'grand_total_amount' => $grandTotal,
                 'credit_limit_snapshot' => $customer->credit_limit,
@@ -235,6 +246,7 @@ class B2bPortalService
                     'base_quantity' => $item->base_quantity,
                     'minimum_price_snapshot' => $minimumPrice,
                     'selected_price' => $item->price_snapshot,
+                    'tax_amount' => is_array($price['tax'] ?? null) ? ($price['tax']['tax_amount'] ?? '0.00') : '0.00',
                     'line_total' => $item->line_total,
                     'price_source' => $item->price_source,
                     'available_stock_snapshot' => $this->availableBaseForProduct($product),
@@ -261,17 +273,51 @@ class B2bPortalService
     }
 
     /**
+     * Membuat order Sales melalui cart dan checkout B2B yang sama dengan portal pelanggan.
+     *
+     * @param  list<array{product_id: int, quantity: mixed}>  $items
+     * @param  array<string, mixed>  $checkout
+     */
+    public function submitForSales(Customer $customer, User $sales, array $items, array $checkout): B2bOrder
+    {
+        if (! $sales->can('sales.orders.create') || (int) $customer->sales_user_id !== (int) $sales->id) {
+            throw new AuthorizationException('Pelanggan bukan tanggung jawab Sales ini.');
+        }
+
+        return DB::transaction(function () use ($customer, $sales, $items, $checkout): B2bOrder {
+            $cart = $this->currentCart($customer, $sales);
+            $cart->items()->delete();
+
+            foreach ($items as $item) {
+                $product = Product::query()->whereKey((int) $item['product_id'])->firstOrFail();
+                $this->addToCart($customer, $sales, [
+                    'product_id' => $product->id,
+                    'unit_id' => $product->base_unit_id,
+                    'quantity' => $item['quantity'],
+                ]);
+            }
+
+            return $this->submitOrder($customer, $sales, $checkout);
+        });
+    }
+
+    /**
      * @param  EloquentCollection<int, B2bCartItem>  $items
-     * @return array{subtotal: string, grand_total: string}
+     * @return array{subtotal: string, tax_amount: string, grand_total: string}
      */
     public function cartTotals(EloquentCollection $items): array
     {
         $subtotal = '0.00';
+        $taxAmount = '0.00';
         foreach ($items as $item) {
-            $subtotal = Decimal::add($subtotal, (string) $item->line_total, 2);
+            $rawMetadata = $item->getAttribute('price_metadata');
+            $metadata = is_array($rawMetadata) ? $rawMetadata : [];
+            $tax = is_array($metadata['tax'] ?? null) ? $metadata['tax'] : [];
+            $subtotal = Decimal::add($subtotal, (string) ($tax['net_amount'] ?? $item->line_total), 2);
+            $taxAmount = Decimal::add($taxAmount, Decimal::add((string) ($tax['tax_amount'] ?? 0), (string) ($tax['luxury_tax_amount'] ?? 0), 2), 2);
         }
 
-        return ['subtotal' => $subtotal, 'grand_total' => $subtotal];
+        return ['subtotal' => $subtotal, 'tax_amount' => $taxAmount, 'grand_total' => Decimal::add($subtotal, $taxAmount, 2)];
     }
 
     public function availabilityLabel(Product $product, string|int|float $baseQuantity): string
@@ -328,7 +374,18 @@ class B2bPortalService
         }
 
         $selectedPrice = (string) $price['selected_price'];
-        $lineTotal = Decimal::mul($quantity, $selectedPrice, 4, 2, 2);
+        $lineNet = Decimal::mul($quantity, $selectedPrice, 4, 2, 2);
+        $tax = $this->taxes->calculate($product, $lineNet);
+        $lineTotal = $tax['total_amount'];
+        $price['tax'] = [
+            'rule_id' => $tax['rule']?->id,
+            'net_amount' => $lineNet,
+            'dpp_amount' => $tax['dpp_amount'],
+            'tax_rate' => $tax['tax_rate'],
+            'dpp_factor' => $tax['dpp_factor'],
+            'tax_amount' => $tax['tax_amount'],
+            'luxury_tax_amount' => $tax['luxury_tax_amount'],
+        ];
 
         return [
             'product' => $product,
