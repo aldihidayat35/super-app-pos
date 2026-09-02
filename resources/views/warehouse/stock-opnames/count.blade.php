@@ -16,7 +16,7 @@
 @endsection
 
 @section('content')
-    <x-metronic.page-title :title="'Penghitungan ' . $opname->number" :description="'Kemajuan ' . $opname->countedProgress() . ' — ' . ($opname->blind_count ? 'Mode penghitungan objektif aktif' : 'Stok sistem ditampilkan')">
+    <x-metronic.page-title :title="'Penghitungan ' . $opname->number" :description="$opname->number . ' — Kemajuan ' . $opname->countedProgress() . ' — ' . ($opname->blind_count ? 'Mode penghitungan objektif aktif' : 'Stok sistem ditampilkan')">
         <x-slot:actions>
             <a href="{{ route('warehouse.stock-opnames.show', $opname) }}" class="btn btn-light">Detail</a>
             <a href="{{ route('warehouse.stock-opnames.variance', $opname) }}" class="btn btn-light-info">Selisih Stok</a>

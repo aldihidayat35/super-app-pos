@@ -3,7 +3,7 @@
 @section('title', $order->number)
 @section('page_title', 'Detail Order Saya')
 @section('content')
-    <x-metronic.page-title :title="$order->number" description="Detail order B2B dan perkembangan fulfillment."><x-slot:actions><a href="{{ route('sales.orders.index') }}" class="btn btn-light">Kembali</a></x-slot:actions></x-metronic.page-title>
+    <x-metronic.page-title :title="$order->number" :description="$order->number . ' — Detail order B2B dan perkembangan fulfillment.'"><x-slot:actions><a href="{{ route('sales.orders.index') }}" class="btn btn-light">Kembali</a></x-slot:actions></x-metronic.page-title>
     <div class="row g-5 mb-5">
         <div class="col-lg-4"><x-metronic.card title="Ringkasan"><div class="mb-2">Customer: <strong>{{ $order->customer?->business_name }}</strong></div><div class="mb-2">Tanggal: <strong>{{ $order->submitted_at?->format('d/m/Y H:i') }}</strong></div><div class="mb-2">Total: <strong>{{ App\Support\CurrencyFormatter::rupiah($order->grand_total_amount) }}</strong></div><div>Status: <x-metronic.status-badge :status="$order->status->value" :label="$order->status->label()" /></div></x-metronic.card></div>
         <div class="col-lg-4"><x-metronic.card title="Pengiriman"><div class="mb-2">Metode: <strong>{{ ucfirst($order->delivery_method) }}</strong></div><div class="mb-2">Kurir: <strong>{{ $order->courier_name ?: '-' }}</strong></div><div>Status: <strong>{{ $order->latestShipment?->status?->label() ?? '-' }}</strong></div></x-metronic.card></div>

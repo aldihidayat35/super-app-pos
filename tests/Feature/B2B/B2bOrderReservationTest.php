@@ -74,7 +74,7 @@ class B2bOrderReservationTest extends TestCase
         $this->actingAs($this->customerUser)->get(route('langganan.checkout.show'))->assertOk()->assertSee('Checkout Order B2B');
         $this->actingAs($this->customerUser)->get(route('langganan.orders.index'))->assertOk()->assertSee($order->number);
         $this->actingAs($this->customerUser)->get(route('langganan.orders.show', $order))->assertOk()->assertSee('Timeline Status');
-        $this->actingAs($this->warehouseHead)->get(route('warehouse.b2b-orders.index'))->assertOk()->assertSee('Antrian Order Gudang');
+        $this->actingAs($this->warehouseHead)->get(route('warehouse.b2b-orders.index'))->assertOk()->assertSee('Antrian Order B2B');
         $reviewResponse = $this->actingAs($this->warehouseHead)->get(route('warehouse.b2b-orders.review', $order));
         $reviewResponse->assertOk()->assertSee('Review dan Reserve')->assertSee('gt-order-stepper__connector', false);
         $this->assertSame(5, substr_count($reviewResponse->getContent(), 'data-step-connector='));

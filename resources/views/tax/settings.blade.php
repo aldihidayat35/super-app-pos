@@ -2,9 +2,8 @@
 
 @section('title', 'Pengaturan Pajak')
 
-@section('page_title')
-    <x-metronic.page-title title="Pengaturan Pajak" subtitle="Profil PKP, aturan efektif, dan klasifikasi objek pajak" />
-@endsection
+@section('page_title', 'Pengaturan Pajak')
+@section('page_description', 'Profil PKP, aturan efektif, dan klasifikasi objek pajak.')
 
 @section('page_guide')
     <x-metronic.page-guide id="tax-settings" title="Panduan Pengaturan Pajak">

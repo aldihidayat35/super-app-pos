@@ -47,7 +47,7 @@ class UserRbacManagementTest extends TestCase
         $this->actingAs($admin)->get(route('admin.users.create'))->assertOk()->assertSee('Tambah Pengguna');
         $this->actingAs($admin)->get(route('admin.users.show', $user))->assertOk()->assertSee($user->email);
         $this->actingAs($admin)->get(route('admin.users.edit', $user))->assertOk()->assertSee('Edit Pengguna');
-        $this->actingAs($admin)->get(route('admin.users.locations.edit', $user))->assertOk()->assertSee('Penugasan Lokasi Kerja');
+        $this->actingAs($admin)->get(route('admin.users.locations.edit', $user))->assertOk()->assertSee('Lokasi Kerja Pengguna');
         $this->actingAs($admin)->get(route('admin.roles.index'))->assertOk()->assertSee('Daftar Role');
         $this->actingAs($admin)->get(route('admin.roles.show', $role))->assertOk()->assertSee('Matriks Permission');
         $this->actingAs($admin)->get(route('admin.permissions.index'))->assertOk()->assertSee('Daftar Permission');

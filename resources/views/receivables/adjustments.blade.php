@@ -4,7 +4,7 @@
 @section('page_title', 'Koreksi Piutang')
 
 @section('content')
-    <x-metronic.page-title title="Koreksi Piutang {{ $receivable->number }}" description="AR-08 credit note dan koreksi saldo piutang dengan approval." />
+    <x-metronic.page-title title="Koreksi Piutang {{ $receivable->number }}" description="{{ $receivable->number }} — AR-08 credit note dan koreksi saldo piutang dengan approval." />
 
     <div class="row g-5">
         <div class="col-lg-7">

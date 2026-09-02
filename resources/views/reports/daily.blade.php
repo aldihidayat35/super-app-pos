@@ -85,39 +85,18 @@
 
 @section('title', 'Laporan Harian Owner - '.config('app.name'))
 @section('page_title', 'Laporan Harian Owner')
+@section('page_description', $scopeMeta['description'])
+
+@section('toolbar_actions')
+    @can('reports.export')
+        <a href="{{ route('reports.exports.index', ['report_type'=>'daily','start_date'=>$filters['start_date'],'end_date'=>$filters['end_date']]) }}" class="btn btn-light-primary">
+            <i class="ki-outline ki-file-down me-2 fs-4"></i><span class="fw-semibold">Export</span>
+        </a>
+    @endcan
+@endsection
 
 @push('styles')
 <style>
-    .daily-report-hero {
-        background: {{ $scopeMeta['gradient'] }};
-        border-radius: 1.25rem;
-        overflow: hidden;
-        position: relative;
-        box-shadow: 0 12px 32px rgba(20,40,90,0.18);
-    }
-    .daily-report-hero::after {
-        content: "";
-        position: absolute;
-        width: 320px;
-        height: 320px;
-        border: 56px solid rgba(255,255,255,0.06);
-        border-radius: 50%;
-        right: -90px;
-        top: -150px;
-        pointer-events: none;
-    }
-    .daily-report-hero > * { position: relative; z-index: 1; }
-    .daily-report-hero .hero-icon {
-        width: 56px; height: 56px;
-        border-radius: 14px;
-        display: grid; place-items: center;
-        background: rgba(255,255,255,0.14);
-        backdrop-filter: blur(6px);
-    }
-    .daily-report-hero .hero-period {
-        background: rgba(255,255,255,0.12);
-        backdrop-filter: blur(6px);
-    }
     .scope-segment {
         display: inline-flex;
         gap: 4px;
@@ -270,36 +249,6 @@
 
 @section('content')
 <div class="daily-report">
-    {{-- HERO --}}
-    <div class="daily-report-hero p-7 p-lg-9 mb-6 text-white">
-        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-6">
-            <div>
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <span class="hero-icon">
-                        <i class="ki-outline {{ $scopeMeta['icon'] }} fs-2 text-white"></i>
-                    </span>
-                    <span class="pill-soft bg-white bg-opacity-15 text-white">
-                        <i class="ki-outline ki-chart-line fs-7"></i>
-                        {{ $scopeMeta['label'] }}
-                    </span>
-                </div>
-                <h1 class="text-white fw-bold fs-2x mb-3">Laporan Harian Owner</h1>
-                <div class="text-white opacity-80 fs-6" style="max-width: 620px;">{{ $scopeMeta['description'] }}</div>
-            </div>
-            <div class="d-flex gap-3 flex-wrap align-items-center">
-                <div class="hero-period rounded-3 px-5 py-3">
-                    <div class="opacity-75 fs-8 fw-semibold text-uppercase" style="letter-spacing:.06em;">Periode Aktif</div>
-                    <div class="fw-bold fs-5">{{ $filters['start']->format('d M Y') }} – {{ $filters['end']->format('d M Y') }}</div>
-                </div>
-                @can('reports.export')
-                    <a href="{{ route('reports.exports.index', ['report_type'=>'daily','start_date'=>$filters['start_date'],'end_date'=>$filters['end_date']]) }}" class="btn btn-light btn-color-white d-flex align-items-center">
-                        <i class="ki-outline ki-file-down me-2 fs-4"></i><span class="fw-semibold">Export</span>
-                    </a>
-                @endcan
-            </div>
-        </div>
-    </div>
-
     {{-- SCOPE SEGMENTED --}}
     <div class="mb-6 d-flex justify-content-center justify-content-lg-start">
         <div class="scope-segment" role="navigation" aria-label="Jenis laporan">

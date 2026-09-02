@@ -4,7 +4,7 @@
 @section('page_title', 'Detail Order Langganan')
 
 @section('content')
-    <x-metronic.page-title :title="$order->number" description="Detail order pelanggan langganan.">
+    <x-metronic.page-title :title="$order->number" :description="$order->number . ' — Detail order pelanggan langganan.'">
         <a href="{{ route('langganan.orders.index') }}" class="btn btn-light">Kembali</a>
         @if($order->invoices->isNotEmpty())
             <a href="{{ route('invoices.show', $order->invoices->first()) }}" class="btn btn-light-primary">Invoice</a>

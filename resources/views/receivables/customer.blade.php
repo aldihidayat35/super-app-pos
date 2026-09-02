@@ -4,7 +4,7 @@
 @section('page_title', 'Kartu Piutang Pelanggan')
 
 @section('content')
-    <x-metronic.page-title title="Kartu Piutang {{ $customer->business_name }}" description="AR-03 kartu piutang, ledger, limit, dan reminder pelanggan.">
+    <x-metronic.page-title title="Kartu Piutang {{ $customer->business_name }}" description="{{ $customer->business_name }} — AR-03 kartu piutang, ledger, limit, dan reminder pelanggan.">
         <a href="{{ route('receivables.payments.create', ['customer_id' => $customer->id]) }}" class="btn btn-primary">Input Pembayaran</a>
     </x-metronic.page-title>
 

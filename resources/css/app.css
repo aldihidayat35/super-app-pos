@@ -1015,6 +1015,39 @@ body::-webkit-scrollbar {
     display: contents;
 }
 
+/*
+ * Page header tunggal untuk seluruh halaman Metronic.
+ * Judul/caption memakai ruang toolbar lama, sedangkan action turun secara alami
+ * pada viewport sempit tanpa mengubah markup atau handler tombol halaman.
+ */
+#kt_app_toolbar {
+    height: auto;
+}
+
+.gt-page-header,
+.gt-page-header__main,
+.gt-page-header__text {
+    min-width: 0;
+}
+
+.gt-page-header__description {
+    max-width: 75rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.gt-page-header__actions {
+    max-width: 100%;
+}
+
+.gt-page-header__actions > .d-flex {
+    flex-wrap: wrap;
+}
+
+.gt-page-header__actions form {
+    margin-bottom: 0;
+}
+
 @media (max-width: 767.98px) {
     html,
     body {
@@ -1031,16 +1064,17 @@ body::-webkit-scrollbar {
     }
 
     #kt_app_toolbar_container {
-        align-items: flex-start;
-        flex-wrap: wrap;
-        gap: 0.6rem;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
     }
 
-    #kt_app_toolbar_container > .d-flex:last-child {
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        max-width: 100%;
-        margin-left: auto;
+    .gt-page-header__actions {
+        width: 100%;
+        justify-content: flex-start !important;
+    }
+
+    .gt-page-header__title {
+        line-height: 1.3;
     }
 
     #kt_app_toolbar_container,

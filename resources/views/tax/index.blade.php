@@ -2,9 +2,8 @@
 
 @section('title', 'Pajak & Kepatuhan')
 
-@section('page_title')
-    <x-metronic.page-title title="Pajak & Kepatuhan" subtitle="Register PPN/PPh, rekonsiliasi, dan tutup masa pajak" />
-@endsection
+@section('page_title', 'Pajak & Kepatuhan')
+@section('page_description', 'Register PPN/PPh, rekonsiliasi, dan tutup masa pajak.')
 
 @section('page_guide')
     <x-metronic.page-guide id="tax-compliance" title="Panduan Pajak & Kepatuhan">

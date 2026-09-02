@@ -145,10 +145,10 @@ class ReceivableLedgerTest extends TestCase
         $this->actingAs($this->warehouseHead)->get(route('receivables.index'))->assertOk()->assertSee($receivable->number);
         $this->actingAs($this->warehouseHead)->get(route('receivables.customers.show', $this->customer))->assertOk()->assertSee('Kartu Piutang');
         $this->actingAs($this->warehouseHead)->get(route('receivables.payments.create', ['customer_id' => $this->customer->id]))->assertOk()->assertSee('Input Pembayaran Piutang');
-        $this->actingAs($this->warehouseHead)->get(route('receivables.reminders'))->assertOk()->assertSee('Reminder dan Penagihan');
-        $this->actingAs($this->warehouseHead)->get(route('receivables.credit-limits'))->assertOk()->assertSee('Limit Kredit Pelanggan');
+        $this->actingAs($this->warehouseHead)->get(route('receivables.reminders'))->assertOk()->assertSee('Reminder Piutang');
+        $this->actingAs($this->warehouseHead)->get(route('receivables.credit-limits'))->assertOk()->assertSee('Limit Kredit');
         $this->actingAs($this->warehouseHead)->get(route('receivables.adjustments', $receivable))->assertOk()->assertSee('Koreksi Piutang');
-        $this->actingAs($this->warehouseHead)->get(route('retail.receivables.index'))->assertOk()->assertSee('Piutang Toko Internal');
+        $this->actingAs($this->warehouseHead)->get(route('retail.receivables.index'))->assertOk()->assertSee('Piutang Toko');
     }
 
     public function test_invoice_creates_receivable_ledger_and_receivable_payment_reconciles_balance(): void

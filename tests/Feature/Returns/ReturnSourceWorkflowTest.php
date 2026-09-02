@@ -309,7 +309,7 @@ class ReturnSourceWorkflowTest extends TestCase
         ]))->assertRedirect();
         $return = ReturnDocument::query()->sole();
 
-        $this->actingAs($this->staff)->get(route('returns.edit', $return))->assertOk()->assertSee('Ubah '.$return->number);
+        $this->actingAs($this->staff)->get(route('returns.edit', $return))->assertOk()->assertSee('Ubah Draft Retur');
         $this->put(route('returns.update', $return), $this->payload($sale, $saleItem, [
             'action' => 'submit',
             'items' => [[

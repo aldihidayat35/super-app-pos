@@ -2,6 +2,7 @@
 
 @section('title', 'Dashboard Gudang - ' . config('app.name'))
 @section('page_title', 'Dashboard Gudang')
+@section('page_description', 'Pantau stok dan pekerjaan operasional berdasarkan gudang aktif.')
 
 @section('page_guide')
     <x-metronic.page-guide id="warehouse-dashboard" title="Panduan Halaman Dashboard Gudang">
@@ -36,20 +37,13 @@
             <i class="ki-outline ki-chart-simple fs-5"></i> Laporan Gudang
         </a>
         <x-metronic.permission-button permission="stock.create" :href="route('warehouse.location-transfers.index')" icon="ki-outline ki-arrow-right-left">Transfer Lokasi</x-metronic.permission-button>
+        <button type="button" class="btn btn-sm btn-light" data-bs-toggle="offcanvas" data-bs-target="#warehouse-dashboard-help" aria-label="Buka panduan">
+            <i class="ki-outline ki-information-2 fs-5 me-2"></i>Bantuan
+        </button>
     </div>
 @endsection
 
 @section('content')
-    <div class="d-flex flex-wrap align-items-center justify-content-between mb-6">
-        <div>
-            <h1 class="fs-2x fw-bold text-gray-900 mb-1">Dashboard Gudang</h1>
-            <p class="text-muted fs-5 mb-0">Pantau stok dan pekerjaan operasional berdasarkan gudang aktif.</p>
-        </div>
-        <button type="button" class="btn btn-light" data-bs-toggle="offcanvas" data-bs-target="#warehouse-dashboard-help" aria-label="Buka panduan">
-            <i class="ki-outline ki-information-2 fs-5 me-2"></i>Bantuan
-        </button>
-    </div>
-
     {{-- Context & Filter Card --}}
     <div class="card mb-6">
         <form id="warehouse-dashboard-filter" method="GET" action="{{ route('warehouse.dashboard') }}">

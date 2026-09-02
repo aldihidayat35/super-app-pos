@@ -4,7 +4,7 @@
 @section('page_title', 'Detail Invoice')
 
 @section('content')
-    <x-metronic.page-title :title="$invoice->number" description="Detail tagihan, pembayaran, dan PDF.">
+    <x-metronic.page-title :title="$invoice->number" :description="$invoice->number . ' — Detail tagihan, pembayaran, dan PDF.'">
         <a href="{{ route('invoices.index') }}" class="btn btn-light">Kembali</a>
         <a href="{{ route('invoices.pdf', $invoice) }}" class="btn btn-light-primary">
             <i class="ki-outline ki-file-pdf fs-5 me-1"></i>PDF

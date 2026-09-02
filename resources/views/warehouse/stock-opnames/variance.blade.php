@@ -16,7 +16,7 @@
 @endsection
 
 @section('content')
-    <x-metronic.page-title :title="'Selisih Stok ' . $opname->number" description="Perbandingan acuan stok dengan hasil fisik dan nilai selisih berdasarkan HPP saat acuan dibuat.">
+    <x-metronic.page-title :title="'Selisih Stok ' . $opname->number" :description="$opname->number . ' — Perbandingan acuan stok dengan hasil fisik dan nilai selisih berdasarkan HPP saat acuan dibuat.'">
         <x-slot:actions>
             <a href="{{ route('warehouse.stock-opnames.variance.export', $opname) }}" class="btn btn-light-success"><i class="ki-outline ki-file-down"></i> Unduh CSV</a>
             <a href="{{ route('warehouse.stock-opnames.approval', $opname) }}" class="btn btn-primary">Persetujuan</a>

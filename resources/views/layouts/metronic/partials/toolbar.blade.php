@@ -1,12 +1,20 @@
-<div id="kt_app_toolbar" class="app-toolbar py-1 py-lg-2">
-    <div id="kt_app_toolbar_container" class="app-container container-fluid d-flex flex-stack">
-        <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
-            <div class="d-flex align-items-center">
-                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">@yield('page_title', 'Dashboard')</h1>
-                @yield('page_guide')
-            </div>
-            @include('layouts.metronic.partials.breadcrumb')
-        </div>
-        <div class="d-flex align-items-center gap-2 gap-lg-3">@yield('toolbar_actions')</div>
+@php
+    $pageTitle = new \Illuminate\Support\HtmlString(trim($__env->yieldContent('page_title', 'Dashboard')));
+    $pageDescription = new \Illuminate\Support\HtmlString(trim($__env->yieldContent('page_description')));
+    $pageActions = trim($__env->yieldContent('toolbar_actions'));
+    $pageHelp = trim($__env->yieldContent('page_title_help').$__env->yieldContent('page_guide'));
+@endphp
+
+<div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-4">
+    <div id="kt_app_toolbar_container" class="app-container container-fluid">
+        <x-metronic.page-header :title="$pageTitle" :description="$pageDescription">
+            @if ($pageHelp !== '')
+                <x-slot:help>{!! $pageHelp !!}</x-slot:help>
+            @endif
+
+            @if ($pageActions !== '')
+                <x-slot:actions>{!! $pageActions !!}</x-slot:actions>
+            @endif
+        </x-metronic.page-header>
     </div>
 </div>

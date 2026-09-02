@@ -4,7 +4,7 @@
 @section('page_title', 'Ubah Draft Retur')
 
 @section('content')
-    <x-metronic.page-title :title="'Ubah ' . $return->number" description="Perbarui draft retur sebelum diajukan ke pemeriksaan QC.">
+    <x-metronic.page-title :title="'Ubah ' . $return->number" :description="$return->number . ' — Perbarui draft retur sebelum diajukan ke pemeriksaan QC.'">
         <x-slot:actions>
             <a href="{{ route('returns.show', $return) }}" class="btn btn-light">
                 <i class="ki-outline ki-arrow-left fs-5 me-2"></i>Kembali

@@ -3,7 +3,7 @@
 @section('title', $customer->business_name)
 @section('page_title', 'Detail Customer Saya')
 @section('content')
-    <x-metronic.page-title :title="$customer->business_name" :description="$customer->code">
+    <x-metronic.page-title :title="$customer->business_name" :description="$customer->business_name . ' — ' . $customer->code">
         <x-slot:actions><a href="{{ route('sales.orders.create', ['customer_id' => $customer->id]) }}" class="btn btn-primary">Buat Order</a><a href="{{ route('sales.customers.index') }}" class="btn btn-light">Kembali</a></x-slot:actions>
     </x-metronic.page-title>
     <div class="row g-5 mb-5">

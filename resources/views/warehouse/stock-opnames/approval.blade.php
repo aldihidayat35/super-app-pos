@@ -16,7 +16,7 @@
 @endsection
 
 @section('content')
-    <x-metronic.page-title :title="'Persetujuan ' . $opname->number" description="Pemeriksaan akhir sebelum penyesuaian saldo stok dibuat.">
+    <x-metronic.page-title :title="'Persetujuan ' . $opname->number" :description="$opname->number . ' — Pemeriksaan akhir sebelum penyesuaian saldo stok dibuat.'">
         <x-slot:actions><a href="{{ route('warehouse.stock-opnames.variance', $opname) }}" class="btn btn-light-info">Lihat Selisih Stok</a></x-slot:actions>
     </x-metronic.page-title>
 

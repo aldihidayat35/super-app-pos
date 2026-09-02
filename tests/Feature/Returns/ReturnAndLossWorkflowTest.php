@@ -52,9 +52,9 @@ class ReturnAndLossWorkflowTest extends TestCase
 
         $this->actingAs($this->head);
         $this->get(route('returns.index'))->assertOk()->assertSee('Daftar Retur');
-        $this->get(route('returns.create'))->assertOk()->assertSee('Form Pengajuan Retur');
+        $this->get(route('returns.create'))->assertOk()->assertSee('Pengajuan Retur');
         $this->get(route('returns.show', $return))->assertOk()->assertSee($return->number);
-        $this->get(route('returns.inspection', $return))->assertOk()->assertSee('QC '.$return->number);
+        $this->get(route('returns.inspection', $return))->assertOk()->assertSee('Pemeriksaan Retur');
         $this->get(route('warehouse.losses.index'))->assertOk()->assertSee('Barang Rusak');
         $this->get(route('reports.losses.index'))->assertOk()->assertSee('Laporan Loss Tracking');
     }

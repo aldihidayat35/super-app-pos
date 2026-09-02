@@ -4,7 +4,7 @@
 @section('page_title', 'Verifikasi Pembayaran')
 
 @section('content')
-    <x-metronic.page-title :title="$payment->number" description="Review bukti dan alokasi invoice." />
+    <x-metronic.page-title :title="$payment->number" :description="$payment->number . ' — Review bukti dan alokasi invoice.'" />
     <div class="row g-5">
         <div class="col-lg-7"><x-metronic.card title="Detail Pembayaran">
             <div>Customer: <strong>{{ $payment->customer?->business_name }}</strong></div><div>Nominal: <strong>{{ App\Support\CurrencyFormatter::rupiah($payment->amount) }}</strong></div><div>Metode: {{ $payment->method?->label() }}</div><div>Status: {{ $payment->status?->label() }}</div><div>Ref: {{ $payment->reference_no ?: '-' }}</div>

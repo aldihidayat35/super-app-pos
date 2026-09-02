@@ -92,12 +92,12 @@ class B2bFulfillmentTest extends TestCase
 
         $this->actingAs($this->customerUser)->get(route('invoices.index'))->assertOk()->assertSee($invoice->number);
         $this->actingAs($this->customerUser)->get(route('invoices.show', $invoice))->assertOk()->assertSee('Detail Invoice');
-        $this->actingAs($this->customerUser)->get(route('payments.create', ['invoice_id' => $invoice->id]))->assertOk()->assertSee('Upload / Entri Pembayaran');
-        $this->actingAs($this->warehouseHead)->get(route('shipments.index'))->assertOk()->assertSee('Daftar Pengiriman');
+        $this->actingAs($this->customerUser)->get(route('payments.create', ['invoice_id' => $invoice->id]))->assertOk()->assertSee('Input Pembayaran');
+        $this->actingAs($this->warehouseHead)->get(route('shipments.index'))->assertOk()->assertSee('Pengiriman B2B');
         $this->actingAs($this->warehouseHead)->get(route('shipments.show', $shipment))->assertOk()->assertSee($shipment->number);
         $this->actingAs($this->warehouseHead)->get(route('shipments.proof', $shipment))->assertOk()->assertSee('Bukti Pengiriman');
         $this->actingAs($this->customerUser)->get(route('langganan.shipments.show', $shipment))->assertOk()->assertSee('Tracking Pengiriman');
-        $this->actingAs($this->customerUser)->get(route('langganan.complaints.index'))->assertOk()->assertSee('Komplain dan Retur B2B');
+        $this->actingAs($this->customerUser)->get(route('langganan.complaints.index'))->assertOk()->assertSee('Komplain B2B');
     }
 
     public function test_partial_payment_full_payment_and_duplicate_verification_are_idempotent(): void

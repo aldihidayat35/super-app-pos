@@ -4,7 +4,7 @@
 @section('page_title', 'Tracking Pengiriman')
 
 @section('content')
-    <x-metronic.page-title :title="$shipment->number" description="Status, timeline, dan bukti pengiriman.">
+    <x-metronic.page-title :title="$shipment->number" :description="$shipment->number . ' — Status, timeline, dan bukti pengiriman.'">
         <a href="{{ route('langganan.orders.show', $shipment->order) }}" class="btn btn-light">Kembali ke Order</a>
         @if($shipment->status === App\Enums\ShipmentStatus::DELIVERED)<form method="POST" action="{{ route('langganan.shipments.confirm', $shipment) }}" class="d-inline">@csrf<button class="btn btn-success">Konfirmasi Selesai</button></form>@endif
     </x-metronic.page-title>

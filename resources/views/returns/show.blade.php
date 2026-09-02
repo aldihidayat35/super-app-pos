@@ -4,7 +4,7 @@
 @section('page_title', 'Detail Retur')
 
 @section('content')
-    <x-metronic.page-title :title="$return->number" description="Detail dokumen retur, QC, settlement, mutasi stok, dan timeline.">
+    <x-metronic.page-title :title="$return->number" :description="$return->number . ' — Detail dokumen retur, QC, settlement, mutasi stok, dan timeline.'">
         <x-slot:actions>
             @can('update', $return)<a href="{{ route('returns.edit', $return) }}" class="btn btn-light-primary"><i class="ki-outline ki-pencil fs-5 me-2"></i>Ubah Draft</a>@endcan
             @can('inspect', $return)<a href="{{ route('returns.inspection', $return) }}" class="btn btn-light-primary">QC Retur</a>@endcan

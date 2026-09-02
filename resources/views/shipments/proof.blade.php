@@ -4,7 +4,7 @@
 @section('page_title', 'Bukti Pengiriman')
 
 @section('content')
-    <x-metronic.page-title :title="$shipment->number" description="Upload foto/surat jalan/resi dan proof of delivery.">
+    <x-metronic.page-title :title="$shipment->number" :description="$shipment->number . ' — Upload foto/surat jalan/resi dan proof of delivery.'">
         <a href="{{ route('shipments.show', $shipment) }}" class="btn btn-light">Kembali</a>
     </x-metronic.page-title>
     <x-metronic.card title="Form Proof">

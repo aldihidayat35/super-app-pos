@@ -5,7 +5,7 @@
 
 @section('content')
     @php($minimumOrder = qty_input(max(1, (float) $product->minimum_order)))
-    <x-metronic.page-title :title="$product->name" :description="$product->sku">
+    <x-metronic.page-title :title="$product->name" :description="$product->name . ' — ' . $product->sku">
         <a href="{{ route('langganan.katalog.index') }}" class="btn btn-light">Kembali</a>
     </x-metronic.page-title>
     <div class="row g-5">

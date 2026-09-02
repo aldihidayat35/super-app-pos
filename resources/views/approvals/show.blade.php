@@ -4,7 +4,7 @@
 @section('page_title', 'Detail Approval')
 
 @section('content')
-    <x-metronic.page-title title="Detail Approval #{{ $approval->id }}" description="APP-02 data sebelum/sesudah, dampak risiko, histori, komentar, dan signature waktu.">
+    <x-metronic.page-title title="Detail Approval #{{ $approval->id }}" description="Approval #{{ $approval->id }} — APP-02 data sebelum/sesudah, dampak risiko, histori, komentar, dan signature waktu.">
         <a href="{{ route('approvals.index') }}" class="btn btn-light">Kembali</a>
     </x-metronic.page-title>
     <div class="row g-5">

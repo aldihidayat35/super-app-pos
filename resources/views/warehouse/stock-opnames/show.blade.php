@@ -30,7 +30,7 @@
 @endsection
 
 @section('content')
-    <x-metronic.page-title :title="$opname->number" description="Ringkasan status, scope, item, dan audit stok opname.">
+    <x-metronic.page-title :title="$opname->number" :description="$opname->number . ' — Ringkasan status, scope, item, dan audit stok opname.'">
         <x-slot:actions>
             @if($opname->status === \App\Enums\StockOpnameStatus::DRAFT)
                 <form method="POST" action="{{ route('warehouse.stock-opnames.start', $opname) }}" class="d-inline">@csrf<button class="btn btn-primary">Simpan Acuan Stok</button></form>
