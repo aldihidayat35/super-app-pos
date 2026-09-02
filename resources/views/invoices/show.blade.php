@@ -19,32 +19,32 @@
     {{-- KPI Summary Cards --}}
     <div class="row g-4 mb-5">
         <div class="col-md-3">
-            <x-metronic.kpi-card 
-                title="Status Invoice" 
-                :value="$invoice->status->label()" 
+            <x-metronic.kpi-card
+                title="Status Invoice"
+                :value="$invoice->status->label()"
                 icon="ki-outline ki-circle-mark"
                 :color="$invoice->status === \App\Enums\InvoiceStatus::PAID ? 'success' : ($invoice->status === \App\Enums\InvoiceStatus::OVERDUE ? 'danger' : 'primary')"
             />
         </div>
         <div class="col-md-3">
-            <x-metronic.kpi-card 
-                title="Total Invoice" 
+            <x-metronic.kpi-card
+                title="Total Invoice"
                 value="{{ App\Support\CurrencyFormatter::rupiah($invoice->total_amount) }}"
                 icon="ki-outline ri-outline ki-cash"
                 color="primary"
             />
         </div>
         <div class="col-md-3">
-            <x-metronic.kpi-card 
-                title="Sudah Dibayar" 
+            <x-metronic.kpi-card
+                title="Sudah Dibayar"
                 value="{{ App\Support\CurrencyFormatter::rupiah($invoice->paid_amount) }}"
                 icon="ki-outline ki-check-circle"
                 color="success"
             />
         </div>
         <div class="col-md-3">
-            <x-metronic.kpi-card 
-                title="Sisa Tagihan" 
+            <x-metronic.kpi-card
+                title="Sisa Tagihan"
                 value="{{ App\Support\CurrencyFormatter::rupiah($invoice->outstanding_amount) }}"
                 icon="ki-outline ki-warning"
                 :color="$invoice->outstanding_amount > 0 ? 'danger' : 'success'"
@@ -149,8 +149,8 @@
                         <span class="fw-bold text-success">{{ App\Support\CurrencyFormatter::rupiah($allocation->amount) }}</span>
                     </div>
                     <div class="text-muted fs-7">
-                        {{ $allocation->payment?->payment_date?->format('d/m/Y') }} · 
-                        {{ $allocation->payment?->method?->label() }} · 
+                        {{ $allocation->payment?->payment_date?->format('d/m/Y') }} ·
+                        {{ $allocation->payment?->method?->label() }} ·
                         <x-metronic.status-badge :status="$allocation->payment?->status" :label="$allocation->payment?->status?->label()" />
                     </div>
                 </div>
@@ -197,9 +197,9 @@
                 </div>
                 @if($invoice->outstanding_amount > 0)
                 <div class="progress mt-3" style="height: 6px;">
-                    <div class="progress-bar bg-success" role="progressbar" 
+                    <div class="progress-bar bg-success" role="progressbar"
                          style="width: {{ ($invoice->paid_amount / $invoice->total_amount) * 100 }}%"
-                         aria-valuenow="{{ ($invoice->paid_amount / $invoice->total_amount) * 100 }}" 
+                         aria-valuenow="{{ ($invoice->paid_amount / $invoice->total_amount) * 100 }}"
                          aria-valuemin="0" aria-valuemax="100">
                     </div>
                 </div>

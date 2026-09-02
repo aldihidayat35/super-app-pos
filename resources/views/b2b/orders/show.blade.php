@@ -17,33 +17,33 @@
     {{-- KPI Summary Cards --}}
     <div class="row g-4 mb-5">
         <div class="col-md-3">
-            <x-metronic.kpi-card 
-                title="Status Order" 
-                :value="$order->status->label()" 
+            <x-metronic.kpi-card
+                title="Status Order"
+                :value="$order->status->label()"
                 :icon="'ki-outline ki-' . ($order->status === \App\Enums\B2bOrderStatus::COMPLETED ? 'check-circle' : ($order->status === \App\Enums\B2bOrderStatus::SHIPPED ? 'truck' : 'box'))"
                 :color="$order->status === \App\Enums\B2bOrderStatus::COMPLETED ? 'success' : ($order->status === \App\Enums\B2bOrderStatus::SHIPPED ? 'info' : 'primary')"
                 :href="route('langganan.orders.index')"
             />
         </div>
         <div class="col-md-3">
-            <x-metronic.kpi-card 
-                title="Total Order" 
+            <x-metronic.kpi-card
+                title="Total Order"
                 value="{{ App\Support\CurrencyFormatter::rupiah($order->grand_total_amount) }}"
                 icon="ki-outline ri-outline ki-cash"
                 color="success"
             />
         </div>
         <div class="col-md-3">
-            <x-metronic.kpi-card 
-                title="Tanggal Submit" 
+            <x-metronic.kpi-card
+                title="Tanggal Submit"
                 :value="$order->submitted_at?->format('d/m/Y')"
                 icon="ki-outline ki-calendar"
                 color="warning"
             />
         </div>
         <div class="col-md-3">
-            <x-metronic.kpi-card 
-                title="Pelanggan" 
+            <x-metronic.kpi-card
+                title="Pelanggan"
                 :value="$order->customer?->business_name ?? '-'"
                 icon="ki-outline ki-profile"
                 color="primary"

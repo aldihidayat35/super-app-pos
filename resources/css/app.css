@@ -7,6 +7,20 @@
     --gt-loading-z-index: 1200;
 }
 
+/* Sembunyikan scrollbar viewport tanpa menonaktifkan fungsi gulir halaman. */
+html,
+body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
+}
+
 [data-bs-theme='dark'] body {
     color-scheme: dark;
 }
