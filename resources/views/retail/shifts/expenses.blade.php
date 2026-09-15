@@ -7,13 +7,13 @@
     <div class="row g-6">
         <div class="col-lg-4">
             <x-metronic.card title="Input Pengeluaran">
-                <form method="POST" action="{{ route('retail.shifts.expenses.store', $shift) }}">
+                <form method="POST" action="{{ route('retail.shifts.expenses.store', $shift) }}" enctype="multipart/form-data">
                     @csrf
                     <x-metronic.form-group name="category" label="Kategori" required><select name="category" class="form-select"><option value="plastic">Plastik</option><option value="transport">Transport</option><option value="parking">Parkir</option><option value="operational">Operasional</option><option value="other">Lainnya</option></select></x-metronic.form-group>
                     <x-metronic.form-group name="payment_method" label="Metode" required><select name="payment_method" class="form-select"><option value="cash">Tunai</option><option value="bank_transfer">Transfer</option><option value="qris">QRIS</option><option value="manual">Manual</option></select></x-metronic.form-group>
                     <x-metronic.form-group name="amount" label="Nominal" required><input type="number" step="0.01" min="0" name="amount" class="form-control"></x-metronic.form-group>
                     <x-metronic.form-group name="spent_at" label="Waktu"><input type="datetime-local" name="spent_at" class="form-control"></x-metronic.form-group>
-                    <x-metronic.form-group name="proof_path" label="Bukti Foto/Path"><input name="proof_path" class="form-control" placeholder="storage/..."></x-metronic.form-group>
+                    <x-metronic.form-group name="proof" label="Bukti Foto"><input type="file" name="proof" accept="image/*" class="form-control"></x-metronic.form-group>
                     <x-metronic.form-group name="notes" label="Catatan"><textarea name="notes" rows="3" class="form-control"></textarea></x-metronic.form-group>
                     <button class="btn btn-primary">Simpan Pengeluaran</button>
                 </form>

@@ -19,7 +19,9 @@
 
 @section('content')
     <x-metronic.page-title title="Laporan Kehadiran" description="Kehadiran, ketepatan waktu, dan jam kerja berdasarkan lokasi serta karyawan.">
-        <x-slot:actions><a href="{{ route('reports.shift-productivity.index', ['from' => $filters['from'], 'to' => $filters['to']]) }}" class="btn btn-light-primary"><i class="ki-outline ki-chart-line-up fs-5"></i> Produktivitas Shift</a></x-slot:actions>
+        @unless (in_array('reports.shift-productivity.index', config('ui_visibility.hidden_navigation_routes', []), true))
+            <x-slot:actions><a href="{{ route('reports.shift-productivity.index', ['from' => $filters['from'], 'to' => $filters['to']]) }}" class="btn btn-light-primary"><i class="ki-outline ki-chart-line-up fs-5"></i> Produktivitas Shift</a></x-slot:actions>
+        @endunless
     </x-metronic.page-title>
 
     <x-metronic.card class="mb-5">

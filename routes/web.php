@@ -78,9 +78,12 @@ use App\Http\Controllers\Reports\ReportExportController;
 use App\Http\Controllers\Reports\RetailDashboardController;
 use App\Http\Controllers\Reports\SupplierPerformanceController;
 use App\Http\Controllers\Retail\CashShiftController;
+use App\Http\Controllers\Retail\EmergencyPurchaseController;
 use App\Http\Controllers\Retail\PosController;
 use App\Http\Controllers\Retail\PosSaleController;
+use App\Http\Controllers\Retail\ProductRequestController;
 use App\Http\Controllers\Retail\RestockRequestController;
+use App\Http\Controllers\Retail\StorefrontController;
 use App\Http\Controllers\Returns\InventoryLossController;
 use App\Http\Controllers\Returns\ReturnController;
 use App\Http\Controllers\Returns\ReturnSourceController;
@@ -1147,6 +1150,39 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         ->name('shipments.show');
 
     Route::prefix('retail')->name('retail.')->group(function (): void {
+        Route::get('/pengajuan-produk', [ProductRequestController::class, 'index'])->middleware('permission:product_requests.view|product_requests.approve')->name('product-requests.index');
+        Route::get('/pengajuan-produk/buat', [ProductRequestController::class, 'create'])->middleware('permission:product_requests.create')->name('product-requests.create');
+        Route::post('/pengajuan-produk', [ProductRequestController::class, 'store'])->middleware('permission:product_requests.create')->name('product-requests.store');
+        Route::get('/pengajuan-produk/{productRequest}', [ProductRequestController::class, 'show'])->middleware('permission:product_requests.view|product_requests.approve')->name('product-requests.show');
+        Route::post('/pengajuan-produk/{productRequest}/setujui', [ProductRequestController::class, 'approve'])->middleware('permission:product_requests.approve')->name('product-requests.approve');
+        Route::post('/pengajuan-produk/{productRequest}/tolak', [ProductRequestController::class, 'reject'])->middleware('permission:product_requests.approve')->name('product-requests.reject');
+        Route::get('/pembelian-darurat/laporan', [EmergencyPurchaseController::class, 'report'])->middleware('permission:emergency_reports.view')->name('emergency.report');
+        Route::put('/pembelian-darurat/aturan', [EmergencyPurchaseController::class, 'rule'])->middleware('permission:emergency_purchases.manage')->name('emergency.rule');
+        Route::delete('/pembelian-darurat/aturan', [EmergencyPurchaseController::class, 'deleteRule'])->middleware('permission:emergency_purchases.manage')->name('emergency.rule.delete');
+        Route::get('/pembelian-darurat', [EmergencyPurchaseController::class, 'index'])->middleware('permission:emergency_purchases.view')->name('emergency.index');
+        Route::get('/pembelian-darurat/buat', [EmergencyPurchaseController::class, 'create'])->middleware('permission:emergency_purchases.create')->name('emergency.create');
+        Route::get('/pembelian-darurat/pratinjau', [EmergencyPurchaseController::class, 'preview'])->middleware('permission:emergency_purchases.create')->name('emergency.preview');
+        Route::post('/pembelian-darurat', [EmergencyPurchaseController::class, 'store'])->middleware('permission:emergency_purchases.create')->name('emergency.store');
+        Route::get('/pembelian-darurat/{purchase}', [EmergencyPurchaseController::class, 'show'])->middleware('permission:emergency_purchases.view')->name('emergency.show');
+        Route::get('/pembelian-darurat/{purchase}/nota/pratinjau', [EmergencyPurchaseController::class, 'receiptPreview'])->middleware('permission:emergency_purchases.view')->name('emergency.receipt-preview');
+        Route::get('/pembelian-darurat/{purchase}/nota', [EmergencyPurchaseController::class, 'receipt'])->middleware('permission:emergency_purchases.view')->name('emergency.receipt');
+        Route::get('/pembelian-darurat/{purchase}/bukti-reimbursement', [EmergencyPurchaseController::class, 'reimbursementProof'])->middleware('permission:emergency_purchases.manage')->name('emergency.reimbursement-proof');
+        Route::post('/pembelian-darurat/{purchase}/beli', [EmergencyPurchaseController::class, 'purchased'])->middleware('permission:emergency_purchases.purchase')->name('emergency.purchased');
+        Route::post('/pembelian-darurat/{purchase}/setujui', [EmergencyPurchaseController::class, 'approve'])->middleware('permission:emergency_purchases.approve')->name('emergency.approve');
+        Route::post('/pembelian-darurat/{purchase}/tolak', [EmergencyPurchaseController::class, 'reject'])->middleware('permission:emergency_purchases.approve')->name('emergency.reject');
+        Route::post('/pembelian-darurat/{purchase}/batal', [EmergencyPurchaseController::class, 'cancel'])->middleware('permission:emergency_purchases.create|emergency_purchases.manage')->name('emergency.cancel');
+        Route::post('/pembelian-darurat/{purchase}/reimbursement', [EmergencyPurchaseController::class, 'reimburse'])->middleware('permission:emergency_purchases.manage')->name('emergency.reimburse');
+        Route::post('/pembelian-darurat/{purchase}/retur-pemasok', [EmergencyPurchaseController::class, 'supplierReturn'])->middleware('permission:emergency_purchases.manage')->name('emergency.supplier-return');
+        Route::post('/pembelian-darurat/{purchase}/masukkan-stok-toko', [EmergencyPurchaseController::class, 'regularize'])->middleware('permission:emergency_purchases.manage')->name('emergency.regularize');
+        Route::post('/pembelian-darurat/{purchase}/alokasi-ulang', [EmergencyPurchaseController::class, 'reassign'])->middleware('permission:emergency_purchases.manage')->name('emergency.reassign');
+        Route::post('/pembelian-darurat/{purchase}/teruskan-gudang', [EmergencyPurchaseController::class, 'forwardWarehouse'])->middleware('permission:emergency_purchases.manage')->name('emergency.forward-warehouse');
+        Route::post('/pembelian-darurat/{purchase}/selesai-gudang', [EmergencyPurchaseController::class, 'completeWarehouse'])->middleware('permission:emergency_purchases.manage')->name('emergency.complete-warehouse');
+        Route::get('/etalase', [StorefrontController::class, 'index'])
+            ->middleware('permission:retail.catalog.view')
+            ->name('storefront.index');
+        Route::put('/etalase/produk/{product}/lokasi', [StorefrontController::class, 'updatePlacement'])
+            ->middleware('permission:retail.catalog.manage')
+            ->name('storefront.placement.update');
         Route::get('/dashboard/data', [RetailDashboardController::class, 'data'])
             ->middleware('permission:dashboard.view|cash_shifts.view|reports.view')
             ->name('dashboard.data');
@@ -1197,6 +1233,7 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/shifts/{shift}/report', [CashShiftController::class, 'report'])
             ->middleware('permission:cash_shifts.view')
             ->name('shifts.report');
+        Route::get('/shifts/{shift}/pdf', [CashShiftController::class, 'exportPdf'])->middleware('permission:cash_shifts.view')->name('shifts.export.pdf');
         Route::get('/pos', [PosController::class, 'index'])
             ->middleware('permission:pos.view')
             ->name('pos.index');

@@ -1049,10 +1049,28 @@ body::-webkit-scrollbar {
 }
 
 @media (max-width: 767.98px) {
+    :root {
+        --gt-mobile-gutter: 0.75rem;
+        --gt-mobile-section-gap: 1rem;
+        --gt-mobile-control-height: 44px;
+    }
+
     html,
     body {
         max-width: 100%;
         overflow-x: clip;
+    }
+
+    body {
+        min-width: 0;
+    }
+
+    img,
+    svg,
+    video,
+    canvas,
+    iframe {
+        max-width: 100%;
     }
 
     #kt_app_wrapper {
@@ -1063,6 +1081,26 @@ body::-webkit-scrollbar {
         overflow-x: hidden;
     }
 
+    #kt_app_header_container {
+        gap: 0.5rem;
+        padding-right: var(--gt-mobile-gutter) !important;
+        padding-left: var(--gt-mobile-gutter) !important;
+    }
+
+    #kt_app_header_container > * {
+        min-width: 0;
+    }
+
+    #kt_app_header_container a[href] {
+        min-width: 0;
+    }
+
+    #kt_app_header_container a[href] > span:not(.symbol) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     #kt_app_toolbar_container {
         padding-top: 0.25rem;
         padding-bottom: 0.25rem;
@@ -1070,7 +1108,26 @@ body::-webkit-scrollbar {
 
     .gt-page-header__actions {
         width: 100%;
+        align-items: stretch !important;
         justify-content: flex-start !important;
+    }
+
+    .gt-page-header__actions > .btn,
+    .gt-page-header__actions > a.btn,
+    .gt-page-header__actions > form,
+    .gt-page-header__actions > form > .btn {
+        width: 100%;
+    }
+
+    .gt-page-header__actions > .d-flex {
+        width: 100%;
+    }
+
+    .gt-page-header__actions > .d-flex > .btn,
+    .gt-page-header__actions > .d-flex > a.btn,
+    .gt-page-header__actions > .d-flex > form {
+        flex: 1 1 0;
+        min-width: 0;
     }
 
     .gt-page-header__title {
@@ -1079,8 +1136,10 @@ body::-webkit-scrollbar {
 
     #kt_app_toolbar_container,
     #kt_app_content_container {
-        padding-right: 0.75rem !important;
-        padding-left: 0.75rem !important;
+        width: 100%;
+        max-width: none;
+        padding-right: var(--gt-mobile-gutter) !important;
+        padding-left: var(--gt-mobile-gutter) !important;
     }
 
     #kt_app_content_container {
@@ -1091,18 +1150,83 @@ body::-webkit-scrollbar {
         padding-bottom: 0.75rem !important;
     }
 
+    #kt_app_content_container > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #kt_app_content_container > .row,
+    #kt_app_content_container .row {
+        --bs-gutter-x: var(--gt-mobile-section-gap);
+        --bs-gutter-y: var(--gt-mobile-section-gap);
+    }
+
+    #kt_app_content_container > .card,
+    #kt_app_content_container > .row,
+    #kt_app_content_container > form,
+    #kt_app_content_container > .alert,
+    #kt_app_content_container > .tab-content {
+        width: 100%;
+    }
+
     #kt_app_content_container .card {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
         border-radius: 0.65rem;
     }
 
     #kt_app_content_container .card > .card-header {
+        gap: 0.75rem;
         min-height: 3.25rem;
-        padding-right: 0.75rem;
-        padding-left: 0.75rem;
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    #kt_app_content_container .card > .card-header:has(> .card-toolbar) {
+        align-items: stretch;
+        flex-direction: column;
+        justify-content: center;
+        padding-top: 0.875rem;
+        padding-bottom: 0.875rem;
+    }
+
+    #kt_app_content_container .card > .card-header > .card-title,
+    #kt_app_content_container .card > .card-header > .card-toolbar {
+        min-width: 0;
+        margin: 0;
+    }
+
+    #kt_app_content_container .card > .card-header > .card-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    #kt_app_content_container .card > .card-header > .card-toolbar > .btn,
+    #kt_app_content_container .card > .card-header > .card-toolbar > a.btn,
+    #kt_app_content_container .card > .card-header > .card-toolbar > form {
+        flex: 1 1 auto;
     }
 
     #kt_app_content_container .card > .card-body {
-        padding: 0.75rem !important;
+        min-width: 0;
+        padding: 1rem !important;
+    }
+
+    #kt_app_content_container .card > .card-body.p-0 {
+        padding: 0 !important;
+    }
+
+    #kt_app_content_container .card > .card-footer {
+        padding: 1rem;
+    }
+
+    #kt_app_content_container .card + .card,
+    #kt_app_content_container .card + .row,
+    #kt_app_content_container .row + .card {
+        margin-top: var(--gt-mobile-section-gap);
     }
 
     #kt_app_content_container .card-body > form.mb-5 {
@@ -1117,6 +1241,294 @@ body::-webkit-scrollbar {
     #kt_app_content_container .card-body > form.row.g-3 {
         --bs-gutter-x: 0.5rem;
         --bs-gutter-y: 0.5rem;
+    }
+
+    /* Kontrol form memenuhi kolomnya; utility width desktop tidak boleh menyempitkan mobile. */
+    #kt_app_content_container :is(input.form-control, select.form-select, textarea.form-control),
+    #kt_app_content_container .select2-container,
+    #kt_app_content_container .select2-container .select2-selection,
+    #kt_app_content_container .searchable-select,
+    #kt_app_content_container .flatpickr-wrapper {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    #kt_app_content_container .select2-hidden-accessible {
+        width: 1px !important;
+        height: 1px !important;
+        min-height: 1px !important;
+    }
+
+    #kt_app_content_container :is(input.form-control, select.form-select),
+    #kt_app_content_container .searchable-select-toggle,
+    #kt_app_content_container .select2-container--bootstrap5 .select2-selection--single {
+        min-height: var(--gt-mobile-control-height);
+    }
+
+    #kt_app_content_container textarea.form-control {
+        min-height: 7rem;
+    }
+
+    #kt_app_content_container .input-group {
+        flex-wrap: nowrap;
+        width: 100%;
+        min-width: 0;
+    }
+
+    #kt_app_content_container .input-group > .form-control,
+    #kt_app_content_container .input-group > .form-select {
+        min-width: 0;
+    }
+
+    #kt_app_content_container form.d-flex:has(.form-control, .form-select),
+    #kt_app_content_container form > .d-flex:has(.form-control, .form-select) {
+        align-items: stretch !important;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    #kt_app_content_container form.d-flex:has(.form-control, .form-select) > *,
+    #kt_app_content_container form > .d-flex:has(.form-control, .form-select) > * {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #kt_app_content_container .fv-row,
+    #kt_app_content_container .form-group {
+        min-width: 0;
+    }
+
+    #kt_app_content_container .fv-row.mb-7 {
+        margin-bottom: 1rem !important;
+    }
+
+    #kt_app_content_container .form-label {
+        margin-bottom: 0.5rem;
+        line-height: 1.35;
+    }
+
+    #kt_app_content_container .btn:not(.btn-sm):not(.btn-icon) {
+        min-height: var(--gt-mobile-control-height);
+    }
+
+    #kt_app_content_container .btn-sm:not(.btn-icon) {
+        min-height: 38px;
+    }
+
+    #kt_app_content_container .btn {
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    #kt_app_content_container .btn > i {
+        flex: 0 0 auto;
+    }
+
+    /* Toolbar tabel dan kontrol DataTables ditumpuk agar pencarian/paging tidak terpotong. */
+    #kt_app_content_container .gt-table-toolbar,
+    #kt_app_content_container .dataTables_wrapper > .d-flex,
+    #kt_app_content_container .dt-container > .d-flex,
+    #kt_app_content_container .dt-container .dt-layout-row {
+        align-items: stretch !important;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    #kt_app_content_container .gt-table-toolbar > *,
+    #kt_app_content_container .dataTables_wrapper > .d-flex > *,
+    #kt_app_content_container .dt-container > .d-flex > *,
+    #kt_app_content_container .dt-container .dt-layout-cell,
+    #kt_app_content_container .dt-container .dt-search,
+    #kt_app_content_container .dt-container .dt-length {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #kt_app_content_container .gt-table-toolbar > .d-flex > .btn,
+    #kt_app_content_container .gt-table-toolbar > .d-flex > a.btn,
+    #kt_app_content_container .gt-table-toolbar > .d-flex > form {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    #kt_app_content_container .dt-container > .d-flex > .d-flex {
+        align-items: stretch;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    #kt_app_content_container .dt-container .dt-search label,
+    #kt_app_content_container .dt-container .dt-length label {
+        display: block;
+        margin-bottom: 0.35rem;
+    }
+
+    #kt_app_content_container .dt-container .dt-length label {
+        display: flex;
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    #kt_app_content_container .dt-container .dt-search input,
+    #kt_app_content_container .dt-container .dt-length select {
+        margin-left: 0;
+    }
+
+    #kt_app_content_container .pagination,
+    #kt_app_content_container .dt-paging nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.25rem;
+        max-width: 100%;
+    }
+
+    /* Tab tetap satu baris dan dapat digeser secara lokal tanpa menggeser halaman. */
+    #kt_app_content_container .nav-tabs,
+    #kt_app_content_container .nav-line-tabs {
+        display: flex;
+        flex-wrap: nowrap;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #kt_app_content_container .nav-tabs > .nav-item,
+    #kt_app_content_container .nav-line-tabs > .nav-item {
+        flex: 0 0 auto;
+    }
+
+    #kt_app_content_container .tab-content,
+    #kt_app_content_container .tab-pane {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #kt_app_content_container .alert {
+        max-width: 100%;
+        padding: 1rem !important;
+        overflow-wrap: anywhere;
+    }
+
+    #kt_app_content_container .alert.d-flex {
+        align-items: flex-start !important;
+    }
+
+    #kt_app_footer .app-container {
+        gap: 0.25rem;
+        padding-right: var(--gt-mobile-gutter) !important;
+        padding-left: var(--gt-mobile-gutter) !important;
+        text-align: center;
+    }
+
+    .dropdown-menu,
+    .menu-sub-dropdown {
+        max-width: calc(100vw - var(--gt-mobile-gutter) - var(--gt-mobile-gutter)) !important;
+    }
+
+    .select2-container--bootstrap5 .select2-dropdown,
+    .searchable-select-dropdown,
+    .flatpickr-calendar {
+        max-width: calc(100vw - var(--gt-mobile-gutter) - var(--gt-mobile-gutter));
+    }
+
+    .offcanvas-start,
+    .offcanvas-end {
+        width: min(100vw, 26rem) !important;
+        max-width: 100vw;
+    }
+
+    .offcanvas-header,
+    .offcanvas-body {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .modal-dialog:not(.modal-fullscreen) {
+        width: calc(100% - var(--gt-mobile-gutter) - var(--gt-mobile-gutter));
+        max-width: none;
+        min-height: calc(100% - var(--gt-mobile-gutter) - var(--gt-mobile-gutter));
+        margin: var(--gt-mobile-gutter) auto;
+    }
+
+    .modal-dialog-scrollable {
+        height: calc(100% - var(--gt-mobile-gutter) - var(--gt-mobile-gutter));
+    }
+
+    .modal-content {
+        max-width: 100%;
+        max-height: calc(100dvh - var(--gt-mobile-gutter) - var(--gt-mobile-gutter));
+        border-radius: 0.75rem;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 1rem;
+    }
+
+    .modal-header {
+        gap: 0.75rem;
+    }
+
+    .modal-header > :first-child {
+        min-width: 0;
+    }
+
+    .modal-title,
+    .modal-header h2 {
+        overflow-wrap: anywhere;
+    }
+
+    .modal-footer {
+        align-items: stretch;
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+    }
+
+    .modal-footer > * {
+        width: 100%;
+        margin: 0 !important;
+    }
+
+    .modal .btn:not(.btn-sm):not(.btn-icon),
+    .offcanvas .btn:not(.btn-sm):not(.btn-icon) {
+        min-height: var(--gt-mobile-control-height);
+    }
+
+    .swal2-popup {
+        width: calc(100vw - var(--gt-mobile-gutter) - var(--gt-mobile-gutter)) !important;
+        max-width: 30rem;
+        padding: 1.25rem !important;
+    }
+
+    .swal2-actions {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .swal2-actions .btn {
+        width: 100%;
+        margin: 0 !important;
+    }
+
+    .position-fixed.top-0.end-0:has(> .toast) {
+        right: var(--gt-mobile-gutter) !important;
+        left: var(--gt-mobile-gutter) !important;
+        padding: var(--gt-mobile-gutter) !important;
+    }
+
+    .position-fixed.top-0.end-0:has(> .toast) > .toast {
+        width: 100%;
+        max-width: none;
     }
 
     .table-responsive.gt-mobile-table-wrapper,
@@ -1415,6 +1827,16 @@ body::-webkit-scrollbar {
 
     .gt-mobile-card-highlight {
         font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 399.98px) {
+    #kt_app_header_container a[href] > .fs-5 {
+        display: none;
+    }
+
+    #kt_app_header_container > .d-flex:last-child {
+        margin-left: auto;
     }
 }
 

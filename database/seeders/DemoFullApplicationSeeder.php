@@ -36,6 +36,7 @@ use App\Models\ReceivableEntry;
 use App\Models\ReportExport;
 use App\Models\RestockRequest;
 use App\Models\RestockRequestItem;
+use App\Models\RetailProductPlacement;
 use App\Models\SalePayment;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
@@ -72,6 +73,7 @@ class DemoFullApplicationSeeder extends Seeder
         'manajemen_gudang' => ['name' => 'Manajemen Gudang', 'username' => 'manajemen-gudang', 'email' => 'manajemen-gudang@gudangtoko.test', 'roles' => ['kepala_gudang', 'purchasing'], 'location' => 'warehouse'],
         'staff_gudang' => ['name' => 'Staff Gudang', 'username' => 'staff-gudang', 'email' => 'staff-gudang@gudangtoko.test', 'roles' => ['staff_gudang'], 'location' => 'warehouse'],
         'toko_internal' => ['name' => 'Toko Internal', 'username' => 'toko-internal', 'email' => 'toko@gudangtoko.test', 'roles' => ['kepala_toko'], 'location' => 'branch'],
+        'staf_toko' => ['name' => 'Staf Toko', 'username' => 'staf-toko', 'email' => 'staf-toko@gudangtoko.test', 'roles' => ['staf_toko'], 'location' => 'branch'],
         'kasir_kepala_toko' => ['name' => 'Kasir / Kepala Toko', 'username' => 'kasir', 'email' => 'kasir@gudangtoko.test', 'roles' => ['kasir', 'kepala_toko'], 'location' => 'branch'],
         'langganan_b2b' => ['name' => 'Langganan / B2B', 'username' => 'langganan-b2b', 'email' => 'langganan-b2b@gudangtoko.test', 'roles' => ['langganan_owner'], 'location' => null],
         'akun_pelanggan' => ['name' => 'Akun Pelanggan', 'username' => 'pelanggan', 'email' => 'pelanggan@gudangtoko.test', 'roles' => ['langganan_staff'], 'location' => null],
@@ -99,6 +101,12 @@ class DemoFullApplicationSeeder extends Seeder
 
             $this->seedInventory($products, $warehouseLocation, $branchLocation, $bin, $users['staff_gudang']);
             $this->seedPricing($products, $branch);
+            foreach ($products as $index => $product) {
+                RetailProductPlacement::query()->updateOrCreate(
+                    ['branch_id' => $branch->id, 'product_id' => $product->id],
+                    ['area' => 'Area Fashion', 'rack' => 'Rak '.($index + 1), 'shelf' => 'Tingkat 1'],
+                );
+            }
             $this->seedPurchasingAndReceipt($warehouse, $supplier, $products[0], $unitPcs, $bin, $users);
             $this->seedRestockAndTransfer($warehouse, $branch, $warehouseLocation, $branchLocation, $bin, $products[1], $unitPcs, $users);
             $this->seedStockOpnameAndLoss($warehouseLocation, $bin, $products[0], $users);

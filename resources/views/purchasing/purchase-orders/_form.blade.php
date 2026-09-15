@@ -41,7 +41,7 @@
 
 <div class="mb-6">
     <h3 class="fs-5 fw-bold mb-1">Informasi Dokumen dan Tujuan</h3>
-    <div class="text-muted fs-7 mb-4">Tentukan supplier, gudang penerima, tanggal, dan ketentuan pembelian.</div>
+    <div class="text-muted fs-7 mb-4">Tentukan supplier, lokasi penerima, tanggal, dan ketentuan pembelian.</div>
     <div class="row g-5">
         <div class="col-md-6">
             <x-metronic.form-group name="supplier_id" label="Supplier" required help="Pemasok aktif yang akan menerima pesanan pembelian ini.">
@@ -54,11 +54,16 @@
             </x-metronic.form-group>
         </div>
         <div class="col-md-6">
-            <x-metronic.form-group name="warehouse_id" label="Gudang Tujuan" required help="Gudang dalam akses lokasi kerja Anda yang akan menerima barang dari supplier.">
-                <select name="warehouse_id" class="form-select form-select-solid" required>
-                    <option value="">Pilih gudang tujuan</option>
-                    @foreach ($warehouses as $warehouse)
-                        <option value="{{ $warehouse->id }}" @selected(old('warehouse_id', $purchaseOrder->warehouse_id ?: $purchaseRequest?->warehouse_id) == $warehouse->id)>{{ $warehouse->code }} - {{ $warehouse->name }}</option>
+            @php
+                $defaultDestinationId = $purchaseOrder->destination_work_location_id
+                    ?: $purchaseOrder->warehouse?->work_location_id
+                    ?: $purchaseRequest?->warehouse?->work_location_id;
+            @endphp
+            <x-metronic.form-group name="destination_work_location_id" label="Lokasi Penerima" required help="Pilih gudang utama atau toko yang menerima barang langsung dari supplier.">
+                <select name="destination_work_location_id" class="form-select form-select-solid" required>
+                    <option value="">Pilih lokasi penerima</option>
+                    @foreach ($destinations as $destination)
+                        <option value="{{ $destination->id }}" @selected(old('destination_work_location_id', $defaultDestinationId) == $destination->id)>{{ $destination->typeLabel() }} - {{ $destination->code }} - {{ $destination->name }}</option>
                     @endforeach
                 </select>
             </x-metronic.form-group>
@@ -69,7 +74,7 @@
             </x-metronic.form-group>
         </div>
         <div class="col-sm-6 col-lg-3">
-            <x-metronic.form-group name="expected_at" label="Perkiraan Tanggal Tiba" help="Perkiraan tanggal barang sampai di gudang tujuan.">
+            <x-metronic.form-group name="expected_at" label="Perkiraan Tanggal Tiba" help="Perkiraan tanggal barang sampai di lokasi penerima.">
                 <input type="date" name="expected_at" value="{{ old('expected_at', optional($purchaseOrder->expected_at)->format('Y-m-d')) }}" class="form-control form-control-solid">
             </x-metronic.form-group>
         </div>

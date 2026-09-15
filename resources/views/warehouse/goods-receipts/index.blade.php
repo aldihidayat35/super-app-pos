@@ -47,14 +47,14 @@
 
         <div class="table-responsive">
             <table class="table table-row-dashed align-middle">
-                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>No Receipt</th><th>PO</th><th>Supplier</th><th>Gudang</th><th>Tanggal</th><th>Penerima</th><th>QC</th><th>Status</th><th></th></tr></thead>
+                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>No Receipt</th><th>PO</th><th>Supplier</th><th>Lokasi Penerima</th><th>Tanggal</th><th>Penerima</th><th>QC</th><th>Status</th><th></th></tr></thead>
                 <tbody>
                 @forelse($receipts as $receipt)
                     <tr>
                         <td class="fw-bold">{{ $receipt->number }}</td>
                         <td>{{ $receipt->purchaseOrder?->number }}</td>
                         <td>{{ $receipt->supplier?->name }}</td>
-                        <td>{{ $receipt->warehouse?->name }}</td>
+                        <td><span class="badge badge-light-primary me-1">{{ $receipt->destinationWorkLocation?->typeLabel() ?? 'Gudang' }}</span>{{ $receipt->destinationName() }}</td>
                         <td>{{ $receipt->received_at?->format('d/m/Y') }}</td>
                         <td>{{ $receipt->receiver?->name }}</td>
                         <td><span class="text-success">{{ $receipt->acceptedQuantity() }}</span> / <span class="text-danger">{{ $receipt->rejectedQuantity() }}</span> / <span class="text-warning">{{ $receipt->damagedQuantity() }}</span></td>

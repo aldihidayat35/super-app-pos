@@ -141,6 +141,7 @@ i.ki-arrows-circle,
 i.ki-refresh { --ki-mask: var(--ki-svg-refresh); }
 i.ki-exit-right,
 i.ki-login { --ki-mask: var(--ki-svg-arrow-right); }
+i.ki-exit-down { --ki-mask: var(--ki-svg-download); }
 
 /* Dashboard, organisasi, dan inventori. */
 i.ki-home-2,
@@ -159,6 +160,7 @@ i.ki-pulse { --ki-mask: var(--ki-svg-chart); }
 i.ki-user,
 i.ki-user-tick,
 i.ki-security-user,
+i.ki-profile,
 i.ki-profile-circle,
 i.ki-profile-user { --ki-mask: var(--ki-svg-user); }
 i.ki-people { --ki-mask: var(--ki-svg-users); }
@@ -182,6 +184,7 @@ i.ki-category { --ki-mask: var(--ki-svg-tag); }
 i.ki-calendar,
 i.ki-calendar-tick { --ki-mask: var(--ki-svg-calendar); }
 i.ki-clock,
+i.ki-timer,
 i.ki-time { --ki-mask: var(--ki-svg-clock); }
 
 /* Keamanan, dokumen, dan tindakan. */
@@ -193,6 +196,7 @@ i.ki-security-check { --ki-mask: var(--ki-svg-shield); }
 i.ki-document,
 i.ki-bill,
 i.ki-file,
+i.ki-file-pdf,
 i.ki-input,
 i.ki-note,
 i.ki-notepad,
@@ -214,6 +218,7 @@ i.ki-check,
 i.ki-checked,
 i.ki-checked-circle,
 i.ki-check-circle,
+i.ki-circle-mark,
 i.ki-list-check,
 i.ki-check-square,
 i.ki-verify { --ki-mask: var(--ki-svg-check); }
@@ -241,6 +246,7 @@ i.ki-route { --ki-mask: var(--ki-svg-send); }
 
 /* Keuangan, komunikasi, dan media. */
 i.ki-wallet,
+i.ki-cash,
 i.ki-calculator,
 i.ki-coin,
 i.ki-dollar { --ki-mask: var(--ki-svg-wallet); }
@@ -258,6 +264,7 @@ i.ki-sun { --ki-mask: var(--ki-svg-sun); }
 i.ki-screen,
 i.ki-laptop { --ki-mask: var(--ki-svg-screen); }
 i.ki-star,
+i.ki-award,
 i.ki-like-shapes,
 i.ki-gift { --ki-mask: var(--ki-svg-star); }
 i.ki-geolocation { --ki-mask: var(--ki-svg-location); }
@@ -291,6 +298,14 @@ i.ki-purchase { --ki-mask: var(--ki-svg-purchase); }
 i.ki-up-square { --ki-mask: var(--ki-svg-up-square); }
 i.ki-warning { --ki-mask: var(--ki-svg-warning); }
 i.ki-12 { --ki-mask: var(--ki-svg-12); }
+i.ki-arrow-back { --ki-mask: var(--ki-svg-arrow-left); }
+i.ki-basket-ok { --ki-mask: var(--ki-svg-cart); }
+i.ki-building { --ki-mask: var(--ki-svg-home); }
+i.ki-calendar-8,
+i.ki-calendar-remove { --ki-mask: var(--ki-svg-calendar); }
+i.ki-chart-line-down-2 { --ki-mask: var(--ki-svg-chart); }
+i.ki-note-2 { --ki-mask: var(--ki-svg-document); }
+i.ki-qr-code { --ki-mask: var(--ki-svg-default); }
 i.ki-abstract-12,
 i.ki-abstract-14,
 i.ki-abstract-25,

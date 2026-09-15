@@ -9,6 +9,7 @@ use App\Exceptions\ServiceException;
 use App\Models\ApprovalRequest;
 use App\Models\ApprovalStep;
 use App\Models\CustomerPriceOverride;
+use App\Models\EmergencyPurchase;
 use App\Models\PriceApprovalRequest;
 use App\Models\ProductPrice;
 use App\Models\User;
@@ -112,6 +113,9 @@ class ApprovalWorkflowService
             if ($approval->required_permission !== null && ! $approver->can($approval->required_permission)) {
                 throw ServiceException::validation('Anda tidak memiliki permission untuk approval ini.');
             }
+            if ($approval->handler_key === 'retail.emergency_purchase' && ! $approver->canAccessWorkLocation((int) $approval->work_location_id)) {
+                throw ServiceException::validation('Approval pembelian darurat hanya untuk toko penugasan Anda.');
+            }
             if ($approval->required_role !== null && ! $approver->hasRole($approval->required_role)) {
                 throw ServiceException::validation('Role Anda tidak sesuai untuk approval ini.');
             }
@@ -156,6 +160,9 @@ class ApprovalWorkflowService
             if ($approval->required_permission !== null && ! $approver->can($approval->required_permission)) {
                 throw ServiceException::validation('Anda tidak memiliki permission untuk approval ini.');
             }
+            if ($approval->handler_key === 'retail.emergency_purchase' && ! $approver->canAccessWorkLocation((int) $approval->work_location_id)) {
+                throw ServiceException::validation('Approval pembelian darurat hanya untuk toko penugasan Anda.');
+            }
 
             $approval->steps()->where('status', ApprovalRequestStatus::PENDING->value)->orderBy('step_order')->first()?->forceFill([
                 'status' => ApprovalRequestStatus::REJECTED,
@@ -164,6 +171,12 @@ class ApprovalWorkflowService
                 'comments' => $comments,
             ])->save();
             $approval->forceFill(['current_status' => ApprovalRequestStatus::REJECTED, 'rejected_by' => $approver->id, 'rejected_at' => now(), 'decision_notes' => $comments])->save();
+            if ($approval->handler_key === 'retail.emergency_purchase' && $approval->subject instanceof EmergencyPurchase) {
+                $purchase = $approval->subject;
+                $purchase->forceFill(['status' => 'rejected'])->save();
+                $purchase->histories()->create(['actor_id' => $approver->id, 'action' => 'rejected',
+                    'from_status' => 'pending_approval', 'to_status' => 'rejected', 'notes' => $comments]);
+            }
 
             $subject = $approval->subject instanceof Model ? $approval->subject : null;
             $this->audit->record('approval.rejected', $approval->module, $approver, $subject, [], ['approval_id' => $approval->id, 'comments' => $comments], $comments, correlationId: $approval->correlation_id);
@@ -174,6 +187,17 @@ class ApprovalWorkflowService
 
     private function executeHandler(ApprovalRequest $approval, User $approver): void
     {
+        if ($approval->handler_key === 'retail.emergency_purchase') {
+            $purchase = $approval->subject;
+            if (! $purchase instanceof EmergencyPurchase || $purchase->status !== 'pending_approval') {
+                throw ServiceException::validation('Permintaan pembelian darurat tidak lagi menunggu approval.');
+            }
+            $purchase->forceFill(['status' => 'approved'])->save();
+            $purchase->histories()->create(['actor_id' => $approver->id, 'action' => 'approved',
+                'from_status' => 'pending_approval', 'to_status' => 'approved', 'notes' => $approval->decision_notes]);
+
+            return;
+        }
         if ($approval->handler_key !== 'pricing.approval') {
             return;
         }

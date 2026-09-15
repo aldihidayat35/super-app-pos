@@ -20,6 +20,7 @@ class StorePosSaleRequest extends FormRequest
             'branch_id' => ['required', Rule::exists('branches', 'id')->where('is_active', true)],
             'customer_id' => ['nullable', Rule::exists('customers', 'id')->where('is_active', true)],
             'idempotency_key' => ['required', 'string', 'max:120'],
+            'emergency_purchase_id' => ['nullable', 'integer', 'exists:emergency_purchases,id'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', Rule::exists('products', 'id')->where('status', 'active')],

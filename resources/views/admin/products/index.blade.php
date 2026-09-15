@@ -47,8 +47,8 @@
     @forelse($products as $product)
         <tr>
             <td class="fw-bold"><span data-mobile-primary>{{ $product->sku }}</span></td><td><a href="{{ route('admin.products.show', $product) }}" class="fw-bold text-gray-900 text-hover-primary" data-mobile-secondary>{{ $product->name }}</a></td><td><span data-mobile-subtitle>{{ $product->category?->name }}</span></td><td>{{ $product->brand?->name ?: '-' }}</td><td>{{ $product->baseUnit?->symbol }}</td><td><x-metronic.status-badge :status="$product->status->value" :label="$product->status->label()" /></td><td class="text-end fw-bold"><span data-mobile-highlight data-mobile-highlight-label="Stok Total">{{ intval($product->total_stock) }}</span></td>
-            <td>@can('viewSensitiveMargin', App\Models\Product::class){{ App\Support\CurrencyFormatter::rupiah($product->cost_price) }}@else - @endcan</td>
-            <td>@can('viewSensitiveMargin', App\Models\Product::class){{ App\Support\CurrencyFormatter::rupiah($product->minimum_price) }}@else - @endcan</td>
+            <td>{{ App\Support\CurrencyFormatter::rupiah($product->cost_price) }}</td>
+            <td>{{ App\Support\CurrencyFormatter::rupiah($product->minimum_price) }}</td>
             <td class="text-end"><a href="{{ route('admin.products.show', $product) }}" class="btn btn-sm btn-light">Detail</a> @can('update', $product)<a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-light-primary">Edit</a>@endcan</td>
         </tr>
     @empty

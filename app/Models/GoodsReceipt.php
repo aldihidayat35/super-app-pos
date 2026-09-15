@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class GoodsReceipt extends Model
 {
-    protected $fillable = ['number', 'purchase_order_id', 'warehouse_id', 'supplier_id', 'received_at', 'delivery_note_number', 'received_by', 'status', 'posted_at', 'posted_by', 'actual_freight_cost', 'actual_additional_cost', 'notes', 'proof_path', 'idempotency_key'];
+    protected $fillable = ['number', 'purchase_order_id', 'warehouse_id', 'destination_work_location_id', 'supplier_id', 'received_at', 'delivery_note_number', 'received_by', 'status', 'posted_at', 'posted_by', 'actual_freight_cost', 'actual_additional_cost', 'notes', 'proof_path', 'idempotency_key'];
 
     protected function casts(): array
     {
@@ -36,6 +36,21 @@ class GoodsReceipt extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    /** @return BelongsTo<WorkLocation, $this> */
+    public function destinationWorkLocation(): BelongsTo
+    {
+        return $this->belongsTo(WorkLocation::class, 'destination_work_location_id');
+    }
+
+    public function destinationName(): string
+    {
+        if ($this->destination_work_location_id !== null) {
+            return (string) $this->destinationWorkLocation->name;
+        }
+
+        return $this->warehouse_id !== null ? (string) $this->warehouse->name : '-';
     }
 
     /** @return BelongsTo<Supplier, $this> */

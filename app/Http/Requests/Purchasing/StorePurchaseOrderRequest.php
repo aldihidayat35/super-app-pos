@@ -2,11 +2,21 @@
 
 namespace App\Http\Requests\Purchasing;
 
+use App\Models\Warehouse;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StorePurchaseOrderRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('destination_work_location_id') && $this->integer('warehouse_id') > 0) {
+            $this->merge([
+                'destination_work_location_id' => Warehouse::query()->whereKey($this->integer('warehouse_id'))->value('work_location_id'),
+            ]);
+        }
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->can('purchase_orders.create') ?? false;
@@ -18,11 +28,13 @@ class StorePurchaseOrderRequest extends FormRequest
         $workLocationIds = $this->user()?->permittedWorkLocationIds() ?? [];
 
         return [
-            'warehouse_id' => [
+            'warehouse_id' => ['nullable', Rule::exists('warehouses', 'id')->where(fn ($query) => $query->where('is_active', true)->whereIn('work_location_id', $workLocationIds))],
+            'destination_work_location_id' => [
                 'required',
-                Rule::exists('warehouses', 'id')->where(fn ($query) => $query
+                Rule::exists('work_locations', 'id')->where(fn ($query) => $query
                     ->where('is_active', true)
-                    ->whereIn('work_location_id', $workLocationIds)),
+                    ->whereIn('type', ['warehouse', 'branch'])
+                    ->whereIn('id', $workLocationIds)),
             ],
             'supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('is_active', true)],
             'purchase_request_id' => ['nullable', 'exists:purchase_requests,id'],
@@ -47,7 +59,7 @@ class StorePurchaseOrderRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'warehouse_id' => 'gudang tujuan',
+            'destination_work_location_id' => 'lokasi penerima',
             'supplier_id' => 'supplier',
             'purchase_request_id' => 'referensi permintaan pembelian',
             'order_date' => 'tanggal pesanan',

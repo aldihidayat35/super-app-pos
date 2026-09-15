@@ -10,7 +10,7 @@
     <p class="muted">{{ config('app.name') }}</p>
     <table>
         <tr><th>No Receipt</th><td>{{ $receipt->number }}</td><th>PO</th><td>{{ $receipt->purchaseOrder?->number }}</td></tr>
-        <tr><th>Supplier</th><td>{{ $receipt->supplier?->name }}</td><th>Gudang</th><td>{{ $receipt->warehouse?->name }}</td></tr>
+        <tr><th>Supplier</th><td>{{ $receipt->supplier?->name }}</td><th>Lokasi penerima</th><td>{{ $receipt->destinationName() }}</td></tr>
         <tr><th>Tanggal</th><td>{{ $receipt->received_at?->format('d/m/Y') }}</td><th>Penerima</th><td>{{ $receipt->receiver?->name }}</td></tr>
     </table>
     <table>

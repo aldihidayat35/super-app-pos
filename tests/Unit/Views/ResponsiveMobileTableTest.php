@@ -51,7 +51,8 @@ class ResponsiveMobileTableTest extends TestCase
         self::assertStringContainsString('#kt_app_wrapper {', $styles);
         self::assertStringContainsString('margin-top: 0 !important', $styles);
         self::assertStringContainsString('#kt_app_content_container .card > .card-body', $styles);
-        self::assertStringContainsString('padding: 0.75rem !important', $styles);
+        self::assertStringContainsString('padding: 1rem !important', $styles);
+        self::assertStringContainsString('.card > .card-body.p-0', $styles);
         self::assertStringContainsString(".gt-mobile-card-trigger[aria-expanded='true']", $styles);
         self::assertStringContainsString('table.gt-mobile-ready > tbody > tr.is-mobile-expanded', $styles);
         self::assertStringContainsString('border-color: rgba(var(--bs-primary-rgb), 0.65)', $styles);

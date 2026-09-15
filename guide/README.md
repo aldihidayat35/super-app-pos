@@ -26,7 +26,7 @@ Versi paling detail dan siap dibuka di browser/cetak tersedia di:
    Untuk `purchasing`. Fokus pada master supplier, permintaan pembelian, PO, koordinasi receipt, HPP, selisih, dan evaluasi supplier.
 
 6. [Toko Internal](toko-internal.md)
-   Untuk `kepala_toko`, `kasir`, `supervisor_shift`, dan karyawan toko. Fokus pada POS, shift kasir, closing, restock, terima transfer, retur toko, piutang toko, dan kehadiran.
+   Untuk `kepala_toko`, `staf_toko`, `kasir`, `supervisor_shift`, dan karyawan toko. Fokus pada etalase, POS, pembelian langsung toko, pengajuan produk baru, stok reguler dan darurat, shift, retur toko, piutang toko, serta kehadiran.
 
 7. [Langganan/B2B](langganan-b2b.md)
    Untuk `langganan_owner` dan `langganan_staff`. Fokus pada portal pelanggan: katalog, keranjang, checkout, order, invoice, pembayaran, pengiriman, bukti terima, reorder, profil usaha, dan komplain.
@@ -58,7 +58,7 @@ Password seluruh akun demo: `password`
 
 ## Prinsip umum aplikasi
 
-GudangToko memakai pola warehouse-first. Artinya, gudang menjadi sumber kebenaran untuk stok, mutasi, HPP, pembelian, penerimaan, dan fulfillment. Toko internal dan portal B2B menggunakan stok yang sudah tersedia atau sudah di-reserve melalui proses yang diaudit.
+GudangToko mengelola persediaan berdasarkan lokasi kerja. Barang toko dapat berasal dari transfer gudang utama atau pembelian pemasok yang diterima langsung di toko. Keduanya tetap memakai dokumen, persetujuan, penerimaan, mutasi stok, dan perhitungan HPP yang dapat diaudit. Rincian proses toko tersedia pada [Pembelian Langsung dan Persediaan Toko](../docs/STORE-INBOUND-AND-EMERGENCY-STOCK.md).
 
 Prinsip penting:
 

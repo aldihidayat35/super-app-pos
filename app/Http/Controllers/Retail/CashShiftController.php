@@ -15,11 +15,13 @@ use App\Models\CashShift;
 use App\Models\ShiftExpense;
 use App\Services\Attendance\AttendanceService;
 use App\Services\Retail\CashShiftService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CashShiftController extends Controller
@@ -111,8 +113,18 @@ class CashShiftController extends Controller
         abort_unless($request->user()->can('cash_shifts.view'), 403);
         $shift = $service->current($request->user());
 
+        if ($shift instanceof CashShift) {
+            $shift = $shift->load([
+                'branch', 'cashier', 'attendance', 'expenses.creator',
+                'cashCounts',
+                'sales' => fn ($q) => $q->whereIn('status', ['completed', 'returned'])->orderBy('completed_at'),
+                'sales.payments',
+                'approvals.actor',
+            ]);
+        }
+
         return view('retail.shifts.current', [
-            'shift' => $shift?->load(['branch', 'cashier', 'attendance', 'expenses']),
+            'shift' => $shift,
             'summary' => $shift instanceof CashShift ? $service->summary($shift) : null,
         ]);
     }
@@ -210,5 +222,25 @@ class CashShiftController extends Controller
             'shift' => $shift->load(['branch', 'cashier', 'expenses', 'cashCounts', 'sales.payments']),
             'summary' => $service->summary($shift),
         ]);
+    }
+
+    public function exportPdf(CashShift $shift, CashShiftService $service): Response
+    {
+        $this->authorize('view', $shift);
+
+        $shift = $shift->load(['branch', 'cashier', 'expenses.creator', 'cashCounts',
+            'sales' => fn ($q) => $q->whereIn('status', ['completed', 'returned'])->orderBy('completed_at'),
+            'sales.payments',
+            'approvals.actor',
+        ]);
+        $summary = $service->summary($shift);
+
+        $html = view('retail.shifts.pdf-report', compact('shift', 'summary'))->render();
+
+        $pdf = Pdf::loadHtml($html)
+            ->setPaper('a4', 'portrait')
+            ->setOptions(['isRemoteEnabled' => true]);
+
+        return $pdf->stream('Laporan-Shift-'.$shift->number.'.pdf');
     }
 }

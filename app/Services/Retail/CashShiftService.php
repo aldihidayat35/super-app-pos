@@ -103,6 +103,11 @@ class CashShiftService
                 throw ServiceException::validation('Pengeluaran di atas batas kasir membutuhkan supervisor.');
             }
 
+            $proofPath = null;
+            if (isset($data['proof']) && $data['proof'] instanceof \Illuminate\Http\UploadedFile) {
+                $proofPath = $data['proof']->store('shift-expenses', 'public');
+            }
+
             return ShiftExpense::query()->create([
                 'cash_shift_id' => $shift->id,
                 'branch_id' => $shift->branch_id,
@@ -112,7 +117,7 @@ class CashShiftService
                 'payment_method' => $data['payment_method'] ?? PaymentMethod::CASH->value,
                 'amount' => $data['amount'],
                 'notes' => $data['notes'] ?? null,
-                'proof_path' => $data['proof_path'] ?? null,
+                'proof_path' => $proofPath,
                 'spent_at' => $data['spent_at'] ?? now(),
             ]);
         });
@@ -128,7 +133,10 @@ class CashShiftService
         $creditSales = $this->paymentTotal($shift, PaymentMethod::CREDIT->value);
         $expenses = $this->expenseTotal($shift);
         $refunds = $this->refundTotal($shift);
-        $expectedCash = Decimal::sub(Decimal::add((string) $shift->opening_cash_amount, $cashSales, 2), Decimal::add($expenses, $refunds, 2), 2);
+        $supplierRefunds = Decimal::normalize((string) DB::table('emergency_purchases')
+            ->where('supplier_refund_cash_shift_id', $shift->id)->sum('supplier_refund_amount'), 2);
+        $expectedCash = Decimal::sub(Decimal::add(Decimal::add((string) $shift->opening_cash_amount, $cashSales, 2),
+            $supplierRefunds, 2), Decimal::add($expenses, $refunds, 2), 2);
         $actualCash = Decimal::normalize($shift->actual_cash_amount ?? 0, 2);
 
         return [
@@ -140,6 +148,7 @@ class CashShiftService
             'non_cash_sales' => Decimal::add(Decimal::add($transferSales, $qrisSales, 2), $manualSales, 2),
             'receivable_sales' => $creditSales,
             'refunds' => $refunds,
+            'supplier_refunds' => $supplierRefunds,
             'expenses' => $expenses,
             'expected_cash' => $expectedCash,
             'actual_cash' => $actualCash,

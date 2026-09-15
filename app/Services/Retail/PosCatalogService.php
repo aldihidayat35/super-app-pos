@@ -18,7 +18,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PosCatalogService
 {
-    public function __construct(private readonly PriceResolverService $prices) {}
+    public function __construct(
+        private readonly PriceResolverService $prices,
+        private readonly EmergencyStockService $emergencyStock,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $filters
@@ -60,6 +63,8 @@ class PosCatalogService
 
         $page = max((int) ($filters['page'] ?? 1), 1);
         $perPage = min(max((int) ($filters['per_page'] ?? 24), 12), 48);
+        $inStock = filter_var($filters['in_stock'] ?? false, FILTER_VALIDATE_BOOL);
+        $emergencyProductIds = $inStock ? $this->emergencyStock->availableProductIds($branch) : [];
         $query = Product::query()
             ->with($this->productRelations((int) $branch->work_location_id))
             ->where('status', 'active')
@@ -70,9 +75,11 @@ class PosCatalogService
                 ->orWhereHas('barcodes', fn (Builder $barcode) => $barcode->where('is_active', true)->where('code', 'like', "%{$search}%"))))
             ->when(filled($filters['category_id'] ?? null), fn (Builder $query) => $query->where('category_id', $filters['category_id']))
             ->when(filled($filters['brand_id'] ?? null), fn (Builder $query) => $query->where('brand_id', $filters['brand_id']))
-            ->when(filter_var($filters['in_stock'] ?? false, FILTER_VALIDATE_BOOL), fn (Builder $query) => $query->whereHas('stocks', fn (Builder $stock) => $stock
-                ->where('work_location_id', $branch->work_location_id)
-                ->whereRaw('(quantity_on_hand - quantity_reserved - quantity_damaged) > 0')))
+            ->when($inStock, fn (Builder $query) => $query->where(fn (Builder $available) => $available
+                ->whereHas('stocks', fn (Builder $stock) => $stock
+                    ->where('work_location_id', $branch->work_location_id)
+                    ->whereRaw('(quantity_on_hand - quantity_reserved - quantity_damaged) > 0'))
+                ->when($emergencyProductIds !== [], fn (Builder $inner) => $inner->orWhereIn('products.id', $emergencyProductIds))))
             ->orderBy('name');
 
         $products = $query->paginate($perPage, ['*'], 'page', $page);
@@ -130,7 +137,10 @@ class PosCatalogService
         $stock = $this->defaultStock($product);
         $availableBase = $stock instanceof Stock ? $stock->available_quantity : '0.0000';
         $branchAvailableBase = $this->availableBaseQuantity($product);
-        $availableUnit = Decimal::div($availableBase, $unit['factor'], 4, 6, 4);
+        $emergencyAvailableBase = $this->emergencyStock->available($branch, (int) $product->id);
+        $sellableBase = Decimal::add($availableBase, $emergencyAvailableBase, 4);
+        $branchSellableBase = Decimal::add($branchAvailableBase, $emergencyAvailableBase, 4);
+        $availableUnit = Decimal::div($sellableBase, $unit['factor'], 4, 6, 4);
         $requiredBase = (string) $pricing['quantity_base'];
         $status = $this->priceStatus($pricing);
         $showSensitive = $cashier->can('margins.view_sensitive');
@@ -172,9 +182,14 @@ class PosCatalogService
             'quantity' => Decimal::normalize($quantity),
             'stock_base' => $availableBase,
             'branch_stock_base' => $branchAvailableBase,
+            'regular_stock_base' => $availableBase,
+            'regular_branch_stock_base' => $branchAvailableBase,
+            'emergency_stock_base' => $emergencyAvailableBase,
+            'sellable_stock_base' => $sellableBase,
+            'branch_sellable_stock_base' => $branchSellableBase,
             'stock' => $availableUnit,
-            'stock_sufficient' => Decimal::compare($availableBase, $requiredBase) >= 0,
-            'stock_low' => Decimal::compare($availableBase, (string) $product->minimum_stock) <= 0,
+            'stock_sufficient' => Decimal::compare($sellableBase, $requiredBase) >= 0,
+            'stock_low' => Decimal::compare($sellableBase, (string) $product->minimum_stock) <= 0,
             'warehouse_location_id' => $stock instanceof Stock ? $stock->warehouse_location_id : null,
             'pricing' => $pricingPayload,
         ];

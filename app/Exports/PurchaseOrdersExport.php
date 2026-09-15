@@ -17,7 +17,7 @@ class PurchaseOrdersExport implements FromCollection, WithHeadings
         return $this->purchaseOrders->map(fn ($po): array => [
             $po->number,
             $po->supplier?->name,
-            $po->warehouse?->name,
+            $po->destinationName(),
             $po->order_date?->format('Y-m-d'),
             $po->expected_at?->format('Y-m-d'),
             $po->grand_total,
@@ -31,6 +31,6 @@ class PurchaseOrdersExport implements FromCollection, WithHeadings
     /** @return list<string> */
     public function headings(): array
     {
-        return ['Nomor', 'Supplier', 'Gudang', 'Tanggal', 'ETA', 'Total', 'Ordered', 'Received', 'Outstanding', 'Status'];
+        return ['Nomor', 'Supplier', 'Lokasi Penerima', 'Tanggal', 'ETA', 'Total', 'Ordered', 'Received', 'Outstanding', 'Status'];
     }
 }

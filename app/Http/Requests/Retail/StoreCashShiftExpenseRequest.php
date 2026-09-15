@@ -19,7 +19,7 @@ class StoreCashShiftExpenseRequest extends FormRequest
             'payment_method' => ['required', 'in:cash,bank_transfer,qris,manual'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'proof_path' => ['nullable', 'string', 'max:255'],
+            'proof' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'spent_at' => ['nullable', 'date'],
         ];
     }

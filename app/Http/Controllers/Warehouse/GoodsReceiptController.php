@@ -63,6 +63,7 @@ class GoodsReceiptController extends Controller
             'receipt' => $goodsReceipt->load([
                 'purchaseOrder.items',
                 'warehouse.workLocation',
+                'destinationWorkLocation',
                 'supplier',
                 'receiver',
                 'items.product',
@@ -116,7 +117,7 @@ class GoodsReceiptController extends Controller
         $this->authorize('view', $goodsReceipt);
 
         return view('warehouse.goods-receipts.print', [
-            'receipt' => $goodsReceipt->load(['purchaseOrder', 'warehouse.workLocation', 'supplier', 'receiver', 'items.warehouseLocation']),
+            'receipt' => $goodsReceipt->load(['purchaseOrder', 'warehouse.workLocation', 'destinationWorkLocation', 'supplier', 'receiver', 'items.warehouseLocation']),
         ]);
     }
 
@@ -126,7 +127,7 @@ class GoodsReceiptController extends Controller
 
         return response()->streamDownload(function () use ($request): void {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Nomor', 'PO', 'Supplier', 'Gudang', 'Tanggal', 'Penerima', 'Accepted', 'Rejected', 'Damaged', 'Status']);
+            fputcsv($handle, ['Nomor', 'PO', 'Supplier', 'Lokasi Penerima', 'Tanggal', 'Penerima', 'Accepted', 'Rejected', 'Damaged', 'Status']);
 
             $this->query($request)->chunk(200, function ($receipts) use ($handle): void {
                 foreach ($receipts as $receipt) {
@@ -134,7 +135,7 @@ class GoodsReceiptController extends Controller
                         $receipt->number,
                         $receipt->purchaseOrder?->number,
                         $receipt->supplier?->name,
-                        $receipt->warehouse?->name,
+                        $receipt->destinationName(),
                         optional($receipt->received_at)->format('Y-m-d'),
                         $receipt->receiver?->name,
                         $receipt->acceptedQuantity(),
@@ -152,8 +153,13 @@ class GoodsReceiptController extends Controller
     private function query(Request $request): mixed
     {
         return GoodsReceipt::query()
-            ->with(['purchaseOrder', 'supplier', 'warehouse', 'receiver', 'items'])
-            ->whereHas('warehouse', fn ($query) => $query->whereIn('work_location_id', $request->user()?->permittedWorkLocationIds() ?? []))
+            ->with(['purchaseOrder', 'supplier', 'warehouse', 'destinationWorkLocation', 'receiver', 'items'])
+            ->where(function ($query) use ($request): void {
+                $locationIds = $request->user()?->permittedWorkLocationIds() ?? [];
+                $query->whereIn('destination_work_location_id', $locationIds)
+                    ->orWhere(fn ($legacy) => $legacy->whereNull('destination_work_location_id')
+                        ->whereHas('warehouse', fn ($warehouse) => $warehouse->whereIn('work_location_id', $locationIds)));
+            })
             ->when($request->integer('supplier_id') > 0, fn ($query) => $query->where('supplier_id', $request->integer('supplier_id')))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('received_at', '>=', $request->query('date_from')))
@@ -167,9 +173,14 @@ class GoodsReceiptController extends Controller
     {
         $readyStatuses = [PurchaseOrderStatus::APPROVED, PurchaseOrderStatus::SENT_TO_SUPPLIER, PurchaseOrderStatus::PARTIALLY_RECEIVED];
         $purchaseOrders = PurchaseOrder::query()
-            ->with(['supplier', 'warehouse.workLocation', 'items.product', 'items.unit'])
+            ->with(['supplier', 'warehouse.workLocation', 'destinationWorkLocation', 'items.product', 'items.unit'])
             ->whereIn('status', $readyStatuses)
-            ->whereHas('warehouse', fn ($query) => $query->whereIn('work_location_id', $request->user()?->permittedWorkLocationIds() ?? []))
+            ->where(function ($query) use ($request): void {
+                $locationIds = $request->user()?->permittedWorkLocationIds() ?? [];
+                $query->whereIn('destination_work_location_id', $locationIds)
+                    ->orWhere(fn ($legacy) => $legacy->whereNull('destination_work_location_id')
+                        ->whereHas('warehouse', fn ($warehouse) => $warehouse->whereIn('work_location_id', $locationIds)));
+            })
             ->latest('order_date')
             ->limit(100)
             ->get();
@@ -180,8 +191,8 @@ class GoodsReceiptController extends Controller
 
         return [
             'purchaseOrders' => $purchaseOrders,
-            'selectedPo' => $selectedPo?->loadMissing(['items.product', 'items.unit', 'warehouse.workLocation']),
-            'warehouseLocations' => $selectedPo
+            'selectedPo' => $selectedPo?->loadMissing(['items.product', 'items.unit', 'warehouse.workLocation', 'destinationWorkLocation']),
+            'warehouseLocations' => $selectedPo?->warehouse_id
                 ? WarehouseLocation::query()->where('warehouse_id', $selectedPo->warehouse_id)->where('is_active', true)->orderBy('full_code')->get()
                 : collect(),
         ];

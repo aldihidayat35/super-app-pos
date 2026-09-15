@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class PurchaseOrder extends Model
 {
     protected $fillable = [
-        'number', 'warehouse_id', 'supplier_id', 'purchase_request_id', 'order_date', 'expected_at', 'payment_term_days', 'notes', 'status',
+        'number', 'warehouse_id', 'destination_work_location_id', 'supplier_id', 'purchase_request_id', 'order_date', 'expected_at', 'payment_term_days', 'notes', 'status',
         'created_by', 'submitted_at', 'submitted_by', 'approved_at', 'approved_by', 'sent_at', 'sent_by', 'cancelled_at', 'cancelled_by', 'cancel_reason',
         'items_subtotal', 'header_discount', 'freight_cost', 'additional_cost', 'grand_total',
     ];
@@ -42,6 +42,21 @@ class PurchaseOrder extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    /** @return BelongsTo<WorkLocation, $this> */
+    public function destinationWorkLocation(): BelongsTo
+    {
+        return $this->belongsTo(WorkLocation::class, 'destination_work_location_id');
+    }
+
+    public function destinationName(): string
+    {
+        if ($this->destination_work_location_id !== null) {
+            return (string) $this->destinationWorkLocation->name;
+        }
+
+        return $this->warehouse_id !== null ? (string) $this->warehouse->name : '-';
     }
 
     /** @return BelongsTo<Supplier, $this> */

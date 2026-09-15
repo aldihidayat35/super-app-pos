@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests\Warehouse;
 
+use App\Models\PurchaseOrder;
+use App\Models\WarehouseLocation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreGoodsReceiptRequest extends FormRequest
 {
@@ -37,5 +40,25 @@ class StoreGoodsReceiptRequest extends FormRequest
             'items.*.qc_notes' => ['nullable', 'string', 'max:500'],
             'action' => ['nullable', 'in:draft,post'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $purchaseOrder = PurchaseOrder::query()->find($this->integer('purchase_order_id'));
+            if (! $purchaseOrder) {
+                return;
+            }
+
+            foreach ((array) $this->input('items', []) as $index => $item) {
+                $locationId = (int) ($item['warehouse_location_id'] ?? 0);
+                if ($locationId === 0) {
+                    continue;
+                }
+                if (! $purchaseOrder->warehouse_id || ! WarehouseLocation::query()->whereKey($locationId)->where('warehouse_id', $purchaseOrder->warehouse_id)->exists()) {
+                    $validator->errors()->add("items.{$index}.warehouse_location_id", 'Lokasi rak hanya boleh dipilih dari gudang tujuan PO. Penerimaan toko tidak memakai rak gudang utama.');
+                }
+            }
+        });
     }
 }

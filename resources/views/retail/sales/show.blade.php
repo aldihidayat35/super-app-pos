@@ -32,8 +32,16 @@
                         @foreach($sale->items as $item)
                             <tr>
                                 <td>{{ $item->sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td>
-                                <td>{{ qty($item->quantity) }} {{ $item->unit_name_snapshot }}<div class="text-muted">Base {{ qty($item->base_quantity) }}</div></td>
-                                @if($canSensitive)<td>HPP Rp {{ number_format((float) $item->hpp_snapshot, 0, ',', '.') }}<div class="text-muted">Margin Rp {{ number_format((float) $item->margin_amount, 0, ',', '.') }}</div></td>@endif
+                                <td>{{ qty($item->quantity) }} {{ $item->unit_name_snapshot }}<div class="text-muted">Base {{ qty($item->base_quantity) }}</div>
+                                    @foreach($item->allocations as $allocation)
+                                        <div class="text-muted">{{ $allocation->source === 'normal' ? 'Stok toko' : 'Darurat' }}: {{ qty($allocation->base_quantity) }}
+                                            @if($allocation->emergencyItem?->purchase && auth()->user()->can('emergency_purchases.view'))
+                                                · <a href="{{ route('retail.emergency.show', $allocation->emergencyItem->purchase) }}">{{ $allocation->emergencyItem->purchase->number }}</a>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </td>
+                                @if($canSensitive)<td>HPP normal Rp {{ number_format((float) $item->hpp_snapshot, 0, ',', '.') }}<div class="text-muted">Margin bersih Rp {{ number_format((float) $item->margin_amount, 0, ',', '.') }}</div>@foreach($item->allocations->where('source','emergency') as $allocation)<div class="text-muted">Biaya darurat Rp {{ number_format((float) $allocation->actual_cogs_amount, 0, ',', '.') }}</div>@endforeach</td>@endif
                                 <td>Rp {{ number_format((float) $item->selected_price, 0, ',', '.') }}<div class="text-muted">Diskon {{ $item->discount_percent }}%</div></td>
                                 <td class="fw-bold">Rp {{ number_format((float) $item->line_total, 0, ',', '.') }}</td>
                             </tr>

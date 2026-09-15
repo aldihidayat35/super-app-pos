@@ -9,7 +9,7 @@ class PosReturnItem extends Model
 {
     protected $fillable = [
         'pos_return_id', 'pos_sale_item_id', 'product_id', 'warehouse_location_id', 'quantity', 'condition',
-        'refund_amount', 'reason',
+        'refund_amount', 'reason', 'normal_quantity', 'emergency_quantity', 'reversed_cogs_amount', 'reversed_margin_amount',
     ];
 
     protected function casts(): array
@@ -17,6 +17,10 @@ class PosReturnItem extends Model
         return [
             'quantity' => 'decimal:4',
             'refund_amount' => 'decimal:2',
+            'normal_quantity' => 'decimal:4',
+            'emergency_quantity' => 'decimal:4',
+            'reversed_cogs_amount' => 'decimal:2',
+            'reversed_margin_amount' => 'decimal:2',
         ];
     }
 

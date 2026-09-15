@@ -20,7 +20,7 @@ class PosSaleController extends Controller
         $this->authorize('view', $sale);
 
         return view('retail.sales.show', [
-            'sale' => $sale->load(['items.product', 'items.unit', 'payments', 'branch', 'cashier', 'customer', 'stockMutations']),
+            'sale' => $sale->load(['items.product', 'items.unit', 'items.allocations.emergencyItem.purchase', 'payments', 'branch', 'cashier', 'customer', 'stockMutations']),
         ]);
     }
 
@@ -61,7 +61,7 @@ class PosSaleController extends Controller
     {
         $this->authorize('return', $sale);
 
-        return view('retail.sales.return', ['sale' => $sale->load(['items.product', 'branch', 'cashier'])]);
+        return view('retail.sales.return', ['sale' => $sale->load(['items.product', 'items.allocations', 'branch', 'cashier'])]);
     }
 
     public function return(StorePosReturnRequest $request, PosSale $sale, PosService $service): RedirectResponse

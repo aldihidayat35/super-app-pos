@@ -81,7 +81,7 @@ class DashboardReportTest extends TestCase
             ->assertSee(route('audit.anomalies.index', ['status' => 'open']), false)
             ->assertSee(route('warehouse.stocks.index', ['status' => 'critical']), false);
         $this->actingAs($this->owner)->get(route('warehouse.dashboard'))->assertOk()->assertSee('Dashboard Gudang')->assertSee('Nilai Persediaan');
-        $this->actingAs($this->retail)->get(route('retail.dashboard'))->assertOk()->assertSee('Dashboard Cabang')->assertSee('Rata-rata Nota');
+        $this->actingAs($this->retail)->get(route('retail.dashboard'))->assertOk()->assertSee('Dashboard Retail')->assertSee('Rata-rata Nota');
         $this->actingAs($this->owner)->get(route('reports.daily.index'))->assertOk()->assertSee('Laporan Harian Owner');
         $this->actingAs($this->owner)->get(route('reports.warehouse.index'))->assertOk()->assertSee('Laporan Gudang');
         $this->actingAs($this->owner)->get(route('reports.retail.index'))->assertOk()->assertSee('Laporan Toko');

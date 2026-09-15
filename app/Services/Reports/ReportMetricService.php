@@ -145,12 +145,15 @@ class ReportMetricService
     public function warehouseDashboard(User $user, array $filters): array
     {
         return Cache::remember($this->cacheKey('warehouse', $user, $filters), 60, function () use ($filters): array {
-            $stock = $this->stockSummary($filters);
+            $stockHealth = $this->stockHealth($filters);
+            $stock = $this->stockSummary($filters, $stockHealth);
             $warehouseIds = $this->warehouseIds($filters);
+            $mutationCounts = $this->warehouseMutationCounts($filters);
+            $movementCharts = $this->stockMovementCharts($filters);
 
             return [
                 'kpis' => [
-                    'total_products' => DB::table('stocks')->whereIn('work_location_id', $filters['location_ids'])->distinct()->count('product_id'),
+                    'total_products' => $stock['total_products'],
                     'on_hand_quantity' => $stock['on_hand_quantity'],
                     'available_quantity' => $stock['available_quantity'],
                     'reserved_quantity' => $stock['reserved_quantity'],
@@ -158,8 +161,8 @@ class ReportMetricService
                     'stock_value' => $stock['stock_value'],
                     'critical_count' => $stock['critical_count'],
                     'empty_count' => $stock['empty_count'],
-                    'incoming_count' => $this->mutationCount($filters, [StockMutationType::RECEIVE->value, StockMutationType::RETURN_IN->value, StockMutationType::TRANSFER_IN->value]),
-                    'outgoing_count' => $this->mutationCount($filters, [StockMutationType::ISSUE->value, StockMutationType::RETURN_OUT->value, StockMutationType::TRANSFER_OUT->value]),
+                    'incoming_count' => $mutationCounts['incoming'],
+                    'outgoing_count' => $mutationCounts['outgoing'],
                     'pending_po' => DB::table('purchase_orders')->whereIn('warehouse_id', $warehouseIds)->whereIn('status', [PurchaseOrderStatus::SUBMITTED->value, PurchaseOrderStatus::APPROVED->value, PurchaseOrderStatus::SENT_TO_SUPPLIER->value, PurchaseOrderStatus::PARTIALLY_RECEIVED->value])->count(),
                     'pending_transfer' => $this->locationScopedCount('stock_transfers', 'source_work_location_id', $filters, [StockTransferStatus::PENDING_APPROVAL->value, StockTransferStatus::APPROVED->value, StockTransferStatus::PACKING->value, StockTransferStatus::SHIPPED->value]),
                     'pending_order' => DB::table('b2b_orders')
@@ -171,7 +174,7 @@ class ReportMetricService
                     'posted_receipts' => DB::table('goods_receipts')->whereIn('warehouse_id', $warehouseIds)->where('status', GoodsReceiptStatus::POSTED->value)->whereBetween('posted_at', [$filters['start'], $filters['end']])->count(),
                     'open_opname' => $this->locationScopedCount('stock_opnames', 'work_location_id', $filters, [StockOpnameStatus::DRAFT->value, StockOpnameStatus::COUNTING->value, StockOpnameStatus::PENDING_APPROVAL->value]),
                 ],
-                'stock_alerts' => $this->warehouseStockAlerts($filters),
+                'stock_alerts' => $stockHealth['alerts'],
                 'large_mutations' => $this->largeMutations($filters),
                 'top_movers' => $this->topStockMovers($filters),
                 'dead_stock' => $this->deadStock($filters),
@@ -179,11 +182,7 @@ class ReportMetricService
                 'restock_needed' => $this->restockNeededProducts($filters),
                 'today_transactions' => $this->stockMutationCount($filters, null),
                 'previous_period_comparison' => $this->previousPeriodComparison($filters),
-                'charts' => [
-                    'daily_movement' => $this->dailyStockMovement($filters),
-                    'monthly_movement' => $this->monthlyStockMovement($filters),
-                    'yearly_movement' => $this->yearlyStockMovement($filters),
-                ],
+                'charts' => $movementCharts,
                 'last_updated_at' => $filters['last_updated_at'],
             ];
         });
@@ -829,29 +828,29 @@ class ReportMetricService
 
     /**
      * @param  ReportFilters  $filters
-     * @return array{on_hand_quantity: string, reserved_quantity: string, damaged_quantity: string, available_quantity: string, stock_value: string, critical_count: int, empty_count: int}
+     * @param  array{critical_count: int, empty_count: int, alerts: list<ReportRow>}|null  $health
+     * @return array{total_products: int, on_hand_quantity: string, reserved_quantity: string, damaged_quantity: string, available_quantity: string, stock_value: string, critical_count: int, empty_count: int}
      */
-    private function stockSummary(array $filters): array
+    private function stockSummary(array $filters, ?array $health = null): array
     {
-        $query = DB::table('stocks')->whereIn('work_location_id', $filters['location_ids']);
-        $health = $this->stockHealth($filters);
-        $onHand = $this->quantity((clone $query)->sum('quantity_on_hand'));
-        $reserved = $this->quantity((clone $query)->sum('quantity_reserved'));
-        $damaged = $this->quantity((clone $query)->sum('quantity_damaged'));
+        $health ??= $this->stockHealth($filters);
+        $stock = DB::table('stocks')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->whereIn('stocks.work_location_id', $filters['location_ids'])
+            ->selectRaw('COUNT(DISTINCT stocks.product_id) as total_products, COALESCE(SUM(stocks.quantity_on_hand), 0) as on_hand_quantity, COALESCE(SUM(stocks.quantity_reserved), 0) as reserved_quantity, COALESCE(SUM(stocks.quantity_damaged), 0) as damaged_quantity, COALESCE(SUM('.Stock::inventoryValueSql().'), 0) as stock_value')
+            ->first();
+        $onHand = $this->quantity(data_get($stock, 'on_hand_quantity', 0));
+        $reserved = $this->quantity(data_get($stock, 'reserved_quantity', 0));
+        $damaged = $this->quantity(data_get($stock, 'damaged_quantity', 0));
         $available = Decimal::sub(Decimal::sub($onHand, $reserved), $damaged);
 
         return [
+            'total_products' => (int) data_get($stock, 'total_products', 0),
             'on_hand_quantity' => $onHand,
             'reserved_quantity' => $reserved,
             'damaged_quantity' => $damaged,
             'available_quantity' => $available,
-            'stock_value' => $this->money(
-                DB::table('stocks')
-                    ->join('products', 'products.id', '=', 'stocks.product_id')
-                    ->whereIn('stocks.work_location_id', $filters['location_ids'])
-                    ->selectRaw('COALESCE(SUM('.Stock::inventoryValueSql().'), 0) as aggregate')
-                    ->value('aggregate'),
-            ),
+            'stock_value' => $this->money(data_get($stock, 'stock_value', 0)),
             'critical_count' => $health['critical_count'],
             'empty_count' => $health['empty_count'],
         ];
@@ -869,15 +868,6 @@ class ReportMetricService
             ->pluck('id')
             ->map(fn ($id): int => (int) $id)
             ->all();
-    }
-
-    /**
-     * @param  ReportFilters  $filters
-     * @return list<ReportRow>
-     */
-    private function warehouseStockAlerts(array $filters): array
-    {
-        return $this->stockHealth($filters)['alerts'];
     }
 
     /**
@@ -1335,45 +1325,39 @@ class ReportMetricService
     }
 
     /**
+     * Grafik bulanan dan tahunan diturunkan dari hasil harian agar tabel mutasi
+     * hanya dipindai sekali untuk satu permintaan dashboard.
+     *
      * @param  ReportFilters  $filters
-     * @return list<ReportRow>
+     * @return array{daily_movement: list<ReportRow>, monthly_movement: list<ReportRow>, yearly_movement: list<ReportRow>}
      */
-    private function monthlyStockMovement(array $filters): array
+    private function stockMovementCharts(array $filters): array
     {
-        $dateSelect = DB::connection()->getDriverName() === 'mysql'
-            ? "DATE_FORMAT(occurred_at, '%Y-%m') as date"
-            : "strftime('%Y-%m', occurred_at) as date";
+        $daily = $this->dailyStockMovement($filters);
 
-        return DB::table('stock_mutations')
-            ->whereIn('work_location_id', $filters['location_ids'])
-            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-            ->selectRaw($dateSelect.', SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->map(fn ($row): array => ['date' => $row->date, 'incoming' => $this->quantity($row->incoming), 'outgoing' => $this->quantity($row->outgoing)])
-            ->all();
+        return [
+            'daily_movement' => $daily,
+            'monthly_movement' => $this->aggregateStockMovement($daily, 7),
+            'yearly_movement' => $this->aggregateStockMovement($daily, 4),
+        ];
     }
 
     /**
-     * @param  ReportFilters  $filters
+     * @param  list<ReportRow>  $movements
      * @return list<ReportRow>
      */
-    private function yearlyStockMovement(array $filters): array
+    private function aggregateStockMovement(array $movements, int $dateLength): array
     {
-        $dateSelect = DB::connection()->getDriverName() === 'mysql'
-            ? "DATE_FORMAT(occurred_at, '%Y') as date"
-            : "CAST(strftime('%Y', occurred_at) AS INTEGER) as date";
+        $aggregated = [];
 
-        return DB::table('stock_mutations')
-            ->whereIn('work_location_id', $filters['location_ids'])
-            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-            ->selectRaw($dateSelect.', SUM(CASE WHEN quantity_on_hand_change > 0 THEN quantity_on_hand_change ELSE 0 END) as incoming, SUM(CASE WHEN quantity_on_hand_change < 0 THEN ABS(quantity_on_hand_change) ELSE 0 END) as outgoing')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->map(fn ($row): array => ['date' => (string) $row->date, 'incoming' => $this->quantity($row->incoming), 'outgoing' => $this->quantity($row->outgoing)])
-            ->all();
+        foreach ($movements as $movement) {
+            $date = substr((string) $movement['date'], 0, $dateLength);
+            $aggregated[$date] ??= ['date' => $date, 'incoming' => '0.0000', 'outgoing' => '0.0000'];
+            $aggregated[$date]['incoming'] = Decimal::add((string) $aggregated[$date]['incoming'], (string) $movement['incoming'], 4);
+            $aggregated[$date]['outgoing'] = Decimal::add((string) $aggregated[$date]['outgoing'], (string) $movement['outgoing'], 4);
+        }
+
+        return array_values($aggregated);
     }
 
     /**
@@ -1391,7 +1375,7 @@ class ReportMetricService
                 $query->where('quantity_on_hand_change', '>=', 100)
                     ->orWhere('quantity_on_hand_change', '<=', -100);
             })
-            ->select('stock_mutations.id', 'stock_mutations.occurred_at', 'stock_mutations.mutation_type', 'stock_mutations.quantity_on_hand_change', 'products.sku', 'products.name as product', 'work_locations.name as location')
+            ->select('stock_mutations.id', 'stock_mutations.product_id', 'stock_mutations.occurred_at', 'stock_mutations.mutation_type', 'stock_mutations.quantity_on_hand_change', 'products.sku', 'products.name as product', 'work_locations.name as location')
             ->latest('stock_mutations.occurred_at')
             ->limit(10)
             ->get()
@@ -1447,15 +1431,27 @@ class ReportMetricService
 
     /**
      * @param  ReportFilters  $filters
-     * @param  list<string>  $types
+     * @return array{incoming: int, outgoing: int}
      */
-    private function mutationCount(array $filters, array $types): int
+    private function warehouseMutationCounts(array $filters): array
     {
-        return DB::table('stock_mutations')
+        $incomingTypes = [StockMutationType::RECEIVE->value, StockMutationType::RETURN_IN->value, StockMutationType::TRANSFER_IN->value];
+        $outgoingTypes = [StockMutationType::ISSUE->value, StockMutationType::RETURN_OUT->value, StockMutationType::TRANSFER_OUT->value];
+        $incomingPlaceholders = implode(', ', array_fill(0, count($incomingTypes), '?'));
+        $outgoingPlaceholders = implode(', ', array_fill(0, count($outgoingTypes), '?'));
+        $counts = DB::table('stock_mutations')
             ->whereIn('work_location_id', $filters['location_ids'])
             ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-            ->whereIn('mutation_type', $types)
-            ->count();
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN mutation_type IN ({$incomingPlaceholders}) THEN 1 ELSE 0 END), 0) as incoming, COALESCE(SUM(CASE WHEN mutation_type IN ({$outgoingPlaceholders}) THEN 1 ELSE 0 END), 0) as outgoing",
+                [...$incomingTypes, ...$outgoingTypes],
+            )
+            ->first();
+
+        return [
+            'incoming' => (int) data_get($counts, 'incoming', 0),
+            'outgoing' => (int) data_get($counts, 'outgoing', 0),
+        ];
     }
 
     /**
@@ -1594,18 +1590,17 @@ class ReportMetricService
      */
     private function deadStock(array $filters): array
     {
-        $movedProductIds = DB::table('stock_mutations')
-            ->whereIn('work_location_id', $filters['location_ids'])
-            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-            ->pluck('product_id')
-            ->unique()
-            ->all();
-
         return DB::table('stocks')
             ->join('products', 'products.id', '=', 'stocks.product_id')
             ->whereIn('stocks.work_location_id', $filters['location_ids'])
             ->where('stocks.quantity_on_hand', '>', 0)
-            ->when($movedProductIds !== [], fn (Builder $query) => $query->whereNotIn('stocks.product_id', $movedProductIds))
+            ->whereNotExists(function (Builder $query) use ($filters): void {
+                $query->selectRaw('1')
+                    ->from('stock_mutations')
+                    ->whereColumn('stock_mutations.product_id', 'stocks.product_id')
+                    ->whereIn('stock_mutations.work_location_id', $filters['location_ids'])
+                    ->whereBetween('stock_mutations.occurred_at', [$filters['start'], $filters['end']]);
+            })
             ->selectRaw('products.id as product_id, products.sku, products.name as product, SUM(stocks.quantity_on_hand) as quantity, SUM('.Stock::inventoryValueSql().') as stock_value')
             ->groupBy('products.id', 'products.sku', 'products.name')
             ->orderByDesc('stock_value')
@@ -1692,31 +1687,32 @@ class ReportMetricService
      */
     private function previousPeriodComparison(array $filters): array
     {
-        $currentIncoming = DB::table('stock_mutations')
+        $comparison = DB::table('stock_mutations')
             ->whereIn('work_location_id', $filters['location_ids'])
-            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-            ->where('quantity_on_hand_change', '>', 0)
-            ->count();
-        $previousIncoming = DB::table('stock_mutations')
-            ->whereIn('work_location_id', $filters['location_ids'])
-            ->whereBetween('occurred_at', [$filters['previous_start'], $filters['previous_end']])
-            ->where('quantity_on_hand_change', '>', 0)
-            ->count();
-
-        $currentOutgoing = DB::table('stock_mutations')
-            ->whereIn('work_location_id', $filters['location_ids'])
-            ->whereBetween('occurred_at', [$filters['start'], $filters['end']])
-            ->where('quantity_on_hand_change', '<', 0)
-            ->count();
-        $previousOutgoing = DB::table('stock_mutations')
-            ->whereIn('work_location_id', $filters['location_ids'])
-            ->whereBetween('occurred_at', [$filters['previous_start'], $filters['previous_end']])
-            ->where('quantity_on_hand_change', '<', 0)
-            ->count();
+            ->whereBetween('occurred_at', [$filters['previous_start'], $filters['end']])
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN occurred_at BETWEEN ? AND ? AND quantity_on_hand_change > 0 THEN 1 ELSE 0 END), 0) as current_incoming,
+                COALESCE(SUM(CASE WHEN occurred_at BETWEEN ? AND ? AND quantity_on_hand_change > 0 THEN 1 ELSE 0 END), 0) as previous_incoming,
+                COALESCE(SUM(CASE WHEN occurred_at BETWEEN ? AND ? AND quantity_on_hand_change < 0 THEN 1 ELSE 0 END), 0) as current_outgoing,
+                COALESCE(SUM(CASE WHEN occurred_at BETWEEN ? AND ? AND quantity_on_hand_change < 0 THEN 1 ELSE 0 END), 0) as previous_outgoing',
+                [
+                    $filters['start'], $filters['end'],
+                    $filters['previous_start'], $filters['previous_end'],
+                    $filters['start'], $filters['end'],
+                    $filters['previous_start'], $filters['previous_end'],
+                ],
+            )
+            ->first();
 
         return [
-            'incoming' => ['current' => $currentIncoming, 'previous' => $previousIncoming],
-            'outgoing' => ['current' => $currentOutgoing, 'previous' => $previousOutgoing],
+            'incoming' => [
+                'current' => (int) data_get($comparison, 'current_incoming', 0),
+                'previous' => (int) data_get($comparison, 'previous_incoming', 0),
+            ],
+            'outgoing' => [
+                'current' => (int) data_get($comparison, 'current_outgoing', 0),
+                'previous' => (int) data_get($comparison, 'previous_outgoing', 0),
+            ],
         ];
     }
 

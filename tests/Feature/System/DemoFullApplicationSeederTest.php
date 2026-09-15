@@ -30,6 +30,7 @@ class DemoFullApplicationSeederTest extends TestCase
         'manajemen_gudang' => ['email' => 'manajemen-gudang@gudangtoko.test', 'roles' => ['kepala_gudang', 'purchasing']],
         'staff_gudang' => ['email' => 'staff-gudang@gudangtoko.test', 'roles' => ['staff_gudang']],
         'toko_internal' => ['email' => 'toko@gudangtoko.test', 'roles' => ['kepala_toko']],
+        'staf_toko' => ['email' => 'staf-toko@gudangtoko.test', 'roles' => ['staf_toko']],
         'kasir_kepala_toko' => ['email' => 'kasir@gudangtoko.test', 'roles' => ['kasir', 'kepala_toko']],
         'langganan_b2b' => ['email' => 'langganan-b2b@gudangtoko.test', 'roles' => ['langganan_owner']],
         'akun_pelanggan' => ['email' => 'pelanggan@gudangtoko.test', 'roles' => ['langganan_staff']],
@@ -40,7 +41,7 @@ class DemoFullApplicationSeederTest extends TestCase
     {
         $this->seed(DemoFullApplicationSeeder::class);
 
-        $this->assertSame(8, User::query()->count());
+        $this->assertSame(9, User::query()->count());
 
         foreach ($this->roleAccounts as $account) {
             $user = User::query()->where('email', $account['email'])->first();
@@ -56,6 +57,7 @@ class DemoFullApplicationSeederTest extends TestCase
         $this->assertGreaterThanOrEqual(3, Product::query()->where('sku', 'like', 'DEMO-%')->count());
         $this->assertGreaterThanOrEqual(2, Stock::query()->count());
         $this->assertGreaterThanOrEqual(2, StockMutation::query()->where('reference_type', 'demo_seed')->count());
+        $this->assertDatabaseHas('retail_product_placements', ['area' => 'Area Fashion', 'rack' => 'Rak 1']);
 
         $this->assertDatabaseHas('purchase_orders', ['number' => 'PO-DEMO-0001', 'status' => 'partially_received']);
         $this->assertDatabaseHas('goods_receipts', ['number' => 'RCV-DEMO-0001', 'status' => 'posted']);

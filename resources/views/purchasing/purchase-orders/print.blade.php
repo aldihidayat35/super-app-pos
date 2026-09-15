@@ -20,7 +20,7 @@
         <div>
             <div class="title">Purchase Order</div>
             <div>{{ config('app.name') }}</div>
-            <div>Gudang: {{ $purchaseOrder->warehouse?->name }}</div>
+            <div>Lokasi penerima: {{ $purchaseOrder->destinationName() }}</div>
         </div>
         <div class="right">
             <div><strong>{{ $purchaseOrder->number }}</strong></div>

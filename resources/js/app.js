@@ -407,5 +407,5 @@ if (document.readyState === 'loading') {
 
 window.addEventListener('pageshow', () => window.AppLoading.hide());
 document.addEventListener('submit', (event) => {
-    if (!event.target.hasAttribute('data-no-loading')) window.AppLoading.show();
+    if (!event.defaultPrevented && !event.target.hasAttribute('data-no-loading')) window.AppLoading.show();
 });

@@ -24,12 +24,23 @@
     .guide-content pre { padding: 1rem; border-radius: .65rem; background: var(--bs-gray-900); color: var(--bs-gray-100); overflow-x: auto; }
     .guide-content pre code { padding: 0; background: transparent; color: inherit; }
     .guide-content blockquote { padding: 1rem 1.25rem; border-left: 4px solid var(--bs-primary); background: var(--bs-primary-light); border-radius: .35rem; }
+    .guide-diagram { margin: 1.5rem 0 2rem; padding: 1.25rem; border: 1px solid var(--bs-gray-300); border-radius: .85rem; background: var(--bs-body-bg); overflow-x: auto; }
+    .guide-stock-flow { min-width: 920px; color: var(--bs-gray-700); }
+    .guide-stock-flow svg { display: block; width: 100%; max-width: 1180px; height: auto; margin: 0 auto; }
+    .guide-stock-flow .flow-line { fill: none; stroke: currentColor; stroke-width: 2.5; }
+    .guide-stock-flow .flow-node rect { fill: var(--bs-body-bg); stroke: var(--bs-gray-400); stroke-width: 2; }
+    .guide-stock-flow .flow-node text { fill: var(--bs-gray-800); font-size: 15px; font-weight: 600; }
+    .guide-stock-flow .flow-node-primary rect { fill: var(--bs-primary-light); stroke: var(--bs-primary); }
+    .guide-stock-flow .flow-node-success rect { fill: var(--bs-success-light); stroke: var(--bs-success); }
+    .guide-stock-flow .flow-node-warning rect { fill: var(--bs-warning-light); stroke: var(--bs-warning); }
+    .guide-stock-flow .flow-label { fill: var(--bs-gray-600); font-size: 13px; font-weight: 600; }
     .guide-toc { max-height: calc(100vh - 160px); overflow-y: auto; }
     .guide-toc a { display: block; padding: .4rem .65rem; border-radius: .4rem; color: var(--bs-gray-700); }
     .guide-toc a:hover { color: var(--bs-primary); background: var(--bs-primary-light); }
     .guide-toc .toc-level-3 { padding-left: 1.45rem; font-size: .9rem; }
     .guide-toc .toc-level-4 { padding-left: 2.2rem; font-size: .85rem; }
-    @media print { .app-header, .app-sidebar, .app-toolbar, .guide-sidebar, .btn { display: none !important; } .app-main { margin: 0 !important; } .guide-content h1 { display: block; } }
+    @media (max-width: 767.98px) { .guide-diagram { padding: .75rem; } }
+    @media print { .app-header, .app-sidebar, .app-toolbar, .guide-sidebar, .btn { display: none !important; } .app-main { margin: 0 !important; } .guide-content h1 { display: block; } .guide-diagram { overflow: visible; } .guide-stock-flow { min-width: 0; } }
 </style>
 @endpush
 

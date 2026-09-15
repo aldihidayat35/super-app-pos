@@ -46,7 +46,7 @@
 @section('content')
     {{-- Context & Filter Card --}}
     <div class="card mb-6">
-        <form id="warehouse-dashboard-filter" method="GET" action="{{ route('warehouse.dashboard') }}">
+        <form id="warehouse-dashboard-filter" method="GET" action="{{ route('warehouse.dashboard') }}" data-no-loading>
         <div class="card-header border-0 pt-5">
             <h3 class="card-title fw-bold">
                 <i class="ki-outline ki-geolocation text-primary me-2"></i>
@@ -129,6 +129,7 @@
                 const loading = document.getElementById('warehouse-dashboard-loading');
                 const refresh = document.getElementById('warehouse-dashboard-refresh');
                 const resetBtn = document.getElementById('warehouse-filter-reset');
+                const reportLink = document.getElementById('warehouse-report-link');
 
                 if (!form) {
                     return;
@@ -259,24 +260,37 @@
                 };
 
                 const paramsFromForm = () => new URLSearchParams(new FormData(form));
+                const localDate = (date) => [
+                    date.getFullYear(),
+                    String(date.getMonth() + 1).padStart(2, '0'),
+                    String(date.getDate()).padStart(2, '0'),
+                ].join('-');
 
                 const loadDashboard = async () => {
                     const params = paramsFromForm();
                     if (requestController) requestController.abort();
-                    requestController = new AbortController();
+                    const controller = new AbortController();
+                    requestController = controller;
 
                     loading.classList.remove('d-none');
                     loading.classList.add('d-flex');
                     content.classList.add('opacity-50', 'pe-none');
+                    content.setAttribute('aria-busy', 'true');
                     if (selector) selector.disabled = true;
-                    refresh.disabled = true;
+                    form.querySelectorAll('button').forEach((button) => { button.disabled = true; });
 
                     try {
                         const response = await fetch(`${dataUrl}?${params.toString()}`, {
                             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                            signal: requestController.signal,
+                            signal: controller.signal,
                         });
-                        if (!response.ok) throw new Error(response.status === 403 ? 'Anda tidak memiliki akses ke gudang tersebut.' : 'Data dashboard gagal dimuat.');
+                        if (!response.ok) {
+                            const errorPayload = await response.json().catch(() => ({}));
+                            const validationMessage = Object.values(errorPayload.errors || {}).flat()[0];
+                            throw new Error(response.status === 403
+                                ? 'Anda tidak memiliki akses ke gudang tersebut.'
+                                : validationMessage || 'Data dashboard gagal dimuat.');
+                        }
 
                         const payload = await response.json();
                         destroyCharts();
@@ -284,16 +298,25 @@
                         currentCharts = payload.charts;
                         currentKpis = payload.kpis;
                         renderCharts(currentCharts, currentKpis);
+                        if (reportLink && payload.report_url) reportLink.href = payload.report_url;
+                        window.history.replaceState({}, '', `${form.action}?${params.toString()}`);
                     } catch (error) {
                         if (error.name !== 'AbortError') {
-                            content.insertAdjacentHTML('afterbegin', `<div class="alert alert-danger">${error.message}</div>`);
+                            const alert = document.createElement('div');
+                            alert.className = 'alert alert-danger';
+                            alert.textContent = error.message;
+                            content.prepend(alert);
                         }
                     } finally {
+                        if (requestController !== controller) return;
+
+                        requestController = null;
                         loading.classList.add('d-none');
                         loading.classList.remove('d-flex');
                         content.classList.remove('opacity-50', 'pe-none');
+                        content.removeAttribute('aria-busy');
                         if (selector) selector.disabled = false;
-                        refresh.disabled = false;
+                        form.querySelectorAll('button').forEach((button) => { button.disabled = false; });
                     }
                 };
 
@@ -305,13 +328,13 @@
                 resetBtn.addEventListener('click', function () {
                     const now = new Date();
                     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-                    document.getElementById('warehouse-start-date').value = start.toISOString().split('T')[0];
-                    document.getElementById('warehouse-end-date').value = now.toISOString().split('T')[0];
+                    document.getElementById('warehouse-start-date').value = localDate(start);
+                    document.getElementById('warehouse-end-date').value = localDate(now);
                     loadDashboard();
                 });
 
                 document.getElementById('quick-today').addEventListener('click', function () {
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = localDate(new Date());
                     document.getElementById('warehouse-start-date').value = today;
                     document.getElementById('warehouse-end-date').value = today;
                     loadDashboard();
@@ -320,22 +343,22 @@
                     const end = new Date();
                     const start = new Date(end);
                     start.setDate(start.getDate() - 6);
-                    document.getElementById('warehouse-start-date').value = start.toISOString().split('T')[0];
-                    document.getElementById('warehouse-end-date').value = end.toISOString().split('T')[0];
+                    document.getElementById('warehouse-start-date').value = localDate(start);
+                    document.getElementById('warehouse-end-date').value = localDate(end);
                     loadDashboard();
                 });
                 document.getElementById('quick-month').addEventListener('click', function () {
                     const now = new Date();
                     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-                    document.getElementById('warehouse-start-date').value = start.toISOString().split('T')[0];
-                    document.getElementById('warehouse-end-date').value = now.toISOString().split('T')[0];
+                    document.getElementById('warehouse-start-date').value = localDate(start);
+                    document.getElementById('warehouse-end-date').value = localDate(now);
                     loadDashboard();
                 });
                 document.getElementById('quick-year').addEventListener('click', function () {
                     const now = new Date();
                     const start = new Date(now.getFullYear(), 0, 1);
-                    document.getElementById('warehouse-start-date').value = start.toISOString().split('T')[0];
-                    document.getElementById('warehouse-end-date').value = now.toISOString().split('T')[0];
+                    document.getElementById('warehouse-start-date').value = localDate(start);
+                    document.getElementById('warehouse-end-date').value = localDate(now);
                     loadDashboard();
                 });
 

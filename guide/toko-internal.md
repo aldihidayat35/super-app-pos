@@ -1,12 +1,13 @@
 # Guide Book Toko Internal
 
-Panduan ini untuk `kepala_toko`, `kasir`, `supervisor_shift`, dan karyawan toko. Fokus utama toko internal adalah penjualan POS, shift kasir, closing, restock, penerimaan transfer, retur pelanggan, piutang toko, dan kehadiran.
+Panduan ini untuk `kepala_toko`, `staf_toko`, `kasir`, `supervisor_shift`, dan karyawan toko. Fokus utama toko internal adalah pelayanan pelanggan, penjualan POS, pembelian langsung toko, pengajuan produk baru, pengelolaan stok reguler dan darurat, shift kasir, retur pelanggan, piutang toko, dan kehadiran.
 
 ## 1. Tujuan role Toko Internal
 
 | Role | Fokus |
 |---|---|
-| `kepala_toko` | Mengawasi cabang, stok toko, restock, POS, shift, retur, piutang, dan karyawan. |
+| `kepala_toko` | Mengawasi cabang, stok toko, pembelian langsung, pengajuan produk, konversi stok darurat, POS, shift, retur, piutang, dan karyawan. |
+| `staf_toko` | Melayani pelanggan dengan mencari produk, harga POS, stok siap jual, dan lokasi pajang toko penugasan. Tidak dapat memproses pembayaran atau mengubah lokasi pajang. |
 | `kasir` | Membuka shift, melakukan transaksi POS, menerima pembayaran, dan submit closing. |
 | `supervisor_shift` | Memantau closing, void, dan operasional shift tanpa otoritas approval kepala bagian. |
 | Karyawan toko | Check-in/out, jadwal, izin, dan aktivitas toko sesuai tugas. |
@@ -15,9 +16,15 @@ Panduan ini untuk `kepala_toko`, `kasir`, `supervisor_shift`, dan karyawan toko.
 
 | Menu | URL | Fungsi |
 |---|---|---|
+| Etalase Produk Toko | `/retail/etalase` | Daftar produk tersedia, harga POS, dan area/rak/tingkat pajang di toko penugasan. Menjadi halaman awal `staf_toko`. Kepala toko mengisi lokasi pajang melalui kartu produk. |
 | Dashboard Cabang | `/retail/dashboard` | KPI penjualan, shift, transaksi, dan performa cabang. |
 | Kasir POS | `/retail/pos` | Input penjualan toko. |
 | Checkout POS | `/retail/pos/checkout` | Penyelesaian pembayaran POS. |
+| Pembelian Darurat | `/retail/pembelian-darurat` | Konfirmasi kebutuhan pelanggan, restok proaktif, catat nota, dan pantau pool darurat. |
+| Laporan Darurat Toko | `/retail/pembelian-darurat/laporan` | Biaya, saldo pool, dampak margin, dan kejadian kehabisan stok per toko. |
+| Pengajuan Produk Baru | `/retail/pengajuan-produk` | Mengusulkan produk yang belum ada, lalu menunggu pemeriksaan master data. |
+| Purchase Order | `/purchasing/purchase-orders` | Kepala toko membuat PO dengan lokasi penerima toko; approver pusat tetap menyetujui PO. |
+| Penerimaan Barang | `/warehouse/goods-receipts` | Kepala toko mencatat dan memposting barang supplier yang diterima langsung di toko. |
 | Transaksi Ditahan | `/retail/pos/holds` | Menahan dan melanjutkan transaksi. |
 | Shift Aktif | `/retail/shifts/current` | Melihat shift kasir yang sedang berjalan. |
 | Buka Shift | `/retail/shifts/open` | Membuka shift kasir. |
@@ -35,6 +42,33 @@ Panduan ini untuk `kepala_toko`, `kasir`, `supervisor_shift`, dan karyawan toko.
 | Piutang Toko | `/retail/receivables` | Piutang pelanggan toko. |
 | Kehadiran | `/attendance/check` | Check-in/out karyawan. |
 | Izin/Sakit/Cuti | `/attendance/requests` | Pengajuan kehadiran. |
+
+## Diagram alur persediaan toko
+
+Diagram berikut menunjukkan tiga jalur barang yang dapat dijual melalui POS. Pembelian toko dan transfer gudang menjadi stok reguler. Pembelian darurat tetap berada pada stok darurat sampai terjual atau dikonversi secara resmi oleh kepala toko.
+
+```mermaid
+flowchart LR
+    S[Pemasok] --> PT[Pembelian Toko]
+    PT --> A[Persetujuan]
+    A --> PB[Penerimaan Barang di Toko]
+    PB --> ST[Stok Reguler Toko]
+    ST --> POS[Penjualan POS]
+
+    GU[Gudang Utama] --> TR[Transfer Stok]
+    TR --> ST
+
+    ED[Pembelian Darurat] --> SD[Stok Darurat]
+    SD --> POS
+    SD --> CV[Konversi ke Stok Reguler]
+    CV --> ST
+```
+
+Makna setiap jalur:
+
+- **Pembelian toko:** barang dikirim pemasok langsung ke toko, tetapi stok baru bertambah setelah PO disetujui dan penerimaan diposting.
+- **Transfer stok:** barang berasal dari gudang utama dan stok toko bertambah sesuai jumlah fisik yang diterima.
+- **Pembelian darurat:** biaya dan saldo lot disimpan terpisah. POS menggunakannya setelah stok reguler habis. Saldo bebas dapat dikonversi ke stok reguler dengan jejak mutasi.
 
 ## 3. Alur harian kasir
 
@@ -84,6 +118,17 @@ Cara kerja di belakang layar:
 - HPP dan margin disimpan sebagai snapshot pada item POS.
 - Saat transaksi completed, stok cabang berkurang melalui InventoryService.
 - Pembayaran dicatat dan shift expected cash/non-cash diperbarui.
+
+### Pembelian dan restok darurat toko
+
+1. Staf toko atau kasir memilih **Kebutuhan pelanggan** untuk kekurangan pada transaksi tertentu, atau **Restok darurat toko** untuk membeli barang sebelum ada pelanggan. Restok proaktif tidak mencatat kejadian stockout dan tidak memerlukan pelanggan.
+2. Jika toko belum memiliki aturan approval darurat, permintaan langsung disetujui. Jika ada aturan dan nominal melewati ambang, tunggu penyetuju yang sesuai role dan lokasi.
+3. Kasir mencatat jumlah yang benar-benar dibeli, biaya aktual, pemasok, sumber dana, serta foto/PDF nota. Kas toko memerlukan shift aktif dan otomatis menjadi satu pengeluaran shift. Uang pribadi menunggu reimbursement dengan referensi dan bukti pembayaran.
+4. Kasir membuka permintaan pelanggan yang sudah dibeli dan memilih **Lanjutkan di POS**. Qty keranjang boleh dikurangi atau item tertentu dihapus. POS memakai stok reguler, barang yang terikat pada permintaan, lalu pool darurat toko secara FIFO.
+5. Sisa pembelian pelanggan dan seluruh restok proaktif otomatis menjadi pool darurat toko. Pool dapat dipakai lintas transaksi pada toko yang sama, tetapi tetap terpisah dari stok reguler dan tidak mengubah HPP produk.
+6. Kepala toko dapat mengonversi saldo pool menjadi stok reguler toko, mereturnya ke pemasok, atau meneruskannya melalui PO dan penerimaan gudang. Tindakan hanya berlaku pada jumlah yang belum terjual atau dicadangkan. Konversi membuat mutasi stok reguler dan memperbarui HPP produk dari biaya lot yang dipindahkan.
+
+Pada retur penjualan yang memakai dua sumber, petugas mengisi qty normal dan darurat. Bagian darurat kembali ke lot asal dan tersedia lagi pada pool. Margin dibalik menurut biaya alokasi aslinya. Kepala toko memantau biaya bersih, saldo dan nilai pool, lost margin, serta kejadian kehabisan stok pada laporan darurat.
 
 ### 3.4 Menahan transaksi
 
@@ -197,6 +242,25 @@ Cara kerja di belakang layar:
 - Selisih menjadi discrepancy.
 - Penerimaan partial bisa dilakukan jika kiriman datang sebagian.
 - Sistem mencegah over-receive.
+
+### 5.3 Pembelian supplier yang dikirim langsung ke toko
+
+1. Kepala toko membuka `/purchasing/purchase-orders` dan membuat PO.
+2. Pilih lokasi penerima bertipe **Cabang/Toko** sesuai penugasan.
+3. Ajukan PO dan tunggu persetujuan kepala gudang/approver pusat.
+4. Setelah PO disetujui, buka `/warehouse/goods-receipts` saat barang tiba.
+5. Catat jumlah datang dan hasil pemeriksaan, lalu posting penerimaan.
+
+Barang yang lolos pemeriksaan langsung menambah stok reguler toko dan tersedia untuk POS. Alur ini tidak memakai stok darurat dan tidak menambah stok gudang utama.
+
+### 5.4 Produk baru yang belum ada di sistem
+
+1. Buka `/retail/pengajuan-produk` dan isi identitas, barcode, satuan, harga beli, serta usulan harga jual.
+2. Admin master data atau kepala gudang memeriksa kemungkinan produk ganda.
+3. Setelah disetujui, sistem membuat produk aktif, satuan dasar, barcode, dan harga retail untuk toko pengaju.
+4. Produk tersebut baru dapat dimasukkan ke PO dan diterima sebagai stok toko.
+
+Jika saldo pembelian darurat akan dijadikan stok reguler, kepala toko membuka detail pembelian darurat dan memilih **Masukkan Saldo Bebas ke Stok Reguler Toko**. Saldo yang sedang dicadangkan untuk transaksi pelanggan tidak ikut dipindahkan.
 
 ## 6. Piutang toko
 

@@ -11,10 +11,13 @@ use App\Exceptions\ServiceException;
 use App\Models\Branch;
 use App\Models\CashShift;
 use App\Models\Customer;
+use App\Models\EmergencyPurchase;
+use App\Models\EmergencyPurchaseItem;
 use App\Models\PosHold;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
 use App\Models\PosSale;
+use App\Models\PosSaleAllocation;
 use App\Models\PosSaleItem;
 use App\Models\Product;
 use App\Models\SalePayment;
@@ -38,6 +41,7 @@ class PosService
         private readonly PriceResolverService $prices,
         private readonly ReceivableService $receivables,
         private readonly TaxComplianceService $taxes,
+        private readonly EmergencyStockService $emergencyStock,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -72,6 +76,19 @@ class PosService
             }
 
             $calculated = $this->calculateItems($itemPayloads, $branch, $customer, $cashier);
+            $emergencyPurchase = null;
+            if (filled($data['emergency_purchase_id'] ?? null)) {
+                $emergencyPurchase = EmergencyPurchase::query()->with('items')->whereKey($data['emergency_purchase_id'])->lockForUpdate()->firstOrFail();
+                if ($emergencyPurchase->status !== 'purchased' || (int) $emergencyPurchase->branch_id !== (int) $branch->id
+                    || (int) ($emergencyPurchase->customer_id ?? 0) !== (int) ($customer->id ?? 0)) {
+                    throw ServiceException::validation('Pembelian darurat tidak siap atau tidak sesuai toko/pelanggan transaksi.');
+                }
+                $hasRequestedProduct = $emergencyPurchase->items->contains(fn (EmergencyPurchaseItem $requestedItem): bool => collect($calculated['items'])->contains(fn (array $item): bool => (int) $item['product']->id === (int) $requestedItem->product_id));
+                if (! $hasRequestedProduct) {
+                    throw ServiceException::validation('Keranjang POS harus memuat minimal satu produk dari permintaan darurat.');
+                }
+            }
+            $allocationPlan = $this->planAllocations($calculated['items'], $branch, $emergencyPurchase);
             $approvalItems = collect($calculated['items'])->filter(fn (array $item): bool => $item['price']['approval_required'] === true);
             if ($approvalItems->isNotEmpty()) {
                 $messages = $approvalItems->map(fn (array $item): string => $item['product']->name.' ('.implode(', ', $item['price']['approval_reasons']).')');
@@ -97,13 +114,13 @@ class PosService
                 'grand_total_amount' => $calculated['grand_total'],
                 'paid_amount' => $payments['paid'],
                 'change_amount' => $payments['change'],
-                'total_margin_amount' => $calculated['margin'],
+                'total_margin_amount' => $allocationPlan['margin'],
                 'idempotency_key' => $data['idempotency_key'] ?? null,
                 'completed_at' => now(),
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            foreach ($calculated['items'] as $itemData) {
+            foreach ($calculated['items'] as $index => $itemData) {
                 /** @var Product $product */
                 $product = $itemData['product'];
                 $saleItem = PosSaleItem::query()->create([
@@ -124,16 +141,42 @@ class PosService
                     'discount_amount' => $itemData['discount_amount'],
                     'tax_amount' => $itemData['tax_amount'],
                     'line_total' => $itemData['line_total'],
-                    'margin_amount' => $itemData['margin_amount'],
+                    'margin_amount' => $allocationPlan['items'][$index]['margin'],
                     'price_source' => $itemData['price']['selected_source'],
                     'price_snapshot' => [...$itemData['price'], 'tax' => $itemData['tax_snapshot']],
                 ]);
 
+                foreach ($allocationPlan['items'][$index]['allocations'] as $allocation) {
+                    PosSaleAllocation::query()->create([
+                        'pos_sale_item_id' => $saleItem->id,
+                        'emergency_purchase_item_id' => $allocation['emergency_item']?->id,
+                        'source' => $allocation['source'], 'base_quantity' => $allocation['quantity'],
+                        'normal_hpp_unit' => $itemData['price']['hpp_base'],
+                        'actual_cost_unit' => $allocation['cost'],
+                        'revenue_amount' => $allocation['revenue'],
+                        'normal_cogs_amount' => $allocation['normal_cogs'],
+                        'actual_cogs_amount' => $allocation['actual_cogs'],
+                        'actual_margin_amount' => $allocation['margin'],
+                        'lost_margin_amount' => $allocation['lost_margin'],
+                    ]);
+                    if ($allocation['emergency_item'] instanceof EmergencyPurchaseItem) {
+                        $emergencyItem = $allocation['emergency_item'];
+                        $emergencyItem->forceFill(['allocated_quantity' => Decimal::add((string) $emergencyItem->allocated_quantity, $allocation['quantity'], 4)])->save();
+                        $targetItem = $allocation['target_item'] ?? null;
+                        if ($targetItem instanceof EmergencyPurchaseItem) {
+                            $targetItem->forceFill(['allocated_quantity' => Decimal::add((string) $targetItem->allocated_quantity, $allocation['quantity'], 4)])->save();
+                        }
+                    }
+                }
+                $normalQuantity = $allocationPlan['items'][$index]['normal_quantity'];
+                if (Decimal::compare($normalQuantity, '0', 4) <= 0) {
+                    continue;
+                }
                 $this->inventory->issue(
                     $product,
                     $branch->workLocation,
                     $itemData['warehouse_location'],
-                    $itemData['base_quantity'],
+                    $normalQuantity,
                     $cashier,
                     ['type' => 'pos_sale', 'id' => $sale->id, 'no' => $sale->number],
                     'Penjualan POS.',
@@ -141,6 +184,8 @@ class PosService
                     ['pos_sale_item_id' => $saleItem->id],
                 );
             }
+
+            $this->finalizeEmergencyPurchases($emergencyPurchase, $allocationPlan['purchase_ids'], $sale, $cashier);
 
             foreach ($payments['rows'] as $payment) {
                 SalePayment::query()->create([
@@ -295,7 +340,7 @@ class PosService
     public function voidSale(PosSale $sale, User $actor, string $reason): PosSale
     {
         return DB::transaction(function () use ($sale, $actor, $reason): PosSale {
-            $sale = PosSale::query()->with(['items.product', 'branch.workLocation', 'cashShift'])->lockForUpdate()->findOrFail($sale->id);
+            $sale = PosSale::query()->with(['items.product', 'items.allocations', 'branch.workLocation', 'cashShift'])->lockForUpdate()->findOrFail($sale->id);
             if ($sale->cashShift?->status->isLocked()) {
                 throw ServiceException::validation('Transaksi pada shift yang sudah closing tidak dapat di-void. Gunakan workflow koreksi resmi.');
             }
@@ -309,11 +354,24 @@ class PosService
                     continue;
                 }
 
+                $normalRemaining = $item->allocations->isEmpty() ? $remaining : '0.0000';
+                foreach ($item->allocations as $allocation) {
+                    $open = Decimal::sub((string) $allocation->base_quantity, (string) $allocation->returned_quantity, 4);
+                    if ($allocation->source === 'normal') {
+                        $normalRemaining = Decimal::add($normalRemaining, $open, 4);
+                    } elseif (Decimal::compare($open, '0', 4) > 0) {
+                        $this->releaseEmergencyAllocation($allocation, $open, $actor, 'void');
+                    }
+                    $allocation->forceFill(['returned_quantity' => $allocation->base_quantity])->save();
+                }
+                if (Decimal::compare($normalRemaining, '0', 4) <= 0) {
+                    continue;
+                }
                 $this->inventory->returnIn(
                     $item->product,
                     $sale->branch->workLocation,
                     $item->warehouseLocation,
-                    $remaining,
+                    $normalRemaining,
                     $actor,
                     ['type' => 'pos_sale_void', 'id' => $sale->id, 'no' => $sale->number],
                     $reason,
@@ -337,7 +395,7 @@ class PosService
     public function returnSale(PosSale $sale, array $data, User $actor): PosReturn
     {
         return DB::transaction(function () use ($sale, $data, $actor): PosReturn {
-            $sale = PosSale::query()->with(['items.product', 'branch.workLocation', 'cashShift'])->lockForUpdate()->findOrFail($sale->id);
+            $sale = PosSale::query()->with(['items.product', 'items.allocations', 'branch.workLocation', 'cashShift'])->lockForUpdate()->findOrFail($sale->id);
             if ($sale->cashShift?->status->isLocked()) {
                 throw ServiceException::validation('Transaksi pada shift yang sudah closing tidak dapat diretur. Gunakan workflow koreksi resmi.');
             }
@@ -346,6 +404,7 @@ class PosService
             }
 
             $refundAmount = '0.00';
+            $reversedMarginTotal = '0.00';
             $return = PosReturn::query()->create([
                 'number' => $this->numbers->next('return', $sale->branch->workLocation),
                 'pos_sale_id' => $sale->id,
@@ -381,6 +440,43 @@ class PosService
                 $condition = $itemData['condition'] ?? 'good';
                 $refundAmount = Decimal::add($refundAmount, $lineRefund, 2);
 
+                $normalQuantity = Decimal::normalize((string) ($itemData['normal_quantity'] ?? $quantity), 4);
+                $emergencyQuantity = Decimal::normalize((string) ($itemData['emergency_quantity'] ?? '0'), 4);
+                if ($item->allocations->contains(fn (PosSaleAllocation $row): bool => $row->source === 'emergency')
+                    && (! array_key_exists('normal_quantity', $itemData) || ! array_key_exists('emergency_quantity', $itemData))) {
+                    throw ServiceException::validation('Pilih qty normal dan darurat secara terpisah pada retur campuran.');
+                }
+                if (Decimal::compare(Decimal::add($normalQuantity, $emergencyQuantity, 4), $quantity, 4) !== 0) {
+                    throw ServiceException::validation('Jumlah qty normal dan darurat harus sama dengan qty retur.');
+                }
+                $reversedCogs = '0.00';
+                $reversedRevenue = '0.00';
+                foreach (['normal' => $normalQuantity, 'emergency' => $emergencyQuantity] as $source => $sourceQty) {
+                    if (Decimal::compare($sourceQty, '0', 4) <= 0) {
+                        continue;
+                    }
+                    $allocation = $item->allocations->firstWhere('source', $source);
+                    if ($item->allocations->isEmpty() && $source === 'normal') {
+                        $reversedCogs = Decimal::add($reversedCogs, Decimal::mul($sourceQty, (string) $item->hpp_snapshot, 4, 2, 2), 2);
+                        $reversedRevenue = Decimal::add($reversedRevenue, Decimal::sub($lineRefund, Decimal::mul($sourceQty, Decimal::div((string) $item->tax_amount, (string) $item->base_quantity, 2, 4, 2), 4, 2, 2), 2), 2);
+
+                        continue;
+                    }
+                    if (! $allocation instanceof PosSaleAllocation || Decimal::compare($sourceQty,
+                        Decimal::sub((string) $allocation->base_quantity, (string) $allocation->returned_quantity, 4), 4) > 0) {
+                        throw ServiceException::validation('Qty retur '.$source.' melebihi sisa alokasi asli.');
+                    }
+                    $reversedCogs = Decimal::add($reversedCogs, Decimal::mul($sourceQty, (string) $allocation->actual_cost_unit, 4, 2, 2), 2);
+                    $reversedRevenue = Decimal::add($reversedRevenue, Decimal::mul($sourceQty,
+                        Decimal::div((string) $allocation->revenue_amount, (string) $allocation->base_quantity, 2, 4, 2), 4, 2, 2), 2);
+                    $allocation->forceFill(['returned_quantity' => Decimal::add((string) $allocation->returned_quantity, $sourceQty, 4)])->save();
+                    if ($source === 'emergency') {
+                        $this->releaseEmergencyAllocation($allocation, $sourceQty, $actor, 'return');
+                    }
+                }
+                $reversedMargin = Decimal::sub($reversedRevenue, $reversedCogs, 2);
+                $reversedMarginTotal = Decimal::add($reversedMarginTotal, $reversedMargin, 2);
+
                 PosReturnItem::query()->create([
                     'pos_return_id' => $return->id,
                     'pos_sale_item_id' => $item->id,
@@ -389,26 +485,32 @@ class PosService
                     'quantity' => $quantity,
                     'condition' => $condition,
                     'refund_amount' => $lineRefund,
+                    'normal_quantity' => $normalQuantity,
+                    'emergency_quantity' => $emergencyQuantity,
+                    'reversed_cogs_amount' => $reversedCogs,
+                    'reversed_margin_amount' => $reversedMargin,
                     'reason' => $itemData['reason'] ?? null,
                 ]);
 
-                $this->inventory->returnIn(
-                    $item->product,
-                    $sale->branch->workLocation,
-                    $item->warehouseLocation,
-                    $quantity,
-                    $actor,
-                    ['type' => 'pos_return', 'id' => $return->id, 'no' => $return->number],
-                    $data['reason'] ?? 'Retur pelanggan POS.',
-                    "pos-return-{$return->id}-item-{$item->id}-in",
-                );
+                if (Decimal::compare($normalQuantity, '0', 4) > 0) {
+                    $this->inventory->returnIn(
+                        $item->product,
+                        $sale->branch->workLocation,
+                        $item->warehouseLocation,
+                        $normalQuantity,
+                        $actor,
+                        ['type' => 'pos_return', 'id' => $return->id, 'no' => $return->number],
+                        $data['reason'] ?? 'Retur pelanggan POS.',
+                        "pos-return-{$return->id}-item-{$item->id}-in",
+                    );
+                }
 
-                if ($condition === 'damaged') {
+                if ($condition === 'damaged' && Decimal::compare($normalQuantity, '0', 4) > 0) {
                     $this->inventory->damage(
                         $item->product,
                         $sale->branch->workLocation,
                         $item->warehouseLocation,
-                        $quantity,
+                        $normalQuantity,
                         $actor,
                         ['type' => 'pos_return', 'id' => $return->id, 'no' => $return->number],
                         'Retur POS masuk stok rusak.',
@@ -416,7 +518,10 @@ class PosService
                     );
                 }
 
-                $item->forceFill(['returned_quantity' => Decimal::add((string) $item->returned_quantity, $quantity)])->save();
+                $item->forceFill([
+                    'returned_quantity' => Decimal::add((string) $item->returned_quantity, $quantity),
+                    'margin_amount' => Decimal::sub((string) $item->margin_amount, $reversedMargin, 2),
+                ])->save();
             }
 
             if (Decimal::compare($refundAmount, '0', 2) <= 0) {
@@ -424,7 +529,8 @@ class PosService
             }
 
             $return->forceFill(['refund_amount' => $refundAmount])->save();
-            $sale->forceFill(['status' => PosSaleStatus::RETURNED])->save();
+            $sale->forceFill(['status' => PosSaleStatus::RETURNED,
+                'total_margin_amount' => Decimal::sub((string) $sale->total_margin_amount, $reversedMarginTotal, 2)])->save();
 
             return $return->fresh(['items.product', 'sale']);
         });
@@ -452,6 +558,201 @@ class PosService
         }
 
         return $branch;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return array{
+     *     margin: string,
+     *     items: array<int, array{margin: string, normal_quantity: string, allocations: list<array<string, mixed>>}>,
+     *     purchase_ids: list<int>
+     * }
+     */
+    private function planAllocations(array $items, Branch $branch, ?EmergencyPurchase $purchase): array
+    {
+        $productIds = collect($items)->map(fn (array $item): int => (int) $item['product']->id)->unique()->values()->all();
+        $boundByProduct = [];
+        if ($purchase instanceof EmergencyPurchase) {
+            $boundItems = EmergencyPurchaseItem::query()
+                ->where('emergency_purchase_id', $purchase->id)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+            $purchase->setRelation('items', $boundItems);
+            foreach ($boundItems as $targetItem) {
+                $sourceItem = $targetItem;
+                $remaining = $this->emergencyStock->remaining($targetItem);
+                if ($targetItem->assigned_source_item_id) {
+                    $sourceItem = EmergencyPurchaseItem::query()->lockForUpdate()->findOrFail($targetItem->assigned_source_item_id);
+                    $assignedRemaining = Decimal::sub((string) $targetItem->assigned_quantity, (string) $targetItem->allocated_quantity, 4);
+                    $sourceRemaining = $this->emergencyStock->remaining($sourceItem);
+                    $remaining = Decimal::compare($sourceRemaining, $assignedRemaining, 4) < 0 ? $sourceRemaining : $assignedRemaining;
+                }
+                if (Decimal::compare($remaining, '0', 4) > 0) {
+                    $boundByProduct[$targetItem->product_id][] = [
+                        'item' => $sourceItem,
+                        'target' => $targetItem->assigned_source_item_id ? $targetItem : null,
+                        'remaining' => $remaining,
+                    ];
+                }
+            }
+        }
+
+        $sharedItems = $this->emergencyStock->lockSharedLots($branch, $productIds);
+        $reservations = $this->emergencyStock->pendingAssignmentsFor($sharedItems->pluck('id')->all());
+        $sharedByProduct = [];
+        foreach ($sharedItems as $sharedItem) {
+            $remaining = Decimal::sub(
+                $this->emergencyStock->remaining($sharedItem),
+                $reservations[$sharedItem->id] ?? '0.0000',
+                4,
+            );
+            if (Decimal::compare($remaining, '0', 4) > 0) {
+                $sharedByProduct[$sharedItem->product_id][] = [
+                    'item' => $sharedItem,
+                    'target' => null,
+                    'remaining' => $remaining,
+                ];
+            }
+        }
+
+        $stockBudget = [];
+        $plan = [];
+        $marginTotal = '0.00';
+        $purchaseIds = [];
+        foreach ($items as $index => $item) {
+            $productId = (int) $item['product']->id;
+            $stockKey = $productId.':'.($item['warehouse_location']->id ?? 'none');
+            if (! isset($stockBudget[$stockKey])) {
+                Stock::query()->firstOrCreate(
+                    ['product_id' => $productId,
+                        'location_scope_key' => 'work:'.$branch->work_location_id.'|bin:'.($item['warehouse_location']->id ?? 'none')],
+                    ['work_location_id' => $branch->work_location_id,
+                        'warehouse_location_id' => $item['warehouse_location']->id ?? null,
+                        'quantity_on_hand' => '0.0000', 'quantity_reserved' => '0.0000',
+                        'quantity_damaged' => '0.0000', 'cost_value' => '0.00'],
+                );
+                $stocks = Stock::query()->where('product_id', $productId)
+                    ->where('work_location_id', $branch->work_location_id)
+                    ->where('warehouse_location_id', $item['warehouse_location']?->id)
+                    ->lockForUpdate()->get();
+                $stockBudget[$stockKey] = $stocks->reduce(
+                    fn (string $sum, Stock $stock): string => Decimal::add($sum, $stock->available_quantity, 4),
+                    '0.0000',
+                );
+            }
+
+            $quantity = (string) $item['base_quantity'];
+            $normal = Decimal::compare($stockBudget[$stockKey], $quantity, 4) >= 0 ? $quantity : $stockBudget[$stockKey];
+            if (Decimal::compare($normal, '0', 4) < 0) {
+                $normal = '0.0000';
+            }
+            $stockBudget[$stockKey] = Decimal::sub($stockBudget[$stockKey], $normal, 4);
+            $needed = Decimal::sub($quantity, $normal, 4);
+            $pieces = [];
+
+            foreach (['boundByProduct', 'sharedByProduct'] as $bucketName) {
+                $bucket = $bucketName === 'boundByProduct' ? $boundByProduct : $sharedByProduct;
+                foreach ($bucket[$productId] ?? [] as $candidateIndex => $candidate) {
+                    if (Decimal::compare($needed, '0', 4) <= 0) {
+                        break;
+                    }
+                    if (Decimal::compare($candidate['remaining'], '0', 4) <= 0) {
+                        continue;
+                    }
+                    $taken = Decimal::compare($candidate['remaining'], $needed, 4) <= 0 ? $candidate['remaining'] : $needed;
+                    $pieces[] = ['source' => 'emergency', 'quantity' => $taken,
+                        'emergency_item' => $candidate['item'], 'target_item' => $candidate['target']];
+                    $candidate['remaining'] = Decimal::sub($candidate['remaining'], $taken, 4);
+                    $needed = Decimal::sub($needed, $taken, 4);
+                    $purchaseIds[(int) $candidate['item']->emergency_purchase_id] = true;
+                    if ($bucketName === 'boundByProduct') {
+                        $boundByProduct[$productId][$candidateIndex] = $candidate;
+                    } else {
+                        $sharedByProduct[$productId][$candidateIndex] = $candidate;
+                    }
+                }
+            }
+
+            if (Decimal::compare($needed, '0', 4) > 0) {
+                throw ServiceException::validation('Stok tersedia tidak mencukupi untuk '.$item['product']->name.'; kekurangan melampaui barang darurat yang tersedia.');
+            }
+
+            $rawAllocations = [];
+            if (Decimal::compare($normal, '0', 4) > 0) {
+                $rawAllocations[] = ['source' => 'normal', 'quantity' => $normal,
+                    'emergency_item' => null, 'target_item' => null];
+            }
+            array_push($rawAllocations, ...$pieces);
+            $netRevenue = Decimal::mul($item['quantity'], (string) $item['price']['discounted_price'], 4, 2, 2);
+            $allocatedRevenue = '0.00';
+            $allocations = [];
+            $lastIndex = count($rawAllocations) - 1;
+            foreach ($rawAllocations as $allocationIndex => $allocation) {
+                $allocatedQty = $allocation['quantity'];
+                $revenue = $allocationIndex === $lastIndex
+                    ? Decimal::sub($netRevenue, $allocatedRevenue, 2)
+                    : Decimal::mul($allocatedQty, Decimal::div($netRevenue, $quantity, 2, 4, 2), 4, 2, 2);
+                $allocatedRevenue = Decimal::add($allocatedRevenue, $revenue, 2);
+                $hpp = (string) $item['price']['hpp_base'];
+                $cost = $allocation['source'] === 'emergency'
+                    ? (string) $allocation['emergency_item']->unit_cost
+                    : $hpp;
+                $normalCogs = Decimal::mul($allocatedQty, $hpp, 4, 2, 2);
+                $actualCogs = Decimal::mul($allocatedQty, $cost, 4, 2, 2);
+                $margin = Decimal::sub($revenue, $actualCogs, 2);
+                $allocations[] = [...$allocation, 'cost' => $cost, 'revenue' => $revenue,
+                    'normal_cogs' => $normalCogs, 'actual_cogs' => $actualCogs, 'margin' => $margin,
+                    'lost_margin' => Decimal::sub($actualCogs, $normalCogs, 2)];
+            }
+            $lineMargin = array_reduce($allocations,
+                fn (string $sum, array $allocation): string => Decimal::add($sum, $allocation['margin'], 2),
+                '0.00');
+            $marginTotal = Decimal::add($marginTotal, $lineMargin, 2);
+            $plan[$index] = ['margin' => $lineMargin, 'normal_quantity' => $normal, 'allocations' => $allocations];
+        }
+
+        return ['margin' => $marginTotal, 'items' => $plan, 'purchase_ids' => array_map('intval', array_keys($purchaseIds))];
+    }
+
+    /** @param list<int> $usedPurchaseIds */
+    private function finalizeEmergencyPurchases(?EmergencyPurchase $boundPurchase, array $usedPurchaseIds, PosSale $sale, User $cashier): void
+    {
+        $ids = array_values(array_unique([...$usedPurchaseIds, ...($boundPurchase ? [(int) $boundPurchase->id] : [])]));
+        foreach ($ids as $purchaseId) {
+            $purchase = EmergencyPurchase::query()->with('items')->lockForUpdate()->findOrFail($purchaseId);
+            $oldStatus = $purchase->status;
+            if ($boundPurchase && (int) $purchase->id === (int) $boundPurchase->id && $purchase->fund_source === 'reallocated') {
+                foreach ($purchase->items as $targetItem) {
+                    if ($targetItem->assigned_source_item_id) {
+                        $targetItem->forceFill(['assigned_quantity' => $targetItem->allocated_quantity])->save();
+                    }
+                }
+                $nextStatus = 'completed';
+            } else {
+                $hasRemaining = $purchase->items->contains(fn (EmergencyPurchaseItem $item): bool => Decimal::compare($this->emergencyStock->remaining($item), '0', 4) > 0);
+                $nextStatus = $hasRemaining ? 'unallocated' : 'completed';
+            }
+            $purchase->forceFill(['status' => $nextStatus])->save();
+            $purchase->histories()->create([
+                'actor_id' => $cashier->id,
+                'action' => $boundPurchase && (int) $purchase->id === (int) $boundPurchase->id ? 'checkout' : 'pool_checkout',
+                'from_status' => $oldStatus,
+                'to_status' => $nextStatus,
+                'notes' => $sale->number,
+            ]);
+        }
+    }
+
+    private function releaseEmergencyAllocation(PosSaleAllocation $allocation, string $quantity, User $actor, string $action): void
+    {
+        $item = EmergencyPurchaseItem::query()->lockForUpdate()->findOrFail($allocation->emergency_purchase_item_id);
+        $item->forceFill(['allocated_quantity' => Decimal::sub((string) $item->allocated_quantity, $quantity, 4)])->save();
+        $purchase = EmergencyPurchase::query()->lockForUpdate()->findOrFail($item->emergency_purchase_id);
+        $old = $purchase->status;
+        $purchase->forceFill(['status' => 'unallocated'])->save();
+        $purchase->histories()->create(['actor_id' => $actor->id, 'action' => $action.'_unallocated',
+            'from_status' => $old, 'to_status' => 'unallocated', 'notes' => 'Barang darurat tidak masuk stok reguler.']);
     }
 
     /**

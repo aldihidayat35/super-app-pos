@@ -1,7 +1,7 @@
 @extends('layouts.metronic.app')
 
 @section('title', 'Persetujuan Stok Opname - ' . config('app.name'))
-@section('page_title', 'Persetujuan Stok Opname')
+@section('page_title', 'Persetujuan ' . $opname->number)
 
 @section('page_guide')
     <x-metronic.page-guide id="warehouse-stock-opname-approval" title="Panduan Persetujuan Stok Opname">

@@ -19,13 +19,13 @@
         </form>
         <div class="table-responsive">
             <table class="table table-row-dashed align-middle">
-                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Nomor</th><th>Supplier</th><th>Gudang</th><th>Tanggal/ETA</th><th>Total</th><th>Received/Outstanding</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+                <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Nomor</th><th>Supplier</th><th>Lokasi Penerima</th><th>Tanggal/ETA</th><th>Total</th><th>Received/Outstanding</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
                 <tbody>
                 @forelse($purchaseOrders as $po)
                     <tr>
                         <td class="fw-bold">{{ $po->number }}</td>
                         <td>{{ $po->supplier?->name }}</td>
-                        <td>{{ $po->warehouse?->name }}</td>
+                        <td><span class="badge badge-light-primary me-1">{{ $po->destinationWorkLocation?->typeLabel() ?? 'Gudang' }}</span>{{ $po->destinationName() }}</td>
                         <td>{{ $po->order_date?->format('d/m/Y') }}<div class="text-muted">ETA: {{ $po->expected_at?->format('d/m/Y') ?: '-' }}</div></td>
                         <td>Rp {{ number_format((float) $po->grand_total, 0, ',', '.') }}</td>
                         <td>{{ qty($po->receivedQuantity()) }} / {{ qty($po->outstandingQuantity()) }}</td>

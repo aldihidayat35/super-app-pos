@@ -71,6 +71,20 @@ final class RoleGuideService
             'html_input' => 'strip',
             'allow_unsafe_links' => false,
         ]);
+        $html = preg_replace_callback(
+            '/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/s',
+            static function (array $matches): string {
+                $diagramSource = html_entity_decode(strip_tags($matches[1]), ENT_QUOTES | ENT_HTML5);
+                $isStoreStockFlow = str_contains($diagramSource, 'Pemasok] --> PT[Pembelian Toko]')
+                    && str_contains($diagramSource, 'ED[Pembelian Darurat] --> SD[Stok Darurat]')
+                    && str_contains($diagramSource, 'CV --> ST');
+
+                return $isStoreStockFlow
+                    ? view('guides.partials.store-stock-flow')->render()
+                    : $matches[0];
+            },
+            $html,
+        ) ?? $html;
         $toc = [];
         $usedIds = [];
 

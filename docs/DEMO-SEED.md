@@ -21,20 +21,15 @@ password
 
 | Role | Email | Username | Lokasi kerja |
 | --- | --- | --- | --- |
-| super_admin | super_admin@gudangtoko.test | demo-super-admin | Global |
-| owner_viewer | owner_viewer@gudangtoko.test | demo-owner-viewer | Global |
-| owner_approver | owner_approver@gudangtoko.test | demo-owner-approver | Global |
-| admin_user | admin_user@gudangtoko.test | demo-admin-user | Global |
-| admin_config | admin_config@gudangtoko.test | demo-admin-config | Global |
-| kepala_gudang | kepala_gudang@gudangtoko.test | demo-kepala-gudang | Gudang Demo Utama |
-| staff_gudang | staff_gudang@gudangtoko.test | demo-staff-gudang | Gudang Demo Utama |
-| picker_packer | picker_packer@gudangtoko.test | demo-picker-packer | Gudang Demo Utama |
-| purchasing | purchasing@gudangtoko.test | demo-purchasing | Gudang Demo Utama |
-| kepala_toko | kepala_toko@gudangtoko.test | demo-kepala-toko | Toko Demo Pusat |
-| kasir | kasir@gudangtoko.test | demo-kasir | Toko Demo Pusat |
-| supervisor_shift | supervisor_shift@gudangtoko.test | demo-supervisor-shift | Toko Demo Pusat |
-| langganan_owner | langganan_owner@gudangtoko.test | demo-langganan-owner | Portal B2B |
-| langganan_staff | langganan_staff@gudangtoko.test | demo-langganan-staff | Portal B2B |
+| super_admin | superadmin@gudangtoko.test | superadmin | Global |
+| owner_approver | owner@gudangtoko.test | owner | Global |
+| kepala_gudang + purchasing | manajemen-gudang@gudangtoko.test | manajemen-gudang | Gudang Demo Utama |
+| staff_gudang | staff-gudang@gudangtoko.test | staff-gudang | Gudang Demo Utama |
+| kepala_toko | toko@gudangtoko.test | toko-internal | Toko Demo Pusat |
+| staf_toko | staf-toko@gudangtoko.test | staf-toko | Toko Demo Pusat |
+| kasir + kepala_toko | kasir@gudangtoko.test | kasir | Toko Demo Pusat |
+| langganan_owner | langganan-b2b@gudangtoko.test | langganan-b2b | Portal B2B |
+| langganan_staff | pelanggan@gudangtoko.test | pelanggan | Portal B2B |
 
 ## Data yang Dibuat
 
@@ -42,6 +37,7 @@ password
 - Master produk: kategori, brand, unit, barcode, supplier, supplier product, dan tiga produk demo.
 - Inventory: saldo pembuka gudang/toko melalui `InventoryService`, stock batches, dan stock mutations append-only.
 - Pricing: price rule dan product price POS.
+- Etalase toko: lokasi pajang area/rak/tingkat untuk produk demo dan akun staf toko.
 - Purchasing: PO parsial dan goods receipt posted dengan QC, histori HPP, dan supplier score.
 - Transfer: restock request approved dan stock transfer `pending_approval` tanpa reserve/pick palsu.
 - Opname/loss: stock opname counting dan inventory loss pending approval.

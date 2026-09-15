@@ -19,6 +19,7 @@ class DocumentNumberService
         'transfer' => 'TRF',
         'opname' => 'OPN',
         'sale' => 'SAL',
+        'emergency_purchase' => 'EDT',
         'order' => 'ORD',
         'invoice' => 'INV',
         'payment' => 'PAY',

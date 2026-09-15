@@ -41,7 +41,7 @@
                 <div class="row g-4 mb-5">
                     <div class="col-md-4"><div class="text-muted">PO</div><a href="{{ route('purchasing.purchase-orders.show', $receipt->purchaseOrder) }}" class="fw-bold">{{ $receipt->purchaseOrder?->number }}</a></div>
                     <div class="col-md-4"><div class="text-muted">Supplier</div><div class="fw-bold">{{ $receipt->supplier?->name }}</div></div>
-                    <div class="col-md-4"><div class="text-muted">Gudang</div><div class="fw-bold">{{ $receipt->warehouse?->name }}</div></div>
+                    <div class="col-md-4"><div class="text-muted">Lokasi Penerima</div><div class="fw-bold">{{ $receipt->destinationWorkLocation?->typeLabel() ?? 'Gudang' }} - {{ $receipt->destinationName() }}</div></div>
                     <div class="col-md-4"><div class="text-muted">Tanggal Datang</div><div class="fw-bold">{{ $receipt->received_at?->format('d/m/Y') }}</div></div>
                     <div class="col-md-4"><div class="text-muted">Surat Jalan</div><div class="fw-bold">{{ $receipt->delivery_note_number ?: '-' }}</div></div>
                     <div class="col-md-4"><div class="text-muted">Status</div><x-metronic.status-badge :status="$receipt->status" /></div>

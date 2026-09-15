@@ -6,7 +6,7 @@
 @section('content')
     <x-metronic.card title="Review {{ $shift->number }}">
         <div class="row g-4 mb-6">
-            @foreach(['expected_cash'=>'Expected', 'actual_cash'=>'Actual', 'difference'=>'Selisih', 'cash_sales'=>'Tunai', 'non_cash_sales'=>'Non Tunai', 'expenses'=>'Expense'] as $key => $label)
+            @foreach(['expected_cash'=>'Expected', 'actual_cash'=>'Actual', 'difference'=>'Selisih', 'cash_sales'=>'Tunai', 'non_cash_sales'=>'Non Tunai', 'supplier_refunds'=>'Refund Pemasok', 'expenses'=>'Expense'] as $key => $label)
                 <div class="col-md-4"><div class="border rounded p-4"><div class="text-muted">{{ $label }}</div><div class="fs-4 fw-bold">Rp {{ number_format((float) ($summary[$key] ?? 0), 0, ',', '.') }}</div></div></div>
             @endforeach
         </div>

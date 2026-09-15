@@ -354,6 +354,30 @@ return [
         'icon' => 'ki-outline ki-shop',
         'children' => [
             [
+                'label' => 'Etalase Produk',
+                'route' => 'retail.storefront.index',
+                'active' => ['retail.storefront.*'],
+                'permission' => 'retail.catalog.view',
+            ],
+            [
+                'label' => 'Pengajuan Produk Baru',
+                'route' => 'retail.product-requests.index',
+                'active' => ['retail.product-requests.*'],
+                'permission' => 'product_requests.view',
+            ],
+            [
+                'label' => 'Pembelian Darurat',
+                'route' => 'retail.emergency.index',
+                'active' => ['retail.emergency.index', 'retail.emergency.create', 'retail.emergency.show'],
+                'permission' => 'emergency_purchases.view',
+            ],
+            [
+                'label' => 'Laporan Darurat Toko',
+                'route' => 'retail.emergency.report',
+                'active' => ['retail.emergency.report'],
+                'permission' => 'emergency_reports.view',
+            ],
+            [
                 'label' => 'Dashboard Cabang',
                 'route' => 'retail.dashboard',
                 'active' => ['retail.dashboard'],

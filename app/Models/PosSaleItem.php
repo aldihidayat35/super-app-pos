@@ -63,4 +63,10 @@ class PosSaleItem extends Model
     {
         return $this->hasMany(PosReturnItem::class);
     }
+
+    /** @return HasMany<PosSaleAllocation, $this> */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(PosSaleAllocation::class);
+    }
 }

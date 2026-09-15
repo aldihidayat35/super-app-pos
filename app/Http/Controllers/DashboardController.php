@@ -9,15 +9,20 @@ use App\Models\User;
 use App\Services\Reports\ReportMetricService;
 use App\Services\Sales\SalesPerformanceService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, ReportMetricService $reports): View
+    public function __invoke(Request $request, ReportMetricService $reports): View|RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
+        if ($user->hasRole('staf_toko')) {
+            return redirect()->route('retail.storefront.index');
+        }
+
         if ($user->hasRole('sales')) {
             return app(SalesDashboardController::class)($request, app(SalesPerformanceService::class));
         }

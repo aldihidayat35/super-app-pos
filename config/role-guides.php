@@ -50,10 +50,10 @@ return [
         'toko-internal' => [
             'title' => 'Panduan Toko Internal',
             'short_title' => 'Toko Internal',
-            'description' => 'POS, shift kasir, closing, restock, transfer masuk, retur, piutang, dan kehadiran.',
+            'description' => 'POS, pembelian langsung toko, produk baru, stok reguler dan darurat, shift, retur, serta kehadiran.',
             'icon' => 'ki-outline ki-shop',
             'color' => 'primary',
-            'roles' => ['kepala_toko', 'kasir', 'supervisor_shift'],
+            'roles' => ['kepala_toko', 'staf_toko', 'kasir', 'supervisor_shift'],
             'file' => 'guide/toko-internal.md',
         ],
         'langganan-b2b' => [

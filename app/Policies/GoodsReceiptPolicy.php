@@ -15,8 +15,9 @@ class GoodsReceiptPolicy
 
     public function view(User $user, GoodsReceipt $goodsReceipt): bool
     {
-        return $user->can('goods_receipts.view')
-            && $user->canAccessWorkLocation((int) $goodsReceipt->warehouse?->work_location_id);
+        $locationId = $goodsReceipt->destination_work_location_id ?: $goodsReceipt->warehouse?->work_location_id;
+
+        return $user->can('goods_receipts.view') && $user->canAccessWorkLocation((int) $locationId);
     }
 
     public function create(User $user): bool

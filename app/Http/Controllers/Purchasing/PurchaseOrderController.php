@@ -8,12 +8,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchasing\CancelPurchaseOrderRequest;
 use App\Http\Requests\Purchasing\StorePurchaseOrderRequest;
 use App\Http\Requests\Purchasing\UpdatePurchaseOrderRequest;
+use App\Models\Branch;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\Supplier;
 use App\Models\Unit;
-use App\Models\Warehouse;
+use App\Models\WorkLocation;
 use App\Services\Purchasing\PurchaseOrderService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -58,7 +59,7 @@ class PurchaseOrderController extends Controller
         $this->authorize('view', $purchaseOrder);
 
         return view('purchasing.purchase-orders.show', [
-            'purchaseOrder' => $purchaseOrder->load(['warehouse', 'supplier', 'creator', 'approver', 'items.product', 'statusHistories.actor', 'approvals.approver', 'purchaseRequest']),
+            'purchaseOrder' => $purchaseOrder->load(['warehouse', 'destinationWorkLocation', 'supplier', 'creator', 'approver', 'items.product', 'statusHistories.actor', 'approvals.approver', 'purchaseRequest']),
         ]);
     }
 
@@ -123,14 +124,19 @@ class PurchaseOrderController extends Controller
     {
         $this->authorize('print', $purchaseOrder);
 
-        return Excel::download(new PurchaseOrdersExport(collect([$purchaseOrder->load(['supplier', 'warehouse', 'items'])])), $purchaseOrder->number.'.xlsx');
+        return Excel::download(new PurchaseOrdersExport(collect([$purchaseOrder->load(['supplier', 'warehouse', 'destinationWorkLocation', 'items'])])), $purchaseOrder->number.'.xlsx');
     }
 
     private function query(Request $request): mixed
     {
         return PurchaseOrder::query()
-            ->with(['supplier', 'warehouse', 'items'])
-            ->whereHas('warehouse', fn ($query) => $query->whereIn('work_location_id', $request->user()?->permittedWorkLocationIds() ?? []))
+            ->with(['supplier', 'warehouse', 'destinationWorkLocation', 'items'])
+            ->where(function ($query) use ($request): void {
+                $locationIds = $this->visibleLocationIds($request);
+                $query->whereIn('destination_work_location_id', $locationIds)
+                    ->orWhere(fn ($legacy) => $legacy->whereNull('destination_work_location_id')
+                        ->whereHas('warehouse', fn ($warehouse) => $warehouse->whereIn('work_location_id', $locationIds)));
+            })
             ->when($request->integer('supplier_id') > 0, fn ($query) => $query->where('supplier_id', $request->integer('supplier_id')))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('order_date', '>=', $request->query('date_from')))
@@ -143,10 +149,30 @@ class PurchaseOrderController extends Controller
     private function formData(Request $request): array
     {
         return [
-            'warehouses' => Warehouse::query()->where('is_active', true)->whereIn('work_location_id', $request->user()?->permittedWorkLocationIds() ?? [])->orderBy('name')->get(),
+            'destinations' => WorkLocation::query()->where('is_active', true)
+                ->whereIn('type', ['warehouse', 'branch'])
+                ->whereIn('id', $request->user()?->permittedWorkLocationIds() ?? [])
+                ->orderBy('type')->orderBy('name')->get(),
             'suppliers' => Supplier::query()->where('is_active', true)->orderBy('name')->get(),
             'products' => Product::query()->with(['baseUnit', 'units.unit'])->where('status', 'active')->orderBy('name')->limit(200)->get(),
             'units' => Unit::query()->where('is_active', true)->orderBy('name')->get(),
         ];
+    }
+
+    /** @return list<int> */
+    private function visibleLocationIds(Request $request): array
+    {
+        $locationIds = $request->user()?->permittedWorkLocationIds() ?? [];
+        if (! $request->user()?->can('purchase_orders.approve')) {
+            return $locationIds;
+        }
+
+        $branchLocationIds = Branch::query()
+            ->whereHas('primaryWarehouse', fn ($warehouse) => $warehouse->whereIn('work_location_id', $locationIds))
+            ->pluck('work_location_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        return array_values(array_unique([...$locationIds, ...$branchLocationIds]));
     }
 }

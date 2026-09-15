@@ -11,6 +11,7 @@ use App\Http\Requests\Retail\StorePosHoldRequest;
 use App\Http\Requests\Retail\StorePosSaleRequest;
 use App\Models\CashShift;
 use App\Models\Customer;
+use App\Models\EmergencyPurchase;
 use App\Models\PosHold;
 use App\Models\ProductBrand;
 use App\Models\ProductCategory;
@@ -26,11 +27,24 @@ use Illuminate\Validation\ValidationException;
 
 class PosController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, PosCatalogService $catalog): View
     {
         abort_unless($request->user()->can('pos.view'), 403);
 
         $activeShift = $this->activeShift($request);
+        $emergencyPurchase = null;
+        $resumeCart = session('pos_resume_cart');
+        if ($request->filled('emergency_purchase_id')) {
+            $emergencyPurchase = EmergencyPurchase::query()->with('items.product')->findOrFail($request->integer('emergency_purchase_id'));
+            abort_unless($activeShift && (int) $activeShift->branch_id === (int) $emergencyPurchase->branch_id
+                && $request->user()->canAccessWorkLocation((int) $emergencyPurchase->work_location_id), 403);
+            abort_unless($emergencyPurchase->status === 'purchased', 422);
+            $resumeCart = ['customer_id' => $emergencyPurchase->customer_id, 'items' => $emergencyPurchase->items
+                ->map(fn ($item): array => $catalog->quote($activeShift->branch, $request->user(), [
+                    'product_id' => $item->product_id, 'unit_id' => $item->unit_id,
+                    'quantity' => $item->requested_quantity, 'customer_id' => $emergencyPurchase->customer_id,
+                ]))->all()];
+        }
 
         return view('retail.pos.index', [
             'activeShift' => $activeShift,
@@ -40,7 +54,8 @@ class PosController extends Controller
             'brands' => ProductBrand::query()->where('is_active', true)->orderBy('name')->get(),
             'paymentMethods' => PaymentMethod::options(),
             'holdCount' => $activeShift ? PosHold::query()->where('cash_shift_id', $activeShift->id)->where('cashier_user_id', $request->user()->id)->where('status', 'held')->count() : 0,
-            'resumeCart' => session('pos_resume_cart'),
+            'resumeCart' => $resumeCart,
+            'emergencyPurchase' => $emergencyPurchase,
         ]);
     }
 

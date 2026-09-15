@@ -36,6 +36,7 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2">
+                    @can('emergency_purchases.create')<a href="{{ route('retail.emergency.create', ['branch_id' => $branch->id]) }}" class="btn btn-light-warning">Pembelian Darurat</a>@endcan
                     <button type="button" id="pos-sidebar-toggle" class="btn btn-icon btn-light" title="Buka/tutup sidebar"
                         aria-label="Buka atau tutup sidebar" aria-expanded="false"><i
                             class="ki-outline ki-arrow-right fs-3"></i></button>
@@ -803,6 +804,7 @@
                 const branchId = @json($branch->id);
                 const paymentMethods = @json($paymentMethods);
                 const resumeCart = @json($resumeCart);
+                let emergencyPurchaseId = @json($emergencyPurchase?->id);
                 const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
                 const scanner = document.getElementById('pos-scanner');
                 const productResults = document.getElementById('product-results');
@@ -934,13 +936,9 @@
                         if (sequence !== requestSequence) return;
                         if (data.exact_match && data.results.length === 1) {
                             const item = data.results[0];
-                            if (!item.stock_sufficient || Number(item.stock) <= 0) {
-                                showScannerMessage(`${item.name}: stok tidak tersedia.`, 'danger');
-                            } else {
-                                await addToCart(item);
-                                scanner.value = '';
-                                showScannerMessage(`${item.name} ditambahkan ke keranjang.`, 'success');
-                            }
+                            await addToCart(item);
+                            scanner.value = '';
+                            showScannerMessage(`${item.name} ditambahkan. Periksa kekurangan stok sebelum checkout.`, item.stock_sufficient ? 'success' : 'warning');
                             focusScanner();
                             return;
                         }
@@ -987,7 +985,7 @@
                         const card = document.createElement('article');
                         card.className = 'pos-product-card';
                         card.innerHTML =
-                            `<div class="d-flex gap-3">${image}<div class="pos-product-meta flex-grow-1"><div class="fw-bold pos-product-name" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</div><div class="text-muted fs-8 text-truncate mt-1">${escapeHtml(product.sku)} / ${escapeHtml(product.unit)}</div><div class="text-${stockClass} fs-8 mt-1">Stok ${qty(product.stock)}${product.stock_low ? ' / menipis' : ''}</div></div></div><div class="pos-ring-list mt-3">${rings}</div><button type="button" class="btn btn-sm btn-primary add-product w-100 mt-3" ${Number(product.stock) <= 0 ? 'disabled' : ''}><i class="ki-outline ki-plus fs-5"></i> Tambah</button>`;
+                            `<div class="d-flex gap-3">${image}<div class="pos-product-meta flex-grow-1"><div class="fw-bold pos-product-name" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</div><div class="text-muted fs-8 text-truncate mt-1">${escapeHtml(product.sku)} / ${escapeHtml(product.unit)}</div><div class="text-${stockClass} fs-8 mt-1">Total ${qty(product.stock)}${product.stock_low ? ' / menipis' : ''}</div><div class="text-muted fs-9">Reguler ${qty(product.regular_stock_base)} · Darurat ${qty(product.emergency_stock_base)}</div></div></div><div class="pos-ring-list mt-3">${rings}</div><button type="button" class="btn btn-sm btn-primary add-product w-100 mt-3"><i class="ki-outline ki-plus fs-5"></i> Tambah</button>`;
                         bindImageFallback(card, 'pos-product-image', 'fs-2x');
                         card.querySelector('.add-product').addEventListener('click', async () => {
                             await addToCart(product);
@@ -1069,7 +1067,7 @@
                         row.className = `pos-cart-item pos-price-${statusClass}`;
                         row.innerHTML = `
                 <div class="pos-cart-main">
-                    <div class="pos-cart-product d-flex gap-3">${image}<div class="min-w-0"><div class="fw-bold fs-6 pos-product-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div><div class="text-muted fs-8 text-truncate">SKU ${escapeHtml(item.sku)}</div><div class="d-flex flex-wrap align-items-center gap-2 mt-2"><select class="form-select form-select-sm cart-unit" data-searchable="false">${units}</select><span class="fs-8 ${item.stock_sufficient ? 'text-muted' : 'text-danger fw-bold'}">Stok ${qty(item.stock)}</span></div></div></div>
+                    <div class="pos-cart-product d-flex gap-3">${image}<div class="min-w-0"><div class="fw-bold fs-6 pos-product-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div><div class="text-muted fs-8 text-truncate">SKU ${escapeHtml(item.sku)}</div><div class="d-flex flex-wrap align-items-center gap-2 mt-2"><select class="form-select form-select-sm cart-unit" data-searchable="false">${units}</select><span class="fs-8 ${item.stock_sufficient ? 'text-muted' : 'text-danger fw-bold'}">Total ${qty(item.stock)} (reguler ${qty(item.regular_stock_base)}, darurat ${qty(item.emergency_stock_base)})</span></div></div></div>
                     <div class="pos-cart-qty"><span class="pos-cart-label">Qty</span><div class="pos-qty-control"><button type="button" class="btn btn-light cart-minus" aria-label="Kurangi qty"><i class="ki-outline ki-minus fs-3"></i></button><input type="number" min="0.0001" step="0.0001" class="form-control text-center cart-qty" value="${qtyInput(item.quantity)}"><button type="button" class="btn btn-light cart-plus" aria-label="Tambah qty"><i class="ki-outline ki-plus fs-3"></i></button></div></div>
                     <div class="pos-cart-action"><button type="button" class="btn btn-icon btn-light-danger cart-remove" title="Hapus" aria-label="Hapus produk"><i class="ki-outline ki-trash fs-3"></i></button></div>
                 </div>
@@ -1145,7 +1143,7 @@
                     const issues = [];
                     cart.forEach(item => {
                         if (item.loading || item.error) issues.push(`${item.name}: harga belum siap`);
-                        if (!item.stock_sufficient) issues.push(`${item.name}: stok tidak cukup`);
+                        if (!item.stock_sufficient) issues.push(`${item.name}: gabungan stok reguler dan darurat tidak cukup`);
                         if (item.pricing?.approval_required) issues.push(
                         `${item.name}: membutuhkan approval harga`);
                     });
@@ -1154,7 +1152,7 @@
                         0) + Number(item.quantity) * Number(item.unit_factor || 1)));
                     requiredByProduct.forEach((required, productId) => {
                         const sample = cart.find(item => item.product_id === productId);
-                        if (sample && required > Number(sample.stock_base)) issues.push(
+                        if (sample && required > Number(sample.sellable_stock_base)) issues.push(
                             `${sample.name}: total qty melampaui stok cabang`);
                     });
                     return [...new Set(issues)];
@@ -1293,6 +1291,7 @@
                         branch_id: branchId,
                         customer_id: customerSelect.value || null,
                         idempotency_key: idempotencyKey,
+                        emergency_purchase_id: emergencyPurchaseId,
                         items: cart.map(item => ({
                             product_id: item.product_id,
                             unit_id: item.unit_id,
@@ -1422,6 +1421,7 @@
 
                 function clearTransaction() {
                     cart = [];
+                    emergencyPurchaseId = null;
                     payments = [];
                     idempotencyKey = makeUuid();
                     customerSelect.value = '';

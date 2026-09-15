@@ -22,6 +22,8 @@ class StorePosReturnRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.pos_sale_item_id' => ['required', 'integer', 'exists:pos_sale_items,id'],
             'items.*.quantity' => ['required', 'numeric', 'min:0'],
+            'items.*.normal_quantity' => ['nullable', 'numeric', 'min:0'],
+            'items.*.emergency_quantity' => ['nullable', 'numeric', 'min:0'],
             'items.*.condition' => ['required', Rule::in(['good', 'damaged'])],
             'items.*.reason' => ['nullable', 'string', 'max:1000'],
         ];

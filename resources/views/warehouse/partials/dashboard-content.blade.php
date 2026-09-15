@@ -8,7 +8,11 @@
     $b2bUrl = route('warehouse.b2b-orders.index');
     $opnameUrl = route('warehouse.stock-opnames.index');
     $receiptUrl = route('warehouse.goods-receipts.index');
-    $mutationUrl = route('warehouse.stock-card.index', ['work_location_id' => $wlId]);
+    $mutationUrl = route('warehouse.stock-card.index', [
+        'work_location_id' => $wlId,
+        'date_from' => $filters['start_date'],
+        'date_to' => $filters['end_date'],
+    ]);
 @endphp
 
 @if (! $activeWarehouse)
@@ -20,6 +24,11 @@
         </div>
     </div>
 @endif
+
+<div class="alert alert-light-primary d-flex flex-wrap align-items-center justify-content-between gap-2 py-3 mb-5" role="status">
+    <span><i class="ki-outline ki-calendar me-2"></i>Aktivitas periode <strong>{{ $filters['start']->translatedFormat('d M Y') }}</strong> sampai <strong>{{ $filters['end']->translatedFormat('d M Y') }}</strong></span>
+    <span class="text-muted fs-8">Saldo stok dan pekerjaan pending menampilkan posisi terkini.</span>
+</div>
 
 {{-- KPI Cards --}}
 @include('warehouse.partials.kpi-grid')

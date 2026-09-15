@@ -22,8 +22,15 @@ class AuthenticatedSessionController extends Controller
         $user = $authenticate->execute($request);
         $request->session()->regenerate();
         $user->forceFill(['last_login_at' => now()])->save();
+        if ($user->hasRole('staf_toko')) {
+            $request->session()->forget('url.intended');
+        }
 
-        return redirect()->intended(route('dashboard'))->with('notification', [
+        $redirect = $user->hasRole('staf_toko')
+            ? redirect()->route('retail.storefront.index')
+            : redirect()->intended(route('dashboard'));
+
+        return $redirect->with('notification', [
             'type' => 'success',
             'message' => 'Selamat datang di GudangToko.',
         ]);

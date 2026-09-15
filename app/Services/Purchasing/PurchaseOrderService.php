@@ -14,6 +14,7 @@ use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Models\WorkLocation;
 use App\Services\Organization\DocumentNumberService;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
@@ -28,13 +29,18 @@ class PurchaseOrderService
     public function create(array $data, User $actor): PurchaseOrder
     {
         return DB::transaction(function () use ($data, $actor): PurchaseOrder {
-            $warehouse = Warehouse::query()->with('workLocation')->findOrFail($data['warehouse_id']);
+            $destinationId = $data['destination_work_location_id'] ?? Warehouse::query()->whereKey($data['warehouse_id'] ?? null)->value('work_location_id');
+            $destination = WorkLocation::query()->where('is_active', true)->findOrFail($destinationId);
+            $warehouse = $destination->type === 'warehouse'
+                ? Warehouse::query()->where('work_location_id', $destination->id)->firstOrFail()
+                : null;
             $supplier = Supplier::query()->findOrFail($data['supplier_id']);
-            $number = $this->numbers->next('po', $warehouse->workLocation);
+            $number = $this->numbers->next('po', $destination);
 
             $purchaseOrder = PurchaseOrder::query()->create([
                 'number' => $number,
-                'warehouse_id' => $warehouse->id,
+                'warehouse_id' => $warehouse?->id,
+                'destination_work_location_id' => $destination->id,
                 'supplier_id' => $supplier->id,
                 'purchase_request_id' => $data['purchase_request_id'] ?? null,
                 'order_date' => $data['order_date'],
@@ -52,7 +58,7 @@ class PurchaseOrderService
             $this->recalculate($purchaseOrder);
             $this->history($purchaseOrder, null, PurchaseOrderStatus::DRAFT, $actor, 'PO dibuat sebagai draft.');
 
-            return $purchaseOrder->fresh(['items', 'supplier', 'warehouse']);
+            return $purchaseOrder->fresh(['items', 'supplier', 'warehouse', 'destinationWorkLocation']);
         });
     }
 
@@ -68,8 +74,15 @@ class PurchaseOrderService
                 throw ServiceException::validation('PO yang sudah disetujui tidak boleh diedit. Gunakan proses reopen/revision yang diaudit.');
             }
 
+            $destinationId = $data['destination_work_location_id'] ?? Warehouse::query()->whereKey($data['warehouse_id'] ?? null)->value('work_location_id');
+            $destination = WorkLocation::query()->where('is_active', true)->findOrFail($destinationId);
+            $warehouseId = $destination->type === 'warehouse'
+                ? Warehouse::query()->where('work_location_id', $destination->id)->value('id')
+                : null;
+
             $purchaseOrder->fill([
-                'warehouse_id' => $data['warehouse_id'],
+                'warehouse_id' => $warehouseId,
+                'destination_work_location_id' => $destination->id,
                 'supplier_id' => $data['supplier_id'],
                 'order_date' => $data['order_date'],
                 'expected_at' => $data['expected_at'] ?? null,
@@ -84,7 +97,7 @@ class PurchaseOrderService
             $this->recalculate($purchaseOrder);
             activity()->causedBy($actor)->performedOn($purchaseOrder)->log('purchase_order.updated');
 
-            return $purchaseOrder->fresh(['items', 'supplier', 'warehouse']);
+            return $purchaseOrder->fresh(['items', 'supplier', 'warehouse', 'destinationWorkLocation']);
         });
     }
 

@@ -65,7 +65,12 @@ class RoleGuideTest extends TestCase
         $this->actingAs($user)->get(route('guides.show', 'toko-internal'))
             ->assertOk()
             ->assertSee('Alur harian kasir')
-            ->assertSee('Check-in');
+            ->assertSee('Check-in')
+            ->assertSee('Diagram alur persediaan toko')
+            ->assertSee('data-guide-flow="store-stock"', false)
+            ->assertSee('Pembelian Toko')
+            ->assertSee('Konversi ke')
+            ->assertSee('Stok Reguler');
 
         $this->actingAs($user)->get(route('guides.show', 'owner'))->assertForbidden();
     }

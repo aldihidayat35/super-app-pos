@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Warehouse;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Warehouse\WarehouseDashboardFilterRequest;
 use App\Models\Stock;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -14,17 +15,18 @@ use Illuminate\Support\Collection;
 
 class WarehouseDashboardController extends Controller
 {
-    public function index(Request $request, ReportMetricService $reports): View
+    public function index(WarehouseDashboardFilterRequest $request, ReportMetricService $reports): View
     {
         $this->authorize('viewAny', Stock::class);
 
-        return $this->renderForUser($request, $reports);
+        return $this->renderForUser($request, $reports, $request->validated());
     }
 
-    public function renderForUser(Request $request, ReportMetricService $reports): View
+    /** @param array<string, mixed>|null $filterInput */
+    public function renderForUser(Request $request, ReportMetricService $reports, ?array $filterInput = null): View
     {
         [$warehouses, $activeWarehouse, $canSelectWarehouse] = $this->resolveContext($request);
-        $payload = $this->dashboardPayload($request, $reports, $activeWarehouse);
+        $payload = $this->dashboardPayload($request, $reports, $activeWarehouse, $filterInput);
 
         return view('warehouse.dashboard', $payload + [
             'warehouses' => $warehouses,
@@ -33,12 +35,12 @@ class WarehouseDashboardController extends Controller
         ]);
     }
 
-    public function data(Request $request, ReportMetricService $reports): JsonResponse
+    public function data(WarehouseDashboardFilterRequest $request, ReportMetricService $reports): JsonResponse
     {
         $this->authorize('viewAny', Stock::class);
 
         [, $activeWarehouse] = $this->resolveContext($request);
-        $payload = $this->dashboardPayload($request, $reports, $activeWarehouse);
+        $payload = $this->dashboardPayload($request, $reports, $activeWarehouse, $request->validated());
 
         return response()->json([
             'warehouse_id' => $activeWarehouse?->id,
@@ -46,6 +48,15 @@ class WarehouseDashboardController extends Controller
             'html' => view('warehouse.partials.dashboard-content', $payload)->render(),
             'kpis' => $payload['dashboard']['kpis'],
             'charts' => $payload['dashboard']['charts'],
+            'filters' => [
+                'start_date' => $payload['filters']['start_date'],
+                'end_date' => $payload['filters']['end_date'],
+            ],
+            'report_url' => route('reports.warehouse.index', [
+                'work_location_id' => $activeWarehouse?->work_location_id,
+                'start_date' => $payload['filters']['start_date'],
+                'end_date' => $payload['filters']['end_date'],
+            ]),
             'last_updated_at' => $payload['dashboard']['last_updated_at']->toIso8601String(),
         ]);
     }
@@ -80,12 +91,15 @@ class WarehouseDashboardController extends Controller
         return [$warehouses, $activeWarehouse, $canSelectWarehouse];
     }
 
-    /** @return array<string, mixed> */
-    private function dashboardPayload(Request $request, ReportMetricService $reports, ?Warehouse $activeWarehouse): array
+    /**
+     * @param  array<string, mixed>|null  $filterInput
+     * @return array<string, mixed>
+     */
+    private function dashboardPayload(Request $request, ReportMetricService $reports, ?Warehouse $activeWarehouse, ?array $filterInput = null): array
     {
         /** @var User $user */
         $user = $request->user();
-        $input = $request->only(['start_date', 'end_date', 'range']);
+        $input = $filterInput ?? $request->only(['start_date', 'end_date', 'range']);
         $input['work_location_id'] = $activeWarehouse === null ? -1 : $activeWarehouse->work_location_id;
         $filters = $reports->filters($user, $input);
 

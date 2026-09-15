@@ -181,6 +181,10 @@ class ReturnSourceService
         }
 
         $document = $this->findDocument($sourceType, $referenceId, $workLocationId);
+        if ($document instanceof PosSale && $document->items()
+            ->whereHas('allocations', fn ($query) => $query->where('source', 'emergency'))->exists()) {
+            throw ServiceException::validation('Retur POS dengan barang darurat harus diproses dari detail penjualan POS agar sumber qty dan biaya asal tidak berubah.');
+        }
         $summary = $this->documentSummary($document);
         $sourceItems = $this->documentSourceItems($document)->keyBy('id');
         $normalizedItems = [];

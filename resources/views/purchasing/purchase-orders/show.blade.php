@@ -137,8 +137,8 @@
                     </div>
                     <div class="col-md-6">
                         <div class="fw-bold mb-3">Tujuan Penerimaan</div>
-                        <div class="text-muted fs-8 mb-1">Gudang yang akan menerima barang dari supplier.</div>
-                        <div class="fw-semibold">{{ $purchaseOrder->warehouse?->code }} - {{ $purchaseOrder->warehouse?->name }}</div>
+                        <div class="text-muted fs-8 mb-1">Gudang atau toko yang menerima barang dari supplier.</div>
+                        <div class="fw-semibold">{{ $purchaseOrder->destinationWorkLocation?->typeLabel() ?? 'Gudang' }} - {{ $purchaseOrder->destinationName() }}</div>
                         <div class="text-muted fs-7 mt-2">Penerimaan dicatat melalui modul Goods Receipt sesuai akses lokasi kerja.</div>
                     </div>
                 </div>

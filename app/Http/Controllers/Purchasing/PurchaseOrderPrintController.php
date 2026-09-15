@@ -13,7 +13,7 @@ class PurchaseOrderPrintController extends Controller
     public function __invoke(Request $request, PurchaseOrder $purchaseOrder): Response
     {
         $this->authorize('print', $purchaseOrder);
-        $purchaseOrder->load(['warehouse', 'supplier', 'items.product', 'creator', 'approver']);
+        $purchaseOrder->load(['warehouse', 'destinationWorkLocation', 'supplier', 'items.product', 'creator', 'approver']);
 
         if ($request->query('download') === 'pdf') {
             return Pdf::loadView('purchasing.purchase-orders.print', compact('purchaseOrder'))

@@ -1,7 +1,7 @@
 @extends('layouts.metronic.app')
 
 @section('title', 'Penghitungan Stok Opname - ' . config('app.name'))
-@section('page_title', 'Penghitungan Stok Opname')
+@section('page_title', 'Penghitungan ' . $opname->number)
 
 @section('page_guide')
     <x-metronic.page-guide id="warehouse-stock-opname-count" title="Panduan Penghitungan Fisik">

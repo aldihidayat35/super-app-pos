@@ -18,8 +18,8 @@ use App\Models\StockBatch;
 use App\Models\SupplierProduct;
 use App\Models\SupplierScore;
 use App\Models\User;
-use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
+use App\Models\WorkLocation;
 use App\Services\Inventory\InventoryService;
 use App\Services\Organization\DocumentNumberService;
 use App\Services\Purchasing\PurchaseOrderService;
@@ -40,16 +40,22 @@ class GoodsReceiptService
     public function createDraft(array $data, User $actor): GoodsReceipt
     {
         return DB::transaction(function () use ($data, $actor): GoodsReceipt {
-            $purchaseOrder = PurchaseOrder::query()->with(['warehouse.workLocation', 'supplier', 'items.product', 'items.unit'])->lockForUpdate()->findOrFail($data['purchase_order_id']);
+            $purchaseOrder = PurchaseOrder::query()->with(['warehouse.workLocation', 'destinationWorkLocation', 'supplier', 'items.product', 'items.unit'])->lockForUpdate()->findOrFail($data['purchase_order_id']);
 
             if (! in_array($purchaseOrder->status, [PurchaseOrderStatus::APPROVED, PurchaseOrderStatus::SENT_TO_SUPPLIER, PurchaseOrderStatus::PARTIALLY_RECEIVED], true)) {
                 throw ServiceException::validation('PO belum siap diterima.');
             }
 
+            $destination = $purchaseOrder->destinationWorkLocation ?? $purchaseOrder->warehouse?->workLocation;
+            if (! $destination) {
+                throw ServiceException::validation('Lokasi penerima PO tidak ditemukan.');
+            }
+
             $receipt = GoodsReceipt::query()->create([
-                'number' => $this->numbers->next('receipt', $purchaseOrder->warehouse->workLocation),
+                'number' => $this->numbers->next('receipt', $destination),
                 'purchase_order_id' => $purchaseOrder->id,
                 'warehouse_id' => $purchaseOrder->warehouse_id,
+                'destination_work_location_id' => $destination->id,
                 'supplier_id' => $purchaseOrder->supplier_id,
                 'received_at' => $data['received_at'],
                 'delivery_note_number' => $data['delivery_note_number'] ?? null,
@@ -64,7 +70,7 @@ class GoodsReceiptService
 
             $this->replaceItems($receipt, $purchaseOrder, $data['items'] ?? []);
 
-            return $receipt->fresh(['items', 'purchaseOrder', 'supplier', 'warehouse']);
+            return $receipt->fresh(['items', 'purchaseOrder', 'supplier', 'warehouse', 'destinationWorkLocation']);
         });
     }
 
@@ -98,7 +104,7 @@ class GoodsReceiptService
     public function post(GoodsReceipt $receipt, User $actor): GoodsReceipt
     {
         return DB::transaction(function () use ($receipt, $actor): GoodsReceipt {
-            $receipt = GoodsReceipt::query()->with(['items.purchaseOrderItem', 'warehouse.workLocation', 'supplier', 'purchaseOrder.items'])->lockForUpdate()->findOrFail($receipt->id);
+            $receipt = GoodsReceipt::query()->with(['items.purchaseOrderItem', 'warehouse.workLocation', 'destinationWorkLocation', 'supplier', 'purchaseOrder.items'])->lockForUpdate()->findOrFail($receipt->id);
 
             if ($receipt->status === GoodsReceiptStatus::POSTED) {
                 return $receipt;
@@ -259,7 +265,7 @@ class GoodsReceiptService
         }
 
         $product = Product::query()->lockForUpdate()->findOrFail($item->product_id);
-        $warehouse = Warehouse::query()->with('workLocation')->findOrFail($receipt->warehouse_id);
+        $destination = $this->destination($receipt);
         $bin = $item->warehouse_location_id ? WarehouseLocation::query()->find($item->warehouse_location_id) : null;
         $beforeQty = Decimal::normalize(Stock::query()->where('product_id', $product->id)->sum('quantity_on_hand'));
         $hppBefore = Decimal::normalize($product->cost_price ?? 0, 2);
@@ -271,7 +277,7 @@ class GoodsReceiptService
 
         $mutation = $this->inventory->receive(
             product: $product,
-            workLocation: $warehouse->workLocation,
+            workLocation: $destination,
             warehouseLocation: $bin,
             quantity: $acceptedBase,
             actor: $actor,
@@ -328,11 +334,21 @@ class GoodsReceiptService
         }
 
         $product = Product::query()->findOrFail($item->product_id);
-        $warehouse = Warehouse::query()->with('workLocation')->findOrFail($receipt->warehouse_id);
+        $destination = $this->destination($receipt);
         $bin = $item->warehouse_location_id ? WarehouseLocation::query()->find($item->warehouse_location_id) : null;
 
-        $this->inventory->receive($product, $warehouse->workLocation, $bin, $damagedBase, $actor, ['type' => 'goods_receipt', 'id' => $receipt->id, 'no' => $receipt->number], 'Penerimaan barang rusak.', "receipt-{$receipt->id}-item-{$item->id}-damaged-receive");
-        $this->inventory->damage($product, $warehouse->workLocation, $bin, $damagedBase, $actor, ['type' => 'goods_receipt', 'id' => $receipt->id, 'no' => $receipt->number], 'QC barang rusak.', "receipt-{$receipt->id}-item-{$item->id}-damaged-qc");
+        $this->inventory->receive($product, $destination, $bin, $damagedBase, $actor, ['type' => 'goods_receipt', 'id' => $receipt->id, 'no' => $receipt->number], 'Penerimaan barang rusak.', "receipt-{$receipt->id}-item-{$item->id}-damaged-receive");
+        $this->inventory->damage($product, $destination, $bin, $damagedBase, $actor, ['type' => 'goods_receipt', 'id' => $receipt->id, 'no' => $receipt->number], 'QC barang rusak.', "receipt-{$receipt->id}-item-{$item->id}-damaged-qc");
+    }
+
+    private function destination(GoodsReceipt $receipt): WorkLocation
+    {
+        $destination = $receipt->destinationWorkLocation ?? $receipt->warehouse?->workLocation;
+        if (! $destination) {
+            throw ServiceException::validation('Lokasi penerima barang tidak ditemukan.');
+        }
+
+        return $destination;
     }
 
     private function writeQcResults(GoodsReceiptItem $item): void

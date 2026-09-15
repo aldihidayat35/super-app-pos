@@ -1,6 +1,10 @@
 @php
     $user = auth()->user();
-    $menuItems = collect(config('navigation'))->filter(function (array $item) use ($user): bool {
+    $hiddenRoutes = config('ui_visibility.hidden_navigation_routes', []);
+    $menuItems = collect(config('navigation'))->filter(function (array $item) use ($user, $hiddenRoutes): bool {
+        if (in_array($item['route'] ?? null, $hiddenRoutes, true)) {
+            return false;
+        }
         if (!empty($item['permission']) && !$user?->can($item['permission'])) {
             return false;
         }
@@ -8,7 +12,8 @@
             return true;
         }
         return collect($item['children'])->contains(
-            fn(array $child): bool => empty($child['permission']) || $user?->can($child['permission']),
+            fn(array $child): bool => !in_array($child['route'] ?? null, $hiddenRoutes, true)
+                && (empty($child['permission']) || $user?->can($child['permission'])),
         );
     });
 
@@ -152,7 +157,8 @@
                 @forelse ($menuItems as $item)
                     @php
                         $children = collect($item['children'] ?? [])->filter(
-                            fn(array $child): bool => empty($child['permission']) || $user?->can($child['permission']),
+                            fn(array $child): bool => !in_array($child['route'] ?? null, $hiddenRoutes, true)
+                                && (empty($child['permission']) || $user?->can($child['permission'])),
                         );
                         $isOpen =
                             collect($item['active'] ?? [])->contains(

@@ -9,7 +9,7 @@
                 <label class="form-label">PO siap diterima</label>
                 <select name="purchase_order_id" class="form-select form-select-solid">
                     @foreach($purchaseOrders as $po)
-                        <option value="{{ $po->id }}" @selected($selectedPo?->id === $po->id)>{{ $po->number }} — {{ $po->supplier?->name }} — {{ $po->warehouse?->name }}</option>
+                        <option value="{{ $po->id }}" @selected($selectedPo?->id === $po->id)>{{ $po->number }} — {{ $po->supplier?->name }} — {{ $po->destinationName() }}</option>
                     @endforeach
                 </select>
             </div>
@@ -28,7 +28,7 @@
             <div class="row g-4">
                 <div class="col-md-3"><label class="form-label">PO</label><input class="form-control form-control-solid" value="{{ $selectedPo->number }}" readonly></div>
                 <div class="col-md-3"><label class="form-label">Supplier</label><input class="form-control form-control-solid" value="{{ $selectedPo->supplier?->name }}" readonly></div>
-                <div class="col-md-3"><label class="form-label">Gudang</label><input class="form-control form-control-solid" value="{{ $selectedPo->warehouse?->name }}" readonly></div>
+                <div class="col-md-3"><label class="form-label">Lokasi Penerima</label><input class="form-control form-control-solid" value="{{ $selectedPo->destinationWorkLocation?->typeLabel() }} - {{ $selectedPo->destinationName() }}" readonly></div>
                 <div class="col-md-3"><label class="form-label required">Tanggal Datang</label><input type="date" name="received_at" value="{{ old('received_at', optional($receipt->received_at)->format('Y-m-d') ?: now()->toDateString()) }}" class="form-control @error('received_at') is-invalid @enderror" required>@error('received_at')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-md-4"><label class="form-label">Nomor Surat Jalan</label><input name="delivery_note_number" value="{{ old('delivery_note_number', $receipt->delivery_note_number) }}" class="form-control"></div>
                 <div class="col-md-4"><label class="form-label">Ongkir Aktual</label><input type="number" step="0.01" min="0" name="actual_freight_cost" value="{{ old('actual_freight_cost', $receipt->actual_freight_cost ?? 0) }}" class="form-control"></div>
