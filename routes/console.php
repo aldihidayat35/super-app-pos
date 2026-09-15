@@ -19,6 +19,18 @@ Schedule::command('notifications:run-schedules')
     ->name('notification-schedule-runner')
     ->withoutOverlapping();
 
+Schedule::command('notifications:business')
+    ->everyFifteenMinutes()
+    ->timezone('Asia/Jakarta')
+    ->name('business-notification-scanner')
+    ->withoutOverlapping();
+
+Schedule::command('notifications:business --owner-report')
+    ->dailyAt('21:00')
+    ->timezone('Asia/Jakarta')
+    ->name('owner-nightly-whatsapp-report')
+    ->withoutOverlapping();
+
 Schedule::command('checklists:generate')
     ->everyFifteenMinutes()
     ->timezone(config('work-checklists.timezone', 'Asia/Jakarta'))

@@ -17,7 +17,9 @@ use App\Models\ShiftExpense;
 use App\Models\User;
 use App\Services\Attendance\AttendanceService;
 use App\Services\Control\AnomalyDetectionService;
+use App\Services\Notifications\BusinessNotificationService;
 use App\Services\Organization\DocumentNumberService;
+use App\Support\CurrencyFormatter;
 use App\Support\Decimal;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +30,7 @@ class CashShiftService
         private readonly DocumentNumberService $numbers,
         private readonly AttendanceService $attendance,
         private readonly AnomalyDetectionService $anomalies,
+        private readonly BusinessNotificationService $notifications,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -209,6 +212,16 @@ class CashShiftService
 
             $this->logApproval($shift, $cashier, 'submit', $data['handover_notes'] ?? null);
             $this->anomalies->detectClosingDifference($shift);
+            if (Decimal::compare($difference, '0', 2) !== 0) {
+                $this->notifications->send(
+                    'cash_closing_difference',
+                    'Selisih Penutupan Kas',
+                    "Shift {$shift->number} oleh {$cashier->name}.\nKas sistem: ".CurrencyFormatter::rupiah($summary['expected_cash'])."\nKas fisik: ".CurrencyFormatter::rupiah($summary['actual_cash'])."\nSelisih: ".CurrencyFormatter::rupiah($difference)."\nAlasan: ".($data['discrepancy_reason'] ?? '-'),
+                    $shift->work_location_id,
+                    route('retail.shifts.approval', $shift),
+                    $shift->id,
+                );
+            }
 
             return $shift->fresh(['branch', 'cashier', 'expenses', 'cashCounts']);
         });

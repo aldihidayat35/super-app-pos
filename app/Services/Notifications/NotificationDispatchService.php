@@ -18,6 +18,8 @@ use Throwable;
 
 class NotificationDispatchService
 {
+    public function __construct(private readonly WhatsappGatewayClient $whatsappGateway) {}
+
     /**
      * @param  array<string, mixed>  $payload
      */
@@ -32,8 +34,9 @@ class NotificationDispatchService
         array $payload = [],
         ?string $idempotencyKey = null,
         ?string $subject = null,
+        ?User $recipientUser = null,
     ): NotificationLog {
-        return DB::transaction(function () use ($channelType, $destination, $body, $template, $recipient, $token, $actor, $payload, $idempotencyKey, $subject): NotificationLog {
+        return DB::transaction(function () use ($channelType, $destination, $body, $template, $recipient, $token, $actor, $payload, $idempotencyKey, $subject, $recipientUser): NotificationLog {
             $templateKey = $template instanceof NotificationTemplate ? $template->key : 'manual';
             $tokenPart = $token instanceof SecureReportToken ? (string) $token->id : Str::uuid()->toString();
             $key = $idempotencyKey ?: hash('sha256', implode('|', [
@@ -53,16 +56,21 @@ class NotificationDispatchService
                 ->where('is_active', true)
                 ->latest('id')
                 ->first();
+            $resolvedUser = $recipientUser ?? $recipient?->user;
+            if (! $resolvedUser instanceof User && $channelType === NotificationChannelType::WHATSAPP) {
+                $resolvedUser = $this->resolveWhatsappRecipient($destination);
+            }
 
             return NotificationLog::query()->create([
                 'notification_channel_id' => $channel?->id,
                 'notification_template_id' => $template?->id,
                 'notification_recipient_id' => $recipient?->id,
+                'recipient_user_id' => $resolvedUser?->id,
                 'daily_report_id' => $token?->daily_report_id,
                 'secure_report_token_id' => $token?->id,
                 'channel_type' => $channelType->value,
                 'template_key' => $template?->key,
-                'recipient_name' => $recipient?->name,
+                'recipient_name' => $resolvedUser instanceof User ? $resolvedUser->name : $recipient?->name,
                 'destination' => $destination,
                 'subject' => $subject,
                 'body' => $body,
@@ -73,6 +81,36 @@ class NotificationDispatchService
                 'created_by' => $actor?->id,
             ]);
         });
+    }
+
+    private function resolveWhatsappRecipient(string $destination): ?User
+    {
+        try {
+            $normalized = $this->whatsappGateway->normalizePhone($destination);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return User::query()
+            ->with('employee')
+            ->where('is_active', true)
+            ->where(function ($query): void {
+                $query->whereNotNull('phone_number')
+                    ->orWhereHas('employee', fn ($employee) => $employee->whereNotNull('whatsapp_number'));
+            })
+            ->get()
+            ->first(function (User $user) use ($normalized): bool {
+                $number = $user->employee?->whatsapp_number ?: $user->phone_number;
+                if (! is_string($number) || $number === '') {
+                    return false;
+                }
+
+                try {
+                    return $this->whatsappGateway->normalizePhone($number) === $normalized;
+                } catch (Throwable) {
+                    return false;
+                }
+            });
     }
 
     public function send(NotificationLog $log): NotificationLog
@@ -110,7 +148,7 @@ class NotificationDispatchService
                 'notification_channel_id' => $channel->id,
                 'status' => NotificationLogStatus::SENT->value,
                 'attempts' => $log->attempts + 1,
-                'provider_message_id' => $response['message_id'] ?? null,
+                'provider_message_id' => $response['message_id'] ?? $response['msg_id'] ?? null,
                 'sanitized_response' => $this->redactArray($response),
                 'sent_at' => now('Asia/Jakarta'),
                 'error_message' => null,
@@ -133,6 +171,10 @@ class NotificationDispatchService
     /** @return array<string, mixed> */
     private function sendWhatsapp(NotificationChannel $channel, NotificationLog $log): array
     {
+        if ($channel->provider() === 'baileys_gateway') {
+            return $this->whatsappGateway->send($log->destination, $log->body);
+        }
+
         $credentials = $channel->credentialData();
         $token = (string) ($credentials['token'] ?? config('notifications.whatsapp.token', ''));
         $endpoint = $channel->endpoint ?: (string) config('notifications.whatsapp.base_url', '');

@@ -34,7 +34,7 @@
                 <div class="mb-4"><div class="text-muted">Status</div><x-metronic.status-badge :status="$opname->status" /></div>
                 <div class="mb-4"><div class="text-muted">Total Selisih Jumlah</div><div class="fs-4 fw-bold">{{ qty($summary['quantity_difference']) }}</div></div>
                 <div class="mb-4"><div class="text-muted">Total Nilai Selisih</div><div class="fs-4 fw-bold">{{ \App\Support\CurrencyFormatter::rupiah($summary['value_difference']) }}</div></div>
-                <div><div class="text-muted">Memerlukan Persetujuan Owner</div><span class="badge badge-light-{{ $opname->requires_owner_approval ? 'danger' : 'success' }}">{{ $opname->requires_owner_approval ? 'Ya, wajib' : 'Tidak' }}</span></div>
+                <div><div class="text-muted">Risiko Selisih Tinggi</div><span class="badge badge-light-{{ $opname->requires_owner_approval ? 'danger' : 'success' }}">{{ $opname->requires_owner_approval ? 'Ya, periksa lebih teliti' : 'Tidak' }}</span></div>
             </x-metronic.card>
         </div>
         <div class="col-lg-8">

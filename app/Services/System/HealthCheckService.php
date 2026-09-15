@@ -2,6 +2,7 @@
 
 namespace App\Services\System;
 
+use App\Services\Notifications\WhatsappGatewayClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -9,6 +10,8 @@ use Throwable;
 
 final class HealthCheckService
 {
+    public function __construct(private readonly WhatsappGatewayClient $whatsappGateway) {}
+
     /** @return array<string, array{status: string, message: string}> */
     public function run(): array
     {
@@ -20,10 +23,35 @@ final class HealthCheckService
             'folder_permissions' => $this->folderPermissions(),
             'queue' => $this->queue(),
             'scheduler' => $this->scheduler(),
+            'whatsapp_gateway' => $this->whatsappGateway(),
             'backup' => $this->backup(),
             'application' => $this->application(),
             'server_time' => $this->serverTime(),
         ];
+    }
+
+    /** @return array{status: string, message: string} */
+    private function whatsappGateway(): array
+    {
+        if (! $this->whatsappGateway->configured()) {
+            return ['status' => 'warning', 'message' => 'Gateway WhatsApp belum dikonfigurasi.'];
+        }
+
+        try {
+            $payload = $this->whatsappGateway->status();
+            $connected = ($payload['status'] ?? null) === 'connected';
+
+            return [
+                'status' => $connected ? 'ok' : 'warning',
+                'message' => $connected
+                    ? 'Gateway aktif dan WhatsApp perusahaan terhubung.'
+                    : 'Gateway dapat dijangkau, tetapi WhatsApp belum terhubung.',
+            ];
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return ['status' => 'error', 'message' => 'Gateway WhatsApp tidak dapat dijangkau. Periksa service Node.'];
+        }
     }
 
     /** @return array{status: string, message: string} */

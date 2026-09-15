@@ -53,12 +53,14 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Guide\RoleGuideController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\Notifications\AlertRuleController;
+use App\Http\Controllers\Notifications\BusinessNotificationSettingController;
 use App\Http\Controllers\Notifications\NotificationChannelController;
 use App\Http\Controllers\Notifications\NotificationLogController;
 use App\Http\Controllers\Notifications\NotificationRecipientController;
 use App\Http\Controllers\Notifications\NotificationScheduleController;
 use App\Http\Controllers\Notifications\NotificationTemplateController;
 use App\Http\Controllers\Notifications\SecureDailyReportController;
+use App\Http\Controllers\Notifications\WhatsappConnectionController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Pricing\HppHistoryController;
 use App\Http\Controllers\Pricing\MarginSimulatorController;
@@ -461,6 +463,10 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         });
 
         Route::prefix('notifications')->name('notifications.')->group(function (): void {
+            Route::get('/pengaturan-bisnis', [BusinessNotificationSettingController::class, 'index'])
+                ->middleware('permission:notifications.view')->name('business-settings.index');
+            Route::put('/pengaturan-bisnis/{setting}', [BusinessNotificationSettingController::class, 'update'])
+                ->middleware('permission:notifications.update')->name('business-settings.update');
             Route::get('/channels', [NotificationChannelController::class, 'index'])
                 ->middleware('permission:notifications.view')
                 ->name('channels.index');
@@ -532,6 +538,15 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             Route::post('/alerts/{alert}/preview', [AlertRuleController::class, 'preview'])
                 ->middleware('permission:notifications.view|audit.view')
                 ->name('alerts.preview');
+        });
+
+        Route::prefix('integrasi/whatsapp')->name('whatsapp.')->middleware('throttle:60,1')->group(function (): void {
+            Route::get('/', [WhatsappConnectionController::class, 'index'])->middleware('permission:whatsapp_connection.view')->name('index');
+            Route::get('/status', [WhatsappConnectionController::class, 'status'])->middleware('permission:whatsapp_connection.view')->name('status');
+            Route::post('/hubungkan', [WhatsappConnectionController::class, 'connect'])->middleware('permission:whatsapp_connection.manage')->name('connect');
+            Route::post('/sambungkan-ulang', [WhatsappConnectionController::class, 'reconnect'])->middleware('permission:whatsapp_connection.manage')->name('reconnect');
+            Route::delete('/', [WhatsappConnectionController::class, 'disconnect'])->middleware('permission:whatsapp_connection.manage')->name('disconnect');
+            Route::post('/uji', [WhatsappConnectionController::class, 'test'])->middleware('permission:whatsapp_connection.manage')->name('test');
         });
 
         Route::resource('warehouses', WarehouseController::class)

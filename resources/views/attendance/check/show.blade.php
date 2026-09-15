@@ -37,14 +37,75 @@
         </div>
     </x-metronic.page-title>
 
-    <div class="card mb-6"><div class="card-body p-3"><div class="nav nav-pills nav-pills-custom gap-2 flex-nowrap overflow-auto">
-        @can('attendance.check')<a href="#absensi-saya" class="nav-link active text-nowrap">Absensi Saya</a>@endcan
-        @if($canManage)<a href="#tim-hari-ini" class="nav-link text-nowrap">Tim Hari Ini</a><a href="#persetujuan-absensi" class="nav-link text-nowrap">Persetujuan Absensi</a>@endif
-        @can('attendance.view')<a href="{{ route('attendance.schedules.index') }}" class="nav-link text-nowrap">Jadwal Mingguan</a>@endcan
-        @if(auth()->user()->can('attendance.check') || auth()->user()->can('attendance.approve'))<a href="{{ route('attendance.requests.index') }}" class="nav-link text-nowrap">Pengajuan Izin</a>@endif
-        @if(auth()->user()->can('attendance.update') || auth()->user()->can('attendance.approve'))<a href="{{ route('attendance.corrections.index') }}" class="nav-link text-nowrap">Koreksi Absensi</a>@endif
-        @can('attendance.update')<a href="{{ route('attendance.employees.index') }}" class="nav-link text-nowrap">Pengaturan Karyawan</a><a href="{{ route('attendance.work-shifts.index') }}" class="nav-link text-nowrap">Pengaturan Shift</a>@endcan
-    </div></div></div>
+    <div class="card mb-6"><div class="card-body p-3">
+        <div class="nav nav-tabs nav-tabs-custom gx-4">
+            @can('attendance.check')
+                <a href="#absensi-saya" class="nav-link active">
+                    <span class="nav-link-inner"><i class="ki-duotone ki-user fs-2 me-2 text-primary"></i><span>Absensi Saya</span></span>
+                </a>
+            @endcan
+            @if($canManage)
+                <a href="#tim-hari-ini" class="nav-link">
+                    <span class="nav-link-inner"><i class="ki-duotone ki-users fs-2 me-2"></i><span>Tim Hari Ini</span></span>
+                </a>
+                <a href="#persetujuan-absensi" class="nav-link">
+                    <span class="nav-link-inner"><i class="ki-duotone ki-checkbox fs-2 me-2"></i><span>Persetujuan Absensi</span></span>
+                </a>
+            @endif
+            @can('attendance.view')
+                <a href="{{ route('attendance.schedules.index') }}" class="nav-link">
+                    <span class="nav-link-inner"><i class="ki-duotone ki-calendar fs-2 me-2"></i><span>Jadwal Mingguan</span></span>
+                </a>
+            @endcan
+            @if(auth()->user()->can('attendance.check') || auth()->user()->can('attendance.approve'))
+                <a href="{{ route('attendance.requests.index') }}" class="nav-link">
+                    <span class="nav-link-inner"><i class="ki-duotone ki-leave fs-2 me-2"></i><span>Pengajuan Izin</span></span>
+                </a>
+            @endif
+            @if(auth()->user()->can('attendance.update') || auth()->user()->can('attendance.approve'))
+                <a href="{{ route('attendance.corrections.index') }}" class="nav-link">
+                    <span class="nav-link-inner"><i class="ki-duotone ki-reload fs-2 me-2"></i><span>Koreksi Absensi</span></span>
+                </a>
+            @endif
+            @can('attendance.update')
+                <a href="{{ route('attendance.employees.index') }}" class="nav-link">
+                    <span class="nav-link-inner"><i class="ki-duotone ki-employee fs-2 me-2"></i><span>Pengaturan Karyawan</span></span>
+                </a>
+                <a href="{{ route('attendance.work-shifts.index') }}" class="nav-link">
+                    <span class="nav-link-inner"><i class="ki-duotone ki-time fs-2 me-2"></i><span>Pengaturan Shift</span></span>
+                </a>
+            @endcan
+        </div>
+        <style>
+            .nav-tabs-custom { border-bottom: 2px solid var(--kt-border-color, #e5e7eb); }
+            .nav-tabs-custom .nav-link {
+                border: none;
+                color: var(--kt-text-color-2, #707898);
+                position: relative;
+                font-weight: 500;
+                font-size: 0.9375rem;
+                padding: 0.75rem 1rem;
+                white-space: nowrap;
+            }
+            .nav-tabs-custom .nav-link .nav-link-inner { display: flex; align-items: center; gap: 0.5rem; }
+            .nav-tabs-custom .nav-link i { display: inline-flex; font-size: 1.125rem; }
+            .nav-tabs-custom .nav-link::before {
+                content: '';
+                position: absolute;
+                bottom: -2px; left: 0; right: 0;
+                height: 3px;
+                border-radius: 3px 3px 0 0;
+                background: transparent;
+                transition: background 0.2s ease;
+            }
+            .nav-tabs-custom .nav-link:hover { color: var(--kt-text-color-1, #212529); }
+            .nav-tabs-custom .nav-link:hover::before { background: var(--kt-primary, #06d79c); opacity: 0.4; }
+            .nav-tabs-custom .nav-link.active { color: var(--kt-primary, #06d79c); font-weight: 700; }
+            .nav-tabs-custom .nav-link.active i { color: var(--kt-primary, #06d79c); }
+            .nav-tabs-custom .nav-link.active::before { background: var(--kt-primary, #06d79c); }
+            .nav-tabs-custom .nav-link:focus { box-shadow: none; }
+        </style>
+    </div></div>
 
     @can('attendance.check')
         <div id="absensi-saya" class="card mb-6 overflow-hidden"><div class="card-body p-6 p-lg-8">

@@ -95,7 +95,7 @@ class B2bOrderController extends Controller
 
     public function pack(Request $request, B2bOrder $order, B2bOrderWorkflowService $workflow): RedirectResponse
     {
-        abort_unless($request->user()->can('b2b_orders.approve'), 403);
+        abort_unless($request->user()->can('b2b_orders.approve') && $request->user()->hasAnyRole(['kepala_gudang', 'super_admin']), 403);
 
         try {
             $workflow->pack($order, $request->user(), $request->input('internal_note'));

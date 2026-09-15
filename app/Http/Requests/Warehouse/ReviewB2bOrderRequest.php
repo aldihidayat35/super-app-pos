@@ -8,7 +8,8 @@ class ReviewB2bOrderRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('b2b_orders.approve') ?? false;
+        return $this->user()->can('b2b_orders.approve')
+            && $this->user()->hasAnyRole(['kepala_gudang', 'super_admin']);
     }
 
     /** @return array<string, mixed> */

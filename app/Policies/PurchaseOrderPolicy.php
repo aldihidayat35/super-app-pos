@@ -6,6 +6,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Models\Branch;
 use App\Models\PurchaseOrder;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class PurchaseOrderPolicy
 {
@@ -48,7 +49,12 @@ class PurchaseOrderPolicy
 
     public function approve(User $user, PurchaseOrder $purchaseOrder): bool
     {
-        return $user->can('purchase_orders.approve') && $purchaseOrder->status === PurchaseOrderStatus::SUBMITTED && $this->view($user, $purchaseOrder);
+        $location = $purchaseOrder->destinationWorkLocation ?: $purchaseOrder->warehouse?->workLocation;
+
+        return $user->can('purchase_orders.approve')
+            && $purchaseOrder->status === PurchaseOrderStatus::SUBMITTED
+            && $location !== null
+            && ApprovalAuthority::canApproveAt($user, (int) $location->id, ApprovalAuthority::roleForLocation($location));
     }
 
     public function send(User $user, PurchaseOrder $purchaseOrder): bool

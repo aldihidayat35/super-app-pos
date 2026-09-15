@@ -16,6 +16,8 @@ use App\Models\ProductPrice;
 use App\Models\StaffBonusPeriod;
 use App\Models\User;
 use App\Models\WorkLocation;
+use App\Services\Notifications\BusinessNotificationService;
+use App\Support\ApprovalAuthority;
 use App\Support\Decimal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -24,7 +26,10 @@ use Illuminate\Support\Str;
 
 class ApprovalWorkflowService
 {
-    public function __construct(private readonly AuditLogService $audit) {}
+    public function __construct(
+        private readonly AuditLogService $audit,
+        private readonly BusinessNotificationService $notifications,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $before
@@ -47,6 +52,11 @@ class ApprovalWorkflowService
         ?string $handlerKey = null,
         ?string $correlationId = null,
     ): ApprovalRequest {
+        $requiredRole ??= ApprovalAuthority::roleForLocation(
+            $location,
+            $module === 'tax' ? ApprovalAuthority::SYSTEM_HEAD : ApprovalAuthority::WAREHOUSE_HEAD,
+        );
+
         return DB::transaction(function () use ($subject, $type, $module, $requester, $riskValue, $reason, $before, $after, $metadata, $location, $requiredPermission, $requiredRole, $handlerKey, $correlationId): ApprovalRequest {
             $existing = ApprovalRequest::query()
                 ->where('subject_type', $subject->getMorphClass())
@@ -86,6 +96,16 @@ class ApprovalWorkflowService
             ]);
 
             $this->audit->record('approval.requested', $module, $requester, $subject, [], $approval->only(['approval_type', 'risk_value', 'risk_level', 'reason']), $reason, correlationId: $approval->correlation_id);
+            $this->notifications->send(
+                'approval_pending',
+                'Approval Baru Menunggu Keputusan',
+                "Modul: {$module}\nJenis: {$type}\nPemohon: {$requester->name}\nAlasan: {$reason}",
+                $location?->id,
+                route('approvals.show', $approval),
+                $approval->id,
+                roles: [$requiredRole],
+                locationScoped: in_array($requiredRole, ['kepala_toko', 'kepala_gudang', 'supervisor_shift'], true),
+            );
 
             return $approval->fresh(['subject', 'requester', 'steps']);
         });
@@ -97,7 +117,7 @@ class ApprovalWorkflowService
     public function approve(ApprovalRequest $approval, User $approver, ?string $comments = null, ?callable $afterApproval = null): ApprovalRequest
     {
         return DB::transaction(function () use ($approval, $approver, $comments, $afterApproval): ApprovalRequest {
-            $approval = ApprovalRequest::query()->with('subject')->lockForUpdate()->findOrFail($approval->id);
+            $approval = ApprovalRequest::query()->with(['subject', 'workLocation'])->lockForUpdate()->findOrFail($approval->id);
             $status = $this->status($approval);
             if ($status === ApprovalRequestStatus::APPROVED) {
                 return $approval->fresh(['subject', 'requester', 'steps']);
@@ -115,11 +135,9 @@ class ApprovalWorkflowService
             if ($approval->required_permission !== null && ! $approver->can($approval->required_permission)) {
                 throw ServiceException::validation('Anda tidak memiliki permission untuk approval ini.');
             }
-            if ($approval->handler_key === 'retail.emergency_purchase' && ! $approver->canAccessWorkLocation((int) $approval->work_location_id)) {
-                throw ServiceException::validation('Approval pembelian darurat hanya untuk toko penugasan Anda.');
-            }
-            if ($approval->required_role !== null && ! $approver->hasRole($approval->required_role)) {
-                throw ServiceException::validation('Role Anda tidak sesuai untuk approval ini.');
+            $requiredRole = $approval->required_role ?: ApprovalAuthority::roleForLocation($approval->workLocation);
+            if (! ApprovalAuthority::canApproveAt($approver, $approval->work_location_id, $requiredRole)) {
+                throw ServiceException::validation('Approval ini hanya dapat diputuskan kepala bagian pada lokasi yang ditugaskan.');
             }
 
             $approval->steps()->where('status', ApprovalRequestStatus::PENDING->value)->orderBy('step_order')->first()?->forceFill([
@@ -144,6 +162,15 @@ class ApprovalWorkflowService
 
             $subject = $approval->subject instanceof Model ? $approval->subject : null;
             $this->audit->record('approval.approved', $approval->module, $approver, $subject, [], ['approval_id' => $approval->id, 'comments' => $comments], $comments, correlationId: $approval->correlation_id);
+            $this->notifications->send(
+                'approval_decided',
+                'Approval Disetujui',
+                "Permintaan {$approval->approval_type} disetujui oleh {$approver->name}.".($comments ? "\nCatatan: {$comments}" : ''),
+                $approval->work_location_id,
+                route('approvals.show', $approval),
+                $approval->id,
+                userIds: [(int) $approval->requester_user_id],
+            );
 
             return $approval->fresh(['subject', 'requester', 'steps']);
         });
@@ -152,7 +179,7 @@ class ApprovalWorkflowService
     public function reject(ApprovalRequest $approval, User $approver, ?string $comments = null): ApprovalRequest
     {
         return DB::transaction(function () use ($approval, $approver, $comments): ApprovalRequest {
-            $approval = ApprovalRequest::query()->with('subject')->lockForUpdate()->findOrFail($approval->id);
+            $approval = ApprovalRequest::query()->with(['subject', 'workLocation'])->lockForUpdate()->findOrFail($approval->id);
             if ($this->status($approval) !== ApprovalRequestStatus::PENDING) {
                 throw ServiceException::validation('Approval tidak dapat ditolak pada status saat ini.');
             }
@@ -162,8 +189,9 @@ class ApprovalWorkflowService
             if ($approval->required_permission !== null && ! $approver->can($approval->required_permission)) {
                 throw ServiceException::validation('Anda tidak memiliki permission untuk approval ini.');
             }
-            if ($approval->handler_key === 'retail.emergency_purchase' && ! $approver->canAccessWorkLocation((int) $approval->work_location_id)) {
-                throw ServiceException::validation('Approval pembelian darurat hanya untuk toko penugasan Anda.');
+            $requiredRole = $approval->required_role ?: ApprovalAuthority::roleForLocation($approval->workLocation);
+            if (! ApprovalAuthority::canApproveAt($approver, $approval->work_location_id, $requiredRole)) {
+                throw ServiceException::validation('Approval ini hanya dapat diputuskan kepala bagian pada lokasi yang ditugaskan.');
             }
 
             $approval->steps()->where('status', ApprovalRequestStatus::PENDING->value)->orderBy('step_order')->first()?->forceFill([
@@ -190,6 +218,15 @@ class ApprovalWorkflowService
 
             $subject = $approval->subject instanceof Model ? $approval->subject : null;
             $this->audit->record('approval.rejected', $approval->module, $approver, $subject, [], ['approval_id' => $approval->id, 'comments' => $comments], $comments, correlationId: $approval->correlation_id);
+            $this->notifications->send(
+                'approval_decided',
+                'Approval Ditolak',
+                "Permintaan {$approval->approval_type} ditolak oleh {$approver->name}.".($comments ? "\nAlasan: {$comments}" : ''),
+                $approval->work_location_id,
+                route('approvals.show', $approval),
+                $approval->id,
+                userIds: [(int) $approval->requester_user_id],
+            );
 
             return $approval->fresh(['subject', 'requester', 'steps']);
         });

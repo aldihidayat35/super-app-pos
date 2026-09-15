@@ -472,6 +472,31 @@ $storeFlows = [
             ]],
         ],
     ],
+
+    'whatsapp-business-notification' => [
+        'title' => 'Notifikasi WhatsApp dari kejadian bisnis',
+        'summary' => 'Sistem memilih kejadian yang aktif, penerima sesuai role dan lokasi, lalu mengirim melalui queue dan gateway perusahaan.',
+        'verified_by' => ['app/Services/Notifications/BusinessNotificationService.php', 'app/Jobs/SendNotificationJob.php', 'app/Services/Notifications/NotificationDispatchService.php'],
+        'lanes' => [
+            ['label' => 'Pembuatan pesan', 'tone' => 'primary', 'steps' => [
+                ['label' => 'Kejadian bisnis terjadi', 'detail' => 'Contohnya stok kritis, restok, approval, selisih kas, atau laporan owner.'],
+                ['label' => 'Notifikasi aktif?', 'detail' => 'Pengaturan aktif/nonaktif dan jeda pengiriman diperiksa.', 'kind' => 'decision'],
+                ['label' => 'Pilih penerima', 'detail' => 'Role, akun tujuan, dan lokasi kerja menjadi pembatas.'],
+                ['label' => 'Buat riwayat antrean', 'detail' => 'Isi pesan, tujuan, dan kunci antiduplikat disimpan.', 'kind' => 'result'],
+            ]],
+            ['label' => 'Pengiriman', 'tone' => 'success', 'steps' => [
+                ['label' => 'Queue mengambil pesan', 'detail' => 'Worker memproses pesan di belakang layar.'],
+                ['label' => 'Gateway terhubung?', 'detail' => 'Sesi WhatsApp perusahaan harus berstatus terhubung.', 'kind' => 'decision'],
+                ['label' => 'Kirim ke nomor tujuan', 'detail' => 'Nomor Indonesia dinormalisasi sebelum dikirim.'],
+                ['label' => 'Catat hasil', 'detail' => 'Status berhasil, coba lagi, atau gagal tampil pada riwayat.', 'kind' => 'result'],
+            ]],
+            ['label' => 'Tindak lanjut pengguna', 'tone' => 'warning', 'steps' => [
+                ['label' => 'Buka tautan aplikasi', 'detail' => 'Pengguna login dan membuka halaman yang sesuai.'],
+                ['label' => 'Periksa data sumber', 'detail' => 'Nomor dokumen, lokasi, nilai, dan status diverifikasi.'],
+                ['label' => 'Lakukan tindakan di aplikasi', 'detail' => 'Keputusan tetap melewati permission dan audit aplikasi.', 'kind' => 'result'],
+            ]],
+        ],
+    ],
 ];
 
 return [

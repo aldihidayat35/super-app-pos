@@ -301,7 +301,7 @@ class StockOpnameWorkflowTest extends TestCase
         $this->assertSame('9.0000', Stock::query()->where('product_id', $product->id)->firstOrFail()->quantity_on_hand);
     }
 
-    public function test_threshold_variance_requires_owner_approval(): void
+    public function test_threshold_variance_is_approved_by_warehouse_head(): void
     {
         [$product, $workLocation, $bin] = $this->fixture('PRD-OPN-OWNER', '250000.00');
         $this->assignScope($workLocation);
@@ -321,12 +321,16 @@ class StockOpnameWorkflowTest extends TestCase
 
         $this->assertTrue($submitted->requires_owner_approval);
 
-        $this->expectException(ServiceException::class);
-        $this->expectExceptionMessage('membutuhkan approval owner');
-        $this->opnames->approve($submitted, $this->warehouseHead, 'Harusnya ditolak');
+        $approved = $this->opnames->approve($submitted, $this->warehouseHead, 'Selisih tinggi telah diverifikasi kepala gudang.');
+
+        $this->assertSame(StockOpnameStatus::APPROVED, $approved->status);
+        $this->assertDatabaseHas('stock_opname_approvals', [
+            'stock_opname_id' => $submitted->id,
+            'approval_level' => 'department_head_high_risk',
+        ]);
     }
 
-    public function test_owner_can_approve_high_variance_and_reject_does_not_mutate_stock(): void
+    public function test_owner_cannot_approve_high_variance_and_reject_does_not_mutate_stock(): void
     {
         [$product, $workLocation, $bin] = $this->fixture('PRD-OPN-REJECT');
         $this->assignScope($workLocation);
@@ -355,7 +359,13 @@ class StockOpnameWorkflowTest extends TestCase
         ], $this->warehouseHead);
         $this->opnames->countItem($opname2->items->firstOrFail(), ['counted_qty' => '8', 'reason' => StockOpnameReason::LOST->value], $this->warehouseStaff);
         $submitted2 = $this->opnames->submit($opname2, $this->warehouseStaff);
-        $approved = $this->opnames->approve($submitted2, $this->owner, 'Owner approved');
+        try {
+            $this->opnames->approve($submitted2, $this->owner, 'Owner tidak lagi menjadi approver');
+            $this->fail('Owner seharusnya tidak dapat menyetujui opname.');
+        } catch (ServiceException $exception) {
+            $this->assertStringContainsString('kepala bagian', $exception->getMessage());
+        }
+        $approved = $this->opnames->approve($submitted2, $this->warehouseHead, 'Kepala gudang menyetujui');
 
         $this->assertSame(StockOpnameStatus::APPROVED, $approved->status);
     }

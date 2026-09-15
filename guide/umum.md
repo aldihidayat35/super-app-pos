@@ -303,3 +303,33 @@ Checklist yang sesuai role sudah tersedia pada menu **Checklist Kerja** (`/check
 ```guide-flow
 checklist-generation
 ```
+
+## 13. Notifikasi WhatsApp perusahaan
+
+Notifikasi WhatsApp membantu pengguna menerima informasi penting tanpa harus terus membuka setiap halaman. Pesan dikirim ke nomor WhatsApp pada data karyawan. Jika nomor tersebut kosong, sistem memakai nomor telepon akun.
+
+Notifikasi yang dapat dikirim meliputi:
+
+- stok kritis atau habis;
+- permintaan dan keputusan restok;
+- pembelian darurat toko;
+- permintaan serta hasil approval;
+- selisih penutupan kas;
+- piutang yang segera atau sudah jatuh tempo;
+- order B2B yang tertunda dan perubahan status penting;
+- laporan owner pukul 21.00 serta laporan setelah checklist harian kepala lokasi selesai.
+
+Cara menindaklanjuti pesan:
+
+1. Periksa judul, nomor dokumen, lokasi, dan status pada pesan.
+2. Klik tautan aplikasi yang tercantum.
+3. Login memakai akun sendiri jika sesi sudah berakhir.
+4. Pastikan halaman dan lokasi yang terbuka sesuai isi pesan.
+5. Lakukan pemeriksaan atau keputusan melalui tombol pada aplikasi.
+6. Jika tautan ditolak, minta administrator memeriksa role, permission, dan penugasan lokasi.
+
+Pesan WhatsApp hanya pemberitahuan. Approval, perubahan stok, pembayaran, dan tindakan final tetap dilakukan di aplikasi agar seluruh jejak audit tersimpan. Jangan membalas pesan otomatis dengan password, PIN, API key, atau data rahasia.
+
+```guide-flow
+whatsapp-business-notification
+```

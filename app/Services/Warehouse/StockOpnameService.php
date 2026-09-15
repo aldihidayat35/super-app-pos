@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\WorkLocation;
 use App\Services\Inventory\InventoryService;
 use App\Services\Organization\DocumentNumberService;
+use App\Support\ApprovalAuthority;
 use App\Support\Decimal;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +61,7 @@ class StockOpnameService
     public function start(StockOpname $opname, User $actor): StockOpname
     {
         return DB::transaction(function () use ($opname, $actor): StockOpname {
-            $opname = StockOpname::query()->lockForUpdate()->findOrFail($opname->id);
+            $opname = StockOpname::query()->with('workLocation')->lockForUpdate()->findOrFail($opname->id);
 
             if ($opname->status !== StockOpnameStatus::DRAFT) {
                 throw ServiceException::validation('Hanya opname draft yang dapat dimulai.');
@@ -226,14 +227,14 @@ class StockOpnameService
             if ($opname->status !== StockOpnameStatus::PENDING_APPROVAL) {
                 throw ServiceException::validation('Opname belum menunggu approval.');
             }
-
-            if ($opname->requires_owner_approval && ! $actor->hasAnyRole(['owner_approver', 'super_admin'])) {
-                throw ServiceException::validation('Selisih melewati threshold dan membutuhkan approval owner.');
+            $requiredRole = ApprovalAuthority::roleForLocation($opname->workLocation);
+            if (! $actor->can('stock_adjustments.approve') || ! ApprovalAuthority::canApproveAt($actor, (int) $opname->work_location_id, $requiredRole)) {
+                throw ServiceException::validation('Opname hanya dapat diputuskan kepala bagian pada lokasi terkait.');
             }
 
             $opname->approvals()->create([
                 'approver_user_id' => $actor->id,
-                'approval_level' => $opname->requires_owner_approval ? 'owner' : 'warehouse_head',
+                'approval_level' => $opname->requires_owner_approval ? 'department_head_high_risk' : 'department_head',
                 'status' => 'approved',
                 'notes' => $notes,
                 'approved_at' => now(),
@@ -249,15 +250,19 @@ class StockOpnameService
     public function reject(StockOpname $opname, User $actor, string $reason): StockOpname
     {
         return DB::transaction(function () use ($opname, $actor, $reason): StockOpname {
-            $opname = StockOpname::query()->lockForUpdate()->findOrFail($opname->id);
+            $opname = StockOpname::query()->with('workLocation')->lockForUpdate()->findOrFail($opname->id);
 
             if ($opname->status !== StockOpnameStatus::PENDING_APPROVAL) {
                 throw ServiceException::validation('Opname belum menunggu approval.');
             }
+            $requiredRole = ApprovalAuthority::roleForLocation($opname->workLocation);
+            if (! $actor->can('stock_adjustments.approve') || ! ApprovalAuthority::canApproveAt($actor, (int) $opname->work_location_id, $requiredRole)) {
+                throw ServiceException::validation('Opname hanya dapat diputuskan kepala bagian pada lokasi terkait.');
+            }
 
             $opname->approvals()->create([
                 'approver_user_id' => $actor->id,
-                'approval_level' => $opname->requires_owner_approval ? 'owner' : 'warehouse_head',
+                'approval_level' => $opname->requires_owner_approval ? 'department_head_high_risk' : 'department_head',
                 'status' => 'rejected',
                 'notes' => $reason,
                 'approved_at' => now(),

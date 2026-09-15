@@ -25,7 +25,7 @@
                         <td>{{ $log->created_at->format('d/m/Y H:i') }}<div class="text-muted">Sent: {{ $log->sent_at?->format('H:i') ?: '-' }}</div></td>
                         <td>{{ $log->channel_type->label() }}</td>
                         <td>{{ $log->template_key ?: '-' }}</td>
-                        <td>{{ $log->recipient_name ?: '-' }}<div class="text-muted">{{ $log->destination }}</div></td>
+                        <td><div class="fw-semibold">{{ $log->recipientUser?->name ?? $log->recipient_name ?? 'Nomor eksternal' }}</div><div class="text-muted">{{ $log->destination }}</div>@if($log->recipientUser)<span class="badge badge-light-primary mt-1">Akun sistem</span>@endif</td>
                         <td><x-metronic.status-badge :status="$log->status" /></td>
                         <td>{{ $log->attempts }}</td>
                         <td class="text-muted">{{ $log->error_message ?: Str::limit(json_encode($log->sanitized_response, JSON_UNESCAPED_SLASHES), 90) }}</td>

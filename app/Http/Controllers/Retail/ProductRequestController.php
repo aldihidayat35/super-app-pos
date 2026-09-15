@@ -24,7 +24,7 @@ class ProductRequestController extends Controller
     {
         $this->authorize('viewAny', ProductRequest::class);
         $query = ProductRequest::query()->with(['branch', 'requester', 'createdProduct']);
-        if (! $request->user()->can('product_requests.approve')) {
+        if (! $request->user()->hasUnrestrictedLocationScope()) {
             $query->whereHas('branch', fn ($branch) => $branch->whereIn('work_location_id', $request->user()->permittedWorkLocationIds()));
         }
 

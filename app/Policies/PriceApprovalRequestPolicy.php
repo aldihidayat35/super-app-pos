@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\PriceApprovalStatus;
 use App\Models\PriceApprovalRequest;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class PriceApprovalRequestPolicy
 {
@@ -15,6 +16,11 @@ class PriceApprovalRequestPolicy
 
     public function approve(User $user, PriceApprovalRequest $approval): bool
     {
-        return $user->can('prices.approve') && $approval->status === PriceApprovalStatus::PENDING;
+        $locationId = $approval->branch?->work_location_id;
+        $requiredRole = $locationId === null ? ApprovalAuthority::WAREHOUSE_HEAD : ApprovalAuthority::STORE_HEAD;
+
+        return $user->can('prices.approve')
+            && $approval->status === PriceApprovalStatus::PENDING
+            && ApprovalAuthority::canApproveAt($user, $locationId === null ? null : (int) $locationId, $requiredRole);
     }
 }

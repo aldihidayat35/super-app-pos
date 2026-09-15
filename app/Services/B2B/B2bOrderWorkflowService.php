@@ -15,6 +15,7 @@ use App\Models\Stock;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Services\Inventory\InventoryService;
+use App\Services\Notifications\BusinessNotificationService;
 use App\Support\Decimal;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -22,7 +23,10 @@ use Illuminate\Support\Facades\DB;
 
 class B2bOrderWorkflowService
 {
-    public function __construct(private readonly InventoryService $inventory) {}
+    public function __construct(
+        private readonly InventoryService $inventory,
+        private readonly BusinessNotificationService $notifications,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -331,6 +335,18 @@ class B2bOrderWorkflowService
         ]);
 
         event(new B2bOrderStatusChanged($order, $from, $to, $actor, $note));
+
+        if ($order->sales_user_id !== null && in_array($to, [B2bOrderStatus::SHIPPED, B2bOrderStatus::RECEIVED, B2bOrderStatus::COMPLETED, B2bOrderStatus::CANCELLED, B2bOrderStatus::REJECTED], true)) {
+            $this->notifications->send(
+                'b2b_status',
+                'Status Order B2B Diperbarui',
+                "{$order->number} sekarang berstatus {$to->label()}.".($note ? "\nCatatan: {$note}" : ''),
+                null,
+                route('sales.orders.show', $order),
+                $order->id.':'.$to->value,
+                userIds: [(int) $order->sales_user_id],
+            );
+        }
     }
 
     private function transition(B2bOrder $order, B2bOrderStatus $to, User $actor, string $note): void

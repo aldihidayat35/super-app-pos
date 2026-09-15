@@ -11,6 +11,7 @@ use App\Models\WorkChecklistItem;
 use App\Models\WorkChecklistTemplate;
 use App\Models\WorkLocation;
 use App\Services\Control\AuditLogService;
+use App\Services\Notifications\BusinessNotificationService;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -22,7 +23,10 @@ use Illuminate\Validation\ValidationException;
 
 class WorkChecklistService
 {
-    public function __construct(private readonly AuditLogService $audit) {}
+    public function __construct(
+        private readonly AuditLogService $audit,
+        private readonly BusinessNotificationService $notifications,
+    ) {}
 
     public function ensureDefaultTemplates(): void
     {
@@ -192,6 +196,9 @@ class WorkChecklistService
                 'completed_at' => $completedAt,
             ]);
             $this->audit->record('work_checklist.completed', 'work_checklists', $actor, $locked, $before, $locked->only(['status', 'first_completed_at', 'completed_at']), request: $request, location: $locked->workLocation);
+            if ($locked->frequency === WorkChecklistFrequency::DAILY && $actor->hasAnyRole(['kepala_toko', 'kepala_gudang'])) {
+                $this->notifications->ownerReport('head_checklist', $locked->workLocation, $locked->id);
+            }
 
             return $locked->fresh();
         });

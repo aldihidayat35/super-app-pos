@@ -31,6 +31,8 @@ class ApprovalAuditAnomalyTest extends TestCase
 
     private User $approver;
 
+    private User $auditor;
+
     private User $cashier;
 
     protected function setUp(): void
@@ -41,7 +43,9 @@ class ApprovalAuditAnomalyTest extends TestCase
         $this->requester = User::factory()->create(['is_active' => true]);
         $this->requester->assignRole(Role::findOrCreate('admin_config'));
         $this->approver = User::factory()->create(['is_active' => true]);
-        $this->approver->assignRole(Role::findOrCreate('owner_approver'));
+        $this->approver->assignRole(Role::findOrCreate('kepala_gudang'));
+        $this->auditor = User::factory()->create(['is_active' => true]);
+        $this->auditor->assignRole(Role::findOrCreate('admin_config'));
         $this->cashier = User::factory()->create(['is_active' => true]);
         $this->cashier->assignRole(Role::findOrCreate('kasir'));
     }
@@ -54,15 +58,15 @@ class ApprovalAuditAnomalyTest extends TestCase
 
         $this->actingAs($this->approver)->get(route('approvals.index'))->assertOk()->assertSee('Kotak Masuk Approval');
         $this->actingAs($this->approver)->get(route('approvals.show', $approval))->assertOk()->assertSee('Detail Approval');
-        $this->actingAs($this->approver)->get(route('audit-logs.index'))->assertOk()->assertSee('Audit Log');
-        $this->actingAs($this->approver)->get(route('audit.anomalies.index'))->assertOk()->assertSee('Dashboard Anomali');
-        $this->actingAs($this->approver)->get(route('audit.security.index'))->assertOk()->assertSee('Log Login dan Keamanan');
+        $this->actingAs($this->auditor)->get(route('audit-logs.index'))->assertOk()->assertSee('Audit Log');
+        $this->actingAs($this->auditor)->get(route('audit.anomalies.index'))->assertOk()->assertSee('Dashboard Anomali');
+        $this->actingAs($this->auditor)->get(route('audit.security.index'))->assertOk()->assertSee('Log Login dan Keamanan');
     }
 
     public function test_self_approval_is_blocked(): void
     {
         $selfApprover = User::factory()->create(['is_active' => true]);
-        $selfApprover->assignRole(Role::findOrCreate('owner_approver'));
+        $selfApprover->assignRole(Role::findOrCreate('kepala_gudang'));
         $approval = $this->approval($selfApprover);
 
         $this->expectException(ServiceException::class);
@@ -145,7 +149,7 @@ class ApprovalAuditAnomalyTest extends TestCase
     {
         $alert = app(AnomalyDetectionService::class)->flag($this->approval(), 'manual_rule', 'Manual Alert', 'Perlu dicek.', 'high', '250000.00');
 
-        $this->actingAs($this->approver)->post(route('audit.anomalies.resolve', $alert), [
+        $this->actingAs($this->auditor)->post(route('audit.anomalies.resolve', $alert), [
             'status' => AnomalyStatus::RESOLVED->value,
             'resolution_note' => 'Sudah diverifikasi.',
         ])->assertRedirect();

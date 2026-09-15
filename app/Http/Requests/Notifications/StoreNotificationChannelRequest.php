@@ -19,7 +19,7 @@ class StoreNotificationChannelRequest extends FormRequest
             'name' => ['required', 'string', 'max:120'],
             'channel_type' => ['required', Rule::in(['whatsapp', 'telegram'])],
             'endpoint' => ['nullable', 'url', 'max:255'],
-            'auth_type' => ['required', Rule::in(['bearer', 'query', 'none'])],
+            'auth_type' => ['required', Rule::in(['bearer', 'query', 'api_key', 'none'])],
             'token' => ['nullable', 'string', 'max:500'],
             'bot_token' => ['nullable', 'string', 'max:500'],
             'sender' => ['nullable', 'string', 'max:120'],

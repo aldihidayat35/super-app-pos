@@ -13,6 +13,7 @@ class NotificationLog extends Model
         'notification_channel_id',
         'notification_template_id',
         'notification_recipient_id',
+        'recipient_user_id',
         'daily_report_id',
         'secure_report_token_id',
         'channel_type',
@@ -78,6 +79,12 @@ class NotificationLog extends Model
     public function recipient(): BelongsTo
     {
         return $this->belongsTo(NotificationRecipient::class, 'notification_recipient_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function recipientUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recipient_user_id');
     }
 
     /** @return BelongsTo<DailyReport, $this> */

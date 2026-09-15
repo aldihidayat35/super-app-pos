@@ -15,9 +15,21 @@ class PriceApprovalController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('viewAny', PriceApprovalRequest::class);
+        $query = PriceApprovalRequest::query()->with(['product', 'customer', 'requester', 'branch.workLocation']);
+        $user = $request->user();
+
+        if (! $user->hasAnyRole(['super_admin', 'owner_viewer', 'owner_approver', 'admin_config'])) {
+            if ($user->hasRole('kepala_toko')) {
+                $query->whereHas('branch', fn ($branch) => $branch->whereIn('work_location_id', $user->permittedWorkLocationIds()));
+            } elseif ($user->hasRole('kepala_gudang')) {
+                $query->whereNull('branch_id');
+            } else {
+                $query->where('requested_by', $user->id);
+            }
+        }
 
         return view('pricing.approvals.index', [
-            'approvals' => PriceApprovalRequest::query()->with(['product', 'customer', 'requester'])->latest('id')->paginate(15),
+            'approvals' => $query->latest('id')->paginate(15),
         ]);
     }
 

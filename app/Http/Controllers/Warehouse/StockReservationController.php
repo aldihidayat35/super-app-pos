@@ -38,7 +38,7 @@ class StockReservationController extends Controller
 
     public function release(Request $request, StockReservation $reservation, B2bOrderWorkflowService $workflow): RedirectResponse
     {
-        abort_unless($request->user()->can('b2b_orders.approve'), 403);
+        abort_unless($request->user()->can('b2b_orders.approve') && $request->user()->hasAnyRole(['kepala_gudang', 'super_admin']), 403);
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
 
         try {
@@ -52,7 +52,7 @@ class StockReservationController extends Controller
 
     public function expire(Request $request, B2bOrderWorkflowService $workflow): RedirectResponse
     {
-        abort_unless($request->user()->can('b2b_orders.approve'), 403);
+        abort_unless($request->user()->can('b2b_orders.approve') && $request->user()->hasAnyRole(['kepala_gudang', 'super_admin']), 403);
         $count = $workflow->expireReservations($request->user());
 
         return back()->with('notification', ['type' => 'success', 'message' => "{$count} reservation kedaluwarsa diproses."]);

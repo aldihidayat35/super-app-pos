@@ -18,11 +18,13 @@
                         <td>{{ $approval->requester?->name }}<div class="text-muted">{{ $approval->created_at?->format('d/m/Y H:i') }}</div></td>
                         <td><x-metronic.status-badge :status="$approval->status" /></td>
                         <td>
-                            @if($approval->status->value === 'pending')
+                            @if($approval->status->value === 'pending' && auth()->user()->can('approve', $approval))
                                 <form method="POST" action="{{ route('pricing.approvals.approve', $approval) }}" class="d-inline">@csrf<textarea name="notes" class="form-control form-control-sm mb-2" placeholder="Catatan approval"></textarea><button class="btn btn-sm btn-success">Approve</button></form>
                                 <form method="POST" action="{{ route('pricing.approvals.reject', $approval) }}" class="d-inline">@csrf<button class="btn btn-sm btn-light-danger mt-2">Reject</button></form>
-                            @else
+                            @elseif($approval->status->value !== 'pending')
                                 <span class="text-muted">Selesai</span>
+                            @else
+                                <span class="text-muted">Dipantau</span>
                             @endif
                         </td>
                     </tr>

@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\StockOpnameStatus;
 use App\Models\StockOpname;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class StockOpnamePolicy
 {
@@ -54,7 +55,10 @@ class StockOpnamePolicy
             return false;
         }
 
-        return ! $stockOpname->requires_owner_approval || $user->hasAnyRole(['owner_approver', 'super_admin']);
+        $location = $stockOpname->workLocation;
+
+        return $location !== null
+            && ApprovalAuthority::canApproveAt($user, (int) $location->id, ApprovalAuthority::roleForLocation($location));
     }
 
     public function complete(User $user, StockOpname $stockOpname): bool

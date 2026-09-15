@@ -46,8 +46,23 @@ class StaffBonusController extends Controller
             $team = $this->applyFilters($teamQuery, $request)->latest('id')->paginate(20, ['*'], 'team_page');
         }
         $programs = $user->can('staff_bonuses.manage') ? StaffBonusProgram::query()->with(['workLocation', 'metrics', 'assignments.user', 'period'])->latest('id')->paginate(15, ['*'], 'program_page') : null;
-        $pending = $user->can('staff_bonuses.approve') || $user->can('staff_bonuses.pay')
-            ? StaffBonusPeriod::query()->with(['program', 'workLocation', 'results.user', 'results.payment'])->whereIn('status', [StaffBonusPeriodStatus::PENDING_APPROVAL->value, StaffBonusPeriodStatus::APPROVED->value])->latest('id')->get() : collect();
+        $pending = collect();
+        if ($user->can('staff_bonuses.approve') || $user->can('staff_bonuses.pay')) {
+            $pendingQuery = StaffBonusPeriod::query()->with(['program', 'workLocation', 'approvalRequest', 'results.user', 'results.payment'])
+                ->whereIn('status', [StaffBonusPeriodStatus::PENDING_APPROVAL->value, StaffBonusPeriodStatus::APPROVED->value]);
+            if (! $user->can('staff_bonuses.approve')) {
+                $pendingQuery->where('status', StaffBonusPeriodStatus::APPROVED->value);
+            } elseif (! $user->hasRole('super_admin')) {
+                $pendingQuery->whereHas('approvalRequest', function ($approval) use ($user): void {
+                    $approval->whereIn('required_role', $user->roles()->pluck('name'))
+                        ->where(function ($location) use ($user): void {
+                            $location->whereNull('work_location_id')
+                                ->orWhereIn('work_location_id', $user->permittedWorkLocationIds());
+                        });
+                });
+            }
+            $pending = $pendingQuery->latest('id')->get();
+        }
         $locations = WorkLocation::query()->where('is_active', true)->orderBy('name')->get();
         $eligibleUsers = User::query()->with(['roles', 'employee.workLocation'])->where('is_active', true)->whereHas('employee', fn ($q) => $q->where('is_active', true))->role(config('staff-bonuses.eligible_roles'))->orderBy('name')->get();
         $legacy = SalesBonus::query()->with('sales')->when(! $user->can('staff_bonuses.view_all'), fn ($q) => $q->where('sales_user_id', $user->id))->latest('year')->latest('month')->limit(24)->get();
@@ -102,7 +117,7 @@ class StaffBonusController extends Controller
         abort_unless($request->user()->can('staff_bonuses.manage'), 403);
         $service->submit($period, $request->user(), $request);
 
-        return back()->with('notification', ['type' => 'success', 'message' => 'Hasil bonus berhasil diajukan kepada Owner.']);
+        return back()->with('notification', ['type' => 'success', 'message' => 'Hasil bonus berhasil diajukan kepada kepala bagian terkait.']);
     }
 
     public function approve(DecideStaffBonusRequest $request, StaffBonusPeriod $period, ApprovalWorkflowService $workflow): RedirectResponse

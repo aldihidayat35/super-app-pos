@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class PaymentPolicy
 {
@@ -27,6 +28,7 @@ class PaymentPolicy
 
     public function verify(User $user): bool
     {
-        return $user->can('payments.verify') || $user->can('approvals.approve');
+        return $user->can('payments.verify')
+            && ($user->hasRole(ApprovalAuthority::WAREHOUSE_HEAD) || $user->hasRole('super_admin'));
     }
 }

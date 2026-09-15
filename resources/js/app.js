@@ -2,6 +2,7 @@ import './vendor';
 import './bootstrap';
 import { initializeStockTransferForm } from './modules/warehouse-stock-transfer-form';
 import { initializeResponsiveTables, refreshResponsiveTable } from './modules/responsive-mobile-tables';
+import { initializeWhatsappConnection } from './modules/whatsapp-connection';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 const loadingOverlay = document.querySelector('[data-app-loading]');
@@ -379,6 +380,7 @@ const initializePasswordToggles = () => {
 };
 
 const initializeApplication = () => {
+    initializeWhatsappConnection();
     initializeTheme();
     initializeSelect2();
     initializeStockTransferForm();

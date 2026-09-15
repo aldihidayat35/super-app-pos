@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Receivable;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class ReceivablePolicy
 {
@@ -36,11 +37,23 @@ class ReceivablePolicy
 
     public function adjust(User $user): bool
     {
-        return $user->can('receivables.adjust') || $user->can('approvals.approve');
+        return $user->can('receivables.adjust');
+    }
+
+    public function approveAdjustment(User $user, Receivable $receivable): bool
+    {
+        $location = $receivable->workLocation;
+        $requiredRole = $location?->type === 'branch'
+            ? ApprovalAuthority::STORE_HEAD
+            : ApprovalAuthority::WAREHOUSE_HEAD;
+
+        return $user->can('receivables.approve')
+            && ApprovalAuthority::canApproveAt($user, $receivable->work_location_id, $requiredRole);
     }
 
     public function manageLimit(User $user): bool
     {
-        return $user->can('receivables.approve') || $user->can('customers.manage_settings');
+        return $user->can('receivables.approve')
+            && ($user->hasRole(ApprovalAuthority::WAREHOUSE_HEAD) || $user->hasRole('super_admin'));
     }
 }

@@ -42,6 +42,12 @@ class PriceApprovalRequest extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    /** @return BelongsTo<Branch, $this> */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     /** @return BelongsTo<User, $this> */
     public function requester(): BelongsTo
     {

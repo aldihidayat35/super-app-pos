@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Tax;
 
+use App\Models\TaxPeriod;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TaxPeriodActionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('tax.approve') === true;
+        return $this->user()?->can('approve', TaxPeriod::class) === true;
     }
 
     /** @return array<string, mixed> */

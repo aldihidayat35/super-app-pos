@@ -401,12 +401,11 @@ class EmergencyPurchaseController extends Controller
         $data = $request->validate([
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
             'approval_above_amount' => ['nullable', 'numeric', 'min:0'],
-            'required_role' => ['nullable', 'string', 'max:80', 'exists:roles,name'],
         ]);
         abort_unless($this->branches($request)->contains('id', $data['branch_id']), 403);
         DB::table('emergency_purchase_rules')->updateOrInsert(['branch_id' => $data['branch_id']], [
             'approval_above_amount' => $data['approval_above_amount'] ?? null,
-            'required_role' => $data['required_role'] ?? null, 'is_active' => true,
+            'required_role' => 'kepala_toko', 'is_active' => true,
             'created_at' => now(), 'updated_at' => now(),
         ]);
 

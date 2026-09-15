@@ -2,13 +2,17 @@
 
 namespace App\Http\Requests\Control;
 
+use App\Models\ApprovalRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DecideApprovalRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('approvals.approve') ?? false;
+        $approval = $this->route('approval');
+
+        return $approval instanceof ApprovalRequest
+            && ($this->user()?->can($this->routeIs('approvals.reject') ? 'reject' : 'approve', $approval) ?? false);
     }
 
     /** @return array<string, mixed> */

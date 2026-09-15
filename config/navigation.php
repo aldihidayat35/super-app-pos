@@ -83,6 +83,12 @@ return [
                 'permission' => 'admin.settings.view',
             ],
             [
+                'label' => 'Koneksi WhatsApp',
+                'route' => 'admin.whatsapp.index',
+                'active' => ['admin.whatsapp.*'],
+                'permission' => 'whatsapp_connection.view',
+            ],
+            [
                 'label' => 'Kesehatan Sistem',
                 'route' => 'admin.system.health',
                 'active' => ['admin.system.health', 'system.health'],
@@ -481,6 +487,12 @@ return [
                 'label' => 'Channel Notifikasi',
                 'route' => 'admin.notifications.channels.index',
                 'active' => ['admin.notifications.channels.*'],
+                'permission' => 'notifications.view',
+            ],
+            [
+                'label' => 'Aktif/Nonaktif Notifikasi',
+                'route' => 'admin.notifications.business-settings.index',
+                'active' => ['admin.notifications.business-settings.*'],
                 'permission' => 'notifications.view',
             ],
             [

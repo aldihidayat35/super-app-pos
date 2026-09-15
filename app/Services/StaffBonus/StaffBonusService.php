@@ -29,6 +29,7 @@ use App\Models\User;
 use App\Models\WorkChecklist;
 use App\Services\Control\ApprovalWorkflowService;
 use App\Services\Control\AuditLogService;
+use App\Support\ApprovalAuthority;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -220,7 +221,10 @@ class StaffBonusService
             throw ValidationException::withMessages(['attendance' => 'Masih ada absensi yang menunggu verifikasi.']);
         }
         $period = $this->calculate($period);
-        $approval = $this->approvals->create($period, 'staff_bonus_period', 'staff_bonuses', $actor, (string) $period->total_bonus_amount, 'Persetujuan bonus staf '.$period->month.'/'.$period->year, after: ['total_bonus_amount' => $period->total_bonus_amount], location: $period->workLocation, requiredPermission: 'staff_bonuses.approve', handlerKey: 'staff_bonus.period');
+        $requiredRole = in_array($period->program->role_name, ['staf_toko', 'kasir'], true)
+            ? ApprovalAuthority::STORE_HEAD
+            : ApprovalAuthority::WAREHOUSE_HEAD;
+        $approval = $this->approvals->create($period, 'staff_bonus_period', 'staff_bonuses', $actor, (string) $period->total_bonus_amount, 'Persetujuan bonus staf '.$period->month.'/'.$period->year, after: ['total_bonus_amount' => $period->total_bonus_amount], location: $period->workLocation, requiredPermission: 'staff_bonuses.approve', requiredRole: $requiredRole, handlerKey: 'staff_bonus.period');
         $period->forceFill(['status' => StaffBonusPeriodStatus::PENDING_APPROVAL, 'submitted_at' => now(), 'submitted_by' => $actor->id, 'approval_request_id' => $approval->id])->save();
         $this->audit->record('staff_bonus.period_submitted', 'staff_bonuses', $actor, $period, [], ['total_bonus_amount' => $period->total_bonus_amount], request: $request, location: $period->workLocation);
 

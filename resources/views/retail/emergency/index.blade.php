@@ -33,7 +33,7 @@
         @if($branchId)<x-metronic.card title="Aturan approval toko"><p class="text-muted">Tanpa aturan, permintaan otomatis disetujui. Jika aturan diisi, approval diperlukan bila estimasi biaya melampaui ambang.</p>
             <form method="POST" action="{{ route('retail.emergency.rule') }}" class="row g-3">@csrf @method('PUT')<input type="hidden" name="branch_id" value="{{ $branchId }}">
                 <div class="col-md-5"><label class="form-label">Approval jika biaya melebihi</label><input type="number" step="0.01" min="0" name="approval_above_amount" value="{{ $rule->approval_above_amount ?? '' }}" class="form-control" placeholder="Kosong = semua perlu approval"></div>
-                <div class="col-md-5"><label class="form-label">Role penyetuju</label><select name="required_role" class="form-select"><option value="">Siapa pun dengan permission approval</option>@foreach($roles as $role)<option value="{{ $role }}" @selected(($rule->required_role ?? null) === $role)>{{ $role }}</option>@endforeach</select></div>
+                <div class="col-md-5"><label class="form-label">Pihak yang menyetujui</label><div class="form-control bg-light">Kepala Toko pada cabang ini</div><div class="form-text">Otoritas ditentukan otomatis berdasarkan lokasi toko.</div></div>
                 <div class="col-md-2 align-self-end"><button class="btn btn-primary w-100">Simpan aturan</button></div>
             </form>
             @if($rule)<form method="POST" action="{{ route('retail.emergency.rule.delete') }}" class="mt-3">@csrf @method('DELETE')<input type="hidden" name="branch_id" value="{{ $branchId }}"><button class="btn btn-sm btn-light-danger">Hapus aturan dan kembali ke persetujuan otomatis</button></form>@endif

@@ -17,11 +17,27 @@ class ApprovalInboxController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()->can('approvals.view'), 403);
+        $this->authorize('viewAny', ApprovalRequest::class);
+        $user = $request->user();
+        $query = ApprovalRequest::query()->with(['requester', 'workLocation']);
+
+        if (! $user->hasAnyRole(['super_admin', 'owner_viewer', 'owner_approver'])) {
+            $roleNames = $user->roles()->pluck('name');
+            $locationIds = $user->permittedWorkLocationIds();
+            $query->where(function ($scope) use ($user, $roleNames, $locationIds): void {
+                $scope->where('requester_user_id', $user->id)
+                    ->orWhere(function ($assigned) use ($roleNames, $locationIds): void {
+                        $assigned->whereIn('required_role', $roleNames)
+                            ->where(function ($location) use ($locationIds): void {
+                                $location->whereNull('work_location_id')
+                                    ->orWhereIn('work_location_id', $locationIds);
+                            });
+                    });
+            });
+        }
 
         return view('approvals.index', [
-            'approvals' => ApprovalRequest::query()
-                ->with(['requester', 'workLocation'])
+            'approvals' => $query
                 ->when($request->filled('status'), fn ($query) => $query->where('current_status', $request->query('status')))
                 ->when($request->filled('module'), fn ($query) => $query->where('module', $request->query('module')))
                 ->when($request->filled('risk_level'), fn ($query) => $query->where('risk_level', $request->query('risk_level')))
@@ -35,13 +51,15 @@ class ApprovalInboxController extends Controller
 
     public function show(ApprovalRequest $approval): View
     {
-        abort_unless(request()->user()?->can('approvals.view'), 403);
+        $this->authorize('view', $approval);
 
         return view('approvals.show', ['approval' => $approval->load(['subject', 'requester', 'approver', 'workLocation', 'steps.approver'])]);
     }
 
     public function approve(DecideApprovalRequest $request, ApprovalRequest $approval, ApprovalWorkflowService $service): RedirectResponse
     {
+        $this->authorize('approve', $approval);
+
         try {
             $service->approve($approval, $request->user(), $request->validated()['comments'] ?? null);
         } catch (ServiceException $exception) {
@@ -53,6 +71,8 @@ class ApprovalInboxController extends Controller
 
     public function reject(DecideApprovalRequest $request, ApprovalRequest $approval, ApprovalWorkflowService $service): RedirectResponse
     {
+        $this->authorize('reject', $approval);
+
         try {
             $service->reject($approval, $request->user(), $request->validated()['comments'] ?? null);
         } catch (ServiceException $exception) {

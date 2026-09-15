@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\ReturnStatus;
 use App\Models\ReturnDocument;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class ReturnDocumentPolicy
 {
@@ -35,7 +36,12 @@ class ReturnDocumentPolicy
 
     public function approve(User $user, ReturnDocument $returnDocument): bool
     {
-        return $user->can('returns.approve') && $returnDocument->status === ReturnStatus::PENDING_APPROVAL && $this->view($user, $returnDocument);
+        $location = $returnDocument->workLocation;
+
+        return $user->can('returns.approve')
+            && $returnDocument->status === ReturnStatus::PENDING_APPROVAL
+            && $location !== null
+            && ApprovalAuthority::canApproveAt($user, (int) $location->id, ApprovalAuthority::roleForLocation($location));
     }
 
     public function settle(User $user, ReturnDocument $returnDocument): bool

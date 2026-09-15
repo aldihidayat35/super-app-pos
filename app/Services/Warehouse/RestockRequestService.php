@@ -10,13 +10,17 @@ use App\Models\Product;
 use App\Models\RestockRequest;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Services\Notifications\BusinessNotificationService;
 use App\Services\Organization\DocumentNumberService;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 
 class RestockRequestService
 {
-    public function __construct(private readonly DocumentNumberService $numbers) {}
+    public function __construct(
+        private readonly DocumentNumberService $numbers,
+        private readonly BusinessNotificationService $notifications,
+    ) {}
 
     /** @param array<string, mixed> $data */
     public function create(array $data, User $actor): RestockRequest
@@ -84,7 +88,7 @@ class RestockRequestService
     public function submit(RestockRequest $request, User $actor): RestockRequest
     {
         return DB::transaction(function () use ($request, $actor): RestockRequest {
-            $request = RestockRequest::query()->with('items')->lockForUpdate()->findOrFail($request->id);
+            $request = RestockRequest::query()->with(['items', 'branch', 'sourceWarehouse'])->lockForUpdate()->findOrFail($request->id);
 
             if ($request->status !== RestockRequestStatus::DRAFT) {
                 throw ServiceException::validation('Hanya draft yang dapat diajukan.');
@@ -92,6 +96,14 @@ class RestockRequestService
 
             $request->forceFill(['status' => RestockRequestStatus::PENDING_APPROVAL, 'submitted_at' => now()])->save();
             $this->history($request, RestockRequestStatus::DRAFT, RestockRequestStatus::PENDING_APPROVAL, $actor, 'Request restock diajukan.');
+            $this->notifications->send(
+                'restock_submitted',
+                'Permintaan Restok Baru',
+                "{$request->number} dari {$request->branch->name} perlu ditinjau.",
+                $request->sourceWarehouse->work_location_id,
+                route('retail.restock-requests.show', $request),
+                $request->id,
+            );
 
             return $request->fresh(['items.product', 'branch', 'sourceWarehouse']);
         });
@@ -118,6 +130,15 @@ class RestockRequestService
 
             $request->forceFill(['status' => RestockRequestStatus::APPROVED, 'approved_by' => $actor->id, 'approved_at' => now()])->save();
             $this->history($request, RestockRequestStatus::PENDING_APPROVAL, RestockRequestStatus::APPROVED, $actor, 'Request restock disetujui.');
+            $this->notifications->send(
+                'restock_decided',
+                'Permintaan Restok Disetujui',
+                "{$request->number} telah disetujui oleh {$actor->name}.",
+                $request->branch->work_location_id,
+                route('retail.restock-requests.show', $request),
+                $request->id,
+                userIds: [(int) $request->requested_by],
+            );
 
             return $request->fresh(['items.product', 'branch.workLocation', 'sourceWarehouse.workLocation']);
         });
@@ -126,7 +147,7 @@ class RestockRequestService
     public function reject(RestockRequest $request, User $actor, string $reason): RestockRequest
     {
         return DB::transaction(function () use ($request, $actor, $reason): RestockRequest {
-            $request = RestockRequest::query()->lockForUpdate()->findOrFail($request->id);
+            $request = RestockRequest::query()->with('branch.workLocation')->lockForUpdate()->findOrFail($request->id);
 
             if ($request->status !== RestockRequestStatus::PENDING_APPROVAL) {
                 throw ServiceException::validation('Hanya request pending yang dapat ditolak.');
@@ -134,6 +155,15 @@ class RestockRequestService
 
             $request->forceFill(['status' => RestockRequestStatus::REJECTED, 'approved_by' => $actor->id, 'rejected_at' => now(), 'reject_reason' => $reason])->save();
             $this->history($request, RestockRequestStatus::PENDING_APPROVAL, RestockRequestStatus::REJECTED, $actor, $reason);
+            $this->notifications->send(
+                'restock_decided',
+                'Permintaan Restok Ditolak',
+                "{$request->number} ditolak oleh {$actor->name}.\nAlasan: {$reason}",
+                $request->branch->work_location_id,
+                route('retail.restock-requests.show', $request),
+                $request->id,
+                userIds: [(int) $request->requested_by],
+            );
 
             return $request->fresh(['items.product', 'branch', 'sourceWarehouse']);
         });

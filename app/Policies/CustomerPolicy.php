@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Customer;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class CustomerPolicy
 {
@@ -43,7 +44,8 @@ class CustomerPolicy
 
     public function manageSettings(User $user, Customer $customer): bool
     {
-        return $user->can('customers.manage_settings') || $user->hasRole('owner_approver');
+        return $user->can('customers.manage_settings')
+            && ($user->hasRole(ApprovalAuthority::WAREHOUSE_HEAD) || $user->hasRole('super_admin'));
     }
 
     public function export(User $user): bool

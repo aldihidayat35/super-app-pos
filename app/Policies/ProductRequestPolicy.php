@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\ProductRequest;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class ProductRequestPolicy
 {
@@ -14,8 +15,8 @@ class ProductRequestPolicy
 
     public function view(User $user, ProductRequest $productRequest): bool
     {
-        return $user->can('product_requests.approve')
-            || ($user->can('product_requests.view') && $user->canAccessWorkLocation((int) $productRequest->branch?->work_location_id));
+        return $user->can('product_requests.view')
+            && $user->canAccessWorkLocation((int) $productRequest->branch?->work_location_id);
     }
 
     public function create(User $user): bool
@@ -25,6 +26,11 @@ class ProductRequestPolicy
 
     public function approve(User $user, ProductRequest $productRequest): bool
     {
-        return $user->can('product_requests.approve') && $productRequest->status === 'pending_approval';
+        $locationId = $productRequest->branch?->work_location_id;
+
+        return $user->can('product_requests.approve')
+            && $productRequest->status === 'pending_approval'
+            && $locationId !== null
+            && ApprovalAuthority::canApproveAt($user, (int) $locationId, ApprovalAuthority::STORE_HEAD);
     }
 }

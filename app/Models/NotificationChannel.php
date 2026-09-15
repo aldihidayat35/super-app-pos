@@ -52,6 +52,13 @@ class NotificationChannel extends Model
         return is_array($credentials) ? $credentials : [];
     }
 
+    public function provider(): string
+    {
+        $metadata = $this->getAttribute('metadata');
+
+        return is_array($metadata) ? (string) ($metadata['provider'] ?? 'generic') : 'generic';
+    }
+
     /** @return BelongsTo<User, $this> */
     public function creator(): BelongsTo
     {

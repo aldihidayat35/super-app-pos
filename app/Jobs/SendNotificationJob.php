@@ -2,10 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Enums\NotificationLogStatus;
 use App\Models\NotificationLog;
 use App\Services\Notifications\NotificationDispatchService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use RuntimeException;
 
 class SendNotificationJob implements ShouldQueue
 {
@@ -21,6 +23,10 @@ class SendNotificationJob implements ShouldQueue
     public function handle(NotificationDispatchService $dispatcher): void
     {
         $log = NotificationLog::query()->findOrFail($this->notificationLogId);
-        $dispatcher->send($log);
+        $result = $dispatcher->send($log);
+
+        if ($result->deliveryStatus() === NotificationLogStatus::RETRY) {
+            throw new RuntimeException('Pengiriman notifikasi akan dicoba kembali oleh queue.');
+        }
     }
 }

@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\StockTransferStatus;
 use App\Models\StockTransfer;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class StockTransferPolicy
 {
@@ -34,9 +35,12 @@ class StockTransferPolicy
 
     public function approve(User $user, StockTransfer $stockTransfer): bool
     {
+        $location = $stockTransfer->sourceWorkLocation;
+
         return $user->can('stock_transfers.approve')
             && $stockTransfer->status === StockTransferStatus::PENDING_APPROVAL
-            && $this->view($user, $stockTransfer);
+            && $location !== null
+            && ApprovalAuthority::canApproveAt($user, (int) $location->id, ApprovalAuthority::roleForLocation($location));
     }
 
     public function pack(User $user, StockTransfer $stockTransfer): bool

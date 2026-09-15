@@ -18,7 +18,9 @@ use App\Models\Stock;
 use App\Models\User;
 use App\Services\Control\ApprovalWorkflowService;
 use App\Services\Inventory\InventoryService;
+use App\Services\Notifications\BusinessNotificationService;
 use App\Services\Organization\DocumentNumberService;
+use App\Support\CurrencyFormatter;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -30,6 +32,7 @@ class EmergencyPurchaseService
         private readonly PosCatalogService $catalog,
         private readonly ApprovalWorkflowService $approvals,
         private readonly InventoryService $inventory,
+        private readonly BusinessNotificationService $notifications,
     ) {}
 
     public function regularize(EmergencyPurchase $purchase, User $actor): EmergencyPurchase
@@ -193,11 +196,19 @@ class EmergencyPurchaseService
                     $purchase, 'emergency_purchase', 'retail', $actor, $total,
                     'Pembelian darurat toko '.$purchase->number,
                     after: [], location: $branch->workLocation,
-                    requiredPermission: 'emergency_purchases.approve', requiredRole: $rule->required_role,
+                    requiredPermission: 'emergency_purchases.approve', requiredRole: 'kepala_toko',
                     handlerKey: 'retail.emergency_purchase',
                 );
             }
             $this->history($purchase, $actor, $purpose === 'proactive_restock' ? 'proactive_restock_requested' : 'confirmed', null, $purchase->status);
+            $this->notifications->send(
+                'emergency_purchase',
+                $purpose === 'proactive_restock' ? 'Restok Darurat Toko Dibuat' : 'Pembelian Darurat Diajukan',
+                "{$purchase->number} di {$branch->name}.\nNilai perkiraan: ".CurrencyFormatter::rupiah($total)."\nStatus: {$purchase->status}",
+                $purchase->work_location_id,
+                route('retail.emergency.show', $purchase),
+                $purchase->id.':requested',
+            );
 
             return $purchase->load('items.product');
         });
@@ -279,6 +290,14 @@ class EmergencyPurchaseService
             ])->save();
             $this->history($purchase, $actor, 'purchased', 'approved', $nextStatus,
                 $purchase->purpose === 'proactive_restock' ? 'Barang tersedia pada pool darurat toko.' : null);
+            $this->notifications->send(
+                'emergency_purchase',
+                'Pembelian Darurat Sudah Dibeli',
+                "{$purchase->number} telah dicatat oleh {$actor->name}.\nBiaya aktual: ".CurrencyFormatter::rupiah($total)."\nStatus: {$nextStatus}",
+                $purchase->work_location_id,
+                route('retail.emergency.show', $purchase),
+                $purchase->id.':purchased',
+            );
 
             return $purchase->fresh('items');
         });

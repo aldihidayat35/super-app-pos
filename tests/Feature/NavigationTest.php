@@ -60,9 +60,12 @@ class NavigationTest extends TestCase
             $this->assertStringNotContainsString('href="'.route($routeName).'"', $sidebar, $routeName);
         }
 
-        foreach (['dashboard', 'warehouse.stocks.index', 'sales.orders.index', 'retail.pos.index', 'tax.index'] as $routeName) {
+        foreach (['dashboard', 'admin.whatsapp.index', 'admin.notifications.business-settings.index', 'warehouse.stocks.index', 'sales.orders.index', 'retail.pos.index', 'tax.index'] as $routeName) {
             $this->assertStringContainsString('href="'.route($routeName).'"', $sidebar, $routeName);
         }
+
+        $this->assertStringContainsString('Koneksi WhatsApp', $sidebar);
+        $this->assertStringContainsString('Aktif/Nonaktif Notifikasi', $sidebar);
 
         $this->actingAs($user)->get(route('reports.attendance.index'))
             ->assertOk()

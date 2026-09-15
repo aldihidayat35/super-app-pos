@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\ApprovalRequest;
 use App\Models\B2bComplaint;
 use App\Models\B2bOrder;
 use App\Models\Branch;
@@ -43,6 +44,7 @@ use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
 use App\Models\WorkChecklist;
 use App\Models\WorkLocation;
+use App\Policies\ApprovalRequestPolicy;
 use App\Policies\B2bComplaintPolicy;
 use App\Policies\B2bOrderPolicy;
 use App\Policies\BranchPolicy;
@@ -122,6 +124,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn (User $user, string $ability): ?bool => $user->hasRole('super_admin') ? true : null);
 
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(ApprovalRequest::class, ApprovalRequestPolicy::class);
         Gate::policy(B2bComplaint::class, B2bComplaintPolicy::class);
         Gate::policy(B2bOrder::class, B2bOrderPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);

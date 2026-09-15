@@ -638,7 +638,7 @@ class AttendanceService
         if (! $actor->can('attendance.approve') || ! $actor->canAccessWorkLocation((int) $attendance->work_location_id)) {
             return false;
         }
-        if ($actor->hasAnyRole(['super_admin', 'owner_approver'])) {
+        if ($actor->hasRole('super_admin')) {
             return true;
         }
 

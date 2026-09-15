@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\CashShiftStatus;
 use App\Models\CashShift;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class CashShiftPolicy
 {
@@ -42,6 +43,7 @@ class CashShiftPolicy
     {
         return $user->can('cash_shifts.approve')
             && $this->view($user, $shift)
+            && ApprovalAuthority::canApproveAt($user, (int) $shift->work_location_id, ApprovalAuthority::STORE_HEAD)
             && $shift->status === CashShiftStatus::CLOSING_SUBMITTED;
     }
 }

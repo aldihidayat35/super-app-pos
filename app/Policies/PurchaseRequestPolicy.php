@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\PurchaseRequestStatus;
 use App\Models\PurchaseRequest;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class PurchaseRequestPolicy
 {
@@ -25,7 +26,12 @@ class PurchaseRequestPolicy
 
     public function approve(User $user, PurchaseRequest $purchaseRequest): bool
     {
-        return $user->can('purchase_orders.approve') && $purchaseRequest->status === PurchaseRequestStatus::SUBMITTED && $this->view($user, $purchaseRequest);
+        $locationId = $purchaseRequest->warehouse?->work_location_id;
+
+        return $user->can('purchase_orders.approve')
+            && $purchaseRequest->status === PurchaseRequestStatus::SUBMITTED
+            && $locationId !== null
+            && ApprovalAuthority::canApproveAt($user, (int) $locationId, ApprovalAuthority::WAREHOUSE_HEAD);
     }
 
     public function convert(User $user, PurchaseRequest $purchaseRequest): bool

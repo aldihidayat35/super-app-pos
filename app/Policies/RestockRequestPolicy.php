@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\RestockRequestStatus;
 use App\Models\RestockRequest;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class RestockRequestPolicy
 {
@@ -36,6 +37,10 @@ class RestockRequestPolicy
 
     public function approve(User $user, RestockRequest $restockRequest): bool
     {
-        return $user->can('stock_transfers.approve') && $this->view($user, $restockRequest);
+        $locationId = $restockRequest->sourceWarehouse?->work_location_id;
+
+        return $user->can('stock_transfers.approve')
+            && $locationId !== null
+            && ApprovalAuthority::canApproveAt($user, (int) $locationId, ApprovalAuthority::WAREHOUSE_HEAD);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services\Pricing;
 
 use App\Enums\PriceApprovalStatus;
 use App\Enums\ProductPriceStatus;
+use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\CustomerPriceOverride;
 use App\Models\PriceApprovalRequest;
@@ -14,6 +15,7 @@ use App\Models\ProductPrice;
 use App\Models\User;
 use App\Services\Control\AnomalyDetectionService;
 use App\Services\Control\ApprovalWorkflowService;
+use App\Support\ApprovalAuthority;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -92,7 +94,7 @@ class PriceManagementService
             $this->writeHistory($price, $product, $oldPrice === null ? null : (string) $oldPrice, (string) $price->recommended_price, $actor, $data['notes'] ?? 'Perubahan harga produk');
 
             if ($status === ProductPriceStatus::DRAFT) {
-                $this->requestApproval('product_price', $price->id, $product, null, $actor, (string) $price->recommended_price, $resolved, $data['notes'] ?? null);
+                $this->requestApproval('product_price', $price->id, $product, null, $price->branch_id, $actor, (string) $price->recommended_price, $resolved, $data['notes'] ?? null);
             }
 
             return $price->fresh(['product', 'branch']);
@@ -131,7 +133,7 @@ class PriceManagementService
             $this->writeHistory($override, $product, null, (string) $override->price, $actor, $data['reason'] ?? 'Harga khusus pelanggan');
 
             if ($status === PriceApprovalStatus::PENDING) {
-                $this->requestApproval('customer_special_price', $override->id, $product, $customer, $actor, (string) $override->price, $resolved, $data['reason'] ?? null);
+                $this->requestApproval('customer_special_price', $override->id, $product, $customer, $override->branch_id, $actor, (string) $override->price, $resolved, $data['reason'] ?? null);
             }
 
             return $override->fresh(['customer', 'product']);
@@ -210,7 +212,7 @@ class PriceManagementService
     }
 
     /** @param array<string, mixed> $resolved */
-    private function requestApproval(string $type, int $documentId, Product $product, ?Customer $customer, User $actor, string $requestedPrice, array $resolved, ?string $reason): void
+    private function requestApproval(string $type, int $documentId, Product $product, ?Customer $customer, ?int $branchId, User $actor, string $requestedPrice, array $resolved, ?string $reason): void
     {
         $approval = PriceApprovalRequest::query()->create([
             'approval_type' => implode(',', $resolved['approval_reasons'] ?? [$type]),
@@ -218,6 +220,7 @@ class PriceManagementService
             'document_id' => $documentId,
             'product_id' => $product->id,
             'customer_id' => $customer?->id,
+            'branch_id' => $branchId,
             'requested_by' => $actor->id,
             'status' => PriceApprovalStatus::PENDING,
             'requested_price' => $requestedPrice,
@@ -228,6 +231,7 @@ class PriceManagementService
             'expires_at' => now()->addDays(7),
         ]);
 
+        $location = $branchId === null ? null : Branch::query()->with('workLocation')->find($branchId)?->workLocation;
         $this->approvals->create(
             subject: $approval,
             type: (string) $approval->approval_type,
@@ -251,7 +255,9 @@ class PriceManagementService
                 'hpp_snapshot' => $resolved['hpp_base'] ?? null,
                 'approval_reasons' => $resolved['approval_reasons'] ?? [],
             ],
-            requiredPermission: 'approvals.approve',
+            location: $location,
+            requiredPermission: 'prices.approve',
+            requiredRole: $location === null ? ApprovalAuthority::WAREHOUSE_HEAD : ApprovalAuthority::STORE_HEAD,
             handlerKey: 'pricing.approval',
             correlationId: 'pricing-'.$approval->id,
         );

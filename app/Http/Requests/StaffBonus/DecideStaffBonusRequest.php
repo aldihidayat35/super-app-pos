@@ -2,13 +2,19 @@
 
 namespace App\Http\Requests\StaffBonus;
 
+use App\Models\StaffBonusPeriod;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DecideStaffBonusRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('staff_bonuses.approve') ?? false;
+        $period = $this->route('period');
+        if (! $period instanceof StaffBonusPeriod || $period->approval_request_id === null) {
+            return false;
+        }
+
+        return $this->user()?->can('approve', $period->approvalRequest) ?? false;
     }
 
     /** @return array<string, mixed> */

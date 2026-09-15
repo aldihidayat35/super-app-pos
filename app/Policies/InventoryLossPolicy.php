@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\InventoryLossStatus;
 use App\Models\InventoryLoss;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class InventoryLossPolicy
 {
@@ -20,6 +21,11 @@ class InventoryLossPolicy
 
     public function approve(User $user, InventoryLoss $inventoryLoss): bool
     {
-        return $user->can('returns.approve') && $inventoryLoss->status === InventoryLossStatus::PENDING_APPROVAL && $this->view($user, $inventoryLoss);
+        $location = $inventoryLoss->workLocation;
+
+        return $user->can('returns.approve')
+            && $inventoryLoss->status === InventoryLossStatus::PENDING_APPROVAL
+            && $location !== null
+            && ApprovalAuthority::canApproveAt($user, (int) $location->id, ApprovalAuthority::roleForLocation($location));
     }
 }

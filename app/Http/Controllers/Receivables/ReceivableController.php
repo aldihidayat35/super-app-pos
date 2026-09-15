@@ -329,7 +329,7 @@ class ReceivableController extends Controller
 
     public function approveAdjustment(Request $request, CreditNote $creditNote, ReceivableService $service): RedirectResponse
     {
-        $this->authorize('adjust', Receivable::class);
+        $this->authorize('approveAdjustment', $creditNote->receivable);
         $service->approveCreditNote($creditNote, $request->user(), $request->input('approval_note'));
 
         return back()->with('notification', ['type' => 'success', 'message' => 'Credit note disetujui dan saldo piutang dikoreksi.']);

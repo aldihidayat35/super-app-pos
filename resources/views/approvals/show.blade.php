@@ -135,7 +135,7 @@
         </div>
         <div class="col-lg-5">
             <x-metronic.card title="Keputusan">
-                @if($approval->current_status->value === 'pending')
+                @if($approval->current_status->value === 'pending' && auth()->user()->can('approve', $approval))
                     <form method="POST" action="{{ route('approvals.approve', $approval) }}" class="mb-4">@csrf
                         <textarea name="comments" class="form-control mb-3" rows="3" placeholder="Komentar approval"></textarea>
                         <button class="btn btn-success w-100">Approve</button>
@@ -144,9 +144,11 @@
                         <textarea name="comments" class="form-control mb-3" rows="3" placeholder="Alasan reject"></textarea>
                         <button class="btn btn-light-danger w-100">Reject</button>
                     </form>
-                @else
+                @elseif($approval->current_status->value !== 'pending')
                     <div class="text-muted">Diputus oleh {{ $approval->approver?->name ?: '-' }} pada {{ $approval->approved_at?->format('d/m/Y H:i') ?: $approval->rejected_at?->format('d/m/Y H:i') }}</div>
                     <div class="mt-3">{{ $approval->decision_notes }}</div>
+                @else
+                    <div class="alert alert-light-info mb-0">Permintaan ini hanya dapat diputuskan oleh kepala bagian pada lokasi terkait. Anda tetap dapat memantau statusnya.</div>
                 @endif
             </x-metronic.card>
             <x-metronic.card title="Histori Step" class="mt-5">

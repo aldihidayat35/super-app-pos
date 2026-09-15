@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\TaxPeriod;
 use App\Models\User;
+use App\Support\ApprovalAuthority;
 
 class TaxPeriodPolicy
 {
@@ -24,7 +25,8 @@ class TaxPeriodPolicy
 
     public function approve(User $user): bool
     {
-        return $user->can('tax.approve');
+        return $user->can('tax.approve')
+            && ($user->hasRole(ApprovalAuthority::SYSTEM_HEAD) || $user->hasRole('super_admin'));
     }
 
     public function export(User $user): bool
