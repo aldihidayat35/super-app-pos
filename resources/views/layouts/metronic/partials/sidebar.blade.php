@@ -1,11 +1,13 @@
 @php
     $user = auth()->user();
     $hiddenRoutes = config('ui_visibility.hidden_navigation_routes', []);
-    $menuItems = collect(config('navigation'))->filter(function (array $item) use ($user, $hiddenRoutes): bool {
+    $canOpen = fn (?string $permission): bool => empty($permission)
+        || collect(explode('|', $permission))->contains(fn (string $name): bool => $user?->can($name) === true);
+    $menuItems = collect(config('navigation'))->filter(function (array $item) use ($user, $hiddenRoutes, $canOpen): bool {
         if (in_array($item['route'] ?? null, $hiddenRoutes, true)) {
             return false;
         }
-        if (!empty($item['permission']) && !$user?->can($item['permission'])) {
+        if (!$canOpen($item['permission'] ?? null)) {
             return false;
         }
         if (empty($item['children'])) {
@@ -13,7 +15,7 @@
         }
         return collect($item['children'])->contains(
             fn(array $child): bool => !in_array($child['route'] ?? null, $hiddenRoutes, true)
-                && (empty($child['permission']) || $user?->can($child['permission'])),
+                && $canOpen($child['permission'] ?? null),
         );
     });
 
@@ -38,6 +40,9 @@
         $roles = $user->roles->pluck('name')->toArray();
         $rolesString = implode(' | ', $roles);
     }
+    $workChecklistPending = $user?->can('work_checklists.view_own')
+        ? app(\App\Services\WorkChecklist\WorkChecklistService::class)->pendingCount($user)
+        : 0;
 @endphp
 
 <aside id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar"
@@ -158,7 +163,7 @@
                     @php
                         $children = collect($item['children'] ?? [])->filter(
                             fn(array $child): bool => !in_array($child['route'] ?? null, $hiddenRoutes, true)
-                                && (empty($child['permission']) || $user?->can($child['permission'])),
+                                && $canOpen($child['permission'] ?? null),
                         );
                         $isOpen =
                             collect($item['active'] ?? [])->contains(
@@ -200,6 +205,9 @@
                                     <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                                 </span>
                                 <span class="menu-title">{{ $item['label'] }}</span>
+                                @if (($item['badge'] ?? null) === 'work_checklists.pending' && $workChecklistPending > 0)
+                                    <span class="badge badge-circle badge-danger ms-auto">{{ min($workChecklistPending, 99) }}</span>
+                                @endif
                             </a>
                         </div>
                     @endif

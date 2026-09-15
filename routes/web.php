@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserLocationController;
 use App\Http\Controllers\Admin\WarehouseController;
+use App\Http\Controllers\Attendance\AttendanceRecordController;
 use App\Http\Controllers\Attendance\AttendanceRequestController;
 use App\Http\Controllers\Attendance\CheckController as AttendanceCheckController;
 use App\Http\Controllers\Attendance\CorrectionController as AttendanceCorrectionController;
@@ -95,6 +96,7 @@ use App\Http\Controllers\Sales\StockController as SalesStockController;
 use App\Http\Controllers\Sales\TargetBonusController as SalesTargetBonusController;
 use App\Http\Controllers\ShipmentController;
 use App\Http\Controllers\ShipmentProofController;
+use App\Http\Controllers\StaffBonus\StaffBonusController;
 use App\Http\Controllers\System\HealthController;
 use App\Http\Controllers\System\OperationsController;
 use App\Http\Controllers\Tax\TaxComplianceController;
@@ -110,6 +112,7 @@ use App\Http\Controllers\Warehouse\StockReservationController;
 use App\Http\Controllers\Warehouse\StockTransferController;
 use App\Http\Controllers\Warehouse\WarehouseDashboardController;
 use App\Http\Controllers\Warehouse\WarehouseLocationController;
+use App\Http\Controllers\WorkChecklist\WorkChecklistController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
@@ -241,6 +244,31 @@ Route::middleware(['auth', 'active.user'])->group(function (): void {
 });
 
 Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->group(function (): void {
+    Route::prefix('target-bonus')->name('staff-bonuses.')->group(function (): void {
+        Route::get('/', [StaffBonusController::class, 'index'])->middleware('permission:staff_bonuses.view_own|staff_bonuses.view_team|staff_bonuses.view_all')->name('index');
+        Route::post('/program', [StaffBonusController::class, 'store'])->middleware('permission:staff_bonuses.manage')->name('programs.store');
+        Route::post('/program/{program}/aktifkan', [StaffBonusController::class, 'activate'])->middleware('permission:staff_bonuses.manage')->name('programs.activate');
+        Route::post('/periode/{period}/hitung', [StaffBonusController::class, 'calculate'])->middleware('permission:staff_bonuses.manage')->name('periods.calculate');
+        Route::post('/periode/{period}/ajukan', [StaffBonusController::class, 'submit'])->middleware('permission:staff_bonuses.manage')->name('periods.submit');
+        Route::post('/periode/{period}/setujui', [StaffBonusController::class, 'approve'])->middleware('permission:staff_bonuses.approve')->name('periods.approve');
+        Route::post('/periode/{period}/tolak', [StaffBonusController::class, 'reject'])->middleware('permission:staff_bonuses.approve')->name('periods.reject');
+        Route::post('/hasil/{result}/bayar', [StaffBonusController::class, 'pay'])->middleware('permission:staff_bonuses.pay')->name('results.pay');
+        Route::post('/hasil/{result}/penyesuaian', [StaffBonusController::class, 'adjust'])->middleware('permission:staff_bonuses.manage')->name('results.adjust');
+        Route::get('/rekap.csv', [StaffBonusController::class, 'export'])->middleware('permission:staff_bonuses.export')->name('export');
+    });
+
+    Route::prefix('checklist-kerja')->name('work-checklists.')->group(function (): void {
+        Route::get('/', [WorkChecklistController::class, 'index'])->middleware('permission:work_checklists.view_own|work_checklists.view_team|work_checklists.view_all')->name('index');
+        Route::patch('/poin/{item}', [WorkChecklistController::class, 'updateItem'])->middleware('permission:work_checklists.update_own')->name('items.update');
+        Route::post('/{checklist}/selesai', [WorkChecklistController::class, 'complete'])->middleware('permission:work_checklists.update_own')->name('complete');
+        Route::post('/{checklist}/selesai-dan-pulang', [WorkChecklistController::class, 'completeAndCheckOut'])->middleware('permission:work_checklists.update_own|attendance.check')->name('complete-and-check-out');
+        Route::post('/{checklist}/koreksi', [WorkChecklistController::class, 'reopen'])->middleware('permission:work_checklists.update_own')->name('reopen');
+        Route::get('/rekap.csv', [WorkChecklistController::class, 'export'])->middleware('permission:work_checklists.export')->name('export');
+        Route::post('/template', [WorkChecklistController::class, 'storeTemplate'])->middleware('permission:work_checklists.manage_templates')->name('templates.store');
+        Route::put('/template/{template}', [WorkChecklistController::class, 'versionTemplate'])->middleware('permission:work_checklists.manage_templates')->name('templates.version');
+        Route::patch('/template/{template}/nonaktifkan', [WorkChecklistController::class, 'deactivateTemplate'])->middleware('permission:work_checklists.manage_templates')->name('templates.deactivate');
+    });
+
     Route::get('/dashboard', DashboardController::class)
         ->middleware('permission:dashboard.view')
         ->name('dashboard');
@@ -654,6 +682,7 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     });
 
     Route::prefix('attendance')->name('attendance.')->group(function (): void {
+        Route::get('/', [AttendanceCheckController::class, 'show'])->middleware('permission:attendance.check|attendance.view')->name('dashboard');
         Route::get('/employees', [AttendanceEmployeeController::class, 'index'])->middleware('permission:attendance.view')->name('employees.index');
         Route::get('/employees/create', [AttendanceEmployeeController::class, 'create'])->middleware('permission:attendance.update')->name('employees.create');
         Route::post('/employees', [AttendanceEmployeeController::class, 'store'])->middleware('permission:attendance.update')->name('employees.store');
@@ -669,10 +698,14 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
 
         Route::get('/schedules', [AttendanceScheduleController::class, 'index'])->middleware('permission:attendance.view')->name('schedules.index');
         Route::post('/schedules', [AttendanceScheduleController::class, 'store'])->middleware('permission:attendance.update')->name('schedules.store');
+        Route::post('/schedule-patterns', [AttendanceScheduleController::class, 'storePattern'])->middleware('permission:attendance.update')->name('schedule-patterns.store');
 
         Route::get('/check', [AttendanceCheckController::class, 'show'])->middleware('permission:attendance.check')->name('check.show');
         Route::post('/check/in', [AttendanceCheckController::class, 'checkIn'])->middleware('permission:attendance.check')->name('check.in');
         Route::post('/check/out', [AttendanceCheckController::class, 'checkOut'])->middleware('permission:attendance.check')->name('check.out');
+        Route::post('/records/{attendance}/approve', [AttendanceRecordController::class, 'approve'])->middleware('permission:attendance.approve')->name('records.approve');
+        Route::post('/records/{attendance}/reject', [AttendanceRecordController::class, 'reject'])->middleware('permission:attendance.approve')->name('records.reject');
+        Route::post('/records/{attendance}/supervisor-check-out', [AttendanceRecordController::class, 'supervisorCheckOut'])->middleware('permission:attendance.approve')->name('supervisor.check-out');
 
         Route::get('/requests', [AttendanceRequestController::class, 'index'])->middleware('permission:attendance.check|attendance.approve')->name('requests.index');
         Route::post('/requests', [AttendanceRequestController::class, 'store'])->middleware('permission:attendance.check')->name('requests.store');

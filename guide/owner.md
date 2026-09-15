@@ -1,5 +1,7 @@
 # Guide Book Owner
 
+> Panduan penyusunan KPI, persetujuan hasil, dan pencatatan pembayaran tersedia pada [Panduan Target dan Bonus Staf](target-bonus.md).
+
 Panduan ini untuk `owner_viewer` dan `owner_approver`. Dalam praktik bisnis, owner melihat kondisi seluruh organisasi, mengambil keputusan strategis, dan menyetujui transaksi sensitif. Owner tidak disarankan melakukan input operasional harian kecuali sebagai tindakan supervisi.
 
 ## 1. Tujuan role Owner
@@ -21,6 +23,10 @@ Role terkait:
 | `owner_viewer` | Melihat dashboard, laporan, audit, margin sensitif, dan export tanpa approval. |
 | `owner_approver` | Semua akses owner viewer ditambah hak approve untuk aksi sensitif. |
 
+```guide-flow
+owner-responsibilities
+```
+
 ## 2. Menu utama Owner
 
 | Menu | URL | Fungsi |
@@ -41,6 +47,12 @@ Role terkait:
 | Invoice | `/invoices` | Melihat invoice dan PDF tagihan. |
 | Dashboard Piutang | `/receivables/dashboard` | Ringkasan saldo piutang dan aging. |
 | Limit Kredit | `/receivables/credit-limits` | Meninjau atau menyetujui perubahan limit sesuai izin. |
+| Performa Sales | `/sales/performance` | Membandingkan target dan realisasi seluruh tim Sales. |
+| Pajak & Kepatuhan | `/tax` | Register, rekonsiliasi, status masa, dan export pajak untuk Owner Approver. |
+
+```guide-flow
+owner-overview
+```
 
 ## 3. Alur kerja harian Owner
 
@@ -49,14 +61,20 @@ Role terkait:
 1. Login melalui `/login`.
 2. Buka `Dashboard Owner`.
 3. Periksa KPI utama:
-   - omzet hari ini,
+   - omzet/revenue,
    - gross margin,
-   - transaksi POS,
-   - order B2B,
+   - persentase margin,
+   - nilai stok,
+   - transaksi hari ini,
    - stok kritis,
+   - produk fast moving dan slow moving,
+   - total piutang,
    - piutang overdue,
+   - selisih kas,
+   - kehadiran terlambat,
    - approval tertunda,
-   - anomali.
+   - anomali terbuka,
+   - nilai retur.
 4. Klik kartu KPI untuk masuk ke laporan detail bila tersedia.
 
 Cara kerja di belakang layar:
@@ -66,10 +84,20 @@ Cara kerja di belakang layar:
 - Data dibatasi oleh permission `reports.view` dan `margins.view_sensitive`.
 - Export laporan diproses melalui data report export agar file tidak membebani request utama.
 
+```guide-flow
+owner-dashboard
+```
+
+Gunakan laporan harian, gudang, toko, B2B, pricing, supplier, dan piutang untuk memeriksa penyebab indikator dashboard. Terapkan periode dan lokasi yang sama agar perbandingan tetap konsisten, lalu buka dokumen transaksi sumber sebelum mengambil keputusan.
+
+```guide-flow
+owner-report-review
+```
+
 ### 3.2 Cek approval tertunda
 
 1. Buka `/approvals`.
-2. Filter status `pending` atau prioritas tinggi.
+2. Filter status `pending`, modul, tingkat risiko, atau pemohon.
 3. Buka detail approval.
 4. Baca:
    - pemohon,
@@ -83,22 +111,21 @@ Cara kerja di belakang layar:
 
 Cara kerja di belakang layar:
 
-- Approval tidak sekadar menyembunyikan tombol. Server memeriksa permission `approvals.approve`.
-- Keputusan dicatat ke tabel approval dan audit log.
+- Route keputusan memeriksa permission `approvals.approve`, lalu service memeriksa permission/role yang diwajibkan request, masa berlaku, lokasi tertentu, dan pemisahan tugas.
+- Keputusan, langkah approver, waktu, catatan, dan audit log disimpan.
 - Untuk aksi stok/uang, proses final dijalankan dalam transaksi database.
-- Pemohon tidak boleh dianggap otomatis berhak approve kecuali policy mengizinkan.
+- Jika aturan pemisahan tugas aktif, pemohon tidak boleh memutuskan request sendiri.
 
-Contoh approval yang perlu perhatian:
+Kotak masuk terpusat saat ini digunakan oleh:
 
-- diskon atau harga di bawah minimum,
-- perubahan harga sensitif,
-- koreksi stok besar,
-- void POS,
-- retur besar,
-- credit note,
-- limit kredit,
-- pembayaran mencurigakan,
-- closing shift dengan selisih besar.
+- harga produk atau harga khusus yang memerlukan approval;
+- pembelian darurat toko yang terkena aturan approval.
+
+Approval Purchase Order, stok opname, retur, credit note, limit kredit, dan closing shift dilakukan dari halaman modul masing-masing. Void POS dijalankan langsung oleh pengguna dengan permission `pos.void` dan tidak masuk antrean approval.
+
+```guide-flow
+owner-approval-inbox
+```
 
 ### 3.3 Cek laporan stok dan gudang
 
@@ -114,6 +141,10 @@ Cara kerja di belakang layar:
 - Detail riwayat berasal dari `stock_mutations` yang append-only.
 - Available stock dihitung dari on hand dikurangi reserved dan damaged.
 - Mutasi tidak boleh dihapus. Koreksi harus melalui dokumen adjustment, retur, loss, atau reversal.
+
+```guide-flow
+owner-stock-review
+```
 
 ### 3.4 Cek margin dan harga
 
@@ -134,20 +165,30 @@ Cara kerja di belakang layar:
 - Transaksi POS/B2B menyimpan snapshot HPP dan harga agar laporan historis stabil.
 - Perubahan harga sensitif bisa memicu approval.
 
+```guide-flow
+owner-pricing-review
+```
+
 ### 3.5 Cek piutang
 
 1. Buka `/receivables/dashboard`.
 2. Periksa total outstanding, overdue, aging bucket, dan pelanggan risiko tinggi.
 3. Buka `/receivables` untuk daftar detail.
-4. Buka detail pelanggan untuk histori invoice, pembayaran, dan reminder.
-5. Buka `/receivables/credit-limits` jika perlu meninjau limit.
+4. Buka detail pelanggan untuk histori invoice, pembayaran, ledger, dan reminder.
+5. Untuk `owner_approver`, buka `/receivables/credit-limits` jika perlu mengelola limit atau status blokir.
 
 Cara kerja di belakang layar:
 
-- Piutang dibuat dari invoice issued.
+- Piutang dibuat dari invoice B2B issued atau bagian kredit pada transaksi POS.
 - Pembayaran dicatat sebagai payment dan dialokasikan ke invoice/piutang.
 - Saldo piutang berasal dari ledger receivable entry, bukan angka manual bebas.
 - Credit note atau adjustment harus diaudit dan bisa membutuhkan approval.
+
+`owner_viewer` dapat melihat laporan dan detail piutang, tetapi tidak dapat membuka pengelolaan limit kredit karena halaman itu memerlukan permission `receivables.manage_limits`.
+
+```guide-flow
+owner-receivable-review
+```
 
 ### 3.6 Cek audit dan anomali
 
@@ -155,7 +196,7 @@ Cara kerja di belakang layar:
 2. Prioritaskan severity tinggi.
 3. Buka detail evidence.
 4. Jika anomali valid, minta tim terkait memperbaiki dengan dokumen koreksi.
-5. Jika false positive, resolve dengan catatan.
+5. Tetapkan status `Reviewed`, `Resolved`, atau `False Positive` dengan catatan sesuai hasil pemeriksaan.
 6. Buka `/audit-logs` untuk jejak perubahan record.
 
 Cara kerja di belakang layar:
@@ -163,6 +204,55 @@ Cara kerja di belakang layar:
 - Audit log menyimpan actor, event, module, before/after, IP/user-agent bila tersedia, dan waktu.
 - Anomaly alert dibuat dari aturan risiko, misalnya diskon besar, void, perubahan harga, atau aktivitas login.
 - Resolve anomali tidak mengubah transaksi asal; resolve hanya menandai alert sudah ditinjau.
+
+```guide-flow
+owner-audit-review
+```
+
+### 3.7 Meninjau performa Sales
+
+1. Buka `/sales/performance`.
+2. Pilih bulan dan tahun.
+3. Bandingkan performa seluruh Sales, target, pencapaian, dan nilai bonus.
+4. Telusuri penyimpangan melalui order dan pelanggan terkait.
+5. Tetapkan tindak lanjut tanpa mengambil alih transaksi harian Sales.
+
+Gunakan halaman performa tim, bukan `/sales/dashboard`, karena dashboard tersebut menghitung data milik pengguna Sales yang sedang login.
+
+```guide-flow
+owner-sales-review
+```
+
+### 3.8 Meninjau pajak dan kepatuhan
+
+Fitur ini tersedia untuk `owner_approver` dan `super_admin`. `owner_viewer` tidak memiliki permission `tax.access`.
+
+1. Buka `/tax` dan pilih masa pajak.
+2. Sinkronkan invoice, transaksi POS, dan retur yang sudah memenuhi status final.
+3. Periksa dokumen unmatched, identitas pajak yang belum lengkap, dan dokumen draft.
+4. Rekonsiliasi dokumen dengan referensi Coretax atau lakukan reversal dengan alasan jika salah.
+5. Jalankan status masa secara berurutan: Open, Reviewed, Approved, Reported, Paid bila ada pembayaran, lalu Locked.
+6. Export register pajak setelah data siap.
+
+Masa Locked tidak dapat diubah. Jika harus dikoreksi, buka kembali ke Open dengan alasan, perbaiki dokumen, lalu ulangi alur review.
+
+```guide-flow
+owner-tax-review
+```
+
+### 3.9 Meminta export laporan
+
+1. Buka `/reports/exports`.
+2. Pilih jenis laporan, format, periode, lokasi, dan filter yang diperlukan.
+3. Kirim permintaan export.
+4. Tunggu status pemrosesan selesai oleh queue worker.
+5. Unduh file dari pusat export sebelum masa berlakunya habis.
+
+Export berjalan melalui job antrean dan memiliki masa berlaku tujuh hari. File belum dapat diunduh jika proses belum menghasilkan file di storage.
+
+```guide-flow
+owner-report-export
+```
 
 ## 4. Panduan membaca status
 
@@ -176,7 +266,11 @@ Cara kerja di belakang layar:
 | Sent to Supplier | PO sudah dikirim ke supplier. |
 | Partially Received | Sebagian item sudah diterima. |
 | Completed | PO selesai diterima. |
-| Cancelled | PO dibatalkan sebelum diterima penuh. |
+| Cancelled | PO dibatalkan sebelum ada qty barang yang diterima. |
+
+```guide-flow
+owner-po-status
+```
 
 ### 4.2 Goods Receipt
 
@@ -184,7 +278,13 @@ Cara kerja di belakang layar:
 |---|---|
 | Draft | Penerimaan belum diposting. |
 | Posted | Stok dan HPP sudah diperbarui. |
-| Corrected/Reversed | Ada koreksi melalui dokumen baru. |
+| Cancelled | Penerimaan dibatalkan sesuai alur yang tersedia. |
+
+Goods Receipt tidak memiliki status `Corrected` atau `Reversed`. Receipt Posted tidak diedit langsung; koreksi dilakukan melalui dokumen stok/retur/reversal yang sesuai.
+
+```guide-flow
+owner-receipt-status
+```
 
 ### 4.3 Transfer
 
@@ -197,6 +297,10 @@ Cara kerja di belakang layar:
 | Fully Received/Completed | Transfer selesai. |
 | Cancelled | Dibatalkan sesuai aturan status. |
 
+```guide-flow
+owner-transfer-status
+```
+
 ### 4.4 POS dan Shift
 
 | Status | Arti |
@@ -206,6 +310,10 @@ Cara kerja di belakang layar:
 | Approved/Closed | Closing terkunci. |
 | Rejected | Closing perlu diperbaiki sesuai catatan. |
 
+```guide-flow
+owner-shift-status
+```
+
 ## 5. Hal yang tidak boleh dilakukan Owner
 
 - Jangan menyuruh tim mengubah saldo stok langsung di database.
@@ -214,6 +322,10 @@ Cara kerja di belakang layar:
 - Jangan menghapus transaksi final untuk "merapikan data".
 - Jangan menjalankan seeder demo di production.
 - Jangan mengabaikan piutang overdue yang tetap diberi order baru tanpa approval jelas.
+
+```guide-flow
+owner-guardrails
+```
 
 ## 6. Checklist harian Owner
 
@@ -225,6 +337,10 @@ Cara kerja di belakang layar:
 - [ ] Anomali high severity ditinjau.
 - [ ] Export/laporan penting sudah diunduh bila diperlukan.
 
+```guide-flow
+owner-daily
+```
+
 ## 7. Checklist mingguan Owner
 
 - [ ] Evaluasi performa supplier.
@@ -233,3 +349,23 @@ Cara kerja di belakang layar:
 - [ ] Evaluasi loss, retur, void, dan koreksi stok.
 - [ ] Evaluasi limit kredit pelanggan B2B.
 - [ ] Review backup dan health system bersama Super Admin.
+
+```guide-flow
+owner-weekly
+```
+
+## 8. Mencatat dan memantau checklist
+
+Gunakan menu **Checklist Kerja** (`/checklist-kerja`) untuk mengisi checklist Owner. Tab **Rekap Tim** menampilkan kepatuhan seluruh akun dan lokasi. Rincian status, perhitungan, serta pengaturan versi tersedia pada [Panduan Checklist Kerja](checklist-kerja.md).
+
+```guide-flow
+checklist-recap
+```
+
+## 9. Verifikasi kehadiran kepala lokasi
+
+Owner Approver membuka menu **Kehadiran** (`/attendance`) untuk memeriksa absensi Kepala Toko dan Kepala Gudang setelah jam pulang tercatat. Owner Viewer hanya dapat melihat data. Persetujuan dan penolakan tidak mengubah waktu asli; penolakan wajib disertai alasan agar koreksi dapat ditelusuri.
+
+```guide-flow
+attendance-verification
+```

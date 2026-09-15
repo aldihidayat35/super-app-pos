@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\AttendanceVerificationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\CashShift;
@@ -23,10 +24,11 @@ class AttendanceReportController extends Controller
         $from = $request->query('from', now()->startOfMonth()->toDateString());
         $to = $request->query('to', now()->toDateString());
         $base = Attendance::query()
-            ->with(['employee', 'workLocation'])
+            ->with(['employee', 'workLocation', 'verifier'])
             ->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())
             ->whereBetween('attendance_date', [$from, $to])
             ->when(in_array($request->query('status'), array_column(AttendanceStatus::cases(), 'value'), true), fn ($query) => $query->where('status', $request->query('status')))
+            ->when(in_array($request->query('verification_status'), array_column(AttendanceVerificationStatus::cases(), 'value'), true), fn ($query) => $query->where('verification_status', $request->query('verification_status')))
             ->when($request->filled('work_location_id'), fn ($query) => $query->where('work_location_id', $request->integer('work_location_id')))
             ->when($request->filled('employee_id'), fn ($query) => $query->where('employee_id', $request->integer('employee_id')));
 
@@ -66,13 +68,17 @@ class AttendanceReportController extends Controller
                 'attendance_rate' => $totalAttendance === 0 ? 0 : round(($presentAttendance / $totalAttendance) * 100, 2),
                 'late_minutes' => (int) (clone $base)->sum('late_minutes'),
                 'worked_hours' => round(((int) (clone $base)->sum('worked_minutes')) / 60, 1),
+                'pending_verification' => (int) (clone $base)->where('verification_status', AttendanceVerificationStatus::PENDING->value)->count(),
+                'rejected_verification' => (int) (clone $base)->where('verification_status', AttendanceVerificationStatus::REJECTED->value)->count(),
+                'supervisor_check_outs' => (int) (clone $base)->where('check_out_method', 'supervisor')->count(),
             ],
             'dailyRows' => $dailyRows,
             'locationSummary' => $locationSummary,
             'locations' => WorkLocation::query()->whereIn('id', $request->user()->permittedWorkLocationIds())->orderBy('name')->get(),
             'employees' => Employee::query()->whereIn('work_location_id', $request->user()->permittedWorkLocationIds())->orderBy('name')->get(),
             'statuses' => AttendanceStatus::cases(),
-            'filters' => ['from' => $from, 'to' => $to, 'status' => $request->query('status')],
+            'verificationStatuses' => AttendanceVerificationStatus::cases(),
+            'filters' => ['from' => $from, 'to' => $to, 'status' => $request->query('status'), 'verification_status' => $request->query('verification_status')],
         ]);
     }
 

@@ -81,3 +81,16 @@ Kepala toko dapat memilih **Masukkan Saldo Bebas ke Stok Reguler Toko** pada det
 - Semua pembatasan lokasi memakai lokasi kerja pengguna.
 - Stok darurat tetap terpisah sampai terjadi penjualan atau konversi resmi.
 - Database lokal aktif tidak boleh di-reset untuk menguji migrasi; gunakan lingkungan testing terisolasi.
+
+## Diagram pada panduan aplikasi
+
+Panduan Toko Internal menampilkan diagram untuk setiap fitur operasional. Sumber teks tetap berada di `guide/toko-internal.md`, sedangkan definisi diagram dan daftar file backend acuannya berada di `config/guide-flows.php`. Renderer server-side berada di `RoleGuideService` dan partial `resources/views/guides/partials/workflow.blade.php`, sehingga diagram tidak memerlukan CDN atau library JavaScript tambahan.
+
+Tes `RoleGuideTest` memastikan:
+
+- setiap penanda diagram dalam panduan berhasil dirender;
+- seluruh diagram terdaftar benar-benar digunakan oleh panduan;
+- setiap diagram memiliki lane, langkah, dan sumber verifikasi backend;
+- semua file backend yang dijadikan acuan masih tersedia.
+
+Jika alur service, controller, policy, atau route berubah, definisi diagram terkait wajib diperbarui bersama panduan agar instruksi operasional tetap sama dengan perilaku aplikasi.

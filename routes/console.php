@@ -19,6 +19,24 @@ Schedule::command('notifications:run-schedules')
     ->name('notification-schedule-runner')
     ->withoutOverlapping();
 
+Schedule::command('checklists:generate')
+    ->everyFifteenMinutes()
+    ->timezone(config('work-checklists.timezone', 'Asia/Jakarta'))
+    ->name('work-checklist-generator')
+    ->withoutOverlapping();
+
+Schedule::command('attendance:schedules-generate')
+    ->dailyAt('00:05')
+    ->timezone('Asia/Jakarta')
+    ->name('attendance-schedule-generator')
+    ->withoutOverlapping();
+
+Schedule::command('staff-bonuses:calculate')
+    ->dailyAt('01:15')
+    ->timezone(config('staff-bonuses.timezone', 'Asia/Jakarta'))
+    ->name('staff-bonus-calculator')
+    ->withoutOverlapping();
+
 if (config('security.backup.enabled')) {
     Schedule::command('system:encrypted-backup')
         ->dailyAt((string) config('security.backup.schedule_time', '02:30'))

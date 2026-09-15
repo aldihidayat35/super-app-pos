@@ -19,6 +19,7 @@ use App\Services\Attendance\AttendanceService;
 use App\Services\Control\AnomalyDetectionService;
 use App\Services\Organization\DocumentNumberService;
 use App\Support\Decimal;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class CashShiftService
@@ -104,7 +105,7 @@ class CashShiftService
             }
 
             $proofPath = null;
-            if (isset($data['proof']) && $data['proof'] instanceof \Illuminate\Http\UploadedFile) {
+            if (isset($data['proof']) && $data['proof'] instanceof UploadedFile) {
                 $proofPath = $data['proof']->store('shift-expenses', 'public');
             }
 

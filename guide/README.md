@@ -2,11 +2,13 @@
 
 Dokumen ini adalah buku panduan penggunaan aplikasi GudangToko untuk seluruh kelompok akun pokok. Akun turunan dimasukkan ke bagian akun pokok yang paling dekat dengan pekerjaan hariannya. Versi di dalam aplikasi tersedia melalui menu **Dokumentasi Panduan** dan otomatis disaring berdasarkan role user yang login.
 
-## Versi HTML lengkap
+## Versi HTML satu berkas
 
-Versi paling detail dan siap dibuka di browser/cetak tersedia di:
+Snapshot yang dapat dibuka tanpa menjalankan aplikasi tersedia di:
 
 - [guide-book-gudangtoko.html](guide-book-gudangtoko.html)
+
+Versi di menu **Dokumentasi Panduan** adalah sumber yang paling mutakhir dan memuat diagram alur visual untuk fitur toko serta gudang.
 
 ## Pembagian guide
 
@@ -31,6 +33,12 @@ Versi paling detail dan siap dibuka di browser/cetak tersedia di:
 7. [Langganan/B2B](langganan-b2b.md)
    Untuk `langganan_owner` dan `langganan_staff`. Fokus pada portal pelanggan: katalog, keranjang, checkout, order, invoice, pembayaran, pengiriman, bukti terima, reorder, profil usaha, dan komplain.
 
+8. [Checklist Kerja](checklist-kerja.md)
+   Untuk seluruh role internal. Fokus pada checklist harian dan mingguan per akun/lokasi, koreksi, riwayat, rekap tim, ekspor CSV, dan versi template.
+
+9. [Target dan Bonus Staf](target-bonus.md)
+   Untuk staf gudang, picker/packer, staf toko, kasir, Sales, kepala lokasi, dan Owner. Fokus pada target bulanan, KPI, estimasi, persetujuan, pembayaran, dan rekap bonus.
+
 ## Akun demo lokal
 
 Seeder demo hanya untuk environment `local` atau `testing`. Jangan dipakai untuk production.
@@ -54,7 +62,10 @@ Password seluruh akun demo: `password`
 - Bagian "Menu utama" menjelaskan halaman yang relevan.
 - Bagian "Cara menjalankan fitur" menjelaskan langkah operasional.
 - Bagian "Cara kerja di belakang layar" menjelaskan apa yang dilakukan sistem: validasi, permission, stok, HPP, piutang, audit, approval, queue, dan notifikasi.
+- Diagram alur di bawah setiap fitur memperlihatkan urutan proses, titik keputusan, dampak stok, dan hasil akhir berdasarkan controller, service, policy, serta state machine aplikasi.
 - Bagian "Hal yang tidak boleh dilakukan" menjelaskan batas aman agar data stok, uang, dan audit tetap bisa direkonsiliasi.
+
+Diagram alur dirender oleh aplikasi tanpa layanan eksternal. Definisinya berada di `config/guide-flows.php` serta berkas `config/guide-flows-*` untuk setiap kelompok panduan; setiap definisi menyimpan daftar file backend yang menjadi dasar verifikasinya.
 
 ## Prinsip umum aplikasi
 
@@ -80,6 +91,8 @@ Prinsip penting:
 | Dashboard gudang | `/warehouse/dashboard` |
 | Dashboard toko | `/retail/dashboard` |
 | Dashboard langganan | `/langganan/dashboard` |
+| Checklist kerja internal | `/checklist-kerja` |
+| Target dan bonus staf | `/target-bonus` |
 | Health check local/admin | `/system/health` atau `/admin/system/health` |
 
 ## Catatan untuk production

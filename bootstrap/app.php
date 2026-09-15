@@ -1,6 +1,8 @@
 <?php
 
 use App\Console\Commands\CreateEncryptedBackupCommand;
+use App\Console\Commands\GenerateAttendanceSchedulesCommand;
+use App\Console\Commands\GenerateWorkChecklistsCommand;
 use App\Console\Commands\RunNotificationSchedulesCommand;
 use App\Console\Commands\SendDailyReportCommand;
 use App\Http\Middleware\BlockB2bPortalOnlyUserFromInternal;
@@ -25,6 +27,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
         CreateEncryptedBackupCommand::class,
         RunNotificationSchedulesCommand::class,
         SendDailyReportCommand::class,
+        GenerateWorkChecklistsCommand::class,
+        GenerateAttendanceSchedulesCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmployeeSchedule extends Model
 {
-    protected $fillable = ['employee_id', 'work_shift_id', 'work_location_id', 'scheduled_date', 'scheduled_start_at', 'scheduled_end_at', 'status', 'notes', 'created_by'];
+    protected $fillable = ['employee_id', 'work_shift_id', 'work_location_id', 'scheduled_date', 'scheduled_start_at', 'scheduled_end_at', 'status', 'source', 'employee_schedule_pattern_id', 'notes', 'created_by'];
 
     protected function casts(): array
     {
@@ -36,5 +36,11 @@ class EmployeeSchedule extends Model
     public function workLocation(): BelongsTo
     {
         return $this->belongsTo(WorkLocation::class);
+    }
+
+    /** @return BelongsTo<EmployeeSchedulePattern, $this> */
+    public function pattern(): BelongsTo
+    {
+        return $this->belongsTo(EmployeeSchedulePattern::class, 'employee_schedule_pattern_id');
     }
 }

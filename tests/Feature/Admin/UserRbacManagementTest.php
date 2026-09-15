@@ -492,6 +492,7 @@ class UserRbacManagementTest extends TestCase
         $this->assertFalse($storeHead->can('b2b_orders.approve'));
         $this->assertFalse($storeHead->can('approvals.approve'));
         $this->assertFalse($shiftSupervisor->can('cash_shifts.approve'));
+        $this->assertTrue($shiftSupervisor->can('attendance.check'));
         $this->assertFalse($shiftSupervisor->can('attendance.approve'));
     }
 

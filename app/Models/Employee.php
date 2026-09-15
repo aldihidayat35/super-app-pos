@@ -48,4 +48,10 @@ class Employee extends Model
     {
         return $this->hasMany(Attendance::class);
     }
+
+    /** @return HasMany<EmployeeSchedulePattern, $this> */
+    public function schedulePatterns(): HasMany
+    {
+        return $this->hasMany(EmployeeSchedulePattern::class);
+    }
 }

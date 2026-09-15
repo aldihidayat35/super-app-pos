@@ -1,5 +1,7 @@
 # Guide Book Super Admin
 
+> Pengaturan administratif dan akses darurat modul bonus dijelaskan pada [Panduan Target dan Bonus Staf](target-bonus.md).
+
 Panduan ini untuk `super_admin`, `admin_user`, dan `admin_config`. Super Admin menjaga pondasi aplikasi: user, role, permission, master organisasi, konfigurasi, nomor dokumen, health check, backup, log, import data awal, dan kesiapan go-live.
 
 ## 1. Tujuan role Super Admin
@@ -352,3 +354,19 @@ Cara kerja di belakang layar:
 - [ ] Produk, supplier, pelanggan siap.
 - [ ] Nomor dokumen dicek.
 - [ ] Health check hijau.
+
+## 12. Mengelola template checklist kerja
+
+Menu **Checklist Kerja** (`/checklist-kerja`) menyediakan pemeriksaan sistem berulang. Super Admin dan Admin Config dapat menjadwalkan versi template melalui tab **Pengaturan Template**. Rincian generator, scope, dan rekap tersedia pada [Panduan Checklist Kerja](checklist-kerja.md).
+
+```guide-flow
+checklist-template
+```
+
+## 13. Menjaga operasional kehadiran
+
+Super Admin dapat melihat seluruh lokasi melalui menu **Kehadiran** (`/attendance`), memverifikasi absensi Kepala Toko atau Kepala Gudang, serta meninjau pulang darurat. Pastikan scheduler aktif agar pola mingguan terus membentuk jadwal 28 hari ke depan. Pengecualian tanggal dibuat melalui jadwal manual dan tidak ditimpa generator.
+
+```guide-flow
+attendance-schedule-pattern
+```

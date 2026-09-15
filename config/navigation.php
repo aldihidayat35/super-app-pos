@@ -16,6 +16,21 @@ return [
         'permission' => 'reports.view',
     ],
     [
+        'label' => 'Checklist Kerja',
+        'icon' => 'ki-outline ki-check-square',
+        'route' => 'work-checklists.index',
+        'active' => ['work-checklists.*'],
+        'permission' => 'work_checklists.view_own',
+        'badge' => 'work_checklists.pending',
+    ],
+    [
+        'label' => 'Target & Bonus',
+        'icon' => 'ki-outline ki-award',
+        'route' => 'staff-bonuses.index',
+        'active' => ['staff-bonuses.*'],
+        'permission' => 'staff_bonuses.view_own|staff_bonuses.view_team|staff_bonuses.view_all',
+    ],
+    [
         'label' => 'Administrasi',
         'icon' => 'ki-outline ki-security-user',
         'children' => [
@@ -430,56 +445,9 @@ return [
     [
         'label' => 'Kehadiran',
         'icon' => 'ki-outline ki-calendar-tick',
-        'children' => [
-            [
-                'label' => 'Master Karyawan',
-                'route' => 'attendance.employees.index',
-                'active' => ['attendance.employees.*'],
-                'permission' => 'attendance.view',
-            ],
-            [
-                'label' => 'Master Shift',
-                'route' => 'attendance.work-shifts.index',
-                'active' => ['attendance.work-shifts.*'],
-                'permission' => 'attendance.view',
-            ],
-            [
-                'label' => 'Jadwal Shift',
-                'route' => 'attendance.schedules.index',
-                'active' => ['attendance.schedules.*'],
-                'permission' => 'attendance.view',
-            ],
-            [
-                'label' => 'Check-in/out',
-                'route' => 'attendance.check.show',
-                'active' => ['attendance.check.*'],
-                'permission' => 'attendance.check',
-            ],
-            [
-                'label' => 'Izin/Sakit/Cuti',
-                'route' => 'attendance.requests.index',
-                'active' => ['attendance.requests.*'],
-                'permission' => 'attendance.check',
-            ],
-            [
-                'label' => 'Koreksi Absensi',
-                'route' => 'attendance.corrections.index',
-                'active' => ['attendance.corrections.*'],
-                'permission' => 'attendance.update',
-            ],
-            [
-                'label' => 'Laporan Kehadiran',
-                'route' => 'reports.attendance.index',
-                'active' => ['reports.attendance.*'],
-                'permission' => 'attendance.view',
-            ],
-            [
-                'label' => 'Produktivitas Shift',
-                'route' => 'reports.shift-productivity.index',
-                'active' => ['reports.shift-productivity.*'],
-                'permission' => 'attendance.view',
-            ],
-        ],
+        'route' => 'attendance.dashboard',
+        'active' => ['attendance.*'],
+        'permission' => 'attendance.check|attendance.view',
     ],
     [
         'label' => 'Kontrol & Audit',

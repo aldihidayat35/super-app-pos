@@ -85,6 +85,22 @@ final class RoleGuideService
             },
             $html,
         ) ?? $html;
+        $html = preg_replace_callback(
+            '/<pre><code class="language-guide-flow">\s*([a-z0-9-]+)\s*<\/code><\/pre>/s',
+            static function (array $matches): string {
+                $flowId = trim(html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5));
+                $flow = config('guide-flows.'.$flowId);
+
+                if (! is_array($flow)) {
+                    return $matches[0];
+                }
+
+                return view('guides.partials.workflow', [
+                    'flow' => ['id' => $flowId, ...$flow],
+                ])->render();
+            },
+            $html,
+        ) ?? $html;
         $toc = [];
         $usedIds = [];
 

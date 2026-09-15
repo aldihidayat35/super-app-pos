@@ -297,3 +297,9 @@ Sertakan:
 6. Purchasing memeriksa PO dan receipt outstanding.
 7. Approver memeriksa antrean prioritas.
 8. Logout dari perangkat bersama.
+
+Checklist yang sesuai role sudah tersedia pada menu **Checklist Kerja** (`/checklist-kerja`). Sistem menyimpannya per akun, periode, dan lokasi kerja. Lihat [Panduan Checklist Kerja](checklist-kerja.md) untuk cara mengisi, mengoreksi, dan membaca rekap.
+
+```guide-flow
+checklist-generation
+```

@@ -18,6 +18,10 @@ Tanggung jawab utama:
 - mengevaluasi performa supplier;
 - menyelesaikan selisih atau retur melalui dokumen resmi.
 
+```guide-flow
+purchasing-responsibilities
+```
+
 ## 2. Menu utama
 
 | Menu | URL | Fungsi |
@@ -32,6 +36,10 @@ Tanggung jawab utama:
 | Laporan Supplier | `/reports/suppliers` | Performa pengiriman, kualitas, dan pembelian. |
 
 Menu dan tombol yang terlihat tetap mengikuti permission akun.
+
+```guide-flow
+purchasing-overview
+```
 
 ## 3. Alur kerja purchasing dari awal sampai selesai
 
@@ -52,6 +60,10 @@ Urutan normal:
 13. Tutup tindak lanjut untuk kekurangan atau retur.
 
 Jangan melompati PO dengan meminta gudang menambah stok langsung, kecuali alur stok awal resmi saat implementasi.
+
+```guide-flow
+purchasing-end-to-end
+```
 
 ## 4. Mengelola master supplier
 
@@ -76,6 +88,10 @@ Kriteria data yang baik:
 - termin sesuai perjanjian;
 - supplier duplikat tidak dibuat untuk cabang berbeda tanpa alasan bisnis.
 
+```guide-flow
+supplier-create
+```
+
 ### 4.2 Mengubah supplier
 
 1. Cari supplier berdasarkan kode/nama.
@@ -87,6 +103,10 @@ Kriteria data yang baik:
 
 Jangan mengganti kode supplier yang sudah dipakai dokumen tanpa koordinasi karena kode menjadi referensi operasional.
 
+```guide-flow
+supplier-update
+```
+
 ### 4.3 Menonaktifkan supplier
 
 1. Pastikan tidak ada PO aktif yang belum selesai.
@@ -96,9 +116,13 @@ Jangan mengganti kode supplier yang sudah dipakai dokumen tanpa koordinasi karen
 
 Supplier tidak aktif tidak dipakai untuk PO baru, tetapi histori lama tetap tersedia.
 
+```guide-flow
+supplier-deactivate
+```
+
 ### 4.4 Import supplier
 
-1. Buka halaman import supplier.
+1. Buka `/admin/parties/suppliers/import`.
 2. Unduh template resmi.
 3. Isi kolom tanpa mengubah nama header.
 4. Simpan dalam format yang didukung halaman.
@@ -108,6 +132,12 @@ Supplier tidak aktif tidak dipakai untuk PO baru, tetapi histori lama tetap ters
 8. Preview ulang sampai valid.
 9. Commit sesuai tombol dan permission yang tersedia.
 10. Cocokkan jumlah supplier hasil import.
+
+Import memakai kode supplier sebagai kunci. Kode baru membuat supplier, sedangkan kode yang sudah ada memperbarui data dan mengaktifkan supplier tersebut kembali. Commit tidak dapat dijalankan selama preview masih memiliki error.
+
+```guide-flow
+supplier-import
+```
 
 ## 5. Meninjau kebutuhan pembelian
 
@@ -121,28 +151,36 @@ Supplier tidak aktif tidak dipakai untuk PO baru, tetapi histori lama tetap ters
 6. Periksa PO yang masih outstanding agar tidak membeli dua kali.
 7. Catat produk dan qty rekomendasi.
 
+```guide-flow
+purchasing-stock-needs
+```
+
 ### 5.2 Dari Permintaan Pembelian
 
 1. Buka `/purchasing/requests`.
-2. Filter request baru/pending.
+2. Filter request berstatus Diajukan.
 3. Buka detail request.
-4. Periksa pemohon, lokasi, tanggal kebutuhan, produk, qty, dan alasan.
+4. Periksa pemohon, gudang, prioritas, produk, satuan, qty, dan alasan.
 5. Periksa stok lokasi lain bila transfer internal lebih tepat.
-6. Koreksi atau kembalikan request bila data belum lengkap.
-7. Kelompokkan request yang dapat dibeli dari supplier yang sama.
+6. Jika data tidak layak, koordinasikan penolakan beralasan dengan approver; request yang sudah dibuat tidak memiliki aksi edit.
+7. Jika disetujui, pilih supplier aktif lalu konversi request menjadi satu PO draft.
+
+```guide-flow
+purchase-request-review
+```
 
 ## 6. Membuat Permintaan Pembelian
 
 1. Buka `/purchasing/requests`.
 2. Klik tambah request.
-3. Pilih lokasi tujuan.
-4. Isi tanggal kebutuhan.
-5. Tambahkan produk.
-6. Isi qty dalam satuan yang benar.
-7. Isi alasan kebutuhan.
-8. Simpan draft.
-9. Periksa ulang item.
-10. Submit sesuai alur yang tersedia.
+3. Pilih gudang tujuan.
+4. Pilih prioritas.
+5. Isi alasan permintaan.
+6. Tambahkan minimal satu produk.
+7. Pilih satuan dan isi qty yang benar.
+8. Isi catatan item bila diperlukan.
+9. Periksa ulang seluruh data.
+10. Simpan untuk langsung mengajukan request.
 
 Periksa sebelum submit:
 
@@ -150,7 +188,13 @@ Periksa sebelum submit:
 - satuan tidak tertukar antara PCS, BOX, atau unit lain;
 - qty realistis terhadap penjualan dan kapasitas;
 - tidak ada request duplikat;
-- tanggal kebutuhan memberi waktu supplier untuk mengirim.
+- prioritas sesuai urgensi operasional.
+
+Request manual langsung berstatus **Diajukan** dan belum memengaruhi stok. Setelah tersimpan, request tidak memiliki tahap draft atau aksi edit.
+
+```guide-flow
+purchase-request
+```
 
 ## 7. Membuat Purchase Order
 
@@ -161,6 +205,10 @@ Periksa sebelum submit:
 3. Konfirmasi harga terbaru.
 4. Konfirmasi minimum order dan lead time.
 5. Tentukan gudang tujuan.
+
+```guide-flow
+purchase-order-preparation
+```
 
 ### 7.2 Input PO
 
@@ -176,6 +224,10 @@ Periksa sebelum submit:
 10. Isi termin pembayaran dan catatan pengiriman.
 11. Simpan draft.
 
+```guide-flow
+purchase-order-create
+```
+
 ### 7.3 Pemeriksaan draft PO
 
 Periksa minimal:
@@ -188,20 +240,32 @@ Periksa minimal:
 6. Diskon dan pajak.
 7. Ongkir/biaya tambahan.
 8. Grand total.
-9. Tanggal kirim.
+9. Tanggal order dan estimasi kedatangan.
 10. Termin pembayaran.
 11. Referensi request pembelian bila ada.
+
+PO berstatus Draft atau Submitted masih dapat diedit oleh pengguna dengan izin membuat PO. Setelah Approved, item tidak dapat diedit bebas.
+
+```guide-flow
+purchase-order-review
+```
 
 ### 7.4 Submit dan approval
 
 1. Klik submit/ajukan approval.
-2. Isi alasan jika diminta.
-3. Pantau status PO.
-4. Jika rejected, baca catatan approver.
-5. Koreksi melalui aksi yang disediakan.
-6. Submit ulang setelah valid.
+2. Sistem mencatat waktu dan pengguna yang mengajukan.
+3. Pantau status PO menjadi Submitted.
+4. Approver dengan izin `purchase_orders.approve` memeriksa PO.
+5. Jika sesuai, approver menyetujui dan sistem mencatat approval serta histori status.
+6. Jika tidak dilanjutkan, gunakan pembatalan resmi dengan alasan selama status dan qty received masih mengizinkan.
 
 Purchasing tidak boleh menganggap PO draft sebagai pesanan resmi.
+
+Backend saat ini tidak memiliki status **Rejected** untuk PO. PO Draft, Submitted, atau Approved yang belum pernah menerima barang dapat dibatalkan; PO Sent, Partially Received, atau Completed tidak dapat dibatalkan melalui aksi ini.
+
+```guide-flow
+purchase-order-approval
+```
 
 ### 7.5 Mengirim PO ke supplier
 
@@ -212,6 +276,10 @@ Purchasing tidak boleh menganggap PO draft sebagai pesanan resmi.
 5. Catat konfirmasi supplier.
 6. Pastikan supplier menyetujui item, qty, harga, dan tanggal.
 7. Perbarui status melalui aksi aplikasi bila tersedia.
+
+```guide-flow
+purchase-order-send
+```
 
 ## 8. Memantau PO outstanding
 
@@ -237,6 +305,10 @@ Status umum PO:
 | Completed | Seluruh kewajiban penerimaan selesai. |
 | Cancelled | Dibatalkan melalui alur resmi. |
 
+```guide-flow
+purchase-order-monitoring
+```
+
 ## 9. Koordinasi Goods Receipt dan QC
 
 Goods Receipt dibuat/diposting oleh user gudang yang berwenang. Purchasing bertugas menyiapkan referensi dan menindaklanjuti selisih.
@@ -247,6 +319,10 @@ Goods Receipt dibuat/diposting oleh user gudang yang berwenang. Purchasing bertu
 2. Kirim jadwal ke gudang.
 3. Pastikan gudang mengetahui supplier dan nomor PO.
 4. Siapkan informasi batch/expired bila produk memerlukannya.
+
+```guide-flow
+purchasing-before-receipt
+```
 
 ### 9.2 Saat barang diterima
 
@@ -261,6 +337,12 @@ Gudang memeriksa:
 
 Purchasing tidak boleh meminta gudang mengubah hasil QC agar invoice supplier terlihat cocok.
 
+Role `purchasing` memiliki akses melihat Goods Receipt. Membuat, mengubah, dan mem-posting receipt memerlukan izin `goods_receipts.create` yang diberikan kepada petugas gudang terkait.
+
+```guide-flow
+purchasing-receipt-qc
+```
+
 ### 9.3 Setelah receipt diposting
 
 1. Buka receipt terkait.
@@ -269,6 +351,10 @@ Purchasing tidak boleh meminta gudang mengubah hasil QC agar invoice supplier te
 4. Periksa status PO menjadi partial atau completed secara benar.
 5. Catat klaim ke supplier bila ada selisih.
 6. Periksa perubahan HPP.
+
+```guide-flow
+purchasing-after-receipt
+```
 
 ## 10. Memahami HPP
 
@@ -292,17 +378,21 @@ Langkah pemeriksaan:
 
 Jangan mengubah harga jual langsung hanya karena HPP berubah. Harga jual mengikuti modul pricing dan approval.
 
+```guide-flow
+hpp-history
+```
+
 ## 11. Evaluasi performa supplier
 
 1. Buka `/reports/suppliers`.
 2. Pilih periode.
-3. Filter supplier bila diperlukan.
-4. Periksa ketepatan waktu pengiriman.
-5. Periksa accepted, rejected, dan damaged.
-6. Periksa frekuensi partial delivery.
-7. Periksa tren harga dan HPP.
-8. Bandingkan supplier untuk produk sejenis.
-9. Catat tindakan perbaikan.
+3. Filter supplier atau produk bila diperlukan.
+4. Periksa jumlah receipt yang dievaluasi.
+5. Periksa rata-rata skor total dan skor kualitas.
+6. Periksa tingkat penerimaan barang.
+7. Bandingkan ranking dan tren skor supplier.
+8. Tinjau supplier dengan skor total di bawah 80.
+9. Catat tindakan perbaikan pada proses operasional yang disepakati.
 
 Indikator yang perlu diwaspadai:
 
@@ -310,8 +400,12 @@ Indikator yang perlu diwaspadai:
 - qty fisik sering kurang;
 - barang rusak/ditolak meningkat;
 - harga berubah tanpa pemberitahuan;
-- invoice tidak sesuai PO/receipt;
-- respons klaim lambat.
+- skor total konsisten di bawah batas tinjauan;
+- hasil penerimaan memburuk dari waktu ke waktu.
+
+```guide-flow
+supplier-performance
+```
 
 ## 12. Selisih, retur, dan koreksi
 
@@ -320,7 +414,7 @@ Jika barang kurang:
 1. Pastikan receipt hanya mencatat qty aktual.
 2. Biarkan PO partial bila sisa akan dikirim.
 3. Catat komitmen pengiriman susulan.
-4. Batalkan sisa hanya melalui aksi resmi bila tidak jadi dikirim.
+4. Jika sisa tidak jadi dikirim setelah PO berstatus Sent atau Partially Received, dokumentasikan komitmen supplier dan eskalasikan koreksi karena backend tidak menyediakan pembatalan sisa pada status tersebut.
 
 Jika barang salah/rusak:
 
@@ -338,6 +432,10 @@ Jika harga PO salah setelah final:
 4. Gunakan cancel/reversal/koreksi sesuai status dokumen.
 5. Pastikan audit dan dokumen pengganti saling merujuk.
 
+```guide-flow
+purchasing-correction
+```
+
 ## 13. Hal yang tidak boleh dilakukan
 
 - Mengirim PO yang masih draft.
@@ -349,6 +447,10 @@ Jika harga PO salah setelah final:
 - Membuat PO baru untuk menutupi kesalahan PO lama tanpa koreksi resmi.
 - Membagikan data HPP sensitif kepada pihak yang tidak berwenang.
 - Menggunakan akun user lain untuk approval.
+
+```guide-flow
+purchasing-guardrails
+```
 
 ## 14. Checklist harian Purchasing
 
@@ -362,6 +464,10 @@ Jika harga PO salah setelah final:
 8. Periksa PO overdue.
 9. Catat komunikasi penting dengan supplier.
 
+```guide-flow
+purchasing-daily
+```
+
 ## 15. Checklist mingguan Purchasing
 
 1. Review laporan performa supplier.
@@ -371,3 +477,15 @@ Jika harga PO salah setelah final:
 5. Review kebutuhan pembelian berdasarkan tren stok.
 6. Rekonsiliasi PO, receipt, dan tagihan bersama tim terkait.
 7. Dokumentasikan isu supplier dan rencana tindak lanjut.
+
+```guide-flow
+purchasing-weekly
+```
+
+## 16. Mencatat checklist Purchasing
+
+Gunakan menu **Checklist Kerja** (`/checklist-kerja`) untuk mencatat pemeriksaan harian dan evaluasi mingguan Purchasing. Rincian pengisian, keterlambatan, dan histori tersedia pada [Panduan Checklist Kerja](checklist-kerja.md).
+
+```guide-flow
+checklist-fill
+```

@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\AttendanceVerificationStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Attendance extends Model
 {
-    protected $fillable = ['employee_id', 'user_id', 'work_location_id', 'work_shift_id', 'employee_schedule_id', 'attendance_date', 'check_in_at', 'check_out_at', 'status', 'late_minutes', 'early_leave_minutes', 'worked_minutes', 'overtime_minutes', 'check_in_method', 'check_out_method', 'proof_path', 'device_info', 'location_note', 'notes', 'metadata', 'created_by', 'approved_by'];
+    protected $fillable = ['employee_id', 'user_id', 'work_location_id', 'work_shift_id', 'employee_schedule_id', 'attendance_date', 'check_in_at', 'check_out_at', 'status', 'verification_status', 'late_minutes', 'early_leave_minutes', 'worked_minutes', 'overtime_minutes', 'check_in_method', 'check_out_method', 'proof_path', 'device_info', 'location_note', 'notes', 'metadata', 'created_by', 'approved_by', 'verified_by', 'verified_at', 'verification_note'];
 
     protected function casts(): array
     {
@@ -17,6 +18,8 @@ class Attendance extends Model
             'check_in_at' => 'datetime',
             'check_out_at' => 'datetime',
             'status' => AttendanceStatus::class,
+            'verification_status' => AttendanceVerificationStatus::class,
+            'verified_at' => 'datetime',
             'late_minutes' => 'integer',
             'early_leave_minutes' => 'integer',
             'worked_minutes' => 'integer',
@@ -53,5 +56,11 @@ class Attendance extends Model
     public function schedule(): BelongsTo
     {
         return $this->belongsTo(EmployeeSchedule::class, 'employee_schedule_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function verifier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
     }
 }

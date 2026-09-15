@@ -5,6 +5,7 @@ namespace App\Services\Control;
 use App\Enums\ApprovalRequestStatus;
 use App\Enums\PriceApprovalStatus;
 use App\Enums\ProductPriceStatus;
+use App\Enums\StaffBonusPeriodStatus;
 use App\Exceptions\ServiceException;
 use App\Models\ApprovalRequest;
 use App\Models\ApprovalStep;
@@ -12,6 +13,7 @@ use App\Models\CustomerPriceOverride;
 use App\Models\EmergencyPurchase;
 use App\Models\PriceApprovalRequest;
 use App\Models\ProductPrice;
+use App\Models\StaffBonusPeriod;
 use App\Models\User;
 use App\Models\WorkLocation;
 use App\Support\Decimal;
@@ -177,6 +179,14 @@ class ApprovalWorkflowService
                 $purchase->histories()->create(['actor_id' => $approver->id, 'action' => 'rejected',
                     'from_status' => 'pending_approval', 'to_status' => 'rejected', 'notes' => $comments]);
             }
+            if ($approval->handler_key === 'staff_bonus.period' && $approval->subject instanceof StaffBonusPeriod) {
+                $approval->subject->forceFill([
+                    'status' => StaffBonusPeriodStatus::REJECTED,
+                    'rejected_by' => $approver->id,
+                    'rejected_at' => now(),
+                    'decision_note' => $comments,
+                ])->save();
+            }
 
             $subject = $approval->subject instanceof Model ? $approval->subject : null;
             $this->audit->record('approval.rejected', $approval->module, $approver, $subject, [], ['approval_id' => $approval->id, 'comments' => $comments], $comments, correlationId: $approval->correlation_id);
@@ -187,6 +197,20 @@ class ApprovalWorkflowService
 
     private function executeHandler(ApprovalRequest $approval, User $approver): void
     {
+        if ($approval->handler_key === 'staff_bonus.period') {
+            $period = $approval->subject;
+            if (! $period instanceof StaffBonusPeriod || $period->status !== StaffBonusPeriodStatus::PENDING_APPROVAL) {
+                throw ServiceException::validation('Periode bonus tidak lagi menunggu persetujuan.');
+            }
+            $period->forceFill([
+                'status' => StaffBonusPeriodStatus::APPROVED,
+                'approved_by' => $approver->id,
+                'approved_at' => now(),
+                'decision_note' => $approval->decision_notes,
+            ])->save();
+
+            return;
+        }
         if ($approval->handler_key === 'retail.emergency_purchase') {
             $purchase = $approval->subject;
             if (! $purchase instanceof EmergencyPurchase || $purchase->status !== 'pending_approval') {
