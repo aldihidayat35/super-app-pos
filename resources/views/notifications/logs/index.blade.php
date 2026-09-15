@@ -18,13 +18,13 @@
     <x-metronic.card title="Log Delivery" class="mt-5">
         <div class="table-responsive">
             <table class="table align-middle">
-                <thead><tr><th>Waktu</th><th>Channel</th><th>Template</th><th>Penerima</th><th>Status</th><th>Attempt</th><th>Error/Response</th><th>Report</th><th class="text-end">Aksi</th></tr></thead>
+                <thead><tr><th>Waktu</th><th>Channel</th><th>Jenis Notifikasi</th><th>Penerima</th><th>Status</th><th>Attempt</th><th>Error/Response</th><th>Report</th><th class="text-end">Aksi</th></tr></thead>
                 <tbody>
                 @forelse($logs as $log)
                     <tr>
                         <td>{{ $log->created_at->format('d/m/Y H:i') }}<div class="text-muted">Sent: {{ $log->sent_at?->format('H:i') ?: '-' }}</div></td>
                         <td>{{ $log->channel_type->label() }}</td>
-                        <td>{{ $log->template_key ?: '-' }}</td>
+                        <td><div class="fw-semibold">{{ $presenter->typeLabel($log) }}</div>@if($presenter->typeKey($log))<div class="text-muted fs-8">{{ $presenter->typeKey($log) }}</div>@endif</td>
                         <td><div class="fw-semibold">{{ $log->recipientUser?->name ?? $log->recipient_name ?? 'Nomor eksternal' }}</div><div class="text-muted">{{ $log->destination }}</div>@if($log->recipientUser)<span class="badge badge-light-primary mt-1">Akun sistem</span>@endif</td>
                         <td><x-metronic.status-badge :status="$log->status" /></td>
                         <td>{{ $log->attempts }}</td>
@@ -40,6 +40,7 @@
                             @endif
                         </td>
                         <td class="text-end">
+                            <a href="{{ route('admin.notifications.logs.show', $log) }}" class="btn btn-sm btn-light-info">Detail</a>
                             @if(in_array($log->status->value, ['failed', 'retry'], true))
                                 <form method="POST" action="{{ route('admin.notifications.logs.retry', $log) }}" class="d-inline">@csrf <button class="btn btn-sm btn-light-primary">Retry</button></form>
                             @endif

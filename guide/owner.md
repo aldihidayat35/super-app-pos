@@ -48,7 +48,7 @@ owner-responsibilities
 | Dashboard Piutang | `/receivables/dashboard` | Ringkasan saldo piutang dan aging. |
 | Limit Kredit | `/receivables/credit-limits` | Meninjau atau menyetujui perubahan limit sesuai izin. |
 | Performa Sales | `/sales/performance` | Membandingkan target dan realisasi seluruh tim Sales. |
-| Pajak & Kepatuhan | `/tax` | Register, rekonsiliasi, status masa, dan export pajak untuk Owner Approver. |
+| Keuangan & Pajak Tahunan | `/tax` | Membaca Laba Rugi, Neraca, rekonsiliasi PPh, serta mengunduh PDF/Excel. |
 
 ```guide-flow
 owner-overview
@@ -223,22 +223,28 @@ Gunakan halaman performa tim, bukan `/sales/dashboard`, karena dashboard tersebu
 owner-sales-review
 ```
 
-### 3.8 Meninjau pajak dan kepatuhan
+### 3.8 Meninjau Keuangan & Pajak Tahunan
 
-Fitur ini tersedia untuk `owner_approver` dan `super_admin`. `owner_viewer` tidak memiliki permission `tax.access`.
+Owner Viewer dan Owner Approver membaca laporan tanpa melakukan persetujuan operasional.
 
-1. Buka `/tax` dan pilih masa pajak.
-2. Sinkronkan invoice, transaksi POS, dan retur yang sudah memenuhi status final.
-3. Periksa dokumen unmatched, identitas pajak yang belum lengkap, dan dokumen draft.
-4. Rekonsiliasi dokumen dengan referensi Coretax atau lakukan reversal dengan alasan jika salah.
-5. Jalankan status masa secara berurutan: Open, Reviewed, Approved, Reported, Paid bila ada pembayaran, lalu Locked.
-6. Export register pajak setelah data siap.
+1. Buka `/tax` dan pilih tahun laporan.
+2. Periksa Ringkasan Tahun, Laba Rugi, dan Neraca.
+3. Pastikan 12 bulan terkunci, HPP lengkap, skema pajak telah dikonfirmasi Kepala Keuangan, dan selisih neraca nol.
+4. Baca rekonsiliasi fiskal, PPh terutang, kredit pajak, serta kurang/lebih bayar.
+5. Unduh PDF untuk dokumen bertanda tangan dan Excel untuk penelusuran rinci.
 
-Masa Locked tidak dapat diubah. Jika harus dikoreksi, buka kembali ke Open dengan alasan, perbaiki dokumen, lalu ulangi alur review.
-
-```guide-flow
-owner-tax-review
+```mermaid
+flowchart LR
+    KF[Kepala Keuangan Mengunci] --> LR[Laba Rugi]
+    KF --> NR[Neraca]
+    KF --> RF[Rekonsiliasi Fiskal]
+    LR --> OW[Owner Membaca]
+    NR --> OW
+    RF --> OW
+    OW --> EX[Unduh PDF atau Excel]
 ```
+
+Panduan rinci tersedia di [Keuangan & Pajak Tahunan](../docs/TAX.md).
 
 ### 3.9 Meminta export laporan
 

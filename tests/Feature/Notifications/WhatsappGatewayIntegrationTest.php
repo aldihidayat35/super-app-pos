@@ -61,6 +61,7 @@ class WhatsappGatewayIntegrationTest extends TestCase
         $this->actingAs($admin)->getJson(route('admin.whatsapp.status'))
             ->assertOk()
             ->assertJsonPath('messages.0.destination', '0812-3456-7890')
+            ->assertJsonPath('messages.0.type', 'Pesan Uji WhatsApp')
             ->assertJsonPath('messages.0.status_label', 'Dalam Antrian');
     }
 
@@ -75,19 +76,33 @@ class WhatsappGatewayIntegrationTest extends TestCase
         $log = app(NotificationDispatchService::class)->queueLog(
             NotificationChannelType::WHATSAPP,
             '+62 812-3456-7890',
-            'Pesan stok toko',
+            "Stok Toko Melati hampir habis.\nSegera lakukan pemeriksaan.",
             actor: $admin,
+            payload: ['source' => 'business_event', 'event_key' => 'critical_stock', 'subject_id' => 17, 'api_key' => 'tidak-boleh-tampil'],
+            subject: 'Peringatan Stok',
         );
 
         $this->assertSame($recipient->id, $log->recipient_user_id);
         $this->actingAs($admin)->get(route('admin.whatsapp.index'))
             ->assertOk()
             ->assertSee('Kepala Toko Melati')
+            ->assertSee('Stok Kritis atau Habis')
+            ->assertSee('Detail Pesan')
             ->assertDontSee('Memuat riwayat pengiriman');
         $this->actingAs($admin)->get(route('admin.notifications.logs.index', ['channel_type' => 'whatsapp']))
             ->assertOk()
             ->assertSee('Kepala Toko Melati')
+            ->assertSee('Stok Kritis atau Habis')
             ->assertSee('+62 812-3456-7890');
+        $this->actingAs($admin)->get(route('admin.notifications.logs.show', $log))
+            ->assertOk()
+            ->assertSee('Stok Kritis atau Habis')
+            ->assertSee('Kepala Toko Melati')
+            ->assertSee('Stok Toko Melati hampir habis.')
+            ->assertSee('Segera lakukan pemeriksaan.')
+            ->assertSee('Peringatan Stok')
+            ->assertSee('[DISEMBUNYIKAN]')
+            ->assertDontSee('tidak-boleh-tampil');
     }
 
     public function test_disconnect_logs_out_clears_identity_and_returns_connect_state(): void
@@ -193,6 +208,14 @@ class WhatsappGatewayIntegrationTest extends TestCase
         $cashier = User::factory()->create();
         $cashier->assignRole('kasir');
         $this->actingAs($cashier)->get(route('admin.whatsapp.index'))->assertForbidden();
+        $log = NotificationLog::query()->create([
+            'channel_type' => 'whatsapp',
+            'destination' => '081234567890',
+            'body' => 'Pesan internal',
+            'status' => 'queued',
+            'idempotency_key' => 'wa-forbidden-detail',
+        ]);
+        $this->actingAs($cashier)->get(route('admin.notifications.logs.show', $log))->assertForbidden();
 
         $client = app(WhatsappGatewayClient::class);
         $this->assertSame('6281234567890', $client->normalizePhone('+62 812-3456-7890'));

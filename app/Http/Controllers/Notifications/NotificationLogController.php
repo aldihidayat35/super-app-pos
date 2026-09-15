@@ -7,12 +7,15 @@ use App\Enums\NotificationLogStatus;
 use App\Http\Controllers\Controller;
 use App\Models\NotificationLog;
 use App\Services\Notifications\NotificationDispatchService;
+use App\Services\Notifications\NotificationLogPresenter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class NotificationLogController extends Controller
 {
+    public function __construct(private readonly NotificationLogPresenter $presenter) {}
+
     public function index(Request $request): View
     {
         abort_unless($request->user()->can('notifications.view') || $request->user()->can('audit.view'), 403);
@@ -35,6 +38,22 @@ class NotificationLogController extends Controller
             'logs' => $query->paginate(20)->withQueryString(),
             'statuses' => NotificationLogStatus::cases(),
             'types' => NotificationChannelType::cases(),
+            'presenter' => $this->presenter,
+        ]);
+    }
+
+    public function show(Request $request, NotificationLog $log): View
+    {
+        abort_unless($request->user()->can('notifications.view') || $request->user()->can('audit.view'), 403);
+
+        $log->load(['channel', 'template', 'recipient', 'recipientUser', 'creator', 'dailyReport', 'secureToken']);
+
+        return view('notifications.logs.show', [
+            'log' => $log,
+            'notificationType' => $this->presenter->typeLabel($log),
+            'notificationTypeKey' => $this->presenter->typeKey($log),
+            'safePayload' => $this->presenter->safeMetadata($this->presenter->payload($log)),
+            'safeResponse' => $this->presenter->safeMetadata($this->presenter->response($log)),
         ]);
     }
 

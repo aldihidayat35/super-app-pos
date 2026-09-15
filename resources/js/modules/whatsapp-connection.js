@@ -37,7 +37,7 @@ export function initializeWhatsappConnection() {
         if (!messages.length) {
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 7;
+            cell.colSpan = 9;
             cell.className = 'text-center text-muted py-8';
             cell.textContent = 'Belum ada pesan WhatsApp yang dikirim.';
             row.appendChild(cell);
@@ -54,6 +54,13 @@ export function initializeWhatsappConnection() {
             const timeCell = document.createElement('td');
             timeCell.textContent = message.created_at || '-';
             row.appendChild(timeCell);
+
+            const typeCell = document.createElement('td');
+            const typeBadge = document.createElement('span');
+            typeBadge.className = 'badge badge-light-primary';
+            typeBadge.textContent = message.type || 'Pesan Manual';
+            typeCell.appendChild(typeBadge);
+            row.appendChild(typeCell);
 
             const recipientCell = document.createElement('td');
             const recipientName = document.createElement('div');
@@ -94,6 +101,15 @@ export function initializeWhatsappConnection() {
             detailCell.className = message.error ? 'text-danger' : 'text-muted';
             detailCell.textContent = message.error || message.provider_message_id || '-';
             row.appendChild(detailCell);
+
+            const actionCell = document.createElement('td');
+            actionCell.className = 'text-end';
+            const detailLink = document.createElement('a');
+            detailLink.className = 'btn btn-sm btn-light-primary';
+            detailLink.href = message.detail_url;
+            detailLink.textContent = 'Detail Pesan';
+            actionCell.appendChild(detailLink);
+            row.appendChild(actionCell);
             messageHistory.appendChild(row);
         });
     };

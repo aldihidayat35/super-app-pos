@@ -576,22 +576,11 @@ return [
         ],
     ],
     [
-        'label' => 'Pajak & Kepatuhan',
+        'label' => 'Keuangan & Pajak Tahunan',
         'icon' => 'ki-outline ki-calculator',
-        'children' => [
-            [
-                'label' => 'Laporan Masa Pajak',
-                'route' => 'tax.index',
-                'active' => ['tax.index', 'tax.documents.*', 'tax.periods.*'],
-                'permission' => 'tax.access',
-            ],
-            [
-                'label' => 'Pengaturan Pajak',
-                'route' => 'tax.settings',
-                'active' => ['tax.settings', 'tax.profile.*', 'tax.rules.*', 'tax.products.*', 'tax.counterparties.*'],
-                'permission' => 'tax.manage',
-            ],
-        ],
+        'route' => 'tax.index',
+        'active' => ['tax.*'],
+        'permission' => 'finance_annual.view',
     ],
     [
         'label' => 'Laporan',

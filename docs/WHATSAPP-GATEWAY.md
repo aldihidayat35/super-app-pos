@@ -35,7 +35,7 @@ cd C:\laragon\www\super-app-pos
 php artisan queue:work database --queue=default --tries=3 --timeout=120
 ```
 
-Worker queue wajib aktif agar pesan berstatus **Dalam Antrian** diproses. Halaman Koneksi WhatsApp menampilkan 10 pengiriman terbaru langsung dari server, lalu memperbarui status antrean, percobaan ulang, gagal, serta terkirim secara otomatis. Kolom **Penerima** memakai akun aktual yang nomor WhatsApp-nya cocok; nomor yang belum terhubung ke akun ditandai sebagai **Nomor eksternal**. Informasi yang sama tersedia pada menu **Log Pengiriman**.
+Worker queue wajib aktif agar pesan berstatus **Dalam Antrian** diproses. Halaman Koneksi WhatsApp menampilkan 10 pengiriman terbaru langsung dari server, lalu memperbarui status antrean, percobaan ulang, gagal, serta terkirim secara otomatis. Kolom **Jenis Notifikasi** memakai pengaturan notifikasi bisnis atau template yang menjadi sumber pesan. Kolom **Penerima** memakai akun aktual yang nomor WhatsApp-nya cocok; nomor yang belum terhubung ke akun ditandai sebagai **Nomor eksternal**. Tombol **Detail Pesan** membuka isi lengkap, penerima, waktu proses, percobaan, ID WhatsApp, kegagalan, pemicu, dan respons gateway yang sudah disanitasi. Informasi yang sama tersedia pada menu **Log Pengiriman**.
 
 Status **Terkirim** berarti gateway WhatsApp telah menerima pesan dan mengembalikan ID pesan. Jika gateway sementara tidak dapat dijangkau, job masuk percobaan ulang sesuai jeda queue.
 

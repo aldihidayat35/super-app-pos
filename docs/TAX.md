@@ -1,44 +1,75 @@
-# Modul Pajak & Kepatuhan
+# Keuangan & Pajak Tahunan
 
-## Tujuan
+Modul `/tax` adalah pembukuan sederhana untuk perusahaan non-PKP. Tujuannya menyiapkan Laba Rugi, Neraca, rekonsiliasi fiskal, dan estimasi PPh Badan tahunan. Pelaporan resmi tetap dilakukan melalui Coretax.
 
-Modul ini membentuk register pajak yang dapat ditelusuri dari transaksi GudangToko, mendukung rekonsiliasi internal sebelum pelaporan resmi, dan menjaga histori setelah masa pajak dikunci.
+## Role
 
-## Akses sementara
+- `staf_keuangan`: membuat tahun laporan, mengambil snapshot transaksi, mencatat saldo/input manual, dan mengajukan rekap.
+- `kepala_keuangan`: memeriksa, mengunci atau membuka bulan, mengonfirmasi skema PPh, menyetujui serta mengunci laporan tahunan.
+- `owner_viewer` dan `owner_approver`: membaca dan mengunduh PDF/Excel.
+- `super_admin`: akses administratif darurat.
 
-- `owner_approver`: akses penuh untuk konfigurasi, rekonsiliasi, approval, ekspor, dan penguncian masa.
-- `super_admin`: akses penuh sistem.
-- Role lain, termasuk `owner_viewer`, `admin_config`, kepala gudang, dan kepala toko, tidak memperoleh akses modul pajak.
+## Alur bulanan
 
-## Alur kerja
-
-1. Buat aturan pajak dengan tarif, faktor DPP, dan tanggal efektif.
-2. Isi profil pajak perusahaan dan status PKP.
-3. Tentukan aturan default serta klasifikasi produk kena pajak.
-4. Lengkapi NPWP/NIK dan alamat pajak customer/supplier.
-5. Aktifkan kalkulasi. Hanya transaksi POS dan B2B baru yang terpengaruh.
-6. Sinkronkan transaksi final ke register masa pajak.
-7. Tambahkan faktur masukan atau bukti potong yang belum memiliki sumber internal.
-8. Rekonsiliasi dokumen dengan data eksternal/Coretax.
-9. Jalankan status `open → reviewed → approved → reported → paid → locked`.
-10. Jika ada pembetulan, buka kembali masa terkunci dengan alasan. Semua tindakan dicatat pada audit log.
-
-## Prinsip data
-
-- Tarif tidak di-hardcode pada transaksi; aturan dipilih berdasarkan tanggal efektif.
-- Transaksi menyimpan snapshot nilai pajak agar perubahan aturan berikutnya tidak mengubah histori.
-- Dokumen final tidak dihapus. Koreksi menggunakan reversal dan referensi ke dokumen asal.
-- PPN keluaran bersumber dari invoice B2B dan transaksi POS final.
-- Retur POS membentuk pengurang pada register pajak.
-- PPN masukan dan PPh dapat dimasukkan manual sampai tersedia sumber transaksi pemasok yang lengkap.
-- CSV yang dihasilkan adalah staging rekonsiliasi, bukan bukti bahwa SPT telah terkirim ke Coretax.
-
-## Perintah penerapan
-
-```bash
-php artisan migrate
-php artisan db:seed --class=RolePermissionSeeder
-php artisan optimize:clear
+```mermaid
+flowchart LR
+    POS[Penjualan POS] --> SS[Ambil Snapshot Bulan]
+    B2B[Penjualan B2B] --> SS
+    RT[Retur dan Pembatalan] --> SS
+    HP[HPP, Piutang, Persediaan] --> SS
+    BM[Beban dan Saldo Manual] --> RK[Rekap Bulanan]
+    SS --> RK
+    RK --> AJ[Ajukan]
+    AJ --> LK[Kepala Keuangan Mengunci]
 ```
 
-Setelah penerapan, buka `/tax/settings` dengan akun owner approver atau super admin.
+1. Buat tahun laporan. Sistem menyiapkan Januari sampai Desember.
+2. Pada tab Rekap Bulanan, klik **Ambil Snapshot**. Angka otomatis disimpan agar tidak berubah saat transaksi berikutnya bertambah.
+3. Tambahkan gaji, sewa, listrik/air, saldo neraca, atau koreksi. Nominal manual tidak menimpa sumber otomatis; alasan wajib diisi dan bukti boleh dilampirkan.
+4. Ajukan bulan, lalu Kepala Keuangan memeriksa dan menguncinya.
+5. Bulan terkunci hanya dapat dibuka Kepala Keuangan dengan alasan.
+
+## Data historis
+
+```mermaid
+flowchart LR
+    LH[Laporan Lama] --> TH[Buat Tahun Historis]
+    TH --> IM[Masukkan Omzet, HPP, Beban, dan Saldo]
+    IM --> VB[Verifikasi 12 Bulan]
+    VB --> LT[Laporan Tahunan]
+```
+
+Centang **Data historis** untuk tahun sebelum aplikasi digunakan. Masukkan angka melalui akun penyesuaian. Jangan membuat transaksi POS palsu.
+
+## PPh Badan
+
+```mermaid
+flowchart LR
+    LK[Laba Komersial] --> KP[Koreksi Fiskal Positif]
+    KP --> KN[Koreksi Fiskal Negatif]
+    KN --> PKP[Penghasilan Kena Pajak]
+    PKP --> SK[Pilih dan Konfirmasi Skema]
+    SK --> PH[PPh Terutang]
+    PH --> KB[Kurangi Kredit, Angsuran, Pembayaran]
+    KB --> BY[Kurang atau Lebih Bayar]
+```
+
+Pilihan skema: PPh Final 0,5% omzet, fasilitas Pasal 31E, tarif umum, atau nominal manual dari konsultan/Coretax. Tarif dan batas omzet tersimpan pada tahun laporan agar laporan terkunci tidak berubah oleh aturan masa depan.
+
+## Penutupan tahunan
+
+```mermaid
+flowchart LR
+    B12[12 Bulan Terkunci] --> CK{Pemeriksaan}
+    CK -->|HPP Lengkap| NR[Neraca Seimbang]
+    NR --> SP[Skema Pajak Dikonfirmasi]
+    SP --> ST[Setujui dan Kunci]
+    ST --> PDF[PDF Laporan]
+    ST --> XLS[Excel Rincian]
+```
+
+Laporan tidak dapat disetujui bila ada bulan terbuka, HPP belum lengkap, neraca tidak seimbang, identitas penandatangan belum lengkap, atau skema pajak belum dikonfirmasi. PDF menyediakan identitas perusahaan dan ruang tanda tangan Komisaris/Direktur. Excel memuat ringkasan, rincian bulanan, sumber otomatis, input manual, dan rekonsiliasi fiskal.
+
+## Data pajak lama
+
+Tabel profil, aturan, masa, dan dokumen pajak lama tetap disimpan sebagai histori read-only. Nilai pajak yang sudah menjadi snapshot transaksi tidak diubah. Kalkulasi PPN baru dinonaktifkan karena perusahaan berstatus non-PKP, dan masa pajak lama tidak dimasukkan otomatis ke PPh tahunan.

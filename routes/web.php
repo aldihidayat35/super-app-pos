@@ -101,7 +101,7 @@ use App\Http\Controllers\ShipmentProofController;
 use App\Http\Controllers\StaffBonus\StaffBonusController;
 use App\Http\Controllers\System\HealthController;
 use App\Http\Controllers\System\OperationsController;
-use App\Http\Controllers\Tax\TaxComplianceController;
+use App\Http\Controllers\Tax\AnnualFinanceController;
 use App\Http\Controllers\Warehouse\B2bOrderController as WarehouseB2bOrderController;
 use App\Http\Controllers\Warehouse\GoodsReceiptController;
 use App\Http\Controllers\Warehouse\LocationTransferController;
@@ -303,19 +303,15 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     });
 
     Route::prefix('tax')->name('tax.')->group(function (): void {
-        Route::get('/', [TaxComplianceController::class, 'index'])->middleware('permission:tax.access')->name('index');
-        Route::get('/settings', [TaxComplianceController::class, 'settings'])->middleware('permission:tax.manage')->name('settings');
-        Route::post('/settings/profile', [TaxComplianceController::class, 'storeProfile'])->middleware('permission:tax.manage')->name('profile.store');
-        Route::post('/settings/rules', [TaxComplianceController::class, 'storeRule'])->middleware('permission:tax.manage')->name('rules.store');
-        Route::put('/settings/products/{product}', [TaxComplianceController::class, 'updateProduct'])->middleware('permission:tax.manage')->name('products.update');
-        Route::put('/settings/counterparties', [TaxComplianceController::class, 'updateCounterparty'])->middleware('permission:tax.manage')->name('counterparties.update');
-        Route::post('/documents', [TaxComplianceController::class, 'storeDocument'])->middleware('permission:tax.manage')->name('documents.store');
-        Route::post('/documents/{taxDocument}/reconcile', [TaxComplianceController::class, 'reconcile'])->middleware('permission:tax.manage')->name('documents.reconcile');
-        Route::post('/documents/{taxDocument}/reverse', [TaxComplianceController::class, 'reverse'])->middleware('permission:tax.manage')->name('documents.reverse');
-        Route::post('/sync', [TaxComplianceController::class, 'sync'])->middleware('permission:tax.manage')->name('sync');
-        Route::put('/periods/{taxPeriod}', [TaxComplianceController::class, 'updatePeriod'])->middleware('permission:tax.manage')->name('periods.update');
-        Route::post('/periods/{taxPeriod}/transition', [TaxComplianceController::class, 'transition'])->middleware('permission:tax.approve')->name('periods.transition');
-        Route::get('/periods/{taxPeriod}/export', [TaxComplianceController::class, 'export'])->middleware('permission:tax.export')->name('periods.export');
+        Route::get('/', [AnnualFinanceController::class, 'index'])->middleware('permission:finance_annual.view')->name('index');
+        Route::post('/years', [AnnualFinanceController::class, 'storeYear'])->middleware('permission:finance_annual.manage')->name('years.store');
+        Route::put('/years/{financialYear}', [AnnualFinanceController::class, 'updateYear'])->middleware('permission:finance_annual.manage')->name('years.update');
+        Route::post('/years/{financialYear}/transition', [AnnualFinanceController::class, 'yearTransition'])->middleware('permission:finance_annual.approve')->name('years.transition');
+        Route::post('/months/{financialMonth}/snapshot', [AnnualFinanceController::class, 'snapshot'])->middleware('permission:finance_annual.manage')->name('months.snapshot');
+        Route::post('/months/{financialMonth}/entries', [AnnualFinanceController::class, 'storeEntry'])->middleware('permission:finance_annual.manage')->name('months.entries.store');
+        Route::post('/months/{financialMonth}/transition', [AnnualFinanceController::class, 'monthTransition'])->middleware('permission:finance_annual.manage')->name('months.transition');
+        Route::get('/years/{financialYear}/pdf', [AnnualFinanceController::class, 'pdf'])->middleware('permission:finance_annual.export')->name('years.pdf');
+        Route::get('/years/{financialYear}/excel', [AnnualFinanceController::class, 'excel'])->middleware('permission:finance_annual.export')->name('years.excel');
     });
 
     Route::get('/confirm-password', [PasswordConfirmationController::class, 'create'])->name('password.confirm');
@@ -519,6 +515,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             Route::get('/logs', [NotificationLogController::class, 'index'])
                 ->middleware('permission:notifications.view|audit.view')
                 ->name('logs.index');
+            Route::get('/logs/{log}', [NotificationLogController::class, 'show'])
+                ->middleware('permission:notifications.view|audit.view')
+                ->name('logs.show');
             Route::post('/logs/{log}/retry', [NotificationLogController::class, 'retry'])
                 ->middleware('permission:notifications.send')
                 ->name('logs.retry');

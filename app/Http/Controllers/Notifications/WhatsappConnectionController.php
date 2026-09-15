@@ -9,6 +9,7 @@ use App\Models\NotificationLog;
 use App\Models\WhatsappConnection;
 use App\Services\Control\AuditLogService;
 use App\Services\Notifications\NotificationDispatchService;
+use App\Services\Notifications\NotificationLogPresenter;
 use App\Services\Notifications\WhatsappConnectionService;
 use Carbon\Carbon;
 use DateTimeInterface;
@@ -20,6 +21,8 @@ use Throwable;
 
 class WhatsappConnectionController extends Controller
 {
+    public function __construct(private readonly NotificationLogPresenter $logPresenter) {}
+
     public function index(Request $request, WhatsappConnectionService $connections): View
     {
         abort_unless($request->user()->can('whatsapp_connection.view'), 403);
@@ -102,12 +105,15 @@ class WhatsappConnectionController extends Controller
     {
         return NotificationLog::query()
             ->with('recipientUser')
+            ->with('template')
             ->where('channel_type', NotificationChannelType::WHATSAPP->value)
             ->latest('id')
             ->limit(10)
             ->get()
             ->map(fn (NotificationLog $log): array => [
                 'id' => $log->id,
+                'type' => $this->logPresenter->typeLabel($log),
+                'detail_url' => route('admin.notifications.logs.show', $log),
                 'recipient_name' => $log->recipient_user_id !== null ? $log->recipientUser->name : $log->recipient_name,
                 'recipient_linked' => $log->recipient_user_id !== null,
                 'destination' => $log->destination,

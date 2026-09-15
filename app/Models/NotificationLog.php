@@ -87,6 +87,12 @@ class NotificationLog extends Model
         return $this->belongsTo(User::class, 'recipient_user_id');
     }
 
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     /** @return BelongsTo<DailyReport, $this> */
     public function dailyReport(): BelongsTo
     {

@@ -247,7 +247,9 @@ class NotificationDispatchService
         $redacted = [];
         foreach ($input as $key => $value) {
             $lower = strtolower((string) $key);
-            if (str_contains($lower, 'token') || str_contains($lower, 'secret') || str_contains($lower, 'key')) {
+            $sensitive = $lower === 'key'
+                || preg_match('/(^|_)(token|secret|password|api_key|access_key|private_key|credential|authorization|qr)($|_)/', $lower) === 1;
+            if ($sensitive) {
                 $redacted[$key] = '***redacted***';
 
                 continue;

@@ -67,21 +67,23 @@
         <div class="table-responsive">
             <table class="table table-row-dashed align-middle mb-0">
                 <thead>
-                    <tr class="text-muted fw-semibold"><th>Waktu</th><th>Penerima</th><th>Nomor Tujuan</th><th>Pesan</th><th>Status</th><th>Percobaan</th><th>ID WhatsApp / Keterangan</th></tr>
+                    <tr class="text-muted fw-semibold"><th>Waktu</th><th>Jenis Notifikasi</th><th>Penerima</th><th>Nomor Tujuan</th><th>Pesan</th><th>Status</th><th>Percobaan</th><th>ID WhatsApp / Keterangan</th><th class="text-end">Aksi</th></tr>
                 </thead>
                 <tbody data-wa-message-history>
                     @forelse($messages as $message)
                         <tr>
                             <td>{{ $message['created_at'] ?: '—' }}</td>
+                            <td><span class="badge badge-light-primary">{{ $message['type'] }}</span></td>
                             <td><div class="fw-semibold">{{ $message['recipient_name'] ?: 'Nomor eksternal' }}</div>@if($message['recipient_linked'])<span class="badge badge-light-primary mt-1">Akun sistem</span>@endif</td>
                             <td>{{ $message['destination'] ?: '—' }}</td>
                             <td>{{ $message['message'] ?: '—' }}</td>
                             <td><x-metronic.status-badge :status="$message['status']" :label="$message['status_label']" />@if($message['sent_at'])<div class="text-muted fs-8 mt-1">{{ $message['sent_at'] }}</div>@endif</td>
                             <td>{{ $message['attempts'] }}</td>
                             <td class="{{ $message['error'] ? 'text-danger' : 'text-muted' }}">{{ $message['error'] ?: ($message['provider_message_id'] ?: '—') }}</td>
+                            <td class="text-end"><a href="{{ $message['detail_url'] }}" class="btn btn-sm btn-light-primary">Detail Pesan</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="text-center text-muted py-8">Belum ada pesan WhatsApp yang dikirim.</td></tr>
+                        <tr><td colspan="9" class="text-center text-muted py-8">Belum ada pesan WhatsApp yang dikirim.</td></tr>
                     @endforelse
                 </tbody>
             </table>
