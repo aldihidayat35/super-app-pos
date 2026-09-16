@@ -26,7 +26,48 @@
     $statusTone = fn($status) => match($status instanceof \BackedEnum ? $status->value : $status){'active'=>'primary','pending_approval'=>'warning','approved'=>'success','closed'=>'info','rejected'=>'danger','paid'=>'success',default=>'secondary'};
 @endphp
 
-<div class="card mb-5 border border-gray-200 shadow-none"><div class="card-body py-3"><ul class="nav nav-pills gap-2">@foreach($tabs as $key=>$label)<li class="nav-item"><a href="{{ route('staff-bonuses.index',['tab'=>$key]) }}" class="nav-link {{ $tab===$key?'active':'' }}">{{ $label }}</a></li>@endforeach</ul></div></div>
+@php $tabIcons = ['mine'=>'ki-user','team'=>'ki-users','programs'=>'ki-target','approval'=>'ki-checkbox','recap'=>'ki-chart']; @endphp
+<div class="card mb-5 border border-gray-200 shadow-none"><div class="card-body py-3">
+    <div class="nav nav-tabs nav-tabs-custom gx-4">
+        @foreach($tabs as $key=>$label)
+            <a href="{{ route('staff-bonuses.index',['tab'=>$key]) }}" class="nav-link {{ $tab===$key?'active':'' }}">
+                <span class="nav-link-inner">
+                    <i class="ki-duotone {{ $tabIcons[$key] ?? 'ki-star' }} fs-2 me-2"></i>
+                    <span>{{ $label }}</span>
+                </span>
+            </a>
+        @endforeach
+    </div>
+    <style>
+        .nav-tabs-custom { border-bottom: 2px solid var(--kt-border-color, #e5e7eb); }
+        .nav-tabs-custom .nav-link {
+            border: none;
+            color: var(--kt-text-color-2, #707898);
+            position: relative;
+            font-weight: 500;
+            font-size: 0.9375rem;
+            padding: 0.75rem 1rem;
+            white-space: nowrap;
+        }
+        .nav-tabs-custom .nav-link .nav-link-inner { display: flex; align-items: center; gap: 0.5rem; }
+        .nav-tabs-custom .nav-link i { display: inline-flex; font-size: 1.125rem; }
+        .nav-tabs-custom .nav-link::before {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 0; right: 0;
+            height: 3px;
+            border-radius: 3px 3px 0 0;
+            background: transparent;
+            transition: background 0.2s ease;
+        }
+        .nav-tabs-custom .nav-link:hover { color: var(--kt-text-color-1, #212529); }
+        .nav-tabs-custom .nav-link:hover::before { background: var(--kt-primary, #06d79c); opacity: 0.4; }
+        .nav-tabs-custom .nav-link.active { color: var(--kt-primary, #06d79c); font-weight: 700; }
+        .nav-tabs-custom .nav-link.active i { color: var(--kt-primary, #06d79c); }
+        .nav-tabs-custom .nav-link.active::before { background: var(--kt-primary, #06d79c); }
+        .nav-tabs-custom .nav-link:focus { box-shadow: none; }
+    </style>
+</div></div>
 
 @if($errors->any())<div class="alert alert-danger"><div class="fw-bold mb-2">Data belum dapat disimpan:</div><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 
