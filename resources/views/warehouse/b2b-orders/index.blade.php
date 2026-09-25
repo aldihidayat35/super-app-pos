@@ -27,6 +27,14 @@
         </x-slot:example>
     </x-metronic.page-guide>
 @endsection
+
+@section('toolbar_actions')
+    <a href="{{ route('warehouse.reservations.index') }}" class="btn btn-light"><i class="ki-outline ki-lock"></i> Reserved Stock</a>
+    @can('shipments.view')
+        <a href="{{ route('shipments.index') }}" class="btn btn-light-primary"><i class="ki-outline ki-delivery"></i> Pengiriman B2B</a>
+    @endcan
+@endsection
+
 @section('content')
     <x-metronic.page-title title="Antrian Order Gudang" description="Validasi order pelanggan, stok, limit, pembayaran, dan prioritas fulfillment." />
     <form method="GET" class="card card-body mb-5">

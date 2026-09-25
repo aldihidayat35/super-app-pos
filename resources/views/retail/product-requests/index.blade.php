@@ -5,9 +5,18 @@
 @section('content')
     <x-metronic.page-title title="Pengajuan Produk Baru" description="Usulkan produk yang belum ada di master data sebelum dibeli dan diterima toko." />
 
-    <div class="d-flex justify-content-end mb-5">
+    <div class="d-flex justify-content-between align-items-center gap-2 mb-5">
+        @can('retail.catalog.view')
+            <a href="{{ route('retail.storefront.index') }}" class="btn btn-light">
+                <i class="ki-outline ki-shop fs-5 me-1"></i>Lihat Etalase Toko
+            </a>
+        @else
+            <div></div>
+        @endcan
         @can('create', App\Models\ProductRequest::class)
-            <a href="{{ route('retail.product-requests.create') }}" class="btn btn-primary">Ajukan Produk</a>
+            <a href="{{ route('retail.product-requests.create') }}" class="btn btn-primary">
+                <i class="ki-outline ki-plus fs-5 me-1"></i>Ajukan Produk
+            </a>
         @endcan
     </div>
 

@@ -170,6 +170,7 @@ Daftar route + permission setiap modul ada di [guide/super-admin.md](guide/super
 ## 8. Sumber referensi cepat
 
 - SRS & kontrak domain: [docs/SRS.md](docs/SRS.md), [docs/DOMAIN.md](docs/DOMAIN.md)
+- Guardrail alur bisnis: [.agents/rules/business-flows.md](.agents/rules/business-flows.md)
 - State machine: [docs/STATE-MACHINES.md](docs/STATE-MACHINES.md)
 - Aturan security: [docs/SECURITY.md](docs/SECURITY.md)
 - Performa target: [docs/PERFORMANCE.md](docs/PERFORMANCE.md)

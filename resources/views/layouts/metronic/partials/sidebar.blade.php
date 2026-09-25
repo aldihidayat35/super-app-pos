@@ -19,27 +19,32 @@
         );
     });
 
-    // Get work location type label and display info
-    $workLocationType = '';
-    $displayName = $user->name ?? '';
-    $rolesString = '';
+    // Get work location and role info
+    $displayName = $user?->name ?? 'Pengguna';
+    $roleDefinitions = config('rbac.roles', []);
+    $userRoles = $user?->roles ?? collect();
+    $primaryRole = $userRoles->first()?->name;
+    $primaryRoleLabel = $roleDefinitions[$primaryRole]['label'] ?? ucwords(str_replace('_', ' ', (string) ($primaryRole ?? 'Pengguna')));
+    $rolesString = $userRoles->map(fn($r) => $roleDefinitions[$r->name]['label'] ?? ucwords(str_replace('_', ' ', $r->name)))->implode(' • ');
+
+    $workLocationName = '';
+    $workLocationIcon = 'ki-outline ki-geolocation';
     if ($user?->workLocations?->isNotEmpty()) {
         $wl = $user->workLocations->first();
-        $type = $wl->type;
-        $label = match ($type) {
-            'warehouse' => 'Gudang',
-            'branch' => 'Cabang/Toko',
-            'internal_store' => 'Toko Internal',
-            'customer' => 'Pelanggan',
-            default => ucfirst($type),
+        $workLocationName = $wl->name;
+        $workLocationIcon = match ($wl->type) {
+            'warehouse' => 'ki-outline ki-delivery-3',
+            'branch', 'internal_store' => 'ki-outline ki-shop',
+            'customer' => 'ki-outline ki-profile-user',
+            default => 'ki-outline ki-geolocation',
         };
-        // Tampilkan nama lokasi kerja, bukan hanya tipenya
-        $workLocationType = $wl->name ?? $label;
+    } elseif ($user?->hasUnrestrictedLocationScope()) {
+        $workLocationName = 'Semua Lokasi';
+        $workLocationIcon = 'ki-outline ki-global';
     }
-    if ($user?->roles()->exists()) {
-        $roles = $user->roles->pluck('name')->toArray();
-        $rolesString = implode(' | ', $roles);
-    }
+
+    $initial = strtoupper(substr($displayName, 0, 1));
+    $avatarUrl = $user?->avatar_url ?? asset('assets/media/avatars/default-avatar.png');
     $workChecklistPending = $user?->can('work_checklists.view_own')
         ? app(\App\Services\WorkChecklist\WorkChecklistService::class)->pendingCount($user)
         : 0;
@@ -53,111 +58,57 @@
         <div class="app-sidebar-wrapper hover-scroll-overlay-y my-3 px-3" data-kt-scroll="true"
             data-kt-scroll-height="100%" data-kt-scroll-save-state="true">
             <div class="menu menu-column menu-rounded menu-sub-indention fw-semibold" data-kt-menu="true">
-                {{-- User info section - Metronic style --}}
-                <div class="menu-item menu-accordion show d-flex flex-column"
-                    style="padding: 12px; border-bottom: 2px dashed #e4e6ef; margin-top: 12px; margin-bottom: 12px;">
-                    <div class="d-flex align-items-center"
-                        style="
-            padding: 12px;
-            background: linear-gradient(135deg, #ffffff 0%, #f2fbf6 100%);
-            border: 1px solid #e8f3ec;
-            border-radius: 12px;
-            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-        ">
+                {{-- User info card - Modern Metronic style --}}
+                <div class="mx-1 my-2 p-3 rounded-3 bg-light-primary bg-opacity-20 border border-primary border-opacity-10 shadow-xs">
+                    <div class="d-flex align-items-center gap-3">
                         {{-- Avatar --}}
-                        <div class="position-relative me-3 flex-shrink-0" style="width: 52px; height: 52px;">
-                            <img alt="Avatar {{ $displayName }}"
-                                src="{{ $user?->avatar_path ? asset('storage/' . $user->avatar_path) : asset('assets/media/avatars/10.jpg') }}"
-                                class="object-fit-cover"
-                                style="
-                    width: 52px;
-                    height: 52px;
-                    display: block;
-                    object-fit: cover;
-                    border-radius: 10px;
-                    border: 2px solid #ffffff;
-                    box-shadow: 0 0 0 2px #d8f3e3;
-                ">
+                        <a href="{{ route('profile.edit') }}" class="position-relative flex-shrink-0 text-decoration-none" style="width: 40px; height: 40px;" title="Lihat Profil">
+                            <img src="{{ $avatarUrl }}" alt="{{ $displayName }}" class="w-100 h-100 rounded-circle object-fit-cover border border-2 border-body shadow-xs" style="display: block;">
+                            <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-body rounded-circle" style="width: 10px; height: 10px;" title="Online"></span>
+                        </a>
 
-                            {{-- Status online --}}
-                            <span class="position-absolute bg-success border border-2 border-white"
-                                style="
-                    width: 12px;
-                    height: 12px;
-                    right: -3px;
-                    bottom: -3px;
-                    border-radius: 4px;
-                "
-                                title="Online"></span>
-                        </div>
-
-                        {{-- Informasi pengguna --}}
-                        <div class="flex-grow-1 overflow-hidden">
-                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                                <span class="fw-bold fs-6 text-gray-900 text-truncate" title="{{ $displayName }}">
+                        {{-- User detail --}}
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <a href="{{ route('profile.edit') }}" class="fw-bold text-gray-900 text-hover-primary fs-6 text-truncate pe-1 text-decoration-none" title="{{ $displayName }}">
                                     {{ $displayName }}
-                                </span>
-
-                                <span class="d-flex align-items-center justify-content-center flex-shrink-0"
-                                    style="
-                        width: 24px;
-                        height: 24px;
-                        background-color: #e8fff3;
-                        color: #17c653;
-                        border-radius: 7px;
-                    "
-                                    title="Pengguna aktif">
-                                    <i class="ki-outline ki-shield-tick fs-5"></i>
-                                </span>
+                                </a>
+                                <a href="{{ route('profile.edit') }}" class="btn btn-icon btn-custom btn-active-color-primary w-20px h-20px text-gray-400 text-hover-primary" title="Pengaturan Akun" aria-label="Pengaturan Akun">
+                                    <i class="ki-outline ki-setting-3 fs-6"></i>
+                                </a>
                             </div>
 
-                            {{-- Jabatan/lokasi kerja --}}
-                            <div class="d-inline-flex align-items-center mb-2"
-                                style="
-                    max-width: 100%;
-                    padding: 3px 8px;
-                    background-color: #e8fff3;
-                    border: 1px solid #d5f5e3;
-                    border-radius: 6px;
-                ">
-                                <i class="ki-outline ki-briefcase fs-7 text-success me-1"></i>
-
-                                <span class="fw-semibold text-success text-truncate" style="font-size: 11px;"
-                                    title="{{ $workLocationType ?: 'Administrator' }}">
-                                    {{ $workLocationType ?: 'Administrator' }}
+                            <div class="d-flex align-items-center gap-1 mt-1">
+                                <span class="badge badge-light-primary fw-semibold fs-9 px-2 py-0.5 text-truncate" style="max-width: 130px;" title="{{ $rolesString }}">
+                                    {{ $primaryRoleLabel }}
                                 </span>
-                            </div>
-
-                            {{-- Role --}}
-                            @if ($user && $user->roles()->exists())
-                                <div>
-                                    <span class="badge fw-semibold text-gray-700 text-truncate"
-                                        style="
-                            max-width: 100%;
-                            padding: 5px 8px;
-                            background-color: #f5f6f8;
-                            border: 1px solid #e4e6ef;
-                            border-radius: 6px;
-                            font-size: 11px;
-                        "
-                                        title="{{ $rolesString }}">
-                                        <i class="ki-outline ki-profile-user fs-7 me-1"></i>
-                                        {{ $rolesString }}
+                                @if ($userRoles->count() > 1)
+                                    <span class="badge badge-light-secondary text-gray-600 fw-bold fs-9 px-1" title="{{ $rolesString }}">
+                                        +{{ $userRoles->count() - 1 }}
                                     </span>
-                                </div>
-                            @endif
+                                @endif
+                                @if ($workChecklistPending > 0)
+                                    <a href="{{ route('work-checklists.index') }}" class="badge badge-light-warning text-warning fw-bold fs-9 px-1.5 ms-auto text-decoration-none" title="{{ $workChecklistPending }} checklist pending">
+                                        <i class="ki-outline ki-notification-status fs-9 text-warning me-0.5"></i>{{ $workChecklistPending }}
+                                    </a>
+                                @endif
+                            </div>
+
+                            <div class="d-flex align-items-center gap-1 text-gray-600 fs-9 mt-1 text-truncate" title="{{ $workLocationName ?: 'Semua Lokasi' }}">
+                                <i class="{{ $workLocationIcon }} fs-8 text-primary"></i>
+                                <span class="text-truncate">{{ $workLocationName ?: 'Semua Lokasi' }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="menu-item pt-4">
+                <div class="separator separator-dashed my-2 mx-1 opacity-75"></div>
+
+                <div class="menu-item pt-2 pb-1">
                     <div class="menu-content">
-                        <span class="menu-heading fw-bold text-uppercase fs-7">Menu Utama</span>
+                        <span class="menu-heading fw-bold text-uppercase fs-7 text-gray-500">Menu Utama</span>
                     </div>
                 </div>
-
-                {{-- Align user section with sidebar padding --}}
-                <div class="p-3"></div>
 
                 @forelse ($menuItems as $item)
                     @php

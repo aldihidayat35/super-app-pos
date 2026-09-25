@@ -3,6 +3,19 @@
 @section('title', 'Terima Transfer - '.config('app.name'))
 @section('page_title', 'Terima Transfer')
 
+@section('toolbar_actions')
+    @can('stock_transfers.create')
+        <a href="{{ route('retail.restock-requests.index') }}" class="btn btn-light-primary">
+            <i class="ki-outline ki-arrows-circle fs-5 me-1"></i>Permintaan Restok
+        </a>
+    @endcan
+    @can('stock_transfers.view')
+        <a href="{{ route('warehouse.stock-transfers.index') }}" class="btn btn-light">
+            <i class="ki-outline ki-document fs-5 me-1"></i>Semua Riwayat Transfer
+        </a>
+    @endcan
+@endsection
+
 @section('content')
     <div class="alert alert-primary d-flex align-items-center gap-3"><i class="ki-outline ki-delivery-2 fs-2"></i><div>Barang yang sedang dikirim menuju lokasi Anda dan siap diproses penerimaannya.</div></div>
     <x-metronic.card>

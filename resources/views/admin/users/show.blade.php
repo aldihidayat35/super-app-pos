@@ -34,11 +34,7 @@
             <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-6">
                 <div class="d-flex align-items-center gap-5">
                     <div class="symbol symbol-70px symbol-lg-90px flex-shrink-0">
-                        @if($user->avatar_path)
-                            <img src="{{ asset('storage/'.$user->avatar_path) }}" alt="Avatar {{ $user->name }}" class="object-fit-cover">
-                        @else
-                            <span class="symbol-label bg-light-primary text-primary fs-2x fw-bold">{{ str($user->name)->substr(0, 2)->upper() }}</span>
-                        @endif
+                        <img src="{{ $user->avatar_url }}" alt="Avatar {{ $user->name }}" class="object-fit-cover rounded-circle">
                     </div>
                     <div class="min-w-0">
                         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">

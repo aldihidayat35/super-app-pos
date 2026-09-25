@@ -98,7 +98,8 @@ class RetailDashboardController extends Controller
             $dashboard['charts']['slow_products'] = $this->withoutSensitiveStockValues($dashboard['charts']['slow_products'] ?? []);
         }
 
-        $salesTarget = Decimal::normalize((string) ($activeBranch === null ? 0 : $activeBranch->sales_target), 2);
+        $rawTarget = $activeBranch?->sales_target;
+        $salesTarget = Decimal::normalize(is_numeric((string) $rawTarget) ? (string) $rawTarget : '0', 2);
         $targetAchievement = Decimal::compare($salesTarget, '0', 2) > 0
             ? Decimal::mul(Decimal::div($dashboard['kpis']['revenue'], $salesTarget, 4, 2, 4), '100', 4, 2, 2)
             : '0.00';

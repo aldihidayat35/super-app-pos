@@ -32,8 +32,24 @@
 </style>
 @endpush
 
+@section('toolbar_actions')
+    @can('product_requests.view')
+        <a href="{{ route('retail.product-requests.index') }}" class="btn btn-light-primary">
+            <i class="ki-outline ki-plus-circle fs-5 me-1"></i>Pengajuan Produk Baru
+        </a>
+    @endcan
+@endsection
+
 @section('content')
-    <x-metronic.page-title title="Etalase Produk Toko" description="Bantu pelanggan menemukan produk, harga, dan posisi pajang di toko Anda." />
+    <x-metronic.page-title title="Etalase Produk Toko" description="Bantu pelanggan menemukan produk, harga, dan posisi pajang di toko Anda.">
+        @can('product_requests.view')
+            <x-slot:actions>
+                <a href="{{ route('retail.product-requests.index') }}" class="btn btn-light-primary">
+                    <i class="ki-outline ki-plus-circle fs-5 me-1"></i>Pengajuan Produk Baru
+                </a>
+            </x-slot:actions>
+        @endcan
+    </x-metronic.page-title>
 
     @if (!$branch)
         <x-metronic.empty-state title="Belum ada toko yang ditugaskan" description="Minta admin menambahkan cabang/toko aktif pada lokasi kerja akun Anda." />

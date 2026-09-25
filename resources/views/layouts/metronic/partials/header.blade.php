@@ -20,10 +20,16 @@
 
         {{-- Right: actions --}}
         <div class="d-flex align-items-stretch flex-shrink-0">
-            @include('layouts.metronic.partials.notification-area', ['compact' => true])
+            {{-- Theme Toggle Pill --}}
             <div class="d-flex align-items-center ms-2">
-                <button type="button" class="btn btn-icon btn-active-light-primary" data-theme-value="light" title="Tema terang" aria-label="Tema terang"><i class="ki-outline ki-sun fs-1"></i></button>
-                <button type="button" class="btn btn-icon btn-active-light-primary" data-theme-value="dark" title="Tema gelap" aria-label="Tema gelap"><i class="ki-outline ki-moon fs-1"></i></button>
+                <div class="d-flex align-items-center gt-theme-toggle-pill">
+                    <button type="button" class="btn btn-icon btn-theme-toggle" data-theme-value="light" title="Tema terang" aria-label="Tema terang">
+                        <i class="ki-outline ki-sun fs-5"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-theme-toggle" data-theme-value="dark" title="Tema gelap" aria-label="Tema gelap">
+                        <i class="ki-outline ki-moon fs-5"></i>
+                    </button>
+                </div>
             </div>
             @include('layouts.metronic.partials.user-menu')
         </div>

@@ -29,6 +29,15 @@
     </x-metronic.page-guide>
 @endsection
 
+@section('toolbar_actions')
+    @can('stock_direct_adjustments.view')
+        <a href="{{ route('warehouse.stock-adjustments.index') }}" class="btn btn-light"><i class="ki-outline ki-wrench"></i> Koreksi Stok</a>
+    @endcan
+    @can('opening_stocks.view')
+        <a href="{{ route('warehouse.opening-stocks.index') }}" class="btn btn-light"><i class="ki-outline ki-folder-added"></i> Pendataan Stok Lokasi</a>
+    @endcan
+@endsection
+
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {

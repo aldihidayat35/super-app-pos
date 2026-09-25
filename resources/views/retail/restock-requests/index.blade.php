@@ -3,6 +3,14 @@
 @section('title', 'Permintaan Restok - '.config('app.name'))
 @section('page_title', 'Permintaan Restok')
 
+@section('toolbar_actions')
+    @can('stock_transfers.receive')
+        <a href="{{ route('retail.stock-transfers.receiving') }}" class="btn btn-light-primary">
+            <i class="ki-outline ki-delivery-2 fs-5 me-1"></i>Terima Transfer Masuk
+        </a>
+    @endcan
+@endsection
+
 @section('content')
     <div class="alert alert-primary d-flex align-items-start gap-3">
         <i class="ki-outline ki-information-2 fs-2"></i>

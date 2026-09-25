@@ -4,7 +4,10 @@
 @section('page_title', 'Riwayat Shift dan Closing')
 
 @section('toolbar_actions')
-    <a href="{{ route('retail.shifts.export', request()->query()) }}" class="btn btn-light-success">Export</a>
+    @can('cash_shifts.view')
+        <a href="{{ route('retail.shifts.current') }}" class="btn btn-primary"><i class="ki-outline ki-wallet fs-5 me-1"></i>Shift Aktif</a>
+    @endcan
+    <a href="{{ route('retail.shifts.export', request()->query()) }}" class="btn btn-light-success"><i class="ki-outline ki-file-down fs-5 me-1"></i>Export</a>
 @endsection
 
 @section('content')

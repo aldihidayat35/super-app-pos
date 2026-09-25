@@ -1,4 +1,4 @@
-﻿@extends('layouts.metronic.app')
+@extends('layouts.metronic.app')
 
 @section('title', 'Shift Aktif - '.config('app.name'))
 @section('page_title', 'Shift Aktif')
@@ -29,6 +29,9 @@
 @endpush
 
 @section('toolbar_actions')
+    @can('cash_shifts.view')
+        <a href="{{ route('retail.shifts.index') }}" class="btn btn-light-primary"><i class="ki-outline ki-time fs-5 me-1"></i>Riwayat Shift</a>
+    @endcan
     @if($shift)
         <a href="{{ route('retail.pos.index') }}" class="btn btn-primary"><i class="ki-outline ki-shop fs-5 me-1"></i>Lanjut ke POS</a>
         <a href="{{ route('retail.shifts.export.pdf', $shift) }}" class="btn btn-light" target="_blank"><i class="ki-outline ki-printer fs-5 me-1"></i>Download PDF</a>

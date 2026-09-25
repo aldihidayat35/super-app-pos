@@ -15,11 +15,7 @@
 
                     <div class="d-flex align-items-center gap-5 mb-8">
                         <div class="symbol symbol-80px">
-                            @if ($user->avatar_path)
-                                <img src="{{ asset('storage/'.$user->avatar_path) }}" alt="{{ $user->name }}">
-                            @else
-                                <span class="symbol-label bg-light-primary text-primary fs-2 fw-bold">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
-                            @endif
+                            <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="rounded-circle object-fit-cover">
                         </div>
                         <div>
                             <div class="fw-bold text-gray-900">{{ $user->name }}</div>

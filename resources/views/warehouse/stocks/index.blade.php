@@ -31,6 +31,11 @@
 @endsection
 
 @section('toolbar_actions')
+    <a href="{{ route('warehouse.stock-card.index') }}" class="btn btn-light"><i class="ki-outline ki-document"></i> Kartu Stok</a>
+    <a href="{{ route('warehouse.batches.index') }}" class="btn btn-light"><i class="ki-outline ki-barcode"></i> Batch & Exp</a>
+    @can('goods_receipts.view')
+        <a href="{{ route('pricing.hpp-history.index') }}" class="btn btn-light"><i class="ki-outline ki-chart-line-up"></i> Histori HPP</a>
+    @endcan
     <a href="{{ route('warehouse.stocks.export', request()->query()) }}" class="btn btn-light-primary"><i class="ki-outline ki-file-down"></i> Export CSV</a>
 @endsection
 

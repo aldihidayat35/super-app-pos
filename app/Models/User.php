@@ -72,6 +72,18 @@ class User extends Authenticatable implements MustVerifyEmailContract
     }
 
     /**
+     * Get the user's avatar URL or default avatar if not uploaded.
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        if (! empty($this->avatar_path)) {
+            return asset('storage/'.$this->avatar_path);
+        }
+
+        return asset('assets/media/avatars/default-avatar.png');
+    }
+
+    /**
      * @return BelongsToMany<WorkLocation, $this>
      */
     public function workLocations(): BelongsToMany

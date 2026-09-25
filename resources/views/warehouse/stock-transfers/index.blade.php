@@ -30,6 +30,7 @@
 @endsection
 
 @section('toolbar_actions')
+    <a href="{{ route('warehouse.location-transfers.index') }}" class="btn btn-light"><i class="ki-outline ki-arrows-loop"></i> Transfer Lokasi (Bin)</a>
     <x-metronic.permission-button permission="stock_transfers.create" :href="route('warehouse.stock-transfers.create')" icon="ki-outline ki-plus">Buat Transfer</x-metronic.permission-button>
 @endsection
 
