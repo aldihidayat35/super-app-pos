@@ -473,3 +473,34 @@ Gunakan menu **Checklist Kerja** (`/checklist-kerja`) pada setiap toko penugasan
 ```guide-flow
 checklist-fill
 ```
+## 13. Koreksi Stok Langsung Toko
+
+Panduan lengkap aktivasi, pengajuan, persetujuan, dan audit tersedia pada [Panduan Koreksi Stok Terkendali](koreksi-stok-terkendali.md).
+
+Kepala Toko dapat mencatat koreksi stok produk pada cabang penugasannya selama akses dari Super Admin masih aktif. Stok baru berubah setelah disetujui Kepala Toko lain pada cabang yang sama atau Super Admin.
+
+## 14. Pendataan Stok Lokasi Toko
+
+Panduan lengkap tersedia pada [Panduan Pendataan Stok Lokasi](pendataan-stok-lokasi.md). Staf Toko memilih produk database, rak pada gudang utama cabang, lalu memasukkan jumlah fisik sekarang. Kepala Toko memeriksa dan memposting hasilnya.
+
+```mermaid
+flowchart LR
+    ST[Staf Toko Menghitung] --> DF[Simpan Draft]
+    DF --> AJ[Ajukan]
+    AJ --> KT[Kepala Toko Memeriksa]
+    KT --> PS[Posting Saldo Akhir]
+    PS --> POS[Stok Reguler Siap untuk POS]
+```
+
+```mermaid
+flowchart LR
+    AK[Akses Toko Aktif] --> DF[Buat Draft Koreksi]
+    DF --> SF[Isi Stok Fisik dan Catatan]
+    SF --> AJ[Ajukan]
+    AJ --> AP[Kepala Toko Lain atau Super Admin]
+    AP -->|Setuju| MT[Stok Toko Diperbarui]
+    AP -->|Tolak| RJ[Dokumen Ditolak]
+    MT --> KS[Kartu Stok dan Audit]
+```
+
+Koreksi tidak mengubah HPP produk dan tidak berlaku untuk stok darurat.

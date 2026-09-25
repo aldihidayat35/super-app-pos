@@ -83,6 +83,12 @@ return [
                 'permission' => 'admin.settings.view',
             ],
             [
+                'label' => 'Akses Koreksi Stok',
+                'route' => 'admin.settings.stock-adjustment-access.index',
+                'active' => ['admin.settings.stock-adjustment-access.*'],
+                'permission' => 'stock_direct_adjustments.manage_access',
+            ],
+            [
                 'label' => 'Koneksi WhatsApp',
                 'route' => 'admin.whatsapp.index',
                 'active' => ['admin.whatsapp.*'],
@@ -265,6 +271,18 @@ return [
                 'route' => 'warehouse.stock-opnames.index',
                 'active' => ['warehouse.stock-opnames.*'],
                 'permission' => 'stock_adjustments.view',
+            ],
+            [
+                'label' => 'Pendataan Stok Lokasi',
+                'route' => 'warehouse.opening-stocks.index',
+                'active' => ['warehouse.opening-stocks.*'],
+                'permission' => 'opening_stocks.view',
+            ],
+            [
+                'label' => 'Koreksi Stok',
+                'route' => 'warehouse.stock-adjustments.index',
+                'active' => ['warehouse.stock-adjustments.*'],
+                'permission' => 'stock_direct_adjustments.view',
             ],
             [
                 'label' => 'Barang Rusak & Loss',

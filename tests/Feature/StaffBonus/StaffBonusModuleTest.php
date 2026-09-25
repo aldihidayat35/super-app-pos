@@ -58,7 +58,8 @@ class StaffBonusModuleTest extends TestCase
         [$owner, $staff, $location] = $this->fixtures();
         $this->completedChecklist($staff, $location);
         $approver = User::factory()->create();
-        $approver->assignRole('owner_approver');
+        $approver->assignRole('kepala_toko');
+        $approver->workLocations()->attach($location->id, ['is_default' => true, 'is_active' => true]);
         $service = app(StaffBonusService::class);
         $program = $service->createProgram([
             'program_key' => 'TOKO-OKT', 'name' => 'Bonus Toko Oktober', 'role_name' => 'staf_toko',
@@ -82,15 +83,15 @@ class StaffBonusModuleTest extends TestCase
         $this->assertSame(StaffBonusPeriodStatus::APPROVED, $period->status);
 
         $result = $period->results()->firstOrFail();
-        $this->actingAs($approver)->post(route('staff-bonuses.results.pay', $result), [
+        $this->actingAs($owner)->post(route('staff-bonuses.results.pay', $result), [
             'paid_on' => '2026-11-02', 'payment_method' => 'bank_transfer', 'reference_no' => 'TRX-BONUS-001',
         ])->assertRedirect();
         $this->assertDatabaseHas('staff_bonus_payments', ['staff_bonus_result_id' => $result->id, 'amount' => '500000.00', 'reference_no' => 'TRX-BONUS-001']);
         $this->assertDatabaseHas('staff_bonus_periods', ['id' => $period->id, 'status' => 'closed']);
-        $this->actingAs($approver)->post(route('staff-bonuses.results.pay', $result), [
+        $this->actingAs($owner)->post(route('staff-bonuses.results.pay', $result), [
             'paid_on' => '2026-11-02', 'payment_method' => 'cash', 'reference_no' => 'DUPLIKAT',
         ])->assertStatus(422);
-        $this->actingAs($approver)->post(route('staff-bonuses.results.adjust', $result), [
+        $this->actingAs($owner)->post(route('staff-bonuses.results.adjust', $result), [
             'target_result_id' => $nextPeriod->results->first()->id, 'amount' => '25000', 'reason' => 'Koreksi bonus periode Oktober.',
         ])->assertRedirect();
         $this->assertDatabaseHas('staff_bonus_adjustments', ['source_result_id' => $result->id, 'target_result_id' => $nextPeriod->results->first()->id, 'amount' => '25000.00']);

@@ -1,6 +1,7 @@
-# Data Seeder Demo GudangToko
+# Seeder Akun Administrasi GudangToko
 
-Seeder demo ini dibuat untuk environment `local` dan `testing` saja. Jangan jalankan pada production karena berisi akun dan data simulasi.
+Seeder ini dibuat untuk environment `local` dan `testing` saja. Seeder hanya
+membuat akun administrasi, role, dan permission; tidak ada data bisnis simulasi.
 
 ## Command
 
@@ -19,35 +20,30 @@ Semua akun aktif, email sudah terverifikasi, dan memakai password:
 password
 ```
 
-| Role | Email | Username | Lokasi kerja |
+| Role | Email | Username | Lingkup awal |
 | --- | --- | --- | --- |
 | super_admin | superadmin@gudangtoko.test | superadmin | Global |
 | owner_approver | owner@gudangtoko.test | owner | Global |
-| kepala_gudang + purchasing | manajemen-gudang@gudangtoko.test | manajemen-gudang | Gudang Demo Utama |
-| staff_gudang | staff-gudang@gudangtoko.test | staff-gudang | Gudang Demo Utama |
-| kepala_toko | toko@gudangtoko.test | toko-internal | Toko Demo Pusat |
-| staf_toko | staf-toko@gudangtoko.test | staf-toko | Toko Demo Pusat |
-| kasir + kepala_toko | kasir@gudangtoko.test | kasir | Toko Demo Pusat |
+| kepala_gudang + purchasing | manajemen-gudang@gudangtoko.test | manajemen-gudang | Belum ditugaskan |
+| staff_gudang | staff-gudang@gudangtoko.test | staff-gudang | Belum ditugaskan |
+| kepala_toko | toko@gudangtoko.test | toko-internal | Belum ditugaskan |
+| staf_toko | staf-toko@gudangtoko.test | staf-toko | Belum ditugaskan |
+| kasir + kepala_toko | kasir@gudangtoko.test | kasir | Belum ditugaskan |
 | langganan_owner | langganan-b2b@gudangtoko.test | langganan-b2b | Portal B2B |
 | langganan_staff | pelanggan@gudangtoko.test | pelanggan | Portal B2B |
 
 ## Data yang Dibuat
 
-- Organisasi: `Gudang Demo Utama`, `Toko Demo Pusat`, work location, zona/rak/bin.
-- Master produk: kategori, brand, unit, barcode, supplier, supplier product, dan tiga produk demo.
-- Inventory: saldo pembuka gudang/toko melalui `InventoryService`, stock batches, dan stock mutations append-only.
-- Pricing: price rule dan product price POS.
-- Etalase toko: lokasi pajang area/rak/tingkat untuk produk demo dan akun staf toko.
-- Purchasing: PO parsial dan goods receipt posted dengan QC, histori HPP, dan supplier score.
-- Transfer: restock request approved dan stock transfer `pending_approval` tanpa reserve/pick palsu.
-- Opname/loss: stock opname counting dan inventory loss pending approval.
-- Retail: shift kasir terbuka, POS sale demo, item, dan pembayaran tunai.
-- B2B: customer B2B, alamat, credit limit, order, invoice, shipment, payment pending, receivable, dan complaint.
-- Control/reporting: approval request, anomaly alert, audit log, report export, dan daily report.
+- Semua role dan permission dari `config/rbac.php`.
+- Sembilan akun login sesuai tabel di atas, dengan role yang sama seperti
+  seeder sebelumnya.
+
+Produk, kategori, unit, gudang, cabang, lokasi kerja, stok, supplier,
+pelanggan, order, transaksi POS, B2B, laporan, approval, dan audit tetap kosong.
 
 ## Catatan Integritas
 
-- Seeder ini idempotent: aman dijalankan ulang karena memakai `updateOrCreate`, relasi sync, dan idempotency key untuk saldo pembuka.
-- Perubahan saldo pembuka dibuat lewat `InventoryService`.
-- Sample transfer sengaja dibuat `pending_approval`; stok belum di-reserve agar tidak ada saldo yang berubah tanpa menjalankan workflow/service transfer.
-- Password demo tidak boleh dipakai di production.
+- Seeder ini idempotent: aman dijalankan ulang untuk memperbarui akun dan role.
+- Akun operasional belum memiliki lokasi kerja. Buat gudang/cabang asli terlebih
+  dahulu, lalu tetapkan lokasi kerja melalui menu administrasi.
+- Password `password` hanya untuk local/testing dan tidak boleh dipakai di production.

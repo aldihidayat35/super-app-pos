@@ -560,3 +560,34 @@ attendance-schedule-pattern
 ```
 
 Kepala Gudang memilih shift atau libur untuk setiap hari Senin sampai Minggu melalui `/attendance/schedules`. Pola berlaku mulai Senin berikutnya dan generator menjaga jadwal 28 hari ke depan. Perubahan manual untuk tanggal tertentu menjadi pengecualian yang tidak ditimpa generator.
+## 17. Koreksi Stok Langsung Terkendali
+
+Panduan lengkap aktivasi, pengajuan, persetujuan, dan audit tersedia pada [Panduan Koreksi Stok Terkendali](koreksi-stok-terkendali.md).
+
+Kepala Gudang dapat membuat koreksi per produk hanya saat Super Admin mengaktifkan lokasi gudang. Masukkan stok fisik akhir dan catatan penyebab selisih. Pembuat tidak dapat menyetujui dokumennya sendiri.
+
+## 18. Pendataan Stok Lokasi
+
+Panduan lengkap tersedia pada [Panduan Pendataan Stok Lokasi](pendataan-stok-lokasi.md). Staff Gudang membuat draft hasil hitung fisik, kemudian Kepala Gudang memeriksa dan mempostingnya. Kepala Gudang dapat membuat dan memposting dokumen stok awalnya sendiri dengan audit kritis.
+
+```mermaid
+flowchart LR
+    SG[Staff Gudang Menghitung] --> DS[Draft Saldo Fisik]
+    DS --> AJ[Ajukan]
+    AJ --> KG[Kepala Gudang Memeriksa]
+    KG --> PS[Posting Selisih]
+    PS --> KS[Kartu Stok]
+```
+
+```mermaid
+flowchart LR
+    AK[Akses Gudang Aktif] --> DF[Buat Draft Koreksi]
+    DF --> SF[Isi Stok Fisik dan Catatan]
+    SF --> AJ[Ajukan]
+    AJ --> AP[Kepala Gudang Lain atau Super Admin]
+    AP -->|Setuju| MT[Stok dan Kartu Stok Diperbarui]
+    AP -->|Tolak| RJ[Dokumen Ditolak]
+    AJ -->|Stok Berubah| UL[Kembali ke Draft dan Ajukan Ulang]
+```
+
+Gunakan koreksi langsung untuk produk tertentu. Gunakan stock opname untuk penghitungan banyak produk atau pemeriksaan berkala.

@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\ProductCategoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImportController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\StockAdjustmentAccessController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\UnitController;
@@ -105,9 +106,11 @@ use App\Http\Controllers\Tax\AnnualFinanceController;
 use App\Http\Controllers\Warehouse\B2bOrderController as WarehouseB2bOrderController;
 use App\Http\Controllers\Warehouse\GoodsReceiptController;
 use App\Http\Controllers\Warehouse\LocationTransferController;
+use App\Http\Controllers\Warehouse\OpeningStockController;
 use App\Http\Controllers\Warehouse\StockBatchController;
 use App\Http\Controllers\Warehouse\StockCardController;
 use App\Http\Controllers\Warehouse\StockController;
+use App\Http\Controllers\Warehouse\StockDirectAdjustmentController;
 use App\Http\Controllers\Warehouse\StockMutationController;
 use App\Http\Controllers\Warehouse\StockOpnameController;
 use App\Http\Controllers\Warehouse\StockReservationController;
@@ -578,6 +581,15 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::put('/settings/document-numbers', [DocumentSequenceController::class, 'update'])
             ->middleware('permission:admin.settings.update')
             ->name('settings.document-numbers.update');
+        Route::get('/settings/stock-adjustment-access', [StockAdjustmentAccessController::class, 'index'])
+            ->middleware('permission:stock_direct_adjustments.manage_access')
+            ->name('settings.stock-adjustment-access.index');
+        Route::put('/settings/stock-adjustment-access/{workLocation}', [StockAdjustmentAccessController::class, 'update'])
+            ->middleware('permission:stock_direct_adjustments.manage_access')
+            ->name('settings.stock-adjustment-access.update');
+        Route::delete('/settings/stock-adjustment-access/{access}', [StockAdjustmentAccessController::class, 'destroy'])
+            ->middleware('permission:stock_direct_adjustments.manage_access')
+            ->name('settings.stock-adjustment-access.destroy');
 
         Route::resource('product-categories', ProductCategoryController::class)
             ->except(['show', 'destroy'])
@@ -869,6 +881,60 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/stock-opnames', [StockOpnameController::class, 'index'])
             ->middleware('permission:stock_adjustments.view')
             ->name('stock-opnames.index');
+        Route::get('/opening-stocks/export', [OpeningStockController::class, 'export'])
+            ->middleware('permission:opening_stocks.export')
+            ->name('opening-stocks.export');
+        Route::get('/opening-stocks', [OpeningStockController::class, 'index'])
+            ->middleware('permission:opening_stocks.view')
+            ->name('opening-stocks.index');
+        Route::post('/opening-stocks', [OpeningStockController::class, 'store'])
+            ->middleware('permission:opening_stocks.create')
+            ->name('opening-stocks.store');
+        Route::get('/opening-stocks/{openingStock}', [OpeningStockController::class, 'show'])
+            ->middleware('permission:opening_stocks.view')
+            ->name('opening-stocks.show');
+        Route::put('/opening-stocks/{openingStock}', [OpeningStockController::class, 'update'])
+            ->middleware('permission:opening_stocks.create')
+            ->name('opening-stocks.update');
+        Route::post('/opening-stocks/{openingStock}/submit', [OpeningStockController::class, 'submit'])
+            ->middleware('permission:opening_stocks.create')
+            ->name('opening-stocks.submit');
+        Route::post('/opening-stocks/{openingStock}/approve', [OpeningStockController::class, 'approve'])
+            ->middleware('permission:opening_stocks.approve')
+            ->name('opening-stocks.approve');
+        Route::post('/opening-stocks/{openingStock}/reject', [OpeningStockController::class, 'reject'])
+            ->middleware('permission:opening_stocks.approve')
+            ->name('opening-stocks.reject');
+        Route::post('/opening-stocks/{openingStock}/cancel', [OpeningStockController::class, 'cancel'])
+            ->middleware('permission:opening_stocks.create|opening_stocks.approve')
+            ->name('opening-stocks.cancel');
+        Route::get('/stock-adjustments/export', [StockDirectAdjustmentController::class, 'export'])
+            ->middleware('permission:stock_direct_adjustments.export')
+            ->name('stock-adjustments.export');
+        Route::get('/stock-adjustments', [StockDirectAdjustmentController::class, 'index'])
+            ->middleware('permission:stock_direct_adjustments.view')
+            ->name('stock-adjustments.index');
+        Route::post('/stock-adjustments', [StockDirectAdjustmentController::class, 'store'])
+            ->middleware('permission:stock_direct_adjustments.create')
+            ->name('stock-adjustments.store');
+        Route::get('/stock-adjustments/{stockAdjustment}', [StockDirectAdjustmentController::class, 'show'])
+            ->middleware('permission:stock_direct_adjustments.view')
+            ->name('stock-adjustments.show');
+        Route::put('/stock-adjustments/{stockAdjustment}', [StockDirectAdjustmentController::class, 'update'])
+            ->middleware('permission:stock_direct_adjustments.create')
+            ->name('stock-adjustments.update');
+        Route::post('/stock-adjustments/{stockAdjustment}/submit', [StockDirectAdjustmentController::class, 'submit'])
+            ->middleware('permission:stock_direct_adjustments.create')
+            ->name('stock-adjustments.submit');
+        Route::post('/stock-adjustments/{stockAdjustment}/approve', [StockDirectAdjustmentController::class, 'approve'])
+            ->middleware('permission:stock_direct_adjustments.approve')
+            ->name('stock-adjustments.approve');
+        Route::post('/stock-adjustments/{stockAdjustment}/reject', [StockDirectAdjustmentController::class, 'reject'])
+            ->middleware('permission:stock_direct_adjustments.approve')
+            ->name('stock-adjustments.reject');
+        Route::post('/stock-adjustments/{stockAdjustment}/cancel', [StockDirectAdjustmentController::class, 'cancel'])
+            ->middleware('permission:stock_direct_adjustments.create|stock_direct_adjustments.approve')
+            ->name('stock-adjustments.cancel');
         Route::post('/stock-opnames', [StockOpnameController::class, 'store'])
             ->middleware('permission:stock_adjustments.create')
             ->name('stock-opnames.store');

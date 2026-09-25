@@ -225,6 +225,10 @@ owner-sales-review
 
 ### 3.8 Meninjau Keuangan & Pajak Tahunan
 
+```guide-flow
+owner-tax-review
+```
+
 Owner Viewer dan Owner Approver membaca laporan tanpa melakukan persetujuan operasional.
 
 1. Buka `/tax` dan pilih tahun laporan.

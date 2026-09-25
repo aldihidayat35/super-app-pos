@@ -3,7 +3,7 @@
 return [
     'bonus-program-setup' => [
         'title' => 'Menyusun dan mengaktifkan program bonus',
-        'summary' => 'Owner memilih KPI resmi, target, bobot 100%, lokasi, penerima, dan bonus maksimum sebelum bulan dimulai.',
+        'summary' => 'Owner Pengelola memilih KPI resmi, target, bobot 100%, lokasi, penerima, dan bonus maksimum sebelum bulan dimulai.',
         'verified_by' => ['app/Http/Controllers/StaffBonus/StaffBonusController.php', 'app/Services/StaffBonus/StaffBonusService.php'],
         'lanes' => [['label' => 'Persiapan program', 'tone' => 'primary', 'steps' => [
             ['label' => 'Pilih bulan dan role', 'detail' => 'Periode wajib belum dimulai.'],
@@ -30,10 +30,10 @@ return [
         'summary' => 'Hasil hanya dapat diajukan setelah bulan selesai dan seluruh absensi terkait tidak lagi menunggu verifikasi.',
         'verified_by' => ['app/Services/StaffBonus/StaffBonusService.php', 'app/Services/Control/ApprovalWorkflowService.php'],
         'lanes' => [['label' => 'Penutupan periode', 'tone' => 'warning', 'steps' => [
-            ['label' => 'Bulan berakhir', 'detail' => 'Owner atau admin menjalankan hitung akhir.'],
+            ['label' => 'Bulan berakhir', 'detail' => 'Pengelola menjalankan hitung akhir dari data transaksi terbaru.'],
             ['label' => 'Absensi sudah diverifikasi?', 'detail' => 'Pengajuan ditolak jika masih ada status pending.', 'kind' => 'decision'],
             ['label' => 'Buat approval', 'detail' => 'Total bonus dan snapshot dikirim ke kotak persetujuan.'],
-            ['label' => 'Owner menilai hasil', 'detail' => 'Setujui atau tolak dengan alasan.'],
+            ['label' => 'Kepala bagian menilai hasil', 'detail' => 'Kepala Gudang atau Kepala Toko memeriksa sesuai role dan lokasi program.'],
             ['label' => 'Hasil dikunci', 'detail' => 'Hasil disetujui siap dibayar; hasil ditolak dapat dihitung ulang.', 'kind' => 'result'],
         ]]],
     ],

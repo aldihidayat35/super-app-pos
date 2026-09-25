@@ -18,6 +18,8 @@ class DocumentNumberService
         'receipt' => 'RCV',
         'transfer' => 'TRF',
         'opname' => 'OPN',
+        'stock_direct_adjustment' => 'KST',
+        'opening_balance' => 'SALDO',
         'sale' => 'SAL',
         'emergency_purchase' => 'EDT',
         'order' => 'ORD',

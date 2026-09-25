@@ -67,6 +67,7 @@
 | Invoice | Receivable, Allocation | allocated <= payable balance; issued tidak diedit |
 | Payment | Allocation | posted/reversed append-only; total allocation konsisten |
 | StockOpname | StockOpnameItem, Mutation | adjustment hanya setelah approval yang diwajibkan |
+| StockDirectAdjustment | Items, Approval, Mutation | aktif per lokasi, dua petugas, snapshot harus tetap sama saat approval |
 | Approval | ApprovalDecision | requester tidak boleh self-approve bila segregation diwajibkan |
 
 ## 5. Ubiquitous language
@@ -139,4 +140,3 @@ Controller memanggil Action/Service; transaksi dan locking berada di boundary us
 | Monitoring | Laravel Horizon (Redis) | Untuk queue production jika Redis tersedia |
 
 Tidak ada package yang dipasang pada tahap analisis ini.
-

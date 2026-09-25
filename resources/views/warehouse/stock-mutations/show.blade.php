@@ -316,6 +316,24 @@
                     </div>
 
                     {{-- Catatan --}}
+                    @if($directAdjustment)
+                        @php
+                            $directItem = $directAdjustment->items->first();
+                        @endphp
+                        <div class="col-12">
+                            <div class="border border-dashed border-warning rounded p-4 bg-light-warning">
+                                <div class="fw-bold text-gray-900 mb-3">{{ $directAdjustment->isOpeningBalance() ? 'Pendataan Stok Lokasi' : 'Koreksi Stok Terkendali' }}</div>
+                                <div class="row g-3 fs-7">
+                                    <div class="col-md-4"><span class="text-muted">Pembuat</span><br><strong>{{ $directAdjustment->creator?->name }}</strong></div>
+                                    <div class="col-md-4"><span class="text-muted">Penyetuju</span><br><strong>{{ $directAdjustment->approver?->name }}</strong></div>
+                                    <div class="col-md-4"><span class="text-muted">Target fisik</span><br><strong>{{ qty($directItem?->physical_qty ?? $mutation->quantity_on_hand_after) }}</strong></div>
+                                    <div class="col-12"><span class="text-muted">Catatan item</span><br>{{ $directItem?->note }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Catatan --}}
                     <div class="col-12">
                         <div class="border border-dashed border-gray-300 rounded p-4">
                             <div class="d-flex align-items-center gap-2 mb-3">

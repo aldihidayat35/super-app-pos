@@ -1,6 +1,6 @@
 <?php
 
-return [
+$config = [
     'actions' => ['view', 'view_own', 'view_team', 'view_all', 'create', 'update', 'update_own', 'manage', 'approve', 'void', 'export', 'view_sensitive'],
 
     'permissions' => [
@@ -77,6 +77,15 @@ return [
         'stock_adjustments.view' => ['label' => 'Lihat Koreksi Stok', 'module' => 'stock_adjustments', 'action' => 'view', 'description' => 'Melihat koreksi stok.'],
         'stock_adjustments.create' => ['label' => 'Buat Koreksi Stok', 'module' => 'stock_adjustments', 'action' => 'create', 'description' => 'Membuat koreksi stok.'],
         'stock_adjustments.approve' => ['label' => 'Approve Koreksi Stok', 'module' => 'stock_adjustments', 'action' => 'approve', 'description' => 'Menyetujui koreksi stok.'],
+        'stock_direct_adjustments.view' => ['label' => 'Lihat Koreksi Stok Langsung', 'module' => 'stock_direct_adjustments', 'action' => 'view', 'description' => 'Melihat dokumen koreksi stok langsung.'],
+        'stock_direct_adjustments.create' => ['label' => 'Buat Koreksi Stok Langsung', 'module' => 'stock_direct_adjustments', 'action' => 'create', 'description' => 'Membuat koreksi stok langsung pada lokasi penugasan.'],
+        'stock_direct_adjustments.approve' => ['label' => 'Setujui Koreksi Stok Langsung', 'module' => 'stock_direct_adjustments', 'action' => 'approve', 'description' => 'Menyetujui koreksi yang dibuat kepala lokasi lain.'],
+        'stock_direct_adjustments.manage_access' => ['label' => 'Kelola Akses Koreksi Stok', 'module' => 'stock_direct_adjustments', 'action' => 'manage', 'description' => 'Mengaktifkan akses koreksi stok per lokasi.'],
+        'stock_direct_adjustments.export' => ['label' => 'Export Koreksi Stok Langsung', 'module' => 'stock_direct_adjustments', 'action' => 'export', 'description' => 'Mengunduh riwayat koreksi stok langsung.'],
+        'opening_stocks.view' => ['label' => 'Lihat Pendataan Stok Lokasi', 'module' => 'opening_stocks', 'action' => 'view', 'description' => 'Melihat pendataan stok awal lokasi.'],
+        'opening_stocks.create' => ['label' => 'Isi Pendataan Stok Lokasi', 'module' => 'opening_stocks', 'action' => 'create', 'description' => 'Membuat dan mengajukan saldo fisik lokasi.'],
+        'opening_stocks.approve' => ['label' => 'Posting Pendataan Stok Lokasi', 'module' => 'opening_stocks', 'action' => 'approve', 'description' => 'Memeriksa dan memposting pendataan stok lokasi.'],
+        'opening_stocks.export' => ['label' => 'Export Pendataan Stok Lokasi', 'module' => 'opening_stocks', 'action' => 'export', 'description' => 'Mengunduh riwayat pendataan stok lokasi.'],
         'returns.view' => ['label' => 'Lihat Retur', 'module' => 'returns', 'action' => 'view', 'description' => 'Melihat retur dan settlement.'],
         'returns.create' => ['label' => 'Buat Retur', 'module' => 'returns', 'action' => 'create', 'description' => 'Mengajukan retur.'],
         'returns.inspect' => ['label' => 'QC Retur', 'module' => 'returns', 'action' => 'update', 'description' => 'Melakukan pemeriksaan retur.'],
@@ -180,3 +189,21 @@ return [
         'sales' => ['label' => 'Sales', 'description' => 'Membuat order B2B dan memantau customer, target, bonus, serta stok dalam lingkup sendiri.', 'permissions' => ['staff_bonuses.view_own', 'dashboard.view', 'sales.dashboard.view', 'sales.customers.view_own', 'sales.orders.view_own', 'sales.orders.create', 'sales.stock.view', 'sales.targets.view_own', 'work_checklists.view_own', 'work_checklists.update_own']],
     ],
 ];
+
+$headPermissions = [
+    'stock_direct_adjustments.view',
+    'stock_direct_adjustments.create',
+    'stock_direct_adjustments.approve',
+    'stock_direct_adjustments.export',
+    'opening_stocks.view',
+    'opening_stocks.create',
+    'opening_stocks.approve',
+    'opening_stocks.export',
+];
+
+$config['roles']['kepala_gudang']['permissions'] = array_values(array_unique(array_merge($config['roles']['kepala_gudang']['permissions'], $headPermissions)));
+$config['roles']['kepala_toko']['permissions'] = array_values(array_unique(array_merge($config['roles']['kepala_toko']['permissions'], $headPermissions)));
+$config['roles']['staff_gudang']['permissions'] = array_values(array_unique(array_merge($config['roles']['staff_gudang']['permissions'], ['opening_stocks.view', 'opening_stocks.create'])));
+$config['roles']['staf_toko']['permissions'] = array_values(array_unique(array_merge($config['roles']['staf_toko']['permissions'], ['opening_stocks.view', 'opening_stocks.create'])));
+
+return $config;

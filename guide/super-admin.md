@@ -370,3 +370,23 @@ Super Admin dapat melihat seluruh lokasi melalui menu **Kehadiran** (`/attendanc
 ```guide-flow
 attendance-schedule-pattern
 ```
+## 14. Akses Koreksi Stok Langsung
+
+Panduan langkah demi langkah tersedia pada [Panduan Koreksi Stok Terkendali](koreksi-stok-terkendali.md).
+
+Super Admin membuka akses koreksi secara terpisah untuk setiap toko atau gudang melalui menu **Administrasi Sistem > Akses Koreksi Stok**. Waktu mulai, waktu berakhir, dan alasan wajib diisi. Akses akan terkunci otomatis setelah masa berlakunya habis.
+
+Akses yang sama membuka [Pendataan Stok Lokasi](pendataan-stok-lokasi.md), yaitu alternatif stok awal tanpa Excel. Produk dipilih langsung dari database dan jumlah yang dimasukkan menjadi saldo fisik akhir.
+
+```mermaid
+flowchart LR
+    SA[Super Admin] --> PL[Pilih Toko atau Gudang]
+    PL --> WT[Isi Waktu dan Alasan]
+    WT --> AK[Akses Aktif]
+    AK --> KH[Kepala Lokasi Membuat Koreksi]
+    KH --> AP[Kepala Lain atau Super Admin Menyetujui]
+    AP --> MT[Mutasi Stok dan Audit]
+    AK -->|Waktu Habis| LK[Akses Terkunci]
+```
+
+Super Admin hanya menjadi penyetuju cadangan jika lokasi tidak memiliki kepala kedua. Dokumen yang sudah selesai tidak berubah ketika akses dinonaktifkan.

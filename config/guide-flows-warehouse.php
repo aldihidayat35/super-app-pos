@@ -1,6 +1,72 @@
 <?php
 
 return [
+    'stock-adjustment-access' => [
+        'title' => 'Aktivasi akses koreksi stok per lokasi',
+        'summary' => 'Super Admin membuka akses toko atau gudang dalam waktu terbatas; histori aktivasi tetap tersimpan.',
+        'verified_by' => ['app/Services/Warehouse/StockAdjustmentAccessService.php', 'app/Http/Controllers/Admin/StockAdjustmentAccessController.php'],
+        'lanes' => [[
+            'label' => 'Super Admin', 'tone' => 'danger', 'steps' => [
+                ['label' => 'Pilih toko atau gudang', 'detail' => 'Lokasi harus aktif dan bertipe branch atau warehouse.'],
+                ['label' => 'Isi waktu mulai dan berakhir', 'detail' => 'Waktu berakhir harus setelah waktu mulai dan belum lewat.'],
+                ['label' => 'Isi alasan aktivasi', 'detail' => 'Alasan minimal sepuluh karakter.'],
+                ['label' => 'Aktifkan akses', 'detail' => 'Pengaktif, waktu, alasan, dan lokasi dicatat.', 'kind' => 'result'],
+                ['label' => 'Masa aktif berakhir?', 'detail' => 'Akses terkunci otomatis tanpa mengubah dokumen selesai.', 'kind' => 'decision'],
+            ],
+        ]],
+    ],
+
+    'stock-direct-adjustment-create' => [
+        'title' => 'Membuat koreksi stok per produk',
+        'summary' => 'Kepala lokasi memasukkan stok fisik akhir; sistem menghitung selisih dari snapshot stok saat draft dibuat.',
+        'verified_by' => ['app/Services/Warehouse/StockDirectAdjustmentService.php', 'app/Http/Requests/Warehouse/StoreStockDirectAdjustmentRequest.php'],
+        'lanes' => [[
+            'label' => 'Kepala lokasi', 'tone' => 'primary', 'steps' => [
+                ['label' => 'Buka Koreksi Stok', 'detail' => 'Hanya Kepala Toko atau Kepala Gudang pada lokasi penugasan.'],
+                ['label' => 'Akses lokasi aktif?', 'detail' => 'Jika tidak aktif, pembuatan dan pengajuan ditolak.', 'kind' => 'decision'],
+                ['label' => 'Pilih produk', 'detail' => 'Produk harus berasal dari saldo stok lokasi tersebut.'],
+                ['label' => 'Isi stok fisik final', 'detail' => 'Target tidak boleh negatif atau di bawah reserved dan rusak.'],
+                ['label' => 'Isi catatan item', 'detail' => 'Catatan wajib menjelaskan alasan selisih.'],
+                ['label' => 'Simpan draft dan ajukan', 'detail' => 'Snapshot dan isi terkunci saat menunggu persetujuan.', 'kind' => 'result'],
+            ],
+        ]],
+    ],
+
+    'stock-direct-adjustment-approval' => [
+        'title' => 'Persetujuan koreksi oleh petugas kedua',
+        'summary' => 'Pembuat tidak boleh memutuskan dokumennya sendiri dan stok harus tetap sama dengan snapshot pengajuan.',
+        'verified_by' => ['app/Policies/StockDirectAdjustmentPolicy.php', 'app/Services/Warehouse/StockDirectAdjustmentService.php'],
+        'lanes' => [
+            ['label' => 'Pemeriksaan kewenangan', 'tone' => 'warning', 'steps' => [
+                ['label' => 'Dokumen menunggu persetujuan', 'detail' => 'Status lain tidak dapat diputuskan.'],
+                ['label' => 'Penyetuju bukan pembuat?', 'detail' => 'Akun pembuat selalu ditolak.', 'kind' => 'decision'],
+                ['label' => 'Role dan lokasi sesuai?', 'detail' => 'Kepala kedua harus berada pada lokasi sama; Super Admin menjadi cadangan.', 'kind' => 'decision'],
+                ['label' => 'Akses masih aktif?', 'detail' => 'Jika kedaluwarsa, lokasi harus diaktifkan kembali.', 'kind' => 'decision'],
+            ]],
+            ['label' => 'Pemeriksaan snapshot', 'tone' => 'primary', 'steps' => [
+                ['label' => 'Kunci stok', 'detail' => 'Stok setiap item dikunci dalam transaksi.'],
+                ['label' => 'Bandingkan snapshot', 'detail' => 'On hand, reserved, dan damaged diperiksa.'],
+                ['label' => 'Stok berubah?', 'detail' => 'Snapshot diperbarui dan dokumen kembali ke draft untuk diajukan ulang.', 'kind' => 'decision'],
+                ['label' => 'Setujui atau tolak', 'detail' => 'Penolakan wajib memiliki alasan.', 'kind' => 'result'],
+            ]],
+        ],
+    ],
+
+    'stock-direct-adjustment-posting' => [
+        'title' => 'Posting mutasi dan audit koreksi stok',
+        'summary' => 'Seluruh item diposting secara atomik melalui InventoryService dan menghasilkan jejak yang tidak dapat diedit.',
+        'verified_by' => ['app/Services/Warehouse/StockDirectAdjustmentService.php', 'app/Services/Inventory/InventoryService.php', 'app/Services/Control/AuditLogService.php'],
+        'lanes' => [[
+            'label' => 'Transaksi database', 'tone' => 'success', 'steps' => [
+                ['label' => 'Persetujuan sah', 'detail' => 'Semua pemeriksaan role, lokasi, akses, dan snapshot lulus.'],
+                ['label' => 'Adjust per item', 'detail' => 'InventoryService memakai target fisik dan idempotency key.'],
+                ['label' => 'Semua item berhasil?', 'detail' => 'Satu kegagalan membatalkan seluruh perubahan.', 'kind' => 'decision'],
+                ['label' => 'Dokumen selesai', 'detail' => 'Saldo sebelum dan sesudah disimpan pada item.', 'kind' => 'result'],
+                ['label' => 'Mutasi dan audit', 'detail' => 'Nomor dokumen, pembuat, penyetuju, alasan, waktu, IP, dan target dapat ditelusuri.', 'kind' => 'result'],
+            ],
+        ]],
+    ],
+
     'warehouse-overview' => [
         'title' => 'Siklus utama manajemen gudang',
         'summary' => 'Dashboard mengarahkan pekerjaan dari kebutuhan pembelian sampai barang diterima, disimpan, dan dikeluarkan dengan dokumen yang dapat ditelusuri.',

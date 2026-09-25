@@ -2,16 +2,8 @@
 
 namespace Tests\Feature\System;
 
-use App\Models\B2bOrder;
-use App\Models\DailyReport;
-use App\Models\GoodsReceipt;
-use App\Models\Invoice;
-use App\Models\PosSale;
 use App\Models\Product;
-use App\Models\Receivable;
 use App\Models\Stock;
-use App\Models\StockMutation;
-use App\Models\StockTransfer;
 use App\Models\User;
 use Database\Seeders\DemoFullApplicationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -37,7 +29,7 @@ class DemoFullApplicationSeederTest extends TestCase
     ];
 
     #[Test]
-    public function demo_full_application_seeder_creates_role_accounts_and_cross_module_data(): void
+    public function demo_full_application_seeder_creates_role_accounts_without_business_data(): void
     {
         $this->seed(DemoFullApplicationSeeder::class);
 
@@ -54,23 +46,14 @@ class DemoFullApplicationSeederTest extends TestCase
             }
         }
 
-        $this->assertGreaterThanOrEqual(3, Product::query()->where('sku', 'like', 'DEMO-%')->count());
-        $this->assertGreaterThanOrEqual(2, Stock::query()->count());
-        $this->assertGreaterThanOrEqual(2, StockMutation::query()->where('reference_type', 'demo_seed')->count());
-        $this->assertDatabaseHas('retail_product_placements', ['area' => 'Area Fashion', 'rack' => 'Rak 1']);
-
-        $this->assertDatabaseHas('purchase_orders', ['number' => 'PO-DEMO-0001', 'status' => 'partially_received']);
-        $this->assertDatabaseHas('goods_receipts', ['number' => 'RCV-DEMO-0001', 'status' => 'posted']);
-        $this->assertDatabaseHas('restock_requests', ['number' => 'RST-DEMO-0001', 'status' => 'approved']);
-        $this->assertDatabaseHas('stock_transfers', ['number' => 'TRF-DEMO-0001', 'status' => 'pending_approval']);
-        $this->assertDatabaseHas('stock_transfer_items', ['quantity_reserved' => 0, 'quantity_picked' => 0]);
-
-        $this->assertTrue(GoodsReceipt::query()->where('number', 'RCV-DEMO-0001')->exists());
-        $this->assertTrue(PosSale::query()->where('number', 'POS-DEMO-0001')->exists());
-        $this->assertTrue(B2bOrder::query()->where('number', 'B2B-DEMO-0001')->exists());
-        $this->assertTrue(Invoice::query()->where('number', 'INV-DEMO-0001')->exists());
-        $this->assertTrue(Receivable::query()->where('number', 'AR-DEMO-0001')->exists());
-        $this->assertTrue(StockTransfer::query()->where('number', 'TRF-DEMO-0001')->exists());
-        $this->assertTrue(DailyReport::query()->where('idempotency_key', 'demo-daily-report')->exists());
+        $this->assertSame(0, Product::query()->count());
+        $this->assertSame(0, Stock::query()->count());
+        $this->assertDatabaseCount('warehouses', 0);
+        $this->assertDatabaseCount('branches', 0);
+        $this->assertDatabaseCount('customers', 0);
+        $this->assertDatabaseCount('suppliers', 0);
+        $this->assertDatabaseCount('pos_sales', 0);
+        $this->assertDatabaseCount('b2b_orders', 0);
+        $this->assertDatabaseCount('purchase_orders', 0);
     }
 }

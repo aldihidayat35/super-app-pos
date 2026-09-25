@@ -4,6 +4,10 @@
 @section('page_title', 'Import Data Awal')
 
 @section('content')
+    <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <div><strong>Ingin mengisi tanpa Excel?</strong><br>Gunakan Pendataan Stok Lokasi untuk memilih produk database dan memasukkan jumlah fisik langsung.</div>
+        @can('opening_stocks.view')<a href="{{ route('warehouse.opening-stocks.index') }}" class="btn btn-primary">Buka Pendataan Manual</a>@endcan
+    </div>
     <x-metronic.page-title title="Import Data Awal" description="OPS-03 — Wizard template, mapping, preview, validasi dry-run, rekonsiliasi, rollback plan, dan sign-off owner." />
 
     <x-metronic.card title="Template Import">

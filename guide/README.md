@@ -39,6 +39,12 @@ Versi di menu **Dokumentasi Panduan** adalah sumber yang paling mutakhir dan mem
 9. [Target dan Bonus Staf](target-bonus.md)
    Untuk staf gudang, picker/packer, staf toko, kasir, Sales, kepala lokasi, dan Owner. Fokus pada target bulanan, KPI, estimasi, persetujuan, pembayaran, dan rekap bonus.
 
+10. [Koreksi Stok Terkendali](koreksi-stok-terkendali.md)
+    Untuk Super Admin, Kepala Gudang, dan Kepala Toko. Fokus pada aktivasi akses per lokasi, koreksi stok fisik, persetujuan dua petugas, mutasi, dan audit.
+
+11. [Pendataan Stok Lokasi](pendataan-stok-lokasi.md)
+    Untuk Super Admin, Kepala Gudang, Staff Gudang, Kepala Toko, dan Staf Toko. Fokus pada input saldo fisik manual sebagai alternatif Excel.
+
 ## Akun demo lokal
 
 Seeder demo hanya untuk environment `local` atau `testing`. Jangan dipakai untuk production.
@@ -93,6 +99,7 @@ Prinsip penting:
 | Dashboard langganan | `/langganan/dashboard` |
 | Checklist kerja internal | `/checklist-kerja` |
 | Target dan bonus staf | `/target-bonus` |
+| Pendataan stok lokasi | `/warehouse/opening-stocks` |
 | Health check local/admin | `/system/health` atau `/admin/system/health` |
 
 ## Catatan untuk production
