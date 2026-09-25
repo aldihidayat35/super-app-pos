@@ -45,7 +45,7 @@ class CustomerPolicy
     public function manageSettings(User $user, Customer $customer): bool
     {
         return $user->can('customers.manage_settings')
-            && ($user->hasRole(ApprovalAuthority::WAREHOUSE_HEAD) || $user->hasRole('super_admin'));
+            && ($user->hasRole(ApprovalAuthority::WAREHOUSE_HEAD) || $user->hasRole(ApprovalAuthority::SYSTEM_HEAD) || $user->hasRole('super_admin'));
     }
 
     public function export(User $user): bool

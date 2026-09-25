@@ -3,6 +3,17 @@
 @section('title', 'Pendataan Stok Lokasi - ' . config('app.name'))
 @section('page_title', 'Pendataan Stok Lokasi')
 
+@section('toolbar_actions')
+    @can('opening_stocks.create')
+        <a href="{{ route('warehouse.opening-stocks.import.index') }}" class="btn btn-light-primary me-2">
+            <i class="ki-outline ki-file-up fs-2 me-1"></i> Import Excel
+        </a>
+    @endcan
+    <a href="{{ route('warehouse.opening-stocks.export', ['work_location_id' => $selectedLocationId]) }}" class="btn btn-light-success">
+        <i class="ki-outline ki-file-down fs-2 me-1"></i> Export CSV
+    </a>
+@endsection
+
 @section('page_guide')
     <x-metronic.page-guide id="opening-stock" title="Panduan Pendataan Stok Lokasi">
         <x-slot:function><p>Mencatat jumlah fisik sekarang untuk produk yang sudah ada di database sebagai alternatif import Excel.</p></x-slot:function>

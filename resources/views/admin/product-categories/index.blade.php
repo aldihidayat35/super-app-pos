@@ -16,6 +16,7 @@
 @endsection
 
 @section('toolbar_actions')
+    <x-metronic.permission-button permission="products.import" :href="route('admin.product-categories.import.index')" icon="ki-outline ki-file-up" color="light-primary" class="me-2">Import Kategori</x-metronic.permission-button>
     <x-metronic.permission-button permission="products.create" :href="route('admin.product-categories.create')" icon="ki-outline ki-plus">Tambah Kategori</x-metronic.permission-button>
 @endsection
 

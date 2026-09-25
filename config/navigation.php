@@ -113,12 +113,6 @@ return [
                 'permission' => 'system.operations.view',
             ],
             [
-                'label' => 'Import Data Awal',
-                'route' => 'admin.system.imports.index',
-                'active' => ['admin.system.imports.*'],
-                'permission' => 'system.operations.view',
-            ],
-            [
                 'label' => 'Maintenance & Go-Live',
                 'route' => 'admin.system.maintenance.index',
                 'active' => ['admin.system.maintenance.*'],

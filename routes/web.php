@@ -9,7 +9,9 @@ use App\Http\Controllers\Admin\PartyImportController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProductBarcodeController;
 use App\Http\Controllers\Admin\ProductBrandController;
+use App\Http\Controllers\Admin\ProductBrandImportController;
 use App\Http\Controllers\Admin\ProductCategoryController;
+use App\Http\Controllers\Admin\ProductCategoryImportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImportController;
 use App\Http\Controllers\Admin\RoleController;
@@ -107,6 +109,7 @@ use App\Http\Controllers\Warehouse\B2bOrderController as WarehouseB2bOrderContro
 use App\Http\Controllers\Warehouse\GoodsReceiptController;
 use App\Http\Controllers\Warehouse\LocationTransferController;
 use App\Http\Controllers\Warehouse\OpeningStockController;
+use App\Http\Controllers\Warehouse\OpeningStockImportController;
 use App\Http\Controllers\Warehouse\StockBatchController;
 use App\Http\Controllers\Warehouse\StockCardController;
 use App\Http\Controllers\Warehouse\StockController;
@@ -453,10 +456,6 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             Route::get('/logs', [OperationsController::class, 'logs'])->name('logs.index');
             Route::post('/logs/failed-jobs/{failedJob}/retry', [OperationsController::class, 'retryFailedJob'])->name('logs.failed-jobs.retry');
             Route::post('/logs/resolve', [OperationsController::class, 'resolveLog'])->name('logs.resolve');
-            Route::get('/imports', [OperationsController::class, 'imports'])->name('imports.index');
-            Route::get('/imports/templates/{type}', [OperationsController::class, 'downloadImportTemplate'])->name('imports.templates.download');
-            Route::post('/imports/preview', [OperationsController::class, 'previewImport'])->name('imports.preview');
-            Route::post('/imports/commit', [OperationsController::class, 'commitImport'])->name('imports.commit');
             Route::get('/maintenance', [OperationsController::class, 'maintenance'])->name('maintenance.index');
             Route::post('/maintenance', [OperationsController::class, 'runMaintenance'])->name('maintenance.run');
         });
@@ -591,6 +590,18 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:stock_direct_adjustments.manage_access')
             ->name('settings.stock-adjustment-access.destroy');
 
+        Route::get('/product-categories/import', [ProductCategoryImportController::class, 'index'])
+            ->middleware('permission:products.import')
+            ->name('product-categories.import.index');
+        Route::get('/product-categories/import/template', [ProductCategoryImportController::class, 'template'])
+            ->middleware('permission:products.export')
+            ->name('product-categories.import.template');
+        Route::post('/product-categories/import/preview', [ProductCategoryImportController::class, 'preview'])
+            ->middleware('permission:products.import')
+            ->name('product-categories.import.preview');
+        Route::post('/product-categories/import/commit', [ProductCategoryImportController::class, 'commit'])
+            ->middleware('permission:products.import')
+            ->name('product-categories.import.commit');
         Route::resource('product-categories', ProductCategoryController::class)
             ->except(['show', 'destroy'])
             ->middlewareFor(['index'], 'permission:products.view')
@@ -600,6 +611,18 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:products.update')
             ->name('product-categories.deactivate');
 
+        Route::get('/product-brands/import', [ProductBrandImportController::class, 'index'])
+            ->middleware('permission:products.import')
+            ->name('product-brands.import.index');
+        Route::get('/product-brands/import/template', [ProductBrandImportController::class, 'template'])
+            ->middleware('permission:products.export')
+            ->name('product-brands.import.template');
+        Route::post('/product-brands/import/preview', [ProductBrandImportController::class, 'preview'])
+            ->middleware('permission:products.import')
+            ->name('product-brands.import.preview');
+        Route::post('/product-brands/import/commit', [ProductBrandImportController::class, 'commit'])
+            ->middleware('permission:products.import')
+            ->name('product-brands.import.commit');
         Route::resource('product-brands', ProductBrandController::class)
             ->except(['show', 'destroy'])
             ->middlewareFor(['index'], 'permission:products.view')
@@ -881,6 +904,18 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/stock-opnames', [StockOpnameController::class, 'index'])
             ->middleware('permission:stock_adjustments.view')
             ->name('stock-opnames.index');
+        Route::get('/opening-stocks/import', [OpeningStockImportController::class, 'index'])
+            ->middleware('permission:opening_stocks.view')
+            ->name('opening-stocks.import.index');
+        Route::get('/opening-stocks/import/template', [OpeningStockImportController::class, 'template'])
+            ->middleware('permission:opening_stocks.view')
+            ->name('opening-stocks.import.template');
+        Route::post('/opening-stocks/import/preview', [OpeningStockImportController::class, 'preview'])
+            ->middleware('permission:opening_stocks.create')
+            ->name('opening-stocks.import.preview');
+        Route::post('/opening-stocks/import/commit', [OpeningStockImportController::class, 'commit'])
+            ->middleware('permission:opening_stocks.create')
+            ->name('opening-stocks.import.commit');
         Route::get('/opening-stocks/export', [OpeningStockController::class, 'export'])
             ->middleware('permission:opening_stocks.export')
             ->name('opening-stocks.export');

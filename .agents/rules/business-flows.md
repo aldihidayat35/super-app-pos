@@ -182,3 +182,26 @@ Dokumen ini adalah aturan domain dan guardrail alur bisnis (*business flow*) waj
    - Nominal bayar harus sama persis dengan bonus yang disetujui. Wajib mencatat tanggal, metode pembayaran, dan nomor referensi transaksi.
    - Bonus yang sudah dibayar tidak boleh dihapus atau diedit. Koreksi dilakukan melalui `StaffBonusAdjustment` (+/-) yang dialokasikan ke periode aktif berikutnya.
 
+---
+
+## 11. Konteks Skenario Pilot Testing Lapangan (Single Store & In-Store Warehouse)
+
+1. **Lingkup Operasional Aktif**:
+   - Skenario implementasi dan pengujian lapangan saat ini terkonsentrasi pada **1 Toko Internal** (`Branch`) dan **Gudang Toko Lokal** (`Warehouse` yang berelasi langsung sebagai `primary_warehouse_id` toko tersebut).
+2. **Penetapan Lokasi Kerja Otomatis**:
+   - Seluruh pengguna pengujian lapangan (Kasir, Kepala Toko, Staf Toko, Staf Gudang Lokal) wajib ditugaskan ke lokasi kerja toko dan gudang lokal yang sama.
+   - Hindari mewajibkan pengguna memilih lokasi secara manual jika akun hanya memiliki satu penugasan lokasi.
+3. **Prioritas Alur Operasional Lapangan**:
+   - Alur utama yang wajib bebas hambatan (*frictionless*):
+     1. Penerimaan Barang Supplier (PO / Goods Receipt langsung ke gudang toko lokal).
+     2. Restok Etalase Toko (Permintaan Restok & Terima Transfer lokal dari gudang ke etalase toko).
+     3. Penjualan Kasir POS (Hold transaksi, diskon wajar, barcode scan, cetak struk).
+     4. Pengelolaan Shift Kasir (Buka shift, setoran modal awal, pengeluaran kas, tutup shift harian).
+     5. Pembelian Darurat Toko (*Emergency Purchase* & alokasi *pool* restok lokal).
+     6. Opname & Penyesuaian Stok Fisik Toko.
+4. **Isolasi Fitur yang Ditunda (*Deferred Scope*)**:
+   - Distribusi *multi-warehouse*, transfer antar-cabang regional, dan alur pesanan B2B wholesale skala besar ditandai sebagai fitur sekunder dan tidak boleh memblokir alur kerja harian toko lokal.
+5. **Integritas Arsitektur Jangka Panjang**:
+   - Tetap pertahankan pemisahan entitas `Warehouse` dan `Branch` di level database dan service layer agar sistem tetap siap berekspansi ke multi-cabang tanpa refactoring besar di masa depan.
+
+

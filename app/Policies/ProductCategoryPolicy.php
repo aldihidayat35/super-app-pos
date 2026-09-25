@@ -26,4 +26,14 @@ class ProductCategoryPolicy
     {
         return $user->can('products.update');
     }
+
+    public function import(User $user): bool
+    {
+        return $user->can('products.import') || $user->can('products.create');
+    }
+
+    public function export(User $user): bool
+    {
+        return $user->can('products.export') || $user->can('products.view');
+    }
 }
