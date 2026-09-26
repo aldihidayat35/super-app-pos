@@ -143,10 +143,22 @@ class UsersDataTable
                 .'<i class="ki-outline ki-trash fs-5"></i></button></form>';
         }
 
+        $avatarUrl = $user->avatar_url;
+        $avatarHtml = '<div class="symbol symbol-circle symbol-40px overflow-hidden me-3">'
+            .'<a href="'.$detailUrl.'">'
+            .'<div class="symbol-label"><img src="'.$avatarUrl.'" alt="'.e($user->name).'" class="w-100" /></div>'
+            .'</a></div>';
+            
+        $nameHtml = '<div class="d-flex align-items-center">'
+            .$avatarHtml
+            .'<div class="d-flex flex-column">'
+            .'<a href="'.$detailUrl.'" class="fw-bold text-gray-900 text-hover-primary">'.e($user->name).'</a>'
+            .'<span class="text-muted fs-7">'.e($user->username).'</span>'
+            .'</div></div>';
+
         return [
             'id' => $user->id,
-            'name' => '<a href="'.$detailUrl.'" class="fw-bold text-gray-900 text-hover-primary">'.e($user->name).'</a>'
-                .'<div class="text-muted fs-7">'.e($user->username).'</div>',
+            'name' => $nameHtml,
             'email' => e($user->email),
             'phone_number' => e($user->phone_number ?: '-'),
             'roles' => $roleBadges,

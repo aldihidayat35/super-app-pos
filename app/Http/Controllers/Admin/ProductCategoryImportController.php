@@ -59,12 +59,24 @@ class ProductCategoryImportController extends Controller
         $this->authorize('export', ProductCategory::class);
 
         return response()->streamDownload(function (): void {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['code', 'name', 'parent_code', 'sort_order', 'icon', 'is_active']);
-            fputcsv($handle, ['KAT-MINUMAN', 'Minuman', '', '1', 'ki-cup', '1']);
-            fputcsv($handle, ['KAT-KOPI', 'Kopi & Espresso', 'KAT-MINUMAN', '2', 'ki-coffee', '1']);
-            fputcsv($handle, ['KAT-MAKANAN', 'Makanan Ringan', '', '3', 'ki-burger', '1']);
-            fclose($handle);
-        }, 'template-import-kategori.csv');
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            
+            $sheet->fromArray([
+                ['code', 'name', 'parent_code', 'sort_order', 'icon', 'is_active'],
+                ['KAT-MINUMAN', 'Minuman', '', '1', 'ki-cup', '1'],
+                ['KAT-KOPI', 'Kopi & Espresso', 'KAT-MINUMAN', '2', 'ki-coffee', '1'],
+                ['KAT-MAKANAN', 'Makanan Ringan', '', '3', 'ki-burger', '1'],
+            ]);
+            
+            foreach (range('A', 'F') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+            
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, 'template-import-kategori.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 }

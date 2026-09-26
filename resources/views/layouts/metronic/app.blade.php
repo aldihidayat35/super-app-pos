@@ -5,12 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name'))</title>
-    <link rel="shortcut icon" href="{{ asset('assets/media/logos/favicon.ico') }}">
+    @php
+        $dynamicLogo = \App\Models\SystemSetting::getCompanyLogo() ?? asset('assets/media/logos/favicon.ico');
+    @endphp
+    <link rel="shortcut icon" href="{{ $dynamicLogo }}">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700">
     <link rel="stylesheet" href="{{ asset('assets/vendor/metronic/css/style.bundle.css') }}">
     <link rel="stylesheet" href="{{ versioned_asset('assets/css/ki-icons-fallback.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/sidebar-custom.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/header-custom.css') }}">
+    <link rel="manifest" href="{{ url('/manifest.json') }}">
+    <meta name="theme-color" content="#009ef7">
+    <link rel="apple-touch-icon" href="{{ $dynamicLogo }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GudangToko">
     @vite(['resources/js/vendor.js', 'resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
     <script>
@@ -44,6 +53,7 @@
 
     @include('layouts.metronic.partials.loading-overlay')
     @include('layouts.metronic.partials.flash-toast')
+    @include('layouts.metronic.partials.pwa-prompt')
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
     @stack('scripts')

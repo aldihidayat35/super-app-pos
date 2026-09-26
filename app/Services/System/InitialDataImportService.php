@@ -29,14 +29,14 @@ final class InitialDataImportService
             'suppliers' => ['label' => 'Supplier', 'columns' => ['code' => 'Kode Supplier', 'name' => 'Nama Supplier', 'phone_number' => 'Nomor Telepon', 'email' => 'Email', 'payment_term_days' => 'Termin Pembayaran (Hari)']],
             'customers' => ['label' => 'Pelanggan', 'columns' => ['code' => 'Kode Pelanggan', 'business_name' => 'Nama Usaha', 'pic_name' => 'Nama PIC', 'phone_number' => 'Nomor Telepon', 'email' => 'Email', 'price_category' => 'Kategori Harga', 'payment_term_days' => 'Termin Pembayaran (Hari)']],
             'products' => ['label' => 'Produk', 'columns' => ['sku' => 'SKU Produk', 'name' => 'Nama Produk', 'category_code' => 'Kode Kategori', 'brand_code' => 'Kode Merek', 'base_unit_code' => 'Kode Satuan Dasar', 'minimum_price' => 'Harga Minimum', 'cost_price' => 'HPP']],
-            'opening_stocks' => ['label' => 'Stok Awal', 'columns' => ['product_sku' => 'SKU Produk', 'work_location_code' => 'Kode Gudang/Cabang', 'warehouse_location_code' => 'Kode Lokasi Gudang', 'base_quantity' => 'Jumlah Stok Awal', 'hpp' => 'HPP', 'reason' => 'Alasan']],
+            'opening_stocks' => ['label' => 'Stok Awal', 'columns' => ['product_sku' => 'SKU Produk', 'warehouse_location_code' => 'Kode Rak/Bin (Opsional)', 'base_quantity' => 'Jumlah Stok Awal', 'hpp' => 'HPP', 'reason' => 'Alasan']],
             'users' => ['label' => 'User', 'columns' => ['name' => 'Nama Lengkap', 'username' => 'Username', 'email' => 'Email', 'phone_number' => 'Nomor Telepon', 'role' => 'Peran', 'work_location_code' => 'Kode Lokasi Kerja']],
             'locations' => ['label' => 'Gudang/Cabang', 'columns' => ['type' => 'Jenis Lokasi', 'code' => 'Kode Lokasi', 'name' => 'Nama Lokasi', 'city' => 'Kota', 'phone_number' => 'Nomor Telepon', 'default_warehouse_code' => 'Kode Gudang Default']],
         ];
     }
 
-    /** @return array{type: string, label: string, headers: list<string>, header_labels: array<string, string>, rows: list<array<string, string>>, errors: list<string>, totals: array{rows: int, valid_rows: int, invalid_rows: int}, dry_run: bool} */
-    public function preview(string $type, UploadedFile $file, bool $dryRun = true): array
+    /** @return array{type: string, label: string, headers: list<string>, header_labels: array<string, string>, rows: list<array<string, string>>, errors: list<string>, totals: array{rows: int, valid_rows: int, invalid_rows: int}, extra_data: mixed} */
+    public function preview(string $type, UploadedFile $file, mixed $extraData = null): array
     {
         $templates = $this->templates();
         abort_unless(isset($templates[$type]), 404);
@@ -59,7 +59,7 @@ final class InitialDataImportService
             $mapped = array_combine($keys, $values);
 
             $mapped = array_map(fn ($value): string => trim((string) $value), $mapped);
-            $rowErrors = $this->validateRow($type, $mapped, $index + 2);
+            $rowErrors = $this->validateRow($type, $mapped, $index + 2, $extraData);
             $errors = array_merge($errors, $rowErrors);
             $mappedRows[] = $mapped;
         }
@@ -76,7 +76,7 @@ final class InitialDataImportService
                 'valid_rows' => max(0, count($mappedRows) - count(array_unique(array_map(fn (string $error): string => strtok($error, ':') ?: $error, $errors)))),
                 'invalid_rows' => count($errors),
             ],
-            'dry_run' => $dryRun,
+            'extra_data' => $extraData,
         ];
     }
 
@@ -104,11 +104,15 @@ final class InitialDataImportService
             foreach ($rows as $index => $row) {
                 $line = $index + 2;
                 $product = Product::query()->where('sku', $row['product_sku'])->lockForUpdate()->first();
-                $workLocation = WorkLocation::query()->where('code', $row['work_location_code'])->first();
-                $warehouseLocation = $this->warehouseLocation($row['warehouse_location_code']);
+                $workLocation = WorkLocation::query()->find($preview['extra_data']);
+                $warehouseLocation = filled($row['warehouse_location_code'] ?? null) ? $this->warehouseLocation($row['warehouse_location_code']) : null;
 
-                if (! $product || ! $workLocation || ! $warehouseLocation || ! $this->warehouseLocationMatches($workLocation, $warehouseLocation)) {
-                    abort(422, "Referensi produk atau lokasi pada baris {$line} berubah. Lakukan preview ulang.");
+                if (! $product || ! $workLocation || (filled($row['warehouse_location_code'] ?? null) && ! $warehouseLocation)) {
+                    abort(422, "Referensi produk atau lokasi pada baris {$line} tidak valid. Lakukan preview ulang.");
+                }
+                
+                if ($warehouseLocation && ! $this->warehouseLocationMatches($workLocation, $warehouseLocation)) {
+                    abort(422, "Lokasi rak pada baris {$line} tidak termasuk dalam gudang yang dipilih.");
                 }
 
                 $quantity = Decimal::normalize($row['base_quantity']);
@@ -118,7 +122,7 @@ final class InitialDataImportService
                 $stock = Stock::query()
                     ->where('product_id', $product->id)
                     ->where('work_location_id', $workLocation->id)
-                    ->where('warehouse_location_id', $warehouseLocation->id)
+                    ->when($warehouseLocation, fn($q) => $q->where('warehouse_location_id', $warehouseLocation->id), fn($q) => $q->whereNull('warehouse_location_id'))
                     ->first();
                 $costValue = Decimal::mul($quantity, $hpp);
                 $quantityChanged = ! $stock || Decimal::compare((string) $stock->quantity_on_hand, $quantity) !== 0;
@@ -209,13 +213,13 @@ final class InitialDataImportService
      * @param  array<string, string>  $row
      * @return list<string>
      */
-    private function validateRow(string $type, array $row, int $line): array
+    private function validateRow(string $type, array $row, int $line, mixed $extraData = null): array
     {
         $rules = match ($type) {
             'suppliers' => ['code' => ['required', 'alpha_dash'], 'name' => ['required'], 'email' => ['nullable', 'email'], 'payment_term_days' => ['nullable', 'integer', 'min:0', 'max:365']],
             'customers' => ['code' => ['required', 'alpha_dash'], 'business_name' => ['required'], 'email' => ['nullable', 'email'], 'payment_term_days' => ['nullable', 'integer', 'min:0', 'max:365']],
             'products' => ['sku' => ['required', 'alpha_dash'], 'name' => ['required'], 'minimum_price' => ['nullable', 'numeric', 'min:0'], 'cost_price' => ['nullable', 'numeric', 'min:0']],
-            'opening_stocks' => ['product_sku' => ['required'], 'work_location_code' => ['required'], 'base_quantity' => ['required', 'numeric', 'min:0'], 'hpp' => ['required', 'numeric', 'min:0'], 'reason' => ['required']],
+            'opening_stocks' => ['product_sku' => ['required'], 'warehouse_location_code' => ['nullable'], 'base_quantity' => ['required', 'numeric', 'min:0'], 'hpp' => ['required', 'numeric', 'min:0'], 'reason' => ['required']],
             'users' => ['name' => ['required'], 'username' => ['required', 'alpha_dash'], 'email' => ['required', 'email'], 'role' => ['required']],
             'locations' => ['type' => ['required', Rule::in(['warehouse', 'branch'])], 'code' => ['required', 'alpha_dash'], 'name' => ['required']],
             default => [],
@@ -229,18 +233,18 @@ final class InitialDataImportService
 
         if ($type === 'opening_stocks' && $errors === []) {
             $product = Product::query()->where('sku', $row['product_sku'])->first();
-            $workLocation = WorkLocation::query()->where('code', $row['work_location_code'])->first();
-            $warehouseLocation = $this->warehouseLocation($row['warehouse_location_code'] ?? '');
+            $workLocation = WorkLocation::query()->find($extraData);
+            $warehouseLocation = filled($row['warehouse_location_code'] ?? null) ? $this->warehouseLocation($row['warehouse_location_code']) : null;
 
             if (! $product) {
                 $errors[] = "Baris {$line}: SKU produk tidak ditemukan.";
             }
             if (! $workLocation) {
-                $errors[] = "Baris {$line}: kode gudang/cabang tidak ditemukan.";
+                $errors[] = "Baris {$line}: Lokasi Gudang/Cabang tidak valid.";
             }
-            if (! $warehouseLocation) {
-                $errors[] = "Baris {$line}: kode lokasi gudang tidak ditemukan.";
-            } elseif ($workLocation && ! $this->warehouseLocationMatches($workLocation, $warehouseLocation)) {
+            if (filled($row['warehouse_location_code'] ?? null) && ! $warehouseLocation) {
+                $errors[] = "Baris {$line}: kode lokasi rak/bin tidak ditemukan.";
+            } elseif ($workLocation && $warehouseLocation && ! $this->warehouseLocationMatches($workLocation, $warehouseLocation)) {
                 $errors[] = "Baris {$line}: lokasi rak tidak termasuk dalam gudang yang dipilih.";
             }
         }

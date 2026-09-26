@@ -17,7 +17,7 @@
         <x-slot:workflow>
             <ol>
                 <li>Download file template Excel (.xlsx) resmi.</li>
-                <li>Isi kolom SKU produk, kode gudang/cabang, kode rak/bin, jumlah stok, HPP, dan alasan.</li>
+                <li>Isi kolom SKU produk, kode rak/bin (opsional), jumlah stok, HPP, dan alasan.</li>
                 <li>Unggah file ke form lalu klik <strong>Preview Validasi</strong>.</li>
                 <li>Periksa tabel hasil verifikasi. Jika seluruh baris valid, klik <strong>Commit ke Database</strong> untuk menyimpan saldo.</li>
             </ol>
@@ -44,7 +44,7 @@
         <x-slot:warnings>
             <div class="alert alert-warning mb-0">
                 <ul class="mb-0">
-                    <li>SKU produk, kode gudang, dan kode rak harus sudah terdaftar aktif di sistem.</li>
+                    <li>SKU produk dan kode rak harus sudah terdaftar aktif di sistem.</li>
                     <li>Pastikan angka kuantitas dan HPP bernilai 0 atau positif (bukan negatif).</li>
                 </ul>
             </div>
@@ -88,6 +88,23 @@
             <x-metronic.card title="Unggah Berkas Excel">
                 <form method="POST" action="{{ route('warehouse.opening-stocks.import.preview') }}" enctype="multipart/form-data">
                     @csrf
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold required">Pilih Gudang / Cabang Tujuan</label>
+                        <select name="work_location_id" class="form-select @error('work_location_id') is-invalid @enderror" data-control="select2" data-placeholder="Pilih lokasi..." required>
+                            <option value=""></option>
+                            @foreach ($workLocations ?? [] as $location)
+                                <option value="{{ $location->id }}" @selected(old('work_location_id') == $location->id)>
+                                    {{ $location->typeLabel() }} - {{ $location->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('work_location_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @else
+                            <div class="form-text">Semua baris di dalam file Excel akan dimasukkan ke lokasi ini.</div>
+                        @enderror
+                    </div>
+
                     <div class="mb-4">
                         <label class="form-label fw-semibold required">Pilih File XLSX</label>
                         <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
@@ -133,8 +150,8 @@
                 </div>
                 <div class="col-md-3">
                     <div class="border rounded p-3 text-center">
-                        <div class="text-muted fs-7">Status Mode</div>
-                        <div class="fs-2 fw-bold text-primary">Dry-run (Uji Coba)</div>
+                        <div class="text-muted fs-7">Lokasi Tujuan</div>
+                        <div class="fs-4 fw-bold text-primary text-truncate px-2" title="{{ \App\Models\WorkLocation::find($preview['extra_data'])?->name }}">{{ \App\Models\WorkLocation::find($preview['extra_data'])?->name ?? '-' }}</div>
                     </div>
                 </div>
             </div>

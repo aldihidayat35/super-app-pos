@@ -29,7 +29,7 @@
                 <li>File template diisi di Excel dengan data produk. Setiap baris mewakili satu produk.</li>
                 <li>File Excel/CSV yang sudah diisi diupload melalui tombol "Pilih File" lalu klik <strong>"Preview Validasi"</strong>.</li>
                 <li>Sistem membaca file dan memvalidasi setiap baris: memastikan kategori ada, SKU unik, satuan valid, dsb.</li>
-                <li>Preview ditampilkan berupa tabel dengan kolom: SKU, Nama, Kategori, Merek, Satuan, Status.</li>
+                <li>Preview ditampilkan berupa tabel dengan kolom: SKU, Nama, Kategori, Merek, Satuan.</li>
                 <li>Jika ada error validasi, daftar error ditampilkan per baris. Perbaiki file lalu upload ulang.</li>
                 <li>Jika semua valid, klik tombol <strong>"Commit Import"</strong> untuk menyimpan semua produk sekaligus.</li>
                 <li>Proses commit dijalankan dalam <strong>1 transaksi database</strong> — semua berhasil atau semua gagal.</li>
@@ -60,7 +60,6 @@
                         <li><strong>Category_Code:</strong> Kode kategori produk (misal: UMUM, MINUMAN, MAKANAN).</li>
                         <li><strong>Brand_Code:</strong> Kode merek (misal: FRISO, SOPRINO, NO-BRAND).</li>
                         <li><strong>Base_Unit_Code:</strong> Kode satuan dasar (misal: PCS, BOX, KG).</li>
-                        <li><strong>Status:</strong> 'active' atau 'inactive'.</li>
                     </ul>
                 </li>
                 <li>Simpan file sebagai CSV (.csv) atau Excel (.xlsx).</li>
@@ -132,7 +131,7 @@
             <div class="alert alert-success">Semua baris valid. Klik commit untuk menyimpan dalam transaksi database.</div>
             <form method="POST" action="{{ route('admin.products.import.commit') }}">@csrf<button class="btn btn-success">Commit Import</button></form>
         @endif
-        <div class="table-responsive mt-5"><table class="table table-row-dashed"><thead><tr><th>SKU</th><th>Nama</th><th>Kategori</th><th>Merek</th><th>Satuan</th><th>Status</th></tr></thead><tbody>@foreach(($preview['rows'] ?? []) as $row)<tr><td>{{ $row['sku'] ?? '-' }}</td><td>{{ $row['name'] ?? '-' }}</td><td>{{ $row['category_code'] ?? '-' }}</td><td>{{ $row['brand_code'] ?? '-' }}</td><td>{{ $row['base_unit_code'] ?? '-' }}</td><td>{{ $row['status'] ?? '-' }}</td></tr>@endforeach</tbody></table></div>
+        <div class="table-responsive mt-5"><table class="table table-row-dashed"><thead><tr><th>SKU</th><th>Nama</th><th>Kategori</th><th>Merek</th><th>Satuan</th></tr></thead><tbody>@foreach(($preview['rows'] ?? []) as $row)<tr><td>{{ $row['sku'] ?? '-' }}</td><td>{{ $row['name'] ?? '-' }}</td><td>{{ $row['category_code'] ?? '-' }}</td><td>{{ $row['brand_code'] ?? '-' }}</td><td>{{ $row['base_unit_code'] ?? '-' }}</td></tr>@endforeach</tbody></table></div>
     </x-metronic.card>
 @endif
 @endsection

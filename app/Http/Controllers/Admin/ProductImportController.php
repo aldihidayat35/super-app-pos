@@ -56,10 +56,22 @@ class ProductImportController extends Controller
         $this->authorize('export', Product::class);
 
         return response()->streamDownload(function (): void {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['sku', 'name', 'category_code', 'brand_code', 'base_unit_code', 'status', 'minimum_order', 'minimum_stock', 'safety_stock']);
-            fputcsv($handle, ['PRD-CONTOH-001', 'Produk Contoh', 'UMUM', 'NO-BRAND', 'PCS', 'active', '1', '10', '5']);
-            fclose($handle);
-        }, 'template-import-produk.csv');
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            
+            $sheet->fromArray([
+                ['sku', 'name', 'category_code', 'brand_code', 'base_unit_code', 'minimum_order', 'minimum_stock', 'safety_stock'],
+                ['PRD-CONTOH-001', 'Produk Contoh', 'UMUM', 'NO-BRAND', 'PCS', '1', '10', '5'],
+            ]);
+            
+            foreach (range('A', 'H') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+            
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, 'template-import-produk.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 }
