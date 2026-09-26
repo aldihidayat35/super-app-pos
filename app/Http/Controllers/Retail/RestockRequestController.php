@@ -9,6 +9,7 @@ use App\Http\Requests\Retail\ConvertRestockRequestRequest;
 use App\Http\Requests\Retail\StoreRestockRequestRequest;
 use App\Models\Branch;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\RestockRequest;
 use App\Models\Stock;
 use App\Models\Warehouse;
@@ -30,7 +31,7 @@ class RestockRequestController extends Controller
         $locationIds = $request->user()->permittedWorkLocationIds();
 
         $branches = Branch::query()->with('workLocation')->where('is_active', true)->whereIn('work_location_id', $locationIds)->orderBy('name')->get();
-        $products = Product::query()->with('baseUnit')->where('status', 'active')->orderBy('name')->limit(200)->get();
+        $products = Product::query()->with(['baseUnit', 'images', 'category'])->where('status', 'active')->orderBy('name')->get();
         $available = Stock::query()
             ->selectRaw('work_location_id, product_id, SUM(quantity_on_hand - quantity_reserved - quantity_damaged) as available')
             ->whereIn('work_location_id', $branches->pluck('work_location_id'))
@@ -41,14 +42,21 @@ class RestockRequestController extends Controller
                 $stock->work_location_id.'-'.$stock->product_id => (string) $stock->getAttribute('available'),
             ]);
 
+        $categories = ProductCategory::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+
         return view('retail.restock-requests.index', [
             'requests' => $this->query($request)->paginate(15)->withQueryString(),
             'branches' => $branches,
             'warehouses' => Warehouse::query()->with('workLocation')->where('is_active', true)->whereIn('work_location_id', $locationIds)->orderBy('name')->get(),
             'products' => $products,
+            'categories' => $categories,
             'productMetrics' => $products->mapWithKeys(fn (Product $product): array => [$product->id => [
+                'id' => $product->id,
                 'sku' => $product->sku,
                 'name' => $product->name,
+                'category_id' => $product->category_id,
+                'category' => $product->category ? $product->category->name : 'Tanpa kategori',
+                'image_url' => $product->main_image_url,
                 'unit' => $product->baseUnit?->symbol ?: $product->baseUnit?->name ?: '-',
                 'minimum' => (string) $product->minimum_stock,
                 'target' => Decimal::add((string) $product->minimum_stock, (string) $product->safety_stock),
@@ -79,7 +87,7 @@ class RestockRequestController extends Controller
         $this->authorize('view', $restockRequest);
 
         return view('retail.restock-requests.show', [
-            'restockRequest' => $restockRequest->load(['branch.workLocation', 'sourceWarehouse.workLocation', 'requester', 'approver', 'items.product.baseUnit', 'stockTransfers', 'statusHistories.actor']),
+            'restockRequest' => $restockRequest->load(['branch.workLocation', 'sourceWarehouse.workLocation', 'requester', 'approver', 'items.product.baseUnit', 'items.product.images', 'stockTransfers', 'statusHistories.actor']),
         ]);
     }
 
@@ -147,7 +155,7 @@ class RestockRequestController extends Controller
             ]);
 
         return view('retail.restock-requests.convert', [
-            'restockRequest' => $restockRequest->load(['branch.workLocation', 'sourceWarehouse', 'items.product.baseUnit']),
+            'restockRequest' => $restockRequest->load(['branch.workLocation', 'sourceWarehouse', 'items.product.baseUnit', 'items.product.images']),
             'warehouses' => $warehouses,
             'locations' => $locations,
             'balances' => $balances,

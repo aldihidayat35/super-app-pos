@@ -2,6 +2,7 @@
 
 namespace App\Services\System;
 
+use App\Models\Branch;
 use App\Models\Product;
 use App\Models\ProductCostHistory;
 use App\Models\Stock;
@@ -43,13 +44,15 @@ final class InitialDataImportService
 
         $rows = $this->readSpreadsheet($file);
         $headers = $rows[0] ?? [];
-        $body = array_slice($rows, 1, 50);
+        $body = array_slice($rows, 1);
         $columns = $templates[$type]['columns'];
         $expected = array_values($columns);
         $errors = [];
 
-        if ($headers !== $expected) {
-            $errors[] = 'Header Excel tidak sesuai template. Gunakan template XLSX resmi sebelum import.';
+        $cleanHeaders = array_map(fn ($h): string => trim((string) $h), array_slice($rows[0] ?? [], 0, count($expected)));
+
+        if ($cleanHeaders !== $expected) {
+            $errors[] = 'Header Excel tidak sesuai template. Pastikan kolom: '.implode(', ', $expected);
         }
 
         $mappedRows = [];
@@ -74,14 +77,14 @@ final class InitialDataImportService
             'totals' => [
                 'rows' => count($mappedRows),
                 'valid_rows' => max(0, count($mappedRows) - count(array_unique(array_map(fn (string $error): string => strtok($error, ':') ?: $error, $errors)))),
-                'invalid_rows' => count($errors),
+                'invalid_rows' => count(array_unique(array_map(fn (string $error): string => strtok($error, ':') ?: $error, $errors))),
             ],
             'extra_data' => $extraData,
         ];
     }
 
     /**
-     * @param  array{type: string, rows: list<array<string, string>>, errors: list<string>}  $preview
+     * @param  array{type: string, rows: list<array<string, string>>, errors: list<string>, extra_data?: mixed}  $preview
      * @return array{processed_rows: int, changed_rows: int, unchanged_rows: int, hpp_recorded_rows: int}
      */
     public function commit(array $preview, User $actor): array
@@ -100,19 +103,20 @@ final class InitialDataImportService
         $hppRecorded = 0;
         $referenceNo = 'IMPORT-'.now()->format('Ymd-His');
 
-        DB::transaction(function () use ($rows, $actor, $referenceNo, &$changed, &$unchanged, &$hppRecorded): void {
+        DB::transaction(function () use ($preview, $rows, $actor, $referenceNo, &$changed, &$unchanged, &$hppRecorded): void {
             foreach ($rows as $index => $row) {
                 $line = $index + 2;
                 $product = Product::query()->where('sku', $row['product_sku'])->lockForUpdate()->first();
                 $workLocation = WorkLocation::query()->find($preview['extra_data']);
-                $warehouseLocation = filled($row['warehouse_location_code'] ?? null) ? $this->warehouseLocation($row['warehouse_location_code']) : null;
+                $warehouseLocation = filled($row['warehouse_location_code'] ?? null) ? $this->warehouseLocation($row['warehouse_location_code'], $workLocation) : null;
 
                 if (! $product || ! $workLocation || (filled($row['warehouse_location_code'] ?? null) && ! $warehouseLocation)) {
                     abort(422, "Referensi produk atau lokasi pada baris {$line} tidak valid. Lakukan preview ulang.");
                 }
-                
+
                 if ($warehouseLocation && ! $this->warehouseLocationMatches($workLocation, $warehouseLocation)) {
-                    abort(422, "Lokasi rak pada baris {$line} tidak termasuk dalam gudang yang dipilih.");
+                    $locLabel = $workLocation->type === 'branch' ? 'cabang' : 'gudang';
+                    abort(422, "Lokasi rak pada baris {$line} tidak termasuk dalam {$locLabel} yang dipilih.");
                 }
 
                 $quantity = Decimal::normalize($row['base_quantity']);
@@ -122,7 +126,7 @@ final class InitialDataImportService
                 $stock = Stock::query()
                     ->where('product_id', $product->id)
                     ->where('work_location_id', $workLocation->id)
-                    ->when($warehouseLocation, fn($q) => $q->where('warehouse_location_id', $warehouseLocation->id), fn($q) => $q->whereNull('warehouse_location_id'))
+                    ->when($warehouseLocation, fn ($q) => $q->where('warehouse_location_id', $warehouseLocation->id), fn ($q) => $q->whereNull('warehouse_location_id'))
                     ->first();
                 $costValue = Decimal::mul($quantity, $hpp);
                 $quantityChanged = ! $stock || Decimal::compare((string) $stock->quantity_on_hand, $quantity) !== 0;
@@ -234,34 +238,46 @@ final class InitialDataImportService
         if ($type === 'opening_stocks' && $errors === []) {
             $product = Product::query()->where('sku', $row['product_sku'])->first();
             $workLocation = WorkLocation::query()->find($extraData);
-            $warehouseLocation = filled($row['warehouse_location_code'] ?? null) ? $this->warehouseLocation($row['warehouse_location_code']) : null;
+            $warehouseLocation = filled($row['warehouse_location_code'] ?? null) ? $this->warehouseLocation($row['warehouse_location_code'], $workLocation) : null;
 
             if (! $product) {
-                $errors[] = "Baris {$line}: SKU produk tidak ditemukan.";
+                $errors[] = "Baris {$line}: SKU produk '{$row['product_sku']}' tidak ditemukan.";
             }
             if (! $workLocation) {
-                $errors[] = "Baris {$line}: Lokasi Gudang/Cabang tidak valid.";
+                $errors[] = "Baris {$line}: Lokasi Gudang/Cabang belum dipilih atau tidak valid.";
             }
             if (filled($row['warehouse_location_code'] ?? null) && ! $warehouseLocation) {
-                $errors[] = "Baris {$line}: kode lokasi rak/bin tidak ditemukan.";
+                $locLabel = $workLocation?->typeLabel() ?? 'lokasi';
+                $errors[] = "Baris {$line}: kode lokasi rak/bin '{$row['warehouse_location_code']}' tidak ditemukan pada {$locLabel} ini.";
             } elseif ($workLocation && $warehouseLocation && ! $this->warehouseLocationMatches($workLocation, $warehouseLocation)) {
-                $errors[] = "Baris {$line}: lokasi rak tidak termasuk dalam gudang yang dipilih.";
+                $locLabel = $workLocation->type === 'branch' ? 'cabang' : 'gudang';
+                $errors[] = "Baris {$line}: lokasi rak '{$row['warehouse_location_code']}' tidak termasuk dalam {$locLabel} yang dipilih.";
             }
         }
 
         return $errors;
     }
 
-    private function warehouseLocation(string $code): ?WarehouseLocation
+    private function warehouseLocation(string $code, ?WorkLocation $workLocation = null): ?WarehouseLocation
     {
         return WarehouseLocation::query()
-            ->where('full_code', $code)
-            ->orWhere('code', $code)
+            ->when($workLocation, fn ($q) => $q->forWorkLocation($workLocation->id))
+            ->where(function ($q) use ($code) {
+                $q->where('full_code', $code)
+                    ->orWhere('code', $code);
+            })
             ->first();
     }
 
     private function warehouseLocationMatches(WorkLocation $workLocation, WarehouseLocation $warehouseLocation): bool
     {
+        if ($warehouseLocation->branch_id !== null) {
+            return Branch::query()
+                ->whereKey($warehouseLocation->branch_id)
+                ->where('work_location_id', $workLocation->id)
+                ->exists();
+        }
+
         return Warehouse::query()
             ->whereKey($warehouseLocation->warehouse_id)
             ->where('work_location_id', $workLocation->id)

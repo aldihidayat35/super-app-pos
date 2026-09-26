@@ -127,13 +127,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// Register Service Worker
+// Register & Update Service Worker and Purge Stale Caches
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('SW registered: ', registration);
+            registration.update();
         }).catch(registrationError => {
             console.log('SW registration failed: ', registrationError);
+        });
+    });
+}
+if ('caches' in window) {
+    caches.keys().then(keys => {
+        keys.forEach(key => {
+            if (key !== 'gudangtoko-pwa-v2') {
+                caches.delete(key);
+            }
         });
     });
 }

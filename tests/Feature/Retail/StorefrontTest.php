@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Retail;
 
+use App\Enums\WarehouseLocationType;
 use App\Models\Branch;
 use App\Models\Product;
 use App\Models\RetailProductPlacement;
 use App\Models\Stock;
 use App\Models\User;
+use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -102,6 +104,108 @@ class StorefrontTest extends TestCase
             'area' => 'Area Terlarang',
         ])->assertForbidden();
         $this->assertDatabaseMissing('retail_product_placements', ['branch_id' => $otherBranch->id]);
+    }
+
+    public function test_storefront_automatically_falls_back_to_physical_stock_location(): void
+    {
+        [$branch, $location] = $this->branch('Toko Kedaung');
+        $staff = $this->staff($location);
+
+        $zone = WarehouseLocation::factory()->create([
+            'branch_id' => $branch->id,
+            'type' => WarehouseLocationType::ZONE,
+            'code' => 'Z1',
+            'full_code' => 'TKO-Z1',
+            'name' => 'LANTAI 1',
+            'is_active' => true,
+        ]);
+
+        $rack = WarehouseLocation::factory()->create([
+            'branch_id' => $branch->id,
+            'parent_id' => $zone->id,
+            'type' => WarehouseLocationType::RACK,
+            'code' => 'RAK1',
+            'full_code' => 'TKO-Z1-RAK1',
+            'name' => 'RAK ETALASE UTAMA',
+            'is_active' => true,
+        ]);
+
+        $productWithRack = Product::factory()->create(['name' => 'Piring Cantik', 'cost_price' => '15000', 'minimum_price' => '20000']);
+        Stock::query()->create([
+            'product_id' => $productWithRack->id,
+            'work_location_id' => $location->id,
+            'warehouse_location_id' => $rack->id,
+            'location_scope_key' => 'work:'.$location->id,
+            'quantity_on_hand' => '10',
+            'quantity_reserved' => '0',
+            'quantity_damaged' => '0',
+            'cost_value' => '150000',
+        ]);
+
+        $productWithoutLocation = Product::factory()->create(['name' => 'Barang Tanpa Lokasi', 'cost_price' => '10000', 'minimum_price' => '15000']);
+        Stock::query()->create([
+            'product_id' => $productWithoutLocation->id,
+            'work_location_id' => $location->id,
+            'warehouse_location_id' => null,
+            'location_scope_key' => 'work:'.$location->id,
+            'quantity_on_hand' => '5',
+            'quantity_reserved' => '0',
+            'quantity_damaged' => '0',
+            'cost_value' => '50000',
+        ]);
+
+        $response = $this->actingAs($staff)->get(route('retail.storefront.index'));
+        $response->assertOk()
+            ->assertSee('Piring Cantik')
+            ->assertSee('LANTAI 1')
+            ->assertSee('RAK ETALASE UTAMA')
+            ->assertSee('Dari Saldo Stok')
+            ->assertSee('Barang Tanpa Lokasi')
+            ->assertSee('Belum ditata');
+
+        // Test filter area dari lokasi stok fisik
+        $this->actingAs($staff)->get(route('retail.storefront.index', ['area' => 'LANTAI 1']))
+            ->assertOk()
+            ->assertSee('Piring Cantik')
+            ->assertDontSee('Barang Tanpa Lokasi');
+    }
+
+    public function test_head_can_sync_stock_locations_to_placements(): void
+    {
+        [$branch, $location] = $this->branch('Toko Kedaung');
+        $head = User::factory()->create(['is_active' => true]);
+        $head->assignRole('kepala_toko');
+        $head->workLocations()->attach($location->id, ['is_default' => true, 'is_active' => true]);
+
+        $zone = WarehouseLocation::factory()->create([
+            'branch_id' => $branch->id,
+            'type' => WarehouseLocationType::ZONE,
+            'code' => 'Z1',
+            'full_code' => 'TKO-Z1',
+            'name' => 'LANTAI 1',
+            'is_active' => true,
+        ]);
+
+        $product = Product::factory()->create(['name' => 'Gelas Duralex', 'cost_price' => '12000', 'minimum_price' => '18000']);
+        Stock::query()->create([
+            'product_id' => $product->id,
+            'work_location_id' => $location->id,
+            'warehouse_location_id' => $zone->id,
+            'location_scope_key' => 'work:'.$location->id,
+            'quantity_on_hand' => '20',
+            'quantity_reserved' => '0',
+            'quantity_damaged' => '0',
+            'cost_value' => '240000',
+        ]);
+
+        $this->actingAs($head)->post(route('retail.storefront.sync-stock'), ['branch_id' => $branch->id])
+            ->assertRedirect(route('retail.storefront.index', ['branch_id' => $branch->id]));
+
+        $this->assertDatabaseHas('retail_product_placements', [
+            'branch_id' => $branch->id,
+            'product_id' => $product->id,
+            'area' => 'LANTAI 1',
+        ]);
     }
 
     public function test_staff_without_assigned_branch_sees_setup_message(): void

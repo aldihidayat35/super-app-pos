@@ -31,6 +31,7 @@
 @endsection
 
 @section('toolbar_actions')
+    <a href="{{ route('warehouse.opening-stocks.import.index') }}" class="btn btn-primary"><i class="ki-outline ki-file-up me-1"></i> Import Stok</a>
     <a href="{{ route('warehouse.stock-card.index') }}" class="btn btn-light"><i class="ki-outline ki-document"></i> Kartu Stok</a>
     <a href="{{ route('warehouse.batches.index') }}" class="btn btn-light"><i class="ki-outline ki-barcode"></i> Batch & Exp</a>
     @can('goods_receipts.view')

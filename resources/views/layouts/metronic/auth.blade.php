@@ -55,5 +55,23 @@
     </main>
     @include('layouts.metronic.partials.loading-overlay')
     @include('layouts.metronic.partials.flash-toast')
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (let reg of registrations) {
+                    reg.update();
+                }
+            });
+        }
+        if ('caches' in window) {
+            caches.keys().then(keys => {
+                keys.forEach(key => {
+                    if (key !== 'gudangtoko-pwa-v2') {
+                        caches.delete(key);
+                    }
+                });
+            });
+        }
+    </script>
 </body>
 </html>

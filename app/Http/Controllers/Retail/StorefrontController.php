@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Retail;
 
 use App\Data\WorkLocationContext;
+use App\Enums\WarehouseLocationType;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Product;
@@ -33,8 +34,25 @@ class StorefrontController extends Controller
         $workLocationId = $branch instanceof Branch ? $branch->work_location_id : -1;
         $emergencyProductIds = $branch instanceof Branch ? $emergencyStock->availableProductIds($branch) : [];
 
+        $matchingLocationIds = $branch instanceof Branch && $area !== ''
+            ? WarehouseLocation::query()
+                ->where('branch_id', $branch->id)
+                ->where('is_active', true)
+                ->with('parent.parent')
+                ->get()
+                ->filter(fn (WarehouseLocation $loc) => self::resolvePlacementComponents($loc)['area'] === $area)
+                ->pluck('id')
+                ->all()
+            : [];
+
         $products = Product::query()
-            ->with(['category', 'brand', 'baseUnit', 'images', 'stocks' => fn ($query) => $query->where('work_location_id', $workLocationId)])
+            ->with([
+                'category',
+                'brand',
+                'baseUnit',
+                'images',
+                'stocks' => fn ($query) => $query->where('work_location_id', $workLocationId)->with('warehouseLocation.parent.parent'),
+            ])
             ->where('status', 'active')
             ->when(! $showEmpty, fn ($query) => $query->where(function ($q) use ($workLocationId, $emergencyProductIds) {
                 $q->whereHas('stocks', fn ($stock) => $stock
@@ -50,10 +68,26 @@ class StorefrontController extends Controller
                 ->orWhere('model', 'like', "%{$search}%"))
             )
             ->when($categoryId > 0, fn ($query) => $query->where('category_id', $categoryId))
-            ->when($area !== '', fn ($query) => $query->whereIn('id', RetailProductPlacement::query()
-                ->select('product_id')
-                ->where('branch_id', $branchId)
-                ->where('area', $area)))
+            ->when($area !== '', fn ($query) => $query->where(function ($q) use ($branchId, $workLocationId, $area, $matchingLocationIds, $showEmpty) {
+                $q->whereIn('id', RetailProductPlacement::query()
+                    ->select('product_id')
+                    ->where('branch_id', $branchId)
+                    ->where('area', $area)
+                );
+
+                if (! empty($matchingLocationIds)) {
+                    $q->orWhere(function ($fallbackQ) use ($branchId, $workLocationId, $matchingLocationIds, $showEmpty) {
+                        $fallbackQ->whereNotIn('id', RetailProductPlacement::query()
+                            ->select('product_id')
+                            ->where('branch_id', $branchId)
+                        )->whereHas('stocks', fn ($stock) => $stock
+                            ->where('work_location_id', $workLocationId)
+                            ->whereIn('warehouse_location_id', $matchingLocationIds)
+                            ->when(! $showEmpty, fn ($sq) => $sq->whereRaw('(quantity_on_hand - quantity_reserved - quantity_damaged) > 0'))
+                        );
+                    });
+                }
+            }))
             ->orderByRaw('(CASE WHEN (SELECT COALESCE(SUM(quantity_on_hand - quantity_reserved - quantity_damaged), 0) FROM stocks WHERE stocks.product_id = products.id AND stocks.work_location_id = ?) <= 0 THEN 1 ELSE 0 END), name', [$workLocationId])
             ->paginate(24)
             ->withQueryString();
@@ -65,6 +99,38 @@ class StorefrontController extends Controller
                 ->get()
                 ->keyBy('product_id')
             : collect();
+
+        if ($branch instanceof Branch && $products->isNotEmpty()) {
+            foreach ($products as $product) {
+                if (! $placements->has($product->id)) {
+                    $stockWithLoc = $product->stocks
+                        ->filter(fn (Stock $s) => $s->warehouse_location_id !== null && $s->warehouseLocation !== null)
+                        ->sortByDesc(fn (Stock $s) => (float) $s->available_quantity)
+                        ->first();
+
+                    if ($stockWithLoc && $stockWithLoc->warehouseLocation) {
+                        $components = self::resolvePlacementComponents($stockWithLoc->warehouseLocation);
+                        if (! empty($components['area'])) {
+                            $otherLocationsCount = $product->stocks
+                                ->filter(fn (Stock $s) => $s->warehouse_location_id !== null && $s->warehouse_location_id !== $stockWithLoc->warehouse_location_id)
+                                ->unique('warehouse_location_id')
+                                ->count();
+
+                            $placements->put($product->id, (object) [
+                                'area' => $components['area'],
+                                'rack' => $components['rack'],
+                                'shelf' => $components['shelf'],
+                                'full_code' => $stockWithLoc->warehouseLocation->full_code,
+                                'location_name' => $stockWithLoc->warehouseLocation->name,
+                                'location_id' => $stockWithLoc->warehouse_location_id,
+                                'is_from_stock' => true,
+                                'additional_locations_count' => $otherLocationsCount,
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
 
         $emergencyByProduct = $branch instanceof Branch
             ? $emergencyStock->availableByProduct($branch, $products->getCollection()->pluck('id')->all())
@@ -85,13 +151,33 @@ class StorefrontController extends Controller
             ]];
         });
 
+        $placementAreas = RetailProductPlacement::query()
+            ->where('branch_id', $branchId)
+            ->whereNotNull('area')
+            ->where('area', '!=', '')
+            ->distinct()
+            ->pluck('area');
+
+        $storeLocationAreas = $branch instanceof Branch
+            ? WarehouseLocation::query()
+                ->where('branch_id', $branch->id)
+                ->where('is_active', true)
+                ->with('parent.parent')
+                ->get()
+                ->map(fn (WarehouseLocation $loc) => self::resolvePlacementComponents($loc)['area'])
+                ->filter()
+                ->unique()
+            : collect();
+
+        $areas = $placementAreas->concat($storeLocationAreas)->unique()->filter()->sort()->values();
+
         return view('retail.storefront.index', [
             'branches' => $branches,
             'branch' => $branch,
             'products' => $products,
             'placements' => $placements,
             'cards' => $cards,
-            'areas' => RetailProductPlacement::query()->where('branch_id', $branchId)->distinct()->orderBy('area')->pluck('area'),
+            'areas' => $areas,
             'storeLocations' => $branch instanceof Branch
                 ? WarehouseLocation::query()->where('branch_id', $branch->id)->where('is_active', true)->orderBy('full_code')->get()
                 : collect(),
@@ -111,6 +197,91 @@ class StorefrontController extends Controller
             'categoryId' => $categoryId,
             'showEmpty' => $showEmpty,
         ]);
+    }
+
+    public function syncFromStock(Request $request): RedirectResponse
+    {
+        $branchId = $request->integer('branch_id');
+        $branch = Branch::query()->whereKey($branchId)->where('is_active', true)->firstOrFail();
+        abort_unless($request->user()->canAccessWorkLocation((int) $branch->work_location_id), 403);
+
+        $stocks = Stock::query()
+            ->where('work_location_id', $branch->work_location_id)
+            ->whereNotNull('warehouse_location_id')
+            ->with('warehouseLocation.parent.parent')
+            ->get();
+
+        $synced = 0;
+        foreach ($stocks as $stock) {
+            if (! $stock->warehouseLocation) {
+                continue;
+            }
+
+            $exists = RetailProductPlacement::query()
+                ->where('branch_id', $branch->id)
+                ->where('product_id', $stock->product_id)
+                ->exists();
+
+            if (! $exists) {
+                $components = self::resolvePlacementComponents($stock->warehouseLocation);
+                if (! empty($components['area'])) {
+                    RetailProductPlacement::query()->create([
+                        'branch_id' => $branch->id,
+                        'product_id' => $stock->product_id,
+                        'area' => mb_substr($components['area'], 0, 80),
+                        'rack' => $components['rack'] ? mb_substr($components['rack'], 0, 80) : null,
+                        'shelf' => $components['shelf'] ? mb_substr($components['shelf'], 0, 80) : null,
+                    ]);
+                    $synced++;
+                }
+            }
+        }
+
+        return redirect()->route('retail.storefront.index', ['branch_id' => $branch->id])
+            ->with('notification', ['type' => 'success', 'message' => "Berhasil menyinkronkan {$synced} lokasi produk dari saldo stok ke etalase."]);
+    }
+
+    /**
+     * @return array{area: string|null, rack: string|null, shelf: string|null, code: string|null}
+     */
+    public static function resolvePlacementComponents(?WarehouseLocation $loc): array
+    {
+        if (! $loc) {
+            return ['area' => null, 'rack' => null, 'shelf' => null, 'code' => null];
+        }
+
+        /** @var mixed $rawType */
+        $rawType = $loc->getAttribute('type');
+        $type = $rawType instanceof WarehouseLocationType ? $rawType->value : (string) $rawType;
+        $parent = $loc->parent;
+        $grandParent = $parent?->parent;
+
+        return match ($type) {
+            WarehouseLocationType::ZONE->value, 'zone' => [
+                'area' => $loc->name,
+                'rack' => null,
+                'shelf' => null,
+                'code' => $loc->full_code,
+            ],
+            WarehouseLocationType::RACK->value, 'rack' => [
+                'area' => $grandParent ? $grandParent->name : ($parent ? $parent->name : $loc->name),
+                'rack' => $loc->name,
+                'shelf' => null,
+                'code' => $loc->full_code,
+            ],
+            WarehouseLocationType::BIN->value, 'bin' => [
+                'area' => $grandParent ? $grandParent->name : ($parent ? $parent->name : 'Area Toko'),
+                'rack' => $parent ? $parent->name : null,
+                'shelf' => $loc->name,
+                'code' => $loc->full_code,
+            ],
+            default => [
+                'area' => $loc->name,
+                'rack' => null,
+                'shelf' => null,
+                'code' => $loc->full_code,
+            ],
+        };
     }
 
     public function updatePlacement(Request $request, Product $product, EmergencyStockService $emergencyStock): RedirectResponse

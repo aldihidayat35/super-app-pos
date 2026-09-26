@@ -3,6 +3,7 @@
 namespace Tests\Feature\Warehouse;
 
 use App\Exports\ArrayReportExport;
+use App\Models\Branch;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\User;
@@ -25,9 +26,13 @@ class OpeningStockImportTest extends TestCase
 
     private User $staff;
 
-    private WorkLocation $location;
+    private WorkLocation $warehouseLocation;
 
-    private WarehouseLocation $bin;
+    private WarehouseLocation $warehouseBin;
+
+    private WorkLocation $branchLocation;
+
+    private WarehouseLocation $branchBin;
 
     private Product $product;
 
@@ -39,14 +44,28 @@ class OpeningStockImportTest extends TestCase
         $this->head = $this->createUser('kepala_gudang');
         $this->staff = $this->createUser('staff_gudang');
 
-        $this->location = WorkLocation::factory()->create(['type' => 'warehouse', 'code' => 'GDG-TEST']);
-        $warehouse = Warehouse::factory()->create(['work_location_id' => $this->location->id, 'code' => 'WH-TEST']);
-        $this->bin = WarehouseLocation::factory()->create([
+        // Gudang
+        $this->warehouseLocation = WorkLocation::factory()->create(['type' => 'warehouse', 'code' => 'GDG-TEST', 'name' => 'Gudang Pusat Test']);
+        $warehouse = Warehouse::factory()->create(['work_location_id' => $this->warehouseLocation->id, 'code' => 'WH-TEST']);
+        $this->warehouseBin = WarehouseLocation::factory()->create([
             'warehouse_id' => $warehouse->id,
             'code' => 'RAK-01',
-            'full_code' => 'RAK-01',
+            'full_code' => 'WH-TEST-RAK-01',
+            'type' => 'bin',
             'is_active' => true,
         ]);
+
+        // Toko / Cabang
+        $this->branchLocation = WorkLocation::factory()->create(['type' => 'branch', 'code' => 'TKO-TEST', 'name' => 'Toko Cabang Test']);
+        $branch = Branch::factory()->create(['work_location_id' => $this->branchLocation->id, 'code' => 'BR-TEST']);
+        $this->branchBin = WarehouseLocation::factory()->create([
+            'branch_id' => $branch->id,
+            'code' => 'BIN-KASIR',
+            'full_code' => 'BR-TEST-BIN-KASIR',
+            'type' => 'bin',
+            'is_active' => true,
+        ]);
+
         $this->product = Product::factory()->create([
             'sku' => 'PRD-TEST-001',
             'status' => 'active',
@@ -54,7 +73,8 @@ class OpeningStockImportTest extends TestCase
         ]);
 
         foreach ([$this->head, $this->staff] as $user) {
-            $user->workLocations()->attach($this->location->id, ['is_default' => true, 'is_active' => true]);
+            $user->workLocations()->attach($this->warehouseLocation->id, ['is_default' => true, 'is_active' => true]);
+            $user->workLocations()->attach($this->branchLocation->id, ['is_default' => false, 'is_active' => true]);
         }
     }
 
@@ -63,33 +83,42 @@ class OpeningStockImportTest extends TestCase
         $this->actingAs($this->head)
             ->get(route('warehouse.opening-stocks.import.index'))
             ->assertOk()
-            ->assertSee('Import Stok Awal')
-            ->assertSee('Template Excel');
+            ->assertSee('Import Stok Produk')
+            ->assertSee('Langkah 1: Pilih Lokasi Induk')
+            ->assertSee('Langkah 2: Format & Unggah File Excel');
 
         $this->actingAs($this->head)
             ->get(route('warehouse.opening-stocks.import.template'))
             ->assertOk()
-            ->assertDownload('template-opening-stocks.xlsx');
+            ->assertDownload('template-import-stok-produk.xlsx');
     }
 
-    public function test_preview_validates_rows_and_saves_to_session(): void
+    public function test_preview_requires_work_location_id_and_valid_file(): void
     {
-        $file = UploadedFile::fake()->createWithContent('stok_awal.xlsx', Excel::raw(
+        $response = $this->actingAs($this->head)
+            ->post(route('warehouse.opening-stocks.import.preview'), []);
+
+        $response->assertSessionHasErrors(['work_location_id', 'file']);
+    }
+
+    public function test_preview_validates_rows_and_saves_to_session_for_warehouse(): void
+    {
+        $file = UploadedFile::fake()->createWithContent('stok_gudang.xlsx', Excel::raw(
             new ArrayReportExport([
                 [
                     'SKU Produk' => $this->product->sku,
-                    'Kode Gudang/Cabang' => $this->location->code,
-                    'Kode Lokasi Gudang' => $this->bin->full_code,
+                    'Kode Rak/Bin (Opsional)' => $this->warehouseBin->full_code,
                     'Jumlah Stok Awal' => 25,
                     'HPP' => 15000,
                     'Alasan' => 'Stok awal gudang',
                 ],
-            ], ['SKU Produk', 'Kode Gudang/Cabang', 'Kode Lokasi Gudang', 'Jumlah Stok Awal', 'HPP', 'Alasan']),
+            ], ['SKU Produk', 'Kode Rak/Bin (Opsional)', 'Jumlah Stok Awal', 'HPP', 'Alasan']),
             ExcelFormat::XLSX,
         ));
 
         $response = $this->actingAs($this->head)
             ->post(route('warehouse.opening-stocks.import.preview'), [
+                'work_location_id' => $this->warehouseLocation->id,
                 'file' => $file,
             ]);
 
@@ -99,33 +128,74 @@ class OpeningStockImportTest extends TestCase
         $preview = session('opening_stock_import_preview');
         $this->assertEmpty($preview['errors']);
         $this->assertEquals(1, $preview['totals']['valid_rows']);
+        $this->assertEquals($this->warehouseLocation->id, $preview['extra_data']);
     }
 
-    public function test_preview_reports_invalid_sku_or_location(): void
+    public function test_preview_validates_rows_and_saves_to_session_for_branch(): void
     {
-        $file = UploadedFile::fake()->createWithContent('stok_awal_invalid.xlsx', Excel::raw(
+        $file = UploadedFile::fake()->createWithContent('stok_toko.xlsx', Excel::raw(
             new ArrayReportExport([
                 [
-                    'SKU Produk' => 'SKU-TIDAK-ADA',
-                    'Kode Gudang/Cabang' => $this->location->code,
-                    'Kode Lokasi Gudang' => $this->bin->full_code,
-                    'Jumlah Stok Awal' => 10,
-                    'HPP' => 5000,
-                    'Alasan' => 'Test error',
+                    'SKU Produk' => $this->product->sku,
+                    'Kode Rak/Bin (Opsional)' => $this->branchBin->full_code,
+                    'Jumlah Stok Awal' => 15,
+                    'HPP' => 12000,
+                    'Alasan' => 'Saldo awal toko',
                 ],
-            ], ['SKU Produk', 'Kode Gudang/Cabang', 'Kode Lokasi Gudang', 'Jumlah Stok Awal', 'HPP', 'Alasan']),
+            ], ['SKU Produk', 'Kode Rak/Bin (Opsional)', 'Jumlah Stok Awal', 'HPP', 'Alasan']),
             ExcelFormat::XLSX,
         ));
 
         $response = $this->actingAs($this->head)
             ->post(route('warehouse.opening-stocks.import.preview'), [
+                'work_location_id' => $this->branchLocation->id,
+                'file' => $file,
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('opening_stock_import_preview');
+
+        $preview = session('opening_stock_import_preview');
+        $this->assertEmpty($preview['errors']);
+        $this->assertEquals(1, $preview['totals']['valid_rows']);
+        $this->assertEquals($this->branchLocation->id, $preview['extra_data']);
+    }
+
+    public function test_preview_reports_invalid_sku_or_mismatched_bin(): void
+    {
+        $file = UploadedFile::fake()->createWithContent('stok_invalid.xlsx', Excel::raw(
+            new ArrayReportExport([
+                [
+                    'SKU Produk' => 'SKU-TIDAK-ADA',
+                    'Kode Rak/Bin (Opsional)' => $this->warehouseBin->full_code,
+                    'Jumlah Stok Awal' => 10,
+                    'HPP' => 5000,
+                    'Alasan' => 'Test SKU salah',
+                ],
+                [
+                    'SKU Produk' => $this->product->sku,
+                    // Mencoba memakai bin toko padahal import ke gudang
+                    'Kode Rak/Bin (Opsional)' => $this->branchBin->full_code,
+                    'Jumlah Stok Awal' => 10,
+                    'HPP' => 5000,
+                    'Alasan' => 'Test bin salah',
+                ],
+            ], ['SKU Produk', 'Kode Rak/Bin (Opsional)', 'Jumlah Stok Awal', 'HPP', 'Alasan']),
+            ExcelFormat::XLSX,
+        ));
+
+        $response = $this->actingAs($this->head)
+            ->post(route('warehouse.opening-stocks.import.preview'), [
+                'work_location_id' => $this->warehouseLocation->id,
                 'file' => $file,
             ]);
 
         $response->assertRedirect();
         $preview = session('opening_stock_import_preview');
         $this->assertNotEmpty($preview['errors']);
-        $this->assertStringContainsString('SKU produk tidak ditemukan', $preview['errors'][0]);
+        $this->assertCount(2, $preview['errors']);
+        $this->assertStringContainsString('SKU produk', $preview['errors'][0]);
+        $this->assertStringContainsString('kode lokasi rak/bin', $preview['errors'][1]);
     }
 
     public function test_commit_updates_stock_on_hand_and_hpp(): void
@@ -133,11 +203,10 @@ class OpeningStockImportTest extends TestCase
         $preview = [
             'type' => 'opening_stocks',
             'label' => 'Stok Awal',
-            'headers' => ['product_sku', 'work_location_code', 'warehouse_location_code', 'base_quantity', 'hpp', 'reason'],
+            'headers' => ['product_sku', 'warehouse_location_code', 'base_quantity', 'hpp', 'reason'],
             'header_labels' => [
                 'product_sku' => 'SKU Produk',
-                'work_location_code' => 'Kode Gudang/Cabang',
-                'warehouse_location_code' => 'Kode Lokasi Gudang',
+                'warehouse_location_code' => 'Kode Rak/Bin (Opsional)',
                 'base_quantity' => 'Jumlah Stok Awal',
                 'hpp' => 'HPP',
                 'reason' => 'Alasan',
@@ -145,8 +214,7 @@ class OpeningStockImportTest extends TestCase
             'rows' => [
                 [
                     'product_sku' => $this->product->sku,
-                    'work_location_code' => $this->location->code,
-                    'warehouse_location_code' => $this->bin->full_code,
+                    'warehouse_location_code' => $this->warehouseBin->full_code,
                     'base_quantity' => '30.0000',
                     'hpp' => '17500.00',
                     'reason' => 'Saldo awal verifikasi',
@@ -154,7 +222,7 @@ class OpeningStockImportTest extends TestCase
             ],
             'errors' => [],
             'totals' => ['rows' => 1, 'valid_rows' => 1, 'invalid_rows' => 0],
-            'dry_run' => true,
+            'extra_data' => $this->warehouseLocation->id,
         ];
 
         session(['opening_stock_import_preview' => $preview]);
@@ -162,13 +230,13 @@ class OpeningStockImportTest extends TestCase
         $response = $this->actingAs($this->head)
             ->post(route('warehouse.opening-stocks.import.commit'));
 
-        $response->assertRedirect(route('warehouse.opening-stocks.index'));
+        $response->assertRedirect(route('warehouse.opening-stocks.import.index'));
         $response->assertSessionHas('notification');
 
         $stock = Stock::query()
             ->where('product_id', $this->product->id)
-            ->where('work_location_id', $this->location->id)
-            ->where('warehouse_location_id', $this->bin->id)
+            ->where('work_location_id', $this->warehouseLocation->id)
+            ->where('warehouse_location_id', $this->warehouseBin->id)
             ->first();
 
         $this->assertNotNull($stock);
@@ -176,6 +244,17 @@ class OpeningStockImportTest extends TestCase
 
         $this->product->refresh();
         $this->assertEquals('17500.00', (string) $this->product->cost_price);
+    }
+
+    public function test_cancel_clears_session_preview(): void
+    {
+        session(['opening_stock_import_preview' => ['type' => 'opening_stocks']]);
+
+        $response = $this->actingAs($this->head)
+            ->post(route('warehouse.opening-stocks.import.cancel'));
+
+        $response->assertRedirect(route('warehouse.opening-stocks.import.index'));
+        $this->assertNull(session('opening_stock_import_preview'));
     }
 
     private function createUser(string $role): User

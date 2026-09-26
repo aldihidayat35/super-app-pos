@@ -157,19 +157,41 @@ class Product extends Model
         return $this->hasMany(SupplierProduct::class);
     }
 
+    public const DEFAULT_IMAGE_PATH = 'assets/media/products/default-product.png';
+
+    public static function defaultImageUrl(): string
+    {
+        return asset(self::DEFAULT_IMAGE_PATH);
+    }
+
+    public function hasCustomImage(): bool
+    {
+        if (filled($this->main_image_path)) {
+            return true;
+        }
+
+        if ($this->relationLoaded('images')) {
+            return $this->images->isNotEmpty();
+        }
+
+        return $this->images()->exists();
+    }
+
     /**
-     * Get the full URL for the main image.
+     * Get the full URL for the main image, or default fallback image if not yet uploaded.
      */
-    public function getMainImageUrlAttribute(): ?string
+    public function getMainImageUrlAttribute(): string
     {
         $path = $this->main_image_path;
-        if (! $path && $this->relationLoaded('images')) {
-            $image = $this->images->firstWhere('is_primary', true) ?? $this->images->sortBy('sort_order')->first();
+        if (! $path) {
+            $image = $this->relationLoaded('images')
+                ? ($this->images->firstWhere('is_primary', true) ?? $this->images->sortBy('sort_order')->first())
+                : ($this->images()->where('is_primary', true)->first() ?? $this->images()->orderBy('sort_order')->first());
             $path = $image?->path;
         }
 
         if (! $path) {
-            return null;
+            return self::defaultImageUrl();
         }
 
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '/')) {

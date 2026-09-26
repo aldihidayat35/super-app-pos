@@ -6,7 +6,7 @@
     <x-metronic.page-guide id="retail-storefront" title="Panduan Etalase Produk Toko">
         <x-slot:function>Menunjukkan produk yang tersedia di toko penugasan beserta harga jual, stok reguler, stok darurat, dan lokasi pajangnya.</x-slot:function>
         <x-slot:workflow>Cari produk atau pilih kategori. Jika melayani lebih dari satu toko, pilih toko yang sedang ditangani.</x-slot:workflow>
-        <x-slot:parts>Area, rak, dan tingkat diisi kepala toko melalui tombol Atur Lokasi pada kartu produk.</x-slot:parts>
+        <x-slot:parts>Area, rak, dan tingkat otomatis terisi dari saldo stok fisik toko dan dapat disesuaikan kepala toko melalui tombol Atur Lokasi pada kartu produk.</x-slot:parts>
         <x-slot:impacts>Perubahan lokasi pajang tidak memindahkan stok fisik atau mengubah harga jual.</x-slot:impacts>
         <x-slot:operation>Harga mengikuti harga POS toko. Konfirmasi harga akhir dan ketersediaan sebelum transaksi di kasir.</x-slot:operation>
         <x-slot:warnings>Centang Tampilkan produk kosong untuk melihat barang tanpa stok. POS memakai stok reguler terlebih dahulu, lalu stok darurat.</x-slot:warnings>
@@ -33,6 +33,17 @@
 @endpush
 
 @section('toolbar_actions')
+    @can('retail.catalog.manage')
+        @if ($branch)
+            <form method="POST" action="{{ route('retail.storefront.sync-stock') }}" class="d-inline me-2" onsubmit="return confirm('Apakah Anda yakin ingin menyinkronkan seluruh lokasi produk dari saldo stok fisik toko?');">
+                @csrf
+                <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+                <button type="submit" class="btn btn-light-primary">
+                    <i class="ki-outline ki-arrows-circle fs-5 me-1"></i>Sinkronkan dari Saldo Stok
+                </button>
+            </form>
+        @endif
+    @endcan
     @can('product_requests.view')
         <a href="{{ route('retail.product-requests.index') }}" class="btn btn-light-primary">
             <i class="ki-outline ki-plus-circle fs-5 me-1"></i>Pengajuan Produk Baru
@@ -102,6 +113,15 @@
                 <div class="fw-bold fs-3">{{ $branch->name }}</div>
                 <div class="text-muted">{{ $products->total() }} produk tersedia untuk dilayani</div>
             </div>
+            @can('retail.catalog.manage')
+                <form method="POST" action="{{ route('retail.storefront.sync-stock') }}" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menyinkronkan seluruh lokasi produk yang belum diatur dari saldo stok fisik toko?');">
+                    @csrf
+                    <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+                    <button type="submit" class="btn btn-sm btn-light-primary">
+                        <i class="ki-outline ki-arrows-circle fs-5 me-1"></i>Sinkronkan dari Saldo Stok
+                    </button>
+                </form>
+            @endcan
         </div>
 
         @if ($products->isEmpty())
@@ -135,12 +155,30 @@
                             <div class="text-muted fs-9">Reguler {{ qty($cards[$product->id]['regular_stock']) }} · Darurat {{ qty($cards[$product->id]['emergency_stock']) }}</div>
                             @can('emergency_purchases.create')<a class="btn btn-sm btn-light-warning mt-3 w-100" href="{{ route('retail.emergency.create', ['branch_id' => $branch->id, 'product_id' => $product->id]) }}">Pembelian darurat / restok</a>@endcan
                             <div class="storefront-location">
-                                <div class="text-muted fs-8 fw-semibold mb-1">LOKASI PAJANG</div>
+                                <div class="text-muted fs-8 fw-semibold mb-1 d-flex align-items-center justify-content-between">
+                                    <span>LOKASI PAJANG</span>
+                                    @if ($placement && !empty($placement->is_from_stock))
+                                        <span class="badge badge-light-primary fs-9 py-1 px-2" title="Mengikuti saldo stok fisik di toko">Dari Saldo Stok</span>
+                                    @endif
+                                </div>
                                 @if ($placement)
-                                    <div class="fw-bold">{{ $placement->area }}</div>
-                                    <div class="text-muted fs-8">{{ collect([$placement->rack, $placement->shelf])->filter()->implode(' · ') ?: 'Detail rak belum diisi' }}</div>
+                                    <div class="fw-bold text-gray-800">{{ $placement->area }}</div>
+                                    <div class="text-muted fs-8">
+                                        @php
+                                            $detailRack = collect([$placement->rack, $placement->shelf])->filter()->implode(' · ');
+                                            if (! $detailRack && !empty($placement->full_code)) {
+                                                $detailRack = $placement->full_code;
+                                            }
+                                        @endphp
+                                        {{ $detailRack ?: 'Area '.$placement->area }}
+                                        @if (!empty($placement->additional_locations_count) && $placement->additional_locations_count > 0)
+                                            <span class="text-primary ms-1" title="Terdapat stok di {{ $placement->additional_locations_count }} lokasi lain">(+{{ $placement->additional_locations_count }} lokasi lain)</span>
+                                        @endif
+                                    </div>
                                 @else
-                                    <div class="text-warning fw-semibold">Belum ditata</div>
+                                    <div class="text-warning fw-semibold fs-8">
+                                        <i class="ki-outline ki-information-2 text-warning fs-7 me-1"></i>Belum ditata
+                                    </div>
                                 @endif
                             </div>
                             @can('retail.catalog.manage')
@@ -157,6 +195,7 @@
                                                     <option value="">-- Pilih Lokasi Fisik --</option>
                                                     @foreach ($storeLocations as $loc)
                                                         <option value="{{ $loc->id }}"
+                                                            @selected(isset($placement->location_id) && $placement->location_id == $loc->id)
                                                             data-area="{{ $loc->parent ? ($loc->parent->parent?->name ?? $loc->parent->name) : $loc->name }}"
                                                             data-rack="{{ $loc->type->value === 'rack' ? $loc->name : ($loc->parent?->type->value === 'rack' ? $loc->parent->name : '') }}"
                                                             data-shelf="{{ $loc->type->value === 'bin' ? $loc->name : '' }}">

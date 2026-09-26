@@ -39,27 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
         {{-- Left Column: Summary & Image --}}
         <div class="col-lg-4">
             <x-metronic.card title="Info Produk">
-                @if($product->main_image_path || $product->images->isNotEmpty())
-                    <div class="mb-4 text-center">
-                        @php
-                            $primaryImage = $product->images->firstWhere('is_primary');
-                            $displayImage = $primaryImage ? $primaryImage->path : $product->main_image_path;
-                        @endphp
-                        @if($displayImage)
-                            <img src="{{ asset('storage/' . $displayImage) }}" alt="{{ $product->name }}" class="img-fluid rounded max-h-200px object-fit-cover">
-                        @else
-                            <div class="bg-light border rounded d-flex align-items-center justify-content-center" style="height: 150px;">
-                                <i class="ki-outline ki-scheme fs-1 text-muted"></i>
-                            </div>
-                        @endif
-                    </div>
-                @else
-                    <div class="mb-4 text-center">
-                        <div class="bg-light border rounded d-flex align-items-center justify-content-center" style="height: 150px;">
-                            <i class="ki-outline ki-scheme fs-1 text-muted"></i>
+                <div class="mb-4 text-center">
+                    <img src="{{ $product->main_image_url }}" alt="{{ $product->name }}" class="img-fluid rounded max-h-200px object-fit-cover shadow-sm">
+                    @if(! $product->hasCustomImage())
+                        <div class="mt-2">
+                            <span class="badge badge-light-warning border border-warning fs-8">
+                                <i class="ki-outline ki-information-2 text-warning fs-7 me-1"></i> Foto Default (Belum Diupload)
+                            </span>
                         </div>
-                    </div>
-                @endif
+                    @endif
+                </div>
                 <div class="fs-3 fw-bold text-primary mb-1">{{ $product->name }}</div>
                 <div class="text-muted mb-4">SKU: {{ $product->sku }}</div>
 
