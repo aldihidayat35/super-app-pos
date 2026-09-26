@@ -28,7 +28,7 @@ class SpecialPriceController extends Controller
                 ->paginate(15)
                 ->withQueryString(),
             'customers' => Customer::query()->where('is_active', true)->orderBy('business_name')->limit(500)->get(),
-            'products' => Product::query()->where('status', 'active')->orderBy('name')->limit(500)->get(),
+            'products' => Product::query()->with('category')->where('status', 'active')->orderBy('name')->limit(500)->get(),
             'branches' => Branch::query()->where('is_active', true)->orderBy('name')->get(),
             'selectedCustomerId' => $request->integer('customer_id') ?: null,
         ]);

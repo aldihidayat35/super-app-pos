@@ -8,7 +8,26 @@
         <form method="POST" action="{{ route('pricing.special-prices.store') }}" class="row g-3 align-items-end">
             @csrf
             <div class="col-md-4"><x-metronic.form-group name="customer_id" label="Pelanggan" required><select name="customer_id" class="form-select"><option value="">Pilih pelanggan</option>@foreach($customers as $customer)<option value="{{ $customer->id }}" @selected((string) old('customer_id', $selectedCustomerId) === (string) $customer->id)>{{ $customer->business_name }}</option>@endforeach</select></x-metronic.form-group></div>
-            <div class="col-md-4"><x-metronic.form-group name="product_id" label="Produk" required><select name="product_id" class="form-select"><option value="">Pilih produk</option>@foreach($products as $product)<option value="{{ $product->id }}">{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select></x-metronic.form-group></div>
+            <div class="col-md-4">
+                <x-metronic.form-group name="product_id" label="Produk" required>
+                    <div class="d-flex gap-2">
+                        <select name="product_id" class="form-select" id="product_id">
+                            <option value="">Pilih produk</option>
+                            @foreach($products as $product)
+                                <option value="{{ $product->id }}"
+                                        data-sku="{{ $product->sku }}" 
+                                        data-name="{{ $product->name }}" 
+                                        data-category="{{ $product->category?->name ?? 'Tanpa Kategori' }}" 
+                                        data-image="{{ $product->main_image_url }}"
+                                >{{ $product->sku }} — {{ $product->name }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-icon btn-light-primary" data-bs-toggle="modal" data-bs-target="#visualCatalogModal" title="Pilih dari Katalog Visual">
+                            <i class="ki-outline ki-element-11"></i>
+                        </button>
+                    </div>
+                </x-metronic.form-group>
+            </div>
             <div class="col-md-2"><x-metronic.form-group name="channel" label="Channel" required><select name="channel" class="form-select"><option value="b2b">B2B</option><option value="retail">Retail</option><option value="pos">POS</option><option value="all">Semua</option></select></x-metronic.form-group></div>
             <div class="col-md-2"><x-metronic.form-group name="price" label="Harga" required><input type="number" step="0.01" min="0" name="price" class="form-control"></x-metronic.form-group></div>
             <div class="col-md-3"><x-metronic.form-group name="branch_id" label="Cabang"><select name="branch_id" class="form-select"><option value="">Semua cabang</option>@foreach($branches as $branch)<option value="{{ $branch->id }}">{{ $branch->name }}</option>@endforeach</select></x-metronic.form-group></div>
@@ -68,4 +87,27 @@
         </div>
         {{ $overrides->links() }}
     </x-metronic.card>
+
+    <x-metronic.visual-catalog-modal 
+        id="visualCatalogModal" 
+        sourceSelector="select#product_id option"
+        on-select="handleCatalogSelect" 
+    />
 @endsection
+
+@push('scripts')
+<script>
+    window.handleCatalogSelect = function(product) {
+        const select = document.getElementById('product_id');
+        if (select) {
+            select.value = product.id;
+            if (window.$(select).data('select2')) {
+                window.$(select).trigger('change');
+            } else {
+                select.dispatchEvent(new Event('change'));
+            }
+            toastr && toastr.success(product.name + ' dipilih.');
+        }
+    };
+</script>
+@endpush

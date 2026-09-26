@@ -154,7 +154,7 @@ class PurchaseOrderController extends Controller
                 ->whereIn('id', $request->user()?->permittedWorkLocationIds() ?? [])
                 ->orderBy('type')->orderBy('name')->get(),
             'suppliers' => Supplier::query()->where('is_active', true)->orderBy('name')->get(),
-            'products' => Product::query()->with(['baseUnit', 'units.unit'])->where('status', 'active')->orderBy('name')->limit(200)->get(),
+            'products' => Product::query()->with(['baseUnit', 'category', 'units.unit'])->where('status', 'active')->orderBy('name')->limit(200)->get(),
             'units' => Unit::query()->where('is_active', true)->orderBy('name')->get(),
         ];
     }

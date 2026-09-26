@@ -45,12 +45,22 @@
                             <div class="fw-bold mb-1">Produk yang Dibutuhkan</div>
                             <div class="text-muted fs-8 mb-4">Barang yang akan diajukan untuk dibeli dari supplier.</div>
                             <x-metronic.form-group name="items.0.product_id" label="Produk" required help="Pilih barang yang dibutuhkan gudang.">
-                                <select name="items[0][product_id]" class="form-select form-select-solid" required>
-                                    <option value="">Pilih produk</option>
-                                    @foreach ($products as $product)
-                                        <option value="{{ $product->id }}" @selected(old('items.0.product_id') == $product->id)>{{ $product->sku }} - {{ $product->name }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="d-flex gap-2">
+                                    <select name="items[0][product_id]" class="form-select form-select-solid" required>
+                                        <option value="">Pilih produk</option>
+                                        @foreach ($products as $product)
+                                            <option value="{{ $product->id }}" 
+                                                    data-sku="{{ $product->sku }}" 
+                                                    data-name="{{ $product->name }}" 
+                                                    data-category="{{ $product->category?->name ?? 'Tanpa Kategori' }}" 
+                                                    data-image="{{ $product->main_image_url }}"
+                                                    @selected(old('items.0.product_id') == $product->id)>{{ $product->sku }} - {{ $product->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-icon btn-primary" data-bs-toggle="modal" data-bs-target="#visualCatalogModal" title="Pilih dari Katalog Visual">
+                                        <i class="ki-outline ki-element-11 fs-2"></i>
+                                    </button>
+                                </div>
                             </x-metronic.form-group>
                             <input type="hidden" name="items[0][unit_id]" value="{{ old('items.0.unit_id') }}">
                             <x-metronic.form-group name="items.0.quantity" label="Jumlah Dibutuhkan" required help="Jumlah barang yang diminta untuk dibeli. Satuan dasar produk digunakan jika satuan tidak ditentukan.">
@@ -96,7 +106,17 @@
                                     $available = (float) $stock->quantity_on_hand - (float) $stock->quantity_reserved - (float) $stock->quantity_damaged;
                                 @endphp
                                 <tr>
-                                    <td><span class="fw-semibold">{{ $stock->product?->name }}</span><div class="text-muted fs-8">{{ $stock->product?->sku }} / {{ $stock->product?->baseUnit?->name }}</div></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="symbol symbol-35px me-3">
+                                                <x-metronic.image-preview url="{{ $stock->product?->main_image_url }}" title="{{ $stock->product?->name }}" />
+                                            </div>
+                                            <div>
+                                                <span class="fw-semibold d-block text-gray-800">{{ $stock->product?->name }}</span>
+                                                <span class="text-muted fs-8 d-block">{{ $stock->product?->sku }} / {{ $stock->product?->baseUnit?->name }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td>{{ $stock->workLocation?->name }}<div class="text-muted fs-8">{{ $stock->warehouseLocation?->full_code ?: 'Tanpa lokasi rak/bin' }}</div></td>
                                     <td class="text-end">{{ qty($stock->quantity_on_hand) }}</td>
                                     <td class="text-end fw-semibold text-danger">{{ qty($available) }}</td>
@@ -156,4 +176,28 @@
             </x-metronic.card>
         </div>
     </div>
+    
+    <x-metronic.visual-catalog-modal 
+        id="visualCatalogModal" 
+        sourceSelector="select[name='items[0][product_id]'] option"
+        on-select="handleCatalogSelect" 
+    />
 @endsection
+
+@push('scripts')
+<script>
+    function handleCatalogSelect(product) {
+        const select = document.querySelector('select[name="items[0][product_id]"]');
+        if (select) {
+            select.value = product.id;
+            // Since it might be Select2 in the future, we trigger change event
+            if (window.$(select).data('select2')) {
+                window.$(select).trigger('change');
+            } else {
+                select.dispatchEvent(new Event('change'));
+            }
+            toastr && toastr.success(product.name + ' dipilih.');
+        }
+    }
+</script>
+@endpush

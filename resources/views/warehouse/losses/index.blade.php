@@ -37,10 +37,15 @@
                         </select>
                     </x-metronic.form-group>
                     <x-metronic.form-group name="product_id" label="Produk" required>
-                        <select id="loss-product" name="product_id" class="form-select form-select-solid" data-control="select2" disabled required>
-                            <option value="">Pilih lokasi terlebih dahulu</option>
-                            @if($selectedProduct)<option value="{{ $selectedProduct->id }}" selected data-cost="{{ $selectedProduct->cost_price }}">{{ $selectedProduct->sku }} — {{ $selectedProduct->name }}</option>@endif
-                        </select>
+                        <div class="d-flex gap-2 mb-2">
+                            <select id="loss-product" name="product_id" class="form-select form-select-solid" data-control="select2" disabled required>
+                                <option value="">Pilih lokasi terlebih dahulu</option>
+                                @if($selectedProduct)<option value="{{ $selectedProduct->id }}" selected data-cost="{{ $selectedProduct->cost_price }}">{{ $selectedProduct->sku }} — {{ $selectedProduct->name }}</option>@endif
+                            </select>
+                            <button type="button" class="btn btn-icon btn-primary" id="btn-catalog-modal" data-bs-toggle="modal" data-bs-target="#visualCatalogModal" title="Pilih dari Katalog Visual">
+                                <i class="ki-outline ki-element-11 fs-2"></i>
+                            </button>
+                        </div>
                         <div id="loss-stock-info" class="form-text">Stok tersedia akan tampil setelah produk dipilih.</div>
                     </x-metronic.form-group>
                     <div class="row g-3">
@@ -107,6 +112,12 @@
             </x-metronic.card>
         </div>
     </div>
+
+    <x-metronic.visual-catalog-modal 
+        id="visualCatalogModal" 
+        data-url="{{ route('warehouse.losses.options') }}" 
+        on-select="handleCatalogSelect" 
+    />
 @endsection
 
 @push('scripts')
@@ -172,6 +183,46 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     quantity.addEventListener('input', refreshValue);
     if (work.val()) loadBins(initialBin, initialProduct); else { reset(bin, 'Pilih lokasi kerja terlebih dahulu'); reset(product, 'Pilih lokasi kerja terlebih dahulu'); }
+
+    // Visual Catalog Integration
+    const btnCatalog = document.getElementById('btn-catalog-modal');
+    btnCatalog.addEventListener('click', function() {
+        const sourceLoc = work.val();
+        const sourceBin = bin.val();
+        
+        const params = {
+            work_location_id: sourceLoc,
+            warehouse_location_id: sourceBin,
+            type: 'products'
+        };
+        
+        btnCatalog.dataset.urlParams = JSON.stringify(params);
+    });
+
+    window.handleCatalogSelect = function(productData) {
+        // Find if this product is already in our select list
+        let option = product.find(`option[value="${productData.id}"]`);
+        
+        if (option.length === 0) {
+            // In case it wasn't there, create it and inject the data so our other JS works
+            const itemData = {
+                id: productData.id,
+                text: productData.sku + ' — ' + productData.name,
+                cost_price: productData.cost_price,
+                available: productData.available,
+                unit: productData.unit
+            };
+            
+            let items = product.data('items') || [];
+            items.push(itemData);
+            product.data('items', items);
+            
+            product.append(new Option(itemData.text, itemData.id, true, true));
+        }
+        
+        product.val(productData.id).trigger('change.loss').trigger('change.select2');
+        toastr && toastr.success(productData.name + ' dipilih.');
+    };
 });
 </script>
 @endpush

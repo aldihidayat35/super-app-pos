@@ -106,6 +106,7 @@ class StockTransferController extends Controller
             abort_unless($locationIsValid, 422, 'Lokasi ambil tidak sesuai dengan lokasi kerja sumber.');
 
             $query = Product::query()
+                ->with('category')
                 ->where('status', 'active')
                 ->whereHas('stocks', fn ($stock) => $stock
                     ->where('work_location_id', $workLocationId)
@@ -115,10 +116,17 @@ class StockTransferController extends Controller
                     $inner->where('sku', 'like', "%{$search}%")->orWhere('name', 'like', "%{$search}%");
                 }))
                 ->orderBy('name');
-            $products = $query->paginate($perPage, ['id', 'sku', 'name'], 'page', $page);
+            $products = $query->paginate($perPage, ['id', 'sku', 'name', 'category_id', 'photo_path'], 'page', $page);
 
             return response()->json([
-                'results' => $products->map(fn (Product $product): array => ['id' => $product->id, 'text' => "{$product->sku} — {$product->name}"])->values(),
+                'results' => $products->map(fn (Product $product): array => [
+                    'id' => $product->id,
+                    'text' => "{$product->sku} — {$product->name}",
+                    'sku' => $product->sku,
+                    'name' => $product->name,
+                    'category' => $product->category?->name ?? 'Tanpa kategori',
+                    'image_url' => $product->main_image_url,
+                ])->values(),
                 'pagination' => ['more' => $products->hasMorePages()],
             ]);
         }

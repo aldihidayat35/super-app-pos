@@ -78,7 +78,7 @@ class InventoryLossController extends Controller
         }
 
         $stocks = Stock::query()
-            ->select('stocks.*')->join('products', 'products.id', '=', 'stocks.product_id')->with('product.baseUnit')
+            ->select('stocks.*')->join('products', 'products.id', '=', 'stocks.product_id')->with(['product.baseUnit', 'product.category'])
             ->where('stocks.work_location_id', $workLocationId)
             ->when($warehouseLocationId === null, fn ($query) => $query->whereNull('stocks.warehouse_location_id'), fn ($query) => $query->where('stocks.warehouse_location_id', $warehouseLocationId))
             ->where('products.status', 'active')
@@ -90,6 +90,10 @@ class InventoryLossController extends Controller
         return response()->json(['results' => $stocks->map(fn (Stock $stock): array => [
             'id' => $stock->product_id,
             'text' => $stock->product->sku.' — '.$stock->product->name,
+            'sku' => $stock->product->sku,
+            'name' => $stock->product->name,
+            'category' => $stock->product->category?->name ?? 'Tanpa kategori',
+            'image_url' => $stock->product->main_image_url,
             'cost_price' => (string) $stock->product->cost_price,
             'available' => $stock->available_quantity,
             'unit' => $stock->product->baseUnit?->symbol ?: 'unit',

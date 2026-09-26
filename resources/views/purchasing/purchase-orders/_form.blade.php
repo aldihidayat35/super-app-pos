@@ -105,12 +105,22 @@
                 @foreach ($existingItems as $i => $item)
                     <tr>
                         <td>
-                            <select name="items[{{ $i }}][product_id]" class="form-select form-select-solid" required aria-label="Produk item {{ $i + 1 }}">
-                                <option value="">Pilih produk</option>
-                                @foreach ($products as $product)
-                                    <option value="{{ $product->id }}" @selected(($item['product_id'] ?? '') == $product->id)>{{ $product->sku }} - {{ $product->name }}</option>
-                                @endforeach
-                            </select>
+                            <div class="d-flex gap-2">
+                                <select name="items[{{ $i }}][product_id]" class="form-select form-select-solid" required aria-label="Produk item {{ $i + 1 }}">
+                                    <option value="">Pilih produk</option>
+                                    @foreach ($products as $product)
+                                        <option value="{{ $product->id }}" 
+                                                data-sku="{{ $product->sku }}" 
+                                                data-name="{{ $product->name }}" 
+                                                data-category="{{ $product->category?->name ?? 'Tanpa Kategori' }}" 
+                                                data-image="{{ $product->main_image_url }}"
+                                                @selected(($item['product_id'] ?? '') == $product->id)>{{ $product->sku }} - {{ $product->name }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="button" class="btn btn-icon btn-light-primary btn-catalog" data-bs-toggle="modal" data-bs-target="#visualCatalogModal" data-row-index="{{ $i }}">
+                                    <i class="ki-outline ki-element-11"></i>
+                                </button>
+                            </div>
                         </td>
                         <td>
                             <select name="items[{{ $i }}][unit_id]" class="form-select form-select-solid" required aria-label="Satuan pembelian item {{ $i + 1 }}">
@@ -150,6 +160,12 @@
     <a href="{{ $purchaseOrder->exists ? route('purchasing.purchase-orders.show', $purchaseOrder) : route('purchasing.purchase-orders.index') }}" class="btn btn-light">Batal</a>
 </div>
 
+<x-metronic.visual-catalog-modal 
+    id="visualCatalogModal" 
+    sourceSelector="select[name='items[0][product_id]'] option"
+    on-select="handleCatalogSelect" 
+/>
+
 @push('scripts')
     <script>
         document.addEventListener('input', function (event) {
@@ -177,5 +193,31 @@
         };
 
         window.calculatePurchaseOrderTotal();
+
+        let activePoRowIndex = 0;
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-catalog');
+            if (btn) {
+                activePoRowIndex = btn.dataset.rowIndex;
+                // Update sourceSelector for catalog
+                const modal = document.getElementById('visualCatalogModal');
+                if (modal && modal.__catalogInstance) {
+                    modal.__catalogInstance.updateSourceSelector(`select[name="items[${activePoRowIndex}][product_id]"] option`);
+                }
+            }
+        });
+
+        window.handleCatalogSelect = function(product) {
+            const select = document.querySelector(`select[name="items[${activePoRowIndex}][product_id]"]`);
+            if (select) {
+                select.value = product.id;
+                if (window.$(select).data('select2')) {
+                    window.$(select).trigger('change');
+                } else {
+                    select.dispatchEvent(new Event('change'));
+                }
+                toastr && toastr.success(product.name + ' dipilih.');
+            }
+        };
     </script>
 @endpush

@@ -14,7 +14,6 @@
         <div class="col-xl-7 col-lg-7">
 
             <div class="d-flex flex-column gap-6">
-
                 {{-- Card Parameter Simulasi --}}
                 <x-metronic.card title="Parameter Simulasi">
                     <form
@@ -28,18 +27,27 @@
                             label="Produk"
                             required
                         >
-                            <select name="product_id" class="form-select">
-                                <option value="">Pilih produk</option>
+                            <div class="d-flex gap-2">
+                                <select name="product_id" class="form-select" id="product_id">
+                                    <option value="">Pilih produk</option>
 
-                                @foreach ($products as $product)
-                                    <option
-                                        value="{{ $product->id }}"
-                                        @selected(($filters['product_id'] ?? '') == $product->id)
-                                    >
-                                        {{ $product->sku }} — {{ $product->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                                    @foreach ($products as $product)
+                                        <option
+                                            value="{{ $product->id }}"
+                                            data-sku="{{ $product->sku }}"
+                                            data-name="{{ $product->name }}"
+                                            data-category="{{ $product->category?->name ?? 'Tanpa Kategori' }}"
+                                            data-image="{{ $product->main_image_url }}"
+                                            @selected(($filters['product_id'] ?? '') == $product->id)
+                                        >
+                                            {{ $product->sku }} — {{ $product->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button type="button" class="btn btn-icon btn-light-primary" data-bs-toggle="modal" data-bs-target="#visualCatalogModal" title="Pilih dari Katalog Visual">
+                                    <i class="ki-outline ki-element-11"></i>
+                                </button>
+                            </div>
                         </x-metronic.form-group>
 
                         {{-- Channel dan Quantity --}}
@@ -198,7 +206,6 @@
                                     <i class="ki-outline ki-box fs-6 me-1"></i>
                                     Produk: #{{ $result['product_id'] }}
                                 </span>
-
                                 @if (!empty($result['rule_id']))
                                     <span class="badge bg-light text-dark fs-7">
                                         <i class="ki-outline ki-shield-check fs-6 me-1"></i>
@@ -249,7 +256,30 @@
         </div>
 
     </div>
+
+    <x-metronic.visual-catalog-modal
+        id="visualCatalogModal"
+        sourceSelector="select#product_id option"
+        on-select="handleCatalogSelect"
+    />
 @endsection
+
+@push('scripts')
+<script>
+    window.handleCatalogSelect = function(product) {
+        const select = document.getElementById('product_id');
+        if (select) {
+            select.value = product.id;
+            if (window.$(select).data('select2')) {
+                window.$(select).trigger('change');
+            } else {
+                select.dispatchEvent(new Event('change'));
+            }
+            toastr && toastr.success(product.name + ' dipilih.');
+        }
+    };
+</script>
+@endpush
 
 @push('scripts')
     <script>

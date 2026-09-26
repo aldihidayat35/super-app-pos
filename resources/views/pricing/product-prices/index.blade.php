@@ -451,11 +451,17 @@
 @section('content')
     @php($canSensitive = auth()->user()?->can('margins.view_sensitive'))
     <x-metronic.card title="Input Ring Harga">
-        <form method="POST" action="{{ route('pricing.product-prices.store') }}" class="row g-3 align-items-end" id="product-price-form">
+        <form method="POST" action="{{ route('pricing.product-prices.store') }}" class="row g-3 align-items-start" id="product-price-form">
             @csrf
             <div class="col-md-4">
-                <x-metronic.form-group name="product_ids" label="Produk" required help="Klik untuk membuka dropdown, cari, dan pilih beberapa produk.">
-                    <div class="pp-picker-container" data-product-picker="true">
+                <div class="fv-row mb-7">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label for="product_ids" class="form-label required mb-0">Produk</label>
+                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-bs-toggle="modal" data-bs-target="#visualCatalogModal" title="Pilih dari Katalog Visual">
+                            <i class="ki-outline ki-element-11"></i> Katalog Visual
+                        </button>
+                    </div>
+                    <div class="pp-picker-container w-100" data-product-picker="true">
                         <!-- Hidden native select (form-bound) -->
                         <select id="product_ids" name="product_ids[]"
                             class="pp-native-select @error('product_ids') is-invalid @enderror"
@@ -466,6 +472,7 @@
                                     data-sku="{{ $product->sku }}"
                                     data-name="{{ $product->name }}"
                                     data-category="{{ $product->category?->name ?? '' }}"
+                                    data-image="{{ $product->main_image_url }}"
                                     @selected(in_array((string) $product->id, array_map('strval', old('product_ids', request('product_id') ? [(string) request('product_id')] : [])), true))>
                                     {{ $product->sku }} — {{ $product->name }}
                                 </option>
@@ -495,7 +502,9 @@
                             <span>Belum ada produk dipilih</span>
                         </div>
                     </div>
-                </x-metronic.form-group>
+                    <div class="form-text mt-2">Klik untuk membuka dropdown, cari, dan pilih beberapa produk.</div>
+                    @error('product_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                </div>
             </div>
             <div class="col-md-2"><x-metronic.form-group name="channel" label="Channel" required><select name="channel" class="form-select"><option value="retail">Retail</option><option value="b2b">B2B</option><option value="pos">POS</option><option value="all">Semua</option></select></x-metronic.form-group></div>
             <div class="col-md-2"><x-metronic.form-group name="price_ring" label="Ring" required><input name="price_ring" value="ring_1" class="form-control"></x-metronic.form-group></div>
@@ -515,7 +524,24 @@
 
     <x-metronic.card title="Daftar Harga Produk" class="mt-6">
         <form method="GET" class="row g-3 mb-6">
-            <div class="col-md-5"><select name="product_id" class="form-select"><option value="">Semua produk</option>@foreach($products as $product)<option value="{{ $product->id }}" @selected(($filters['product_id'] ?? '') == $product->id)>{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select></div>
+            <div class="col-md-5">
+                <div class="d-flex gap-2">
+                    <select name="product_id" class="form-select" id="filter_product_id">
+                        <option value="">Semua produk</option>
+                        @foreach($products as $product)
+                            <option value="{{ $product->id }}" 
+                                    data-sku="{{ $product->sku }}" 
+                                    data-name="{{ $product->name }}" 
+                                    data-category="{{ $product->category?->name ?? 'Tanpa Kategori' }}" 
+                                    data-image="{{ $product->main_image_url }}"
+                                    @selected(($filters['product_id'] ?? '') == $product->id)>{{ $product->sku }} — {{ $product->name }}</option>
+                        @endforeach
+                    </select>
+                    <button type="button" class="btn btn-icon btn-light-primary" data-bs-toggle="modal" data-bs-target="#visualCatalogModalFilter" title="Pilih Produk dari Katalog">
+                        <i class="ki-outline ki-element-11"></i>
+                    </button>
+                </div>
+            </div>
             <div class="col-md-3"><select name="channel" class="form-select"><option value="">Semua channel</option><option value="retail" @selected(($filters['channel'] ?? '') === 'retail')>Retail</option><option value="b2b" @selected(($filters['channel'] ?? '') === 'b2b')>B2B</option><option value="pos" @selected(($filters['channel'] ?? '') === 'pos')>POS</option></select></div>
             <div class="col-md-2"><button class="btn btn-light-primary w-100">Filter</button></div>
         </form>
@@ -590,4 +616,40 @@
         </div>
         {{ $prices->links() }}
     </x-metronic.card>
+
+    <x-metronic.visual-catalog-modal 
+        id="visualCatalogModal" 
+        sourceSelector="select#product_ids option"
+        on-select="handleCatalogSelect" 
+    />
+    <x-metronic.visual-catalog-modal 
+        id="visualCatalogModalFilter" 
+        sourceSelector="select#filter_product_id option"
+        on-select="handleCatalogFilterSelect" 
+    />
 @endsection
+
+@push('scripts')
+<script>
+    window.handleCatalogSelect = function(product) {
+        const select = document.getElementById('product_ids');
+        if (select) {
+            // Find the option
+            const option = select.querySelector(`option[value="${product.id}"]`);
+            if (option) {
+                option.selected = true;
+                // Dispatch change event to trigger the custom picker update
+                select.dispatchEvent(new Event('change'));
+                toastr && toastr.success(product.name + ' ditambahkan ke daftar.');
+            }
+        }
+    };
+    window.handleCatalogFilterSelect = function(product) {
+        const select = document.getElementById('filter_product_id');
+        if (select) {
+            select.value = product.id;
+            select.closest('form').submit();
+        }
+    };
+</script>
+@endpush

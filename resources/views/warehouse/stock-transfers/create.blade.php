@@ -91,7 +91,14 @@
             <div class="separator my-6"></div>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div><div class="fw-bold fs-5">Daftar Produk</div><div class="text-muted fs-7">Tambahkan seluruh produk yang akan dipindahkan.</div></div>
-                <button type="button" class="btn btn-sm btn-light-primary" id="add-transfer-item"><i class="ki-outline ki-plus fs-5"></i> Tambah Produk</button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-catalog-modal" data-bs-toggle="modal" data-bs-target="#visualCatalogModal">
+                        <i class="ki-outline ki-element-11 fs-5"></i> Pilih dari Katalog
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light-primary" id="add-transfer-item">
+                        <i class="ki-outline ki-plus fs-5"></i> Tambah Baris
+                    </button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table align-middle">
@@ -127,4 +134,51 @@
             <td class="text-end"><button type="button" class="btn btn-sm btn-icon btn-light-danger remove-transfer-item" title="Hapus produk"><i class="ki-outline ki-trash fs-5"></i></button></td>
         </tr>
     </template>
+
+    <x-metronic.visual-catalog-modal 
+        id="visualCatalogModal" 
+        data-url="{{ route('warehouse.stock-transfers.location-options') }}" 
+        on-select="handleCatalogSelect" 
+    />
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnCatalog = document.getElementById('btn-catalog-modal');
+    btnCatalog.addEventListener('click', function() {
+        // Set dynamic URL params based on current selected locations
+        const sourceLoc = document.getElementById('source-work-location').value;
+        const sourceBin = document.querySelector('select[name="source_warehouse_location_id"]').value;
+        
+        const params = {
+            work_location_id: sourceLoc,
+            warehouse_location_id: sourceBin,
+            context: 'product',
+            per_page: 100 // fetch more for the catalog
+        };
+        
+        btnCatalog.dataset.urlParams = JSON.stringify(params);
+    });
+});
+
+function handleCatalogSelect(product) {
+    const btn = document.getElementById('add-transfer-item');
+    btn.click(); // Add a new row
+    
+    // Find the newly added row
+    const items = document.querySelectorAll('.transfer-item-row');
+    const newRow = items[items.length - 1];
+    
+    // Set the product select value
+    const select = newRow.querySelector('.product-select');
+    if (select) {
+        // Since it's select2 AJAX, we need to create an option element
+        const option = new Option(product.sku + ' — ' + product.name, product.id, true, true);
+        window.$(select).append(option).trigger('change');
+    }
+    
+    toastr && toastr.success(product.name + ' ditambahkan ke daftar transfer.');
+}
+</script>
+@endpush

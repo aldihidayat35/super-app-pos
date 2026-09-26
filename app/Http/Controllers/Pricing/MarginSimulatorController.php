@@ -28,7 +28,7 @@ class MarginSimulatorController extends Controller
         }
 
         return view('pricing.simulator.index', [
-            'products' => Product::query()->where('status', 'active')->orderBy('name')->limit(500)->get(),
+            'products' => Product::query()->with('category')->where('status', 'active')->orderBy('name')->limit(500)->get(),
             'branches' => Branch::query()->where('is_active', true)->orderBy('name')->get(),
             'customers' => Customer::query()->where('is_active', true)->orderBy('business_name')->limit(500)->get(),
             'result' => $result,

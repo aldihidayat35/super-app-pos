@@ -56,15 +56,32 @@
             </div>
         </x-metronic.card>
         <x-metronic.card title="Item Order" class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="card-title fs-5 m-0">Daftar Produk</h3>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#visualCatalogModal">
+                        <i class="ki-outline ki-element-11 fs-5 me-1"></i>Pilih dari Katalog Visual
+                    </button>
+                    <button type="button" id="add-item" class="btn btn-sm btn-light-primary">
+                        <i class="ki-outline ki-plus fs-5 me-1"></i>Tambah Baris
+                    </button>
+                </div>
+            </div>
             <div id="order-items">
                 @foreach(old('items', [['product_id' => '', 'quantity' => 1]]) as $index => $item)
                     <div class="row g-3 align-items-end order-item mb-3">
                         <div class="col-md-8">
                             <label class="form-label">Produk</label>
-                            <select name="items[{{ $index }}][product_id]" class="form-select" required>
+                            <select name="items[{{ $index }}][product_id]" class="form-select product-input" required>
                                 <option value="">Pilih produk</option>
                                 @foreach($products as $product)
-                                    <option value="{{ $product->id }}" @selected((string) ($item['product_id'] ?? '') === (string) $product->id)>{{ $product->sku }} — {{ $product->name }} ({{ $product->baseUnit?->symbol }})</option>
+                                    <option value="{{ $product->id }}" 
+                                        data-sku="{{ $product->sku }}" 
+                                        data-name="{{ $product->name }}" 
+                                        data-unit="{{ $product->baseUnit?->symbol }}"
+                                        data-category="{{ $product->category?->name ?? 'Tanpa Kategori' }}"
+                                        data-image="{{ $product->main_image_url }}"
+                                        @selected((string) ($item['product_id'] ?? '') === (string) $product->id)>{{ $product->sku }} — {{ $product->name }} ({{ $product->baseUnit?->symbol }})</option>
                                 @endforeach
                             </select>
                         </div>
@@ -73,7 +90,6 @@
                     </div>
                 @endforeach
             </div>
-            <button type="button" id="add-item" class="btn btn-sm btn-light-primary">Tambah Item</button>
         </x-metronic.card>
         <x-metronic.card title="Konfirmasi"><x-metronic.form-group name="notes" label="Catatan"><textarea name="notes" rows="3" class="form-control">{{ old('notes') }}</textarea></x-metronic.form-group><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="terms_accepted" value="1" required @checked(old('terms_accepted'))><span class="form-check-label">Saya memastikan data order benar dan menyetujui syarat transaksi B2B.</span></label></x-metronic.card>
         <div class="d-flex justify-content-end gap-3 mt-5"><a href="{{ route('sales.orders.index') }}" class="btn btn-light">Batal</a><button class="btn btn-primary">Kirim Order</button></div>
@@ -86,7 +102,12 @@
                 <select class="form-select product-input" required>
                     <option value="">Pilih produk</option>
                     @foreach($products as $product)
-                        <option value="{{ $product->id }}">{{ $product->sku }} — {{ $product->name }} ({{ $product->baseUnit?->symbol }})</option>
+                        <option value="{{ $product->id }}" 
+                            data-sku="{{ $product->sku }}" 
+                            data-name="{{ $product->name }}" 
+                            data-unit="{{ $product->baseUnit?->symbol }}"
+                            data-category="{{ $product->category?->name ?? 'Tanpa Kategori' }}"
+                            data-image="{{ $product->main_image_url }}">{{ $product->sku }} — {{ $product->name }} ({{ $product->baseUnit?->symbol }})</option>
                     @endforeach
                 </select>
             </div>
@@ -94,6 +115,12 @@
             <div class="col-md-1"><button type="button" class="btn btn-light-danger remove-item">×</button></div>
         </div>
     </template>
+
+    <x-metronic.visual-catalog-modal 
+        id="visualCatalogModal" 
+        source-selector="#item-template .product-input option" 
+        on-select="handleCatalogSelect" 
+    />
 @endsection
 
 @push('scripts')
@@ -122,5 +149,26 @@ document.addEventListener('DOMContentLoaded', function () {
         if (event.target.classList.contains('remove-item') && document.querySelectorAll('.order-item').length > 1) event.target.closest('.order-item').remove();
     });
 });
+
+function handleCatalogSelect(product) {
+    const btn = document.getElementById('add-item');
+    btn.click(); // Add a new row
+    
+    // Find the newly added row (the last one)
+    const items = document.querySelectorAll('.order-item');
+    const newRow = items[items.length - 1];
+    
+    // Set the product select value
+    const select = newRow.querySelector('.product-input');
+    if (select) {
+        select.value = product.id;
+        
+        // Trigger change event for plugins like Select2 (if any)
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    // Show notification
+    toastr && toastr.success(product.name + ' ditambahkan ke daftar.');
+}
 </script>
 @endpush

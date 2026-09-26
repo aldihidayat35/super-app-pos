@@ -312,7 +312,7 @@ class ProductController extends Controller
         if ($request->hasFile('main_image')) {
             $mainImage = $request->file('main_image');
             if ($mainImage instanceof UploadedFile && $mainImage->isValid()) {
-                $path = $mainImage->store('products', 'public');
+                $path = $this->processAndStoreImage($mainImage);
                 $imageService->add($product, $path, $request->user(), true);
             }
         }
@@ -350,10 +350,27 @@ class ProductController extends Controller
                     continue;
                 }
 
-                $path = $file->store('products', 'public');
+                $path = $this->processAndStoreImage($file);
                 $imageService->add($product, $path, $request->user());
             }
         }
+    }
+
+    private function processAndStoreImage(\Illuminate\Http\UploadedFile $file): string
+    {
+        $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+        $filename = \Illuminate\Support\Str::random(40) . '.webp';
+        $path = 'products/' . $filename;
+        
+        \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products');
+        $image = $manager->decodePath($file->path());
+        $image->scaleDown(width: 800, height: 800);
+        
+        // Save as WebP
+        $fullPath = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
+        $image->encodeUsingFormat(\Intervention\Image\Format::WEBP, quality: 80)->save($fullPath);
+        
+        return $path;
     }
 
     /**
