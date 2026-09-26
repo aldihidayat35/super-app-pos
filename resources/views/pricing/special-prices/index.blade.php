@@ -31,7 +31,19 @@
                 @forelse($overrides as $override)
                     <tr>
                         <td>{{ $override->customer?->business_name }}</td>
-                        <td>{{ $override->product?->sku }}<div class="text-muted">{{ $override->product?->name }}</div></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                @if($override->product)
+                                <div class="symbol symbol-35px me-3">
+                                    <x-metronic.image-preview url="{{ $override->product->main_image_url }}" title="{{ $override->product->name }}" />
+                                </div>
+                                @endif
+                                <div>
+                                    <div class="fw-bold text-gray-800" data-mobile-primary>{{ $override->product?->name }}</div>
+                                    <div class="text-muted fs-7" data-mobile-secondary>{{ $override->product?->sku }}</div>
+                                </div>
+                            </div>
+                        </td>
                         <td>{{ strtoupper($override->channel ?? 'all') }}<div class="text-muted">{{ $override->branch?->name ?? 'Semua cabang' }} · Min qty {{ qty($override->minimum_qty) }}</div></td>
                         <td>Rp {{ number_format((float) $override->price, 0, ',', '.') }}<div class="text-muted">Diskon {{ $override->discount_percent ?? 0 }}%</div></td>
                         <td>{{ $override->starts_at?->format('d/m/Y') }} - {{ $override->ends_at?->format('d/m/Y') ?? 'Tanpa batas' }}</td>

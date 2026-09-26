@@ -11,7 +11,7 @@
     <div class="row g-5">
         <div class="col-lg-5"><x-metronic.card>
             <div class="ratio ratio-1x1 bg-light rounded d-flex align-items-center justify-content-center overflow-hidden">
-                <img src="{{ $product->main_image_url }}" class="rounded object-fit-cover w-100 h-100" alt="{{ $product->name }}" loading="lazy">
+                <x-metronic.image-preview url="{{ $product->main_image_url }}" title="{{ $product->name }}" classes="rounded object-fit-cover w-100 h-100" size="" />
             </div>
         </x-metronic.card></div>
         <div class="col-lg-7"><x-metronic.card title="Informasi Produk">

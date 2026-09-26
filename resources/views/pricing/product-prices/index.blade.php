@@ -526,7 +526,19 @@
                 @forelse($prices as $price)
                     @php($resolved = $resolver->resolve($price->product, branch: $price->branch, channel: $price->channel === 'all' ? 'retail' : $price->channel, user: auth()->user(), requestedPrice: $price->recommended_price))
                     <tr>
-                        <td>{{ $price->product?->sku }}<div class="text-muted">{{ $price->product?->name }}</div></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                @if($price->product)
+                                <div class="symbol symbol-35px me-3">
+                                    <x-metronic.image-preview url="{{ $price->product->main_image_url }}" title="{{ $price->product->name }}" />
+                                </div>
+                                @endif
+                                <div>
+                                    <div class="fw-bold text-gray-800" data-mobile-primary>{{ $price->product?->name }}</div>
+                                    <div class="text-muted fs-7" data-mobile-secondary>{{ $price->product?->sku }}</div>
+                                </div>
+                            </div>
+                        </td>
                         @if($canSensitive)<td>Rp {{ number_format((float) $resolved['hpp_base'], 0, ',', '.') }}</td>@endif
                         <td>{{ strtoupper($price->channel) }}<div class="text-muted">{{ $price->branch?->name ?? 'Semua cabang' }} · {{ $price->customer_category ?: 'Semua kategori' }}</div></td>
                         <td>{{ $price->price_ring }}<div class="text-muted">Prioritas {{ $price->priority }}</div></td>

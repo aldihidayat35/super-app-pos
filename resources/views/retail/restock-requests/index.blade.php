@@ -277,7 +277,7 @@
 
 @push('scripts')
 <script>
-(() => {
+document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('restock-form');
     if (!form) return;
 
@@ -682,6 +682,6 @@
     } else {
         add();
     }
-})();
+});
 </script>
 @endpush

@@ -55,7 +55,21 @@
                 @forelse ($mutations as $mutation)
                     <tr>
                         <td>{{ $mutation->occurred_at?->format('d/m/Y H:i:s') }}</td>
-                        <td>{{ $mutation->product?->sku }}<div class="text-muted">{{ $mutation->product?->name }}</div></td>
+                        <td>
+                            @if($mutation->product)
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-35px me-3">
+                                        <x-metronic.image-preview url="{{ $mutation->product->main_image_url }}" title="{{ $mutation->product->name }}" />
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-gray-800">{{ $mutation->product->name }}</div>
+                                        <div class="text-muted fs-7">{{ $mutation->product->sku }}</div>
+                                    </div>
+                                </div>
+                            @else
+                                -
+                            @endif
+                        </td>
                         <td>{{ $mutation->warehouseLocation?->full_code ?: $mutation->workLocation?->name }}</td>
                         <td>{{ $mutation->mutation_type->label() }}</td>
                         <td class="text-success">{{ (float) $mutation->quantity_on_hand_change > 0 ? qty($mutation->quantity_on_hand_change) : '-' }}</td>

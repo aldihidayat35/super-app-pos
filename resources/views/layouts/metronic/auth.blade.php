@@ -58,20 +58,18 @@
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
-                for (let reg of registrations) {
-                    reg.update();
+                for (const reg of registrations) {
+                    reg.unregister();
                 }
             });
         }
         if ('caches' in window) {
             caches.keys().then(keys => {
-                keys.forEach(key => {
-                    if (key !== 'gudangtoko-pwa-v2') {
-                        caches.delete(key);
-                    }
-                });
+                keys.forEach(k => caches.delete(k));
             });
         }
+        localStorage.removeItem('pwa_install_dismissed');
+        sessionStorage.removeItem('pwa_install_shown');
     </script>
 </body>
 </html>

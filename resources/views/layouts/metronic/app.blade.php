@@ -14,12 +14,6 @@
     <link rel="stylesheet" href="{{ versioned_asset('assets/css/ki-icons-fallback.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/sidebar-custom.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/header-custom.css') }}">
-    <link rel="manifest" href="{{ url('/manifest.json') }}">
-    <meta name="theme-color" content="#009ef7">
-    <link rel="apple-touch-icon" href="{{ $dynamicLogo }}">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="GudangToko">
     @vite(['resources/js/vendor.js', 'resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
     <script>
@@ -51,11 +45,27 @@
         </div>
     </div>
 
+    @include('components.metronic.image-preview-modal')
     @include('layouts.metronic.partials.loading-overlay')
     @include('layouts.metronic.partials.flash-toast')
-    @include('layouts.metronic.partials.pwa-prompt')
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (const reg of registrations) {
+                    reg.unregister();
+                }
+            });
+        }
+        if ('caches' in window) {
+            caches.keys().then(keys => {
+                keys.forEach(k => caches.delete(k));
+            });
+        }
+        localStorage.removeItem('pwa_install_dismissed');
+        sessionStorage.removeItem('pwa_install_shown');
+    </script>
     @stack('scripts')
 </body>
 </html>

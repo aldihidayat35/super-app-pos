@@ -76,7 +76,7 @@ class StockCardController extends Controller
             ->when($request->integer('user_id') > 0, fn ($query) => $query->where('actor_user_id', $request->integer('user_id')))
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('occurred_at', '>=', $request->query('date_from')))
             ->when($request->filled('date_to'), fn ($query) => $query->whereDate('occurred_at', '<=', $request->query('date_to')))
-            ->orderBy('occurred_at')
-            ->orderBy('id');
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id');
     }
 }

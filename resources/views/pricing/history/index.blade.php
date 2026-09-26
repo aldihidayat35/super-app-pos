@@ -23,7 +23,19 @@
                 <tbody>
                 @forelse($histories as $history)
                     <tr>
-                        <td>{{ $history->product?->sku }}<div class="text-muted">{{ $history->product?->name }}</div></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                @if($history->product)
+                                <div class="symbol symbol-35px me-3">
+                                    <x-metronic.image-preview url="{{ $history->product->main_image_url }}" title="{{ $history->product->name }}" />
+                                </div>
+                                @endif
+                                <div>
+                                    <div class="fw-bold text-gray-800" data-mobile-primary>{{ $history->product?->name }}</div>
+                                    <div class="text-muted fs-7" data-mobile-secondary>{{ $history->product?->sku }}</div>
+                                </div>
+                            </div>
+                        </td>
                         <td>{{ strtoupper($history->channel) }}<div class="text-muted">{{ $history->price_ring ?: '-' }}</div></td>
                         <td>Rp {{ number_format((float) $history->old_price, 0, ',', '.') }} → <strong>Rp {{ number_format((float) $history->new_price, 0, ',', '.') }}</strong></td>
                         <td>HPP Rp {{ number_format((float) $history->hpp_snapshot, 0, ',', '.') }}<div class="text-muted">Min Rp {{ number_format((float) $history->minimum_price_snapshot, 0, ',', '.') }}</div></td>

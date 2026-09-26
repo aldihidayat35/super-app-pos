@@ -92,10 +92,10 @@
     };
 
     $tableColumns = match ($type) {
-        'warehouse' => ['sku' => 'SKU', 'product' => 'Produk', 'location' => 'Lokasi', 'quantity_on_hand' => 'On Hand', 'quantity_reserved' => 'Reservasi', 'quantity_damaged' => 'Rusak', 'available' => 'Tersedia', 'cost_value' => 'Nilai Stok'],
+        'warehouse' => ['product' => 'Produk', 'location' => 'Lokasi', 'quantity_on_hand' => 'On Hand', 'quantity_reserved' => 'Reservasi', 'quantity_damaged' => 'Rusak', 'available' => 'Tersedia', 'cost_value' => 'Nilai Stok'],
         'retail' => ['date' => 'Tanggal', 'location' => 'Toko', 'cashier' => 'Kasir', 'transaction_count' => 'Transaksi', 'revenue' => 'Omzet', 'margin' => 'Margin'],
         'b2b' => ['customer' => 'Pelanggan', 'status' => 'Status Order', 'order_count' => 'Order', 'revenue' => 'Nilai Order'],
-        'pricing' => ['created_at' => 'Waktu', 'sku' => 'SKU', 'product' => 'Produk', 'channel' => 'Channel', 'old_price' => 'Harga Lama', 'new_price' => 'Harga Baru', 'price_change_percent' => 'Perubahan', 'hpp_snapshot' => 'HPP', 'margin_percent' => 'Margin', 'reason' => 'Alasan'],
+        'pricing' => ['created_at' => 'Waktu', 'product' => 'Produk', 'channel' => 'Channel', 'old_price' => 'Harga Lama', 'new_price' => 'Harga Baru', 'price_change_percent' => 'Perubahan', 'hpp_snapshot' => 'HPP', 'margin_percent' => 'Margin', 'reason' => 'Alasan'],
         'receivables' => ['number' => 'Nomor', 'customer' => 'Pelanggan', 'location' => 'Lokasi', 'channel' => 'Channel', 'issue_date' => 'Terbit', 'due_date' => 'Jatuh Tempo', 'principal_amount' => 'Pokok', 'paid_amount' => 'Terbayar', 'outstanding_amount' => 'Outstanding', 'aging_bucket' => 'Aging', 'status' => 'Status'],
         default => array_combine(array_keys($rows[0] ?? []), array_keys($rows[0] ?? [])) ?: [],
     };
@@ -229,7 +229,18 @@
         <div class="table-responsive"><table class="table table-row-dashed align-middle report-table"><thead><tr class="text-muted fw-bold text-uppercase fs-8">@foreach($tableColumns as $column => $heading)<th>{{ $heading }}</th>@endforeach</tr></thead><tbody>
             @forelse($rows as $row)
                 <tr>@foreach($tableColumns as $column => $heading) @php($value = $row[$column] ?? null) <td @class(['fw-semibold text-gray-800' => in_array($column, ['product', 'customer', 'number'], true)])>
-                    @if($value === null || $value === '') <span class="text-muted">—</span>
+                    @if($column === 'product' && isset($row['sku']))
+                        <div class="d-flex align-items-center">
+                            <div class="symbol symbol-35px me-3">
+                                @php($imgUrl = isset($row['image_path']) ? asset('storage/'.$row['image_path']) : asset('assets/media/svg/files/blank-image.svg'))
+                                <x-metronic.image-preview url="{{ $imgUrl }}" title="{{ $value }}" />
+                            </div>
+                            <div>
+                                <div class="fw-bold text-gray-800" data-mobile-primary>{{ $value }}</div>
+                                <div class="text-muted fs-7" data-mobile-secondary>{{ $row['sku'] }}</div>
+                            </div>
+                        </div>
+                    @elseif($value === null || $value === '') <span class="text-muted">—</span>
                     @elseif(in_array($column, $moneyColumns, true)) {{ CurrencyFormatter::rupiah($value) }}
                     @elseif(in_array($column, $quantityColumns, true)) {{ qty($value) }}
                     @elseif(in_array($column, $percentColumns, true)) <span @class(['text-success' => (float) $value >= 0, 'text-danger' => (float) $value < 0])>{{ number_format((float) $value, 2, ',', '.') }}%</span>

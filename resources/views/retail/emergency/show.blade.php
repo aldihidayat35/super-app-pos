@@ -18,7 +18,7 @@
                 <div class="fw-semibold mb-2">Nota pembelian</div>
                 @if($receiptIsImage)
                     <a href="{{ route('retail.emergency.receipt-preview', $purchase) }}" target="_blank" rel="noopener noreferrer" aria-label="Buka nota pembelian di tab baru">
-                        <img src="{{ route('retail.emergency.receipt-preview', $purchase) }}" class="emergency-receipt-preview img-fluid rounded border bg-light" alt="Nota pembelian {{ $purchase->number }}">
+                        <x-metronic.image-preview url="{{ route('retail.emergency.receipt-preview', $purchase) }}" title="Nota pembelian {{ $purchase->number }}" classes="emergency-receipt-preview img-fluid rounded border bg-light" size="" />
                     </a>
                     <div class="text-muted fs-8 mt-2">Klik gambar untuk membuka ukuran penuh di tab baru.</div>
                 @endif

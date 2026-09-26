@@ -43,16 +43,27 @@
         </div>
         <button class="btn btn-light-primary">Filter</button>
     </form>
-    <div class="table-responsive"><table class="table table-row-dashed align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Kode</th><th>Nama</th><th>Kategori</th><th>Merek</th><th>Satuan</th><th>Status</th><th class="text-end">Stok Total</th><th>HPP</th><th>Harga Minimum</th><th class="text-end">Aksi</th></tr></thead><tbody>
+    <div class="table-responsive"><table class="table table-row-dashed align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Kategori</th><th>Merek</th><th>Satuan</th><th>Status</th><th class="text-end">Stok Total</th><th>HPP</th><th>Harga Minimum</th><th class="text-end">Aksi</th></tr></thead><tbody>
     @forelse($products as $product)
         <tr>
-            <td class="fw-bold"><span data-mobile-primary>{{ $product->sku }}</span></td><td><a href="{{ route('admin.products.show', $product) }}" class="fw-bold text-gray-900 text-hover-primary" data-mobile-secondary>{{ $product->name }}</a></td><td><span data-mobile-subtitle>{{ $product->category?->name }}</span></td><td>{{ $product->brand?->name ?: '-' }}</td><td>{{ $product->baseUnit?->symbol }}</td><td><x-metronic.status-badge :status="$product->status->value" :label="$product->status->label()" /></td><td class="text-end fw-bold"><span data-mobile-highlight data-mobile-highlight-label="Stok Total">{{ intval($product->total_stock) }}</span></td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="symbol symbol-35px me-3">
+                        <x-metronic.image-preview url="{{ $product->main_image_url }}" title="{{ $product->name }}" />
+                    </div>
+                    <div>
+                        <a href="{{ route('admin.products.show', $product) }}" class="fw-bold text-gray-900 text-hover-primary" data-mobile-primary>{{ $product->name }}</a>
+                        <div class="text-muted fs-7" data-mobile-secondary>{{ $product->sku }}</div>
+                    </div>
+                </div>
+            </td>
+            <td><span data-mobile-subtitle>{{ $product->category?->name }}</span></td><td>{{ $product->brand?->name ?: '-' }}</td><td>{{ $product->baseUnit?->symbol }}</td><td><x-metronic.status-badge :status="$product->status->value" :label="$product->status->label()" /></td><td class="text-end fw-bold"><span data-mobile-highlight data-mobile-highlight-label="Stok Total">{{ intval($product->total_stock) }}</span></td>
             <td>{{ App\Support\CurrencyFormatter::rupiah($product->cost_price) }}</td>
             <td>{{ App\Support\CurrencyFormatter::rupiah($product->minimum_price) }}</td>
             <td class="text-end"><a href="{{ route('admin.products.show', $product) }}" class="btn btn-sm btn-light">Detail</a> @can('update', $product)<a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-light-primary">Edit</a>@endcan</td>
         </tr>
     @empty
-        <tr><td colspan="10"><x-metronic.empty-state title="Belum ada produk" description="Produk akan tampil setelah dibuat atau diimport." /></td></tr>
+        <tr><td colspan="9"><x-metronic.empty-state title="Belum ada produk" description="Produk akan tampil setelah dibuat atau diimport." /></td></tr>
     @endforelse
     </tbody></table></div>{{ $products->links() }}
 </x-metronic.card>

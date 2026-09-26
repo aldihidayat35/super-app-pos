@@ -144,6 +144,7 @@ php artisan schedule:work          # dev
 - ✅ Akun deterministic testing di [docs/TESTING.md](docs/TESTING.md).
 - ✅ Number formatting: pakai helper `qty($value)` atau `App\Support\CurrencyFormatter::rupiah($value)`.
 - ✅ PHP binary lokal Laragon: `C:\laragon\bin\php\php-8.3.31-nts-Win32-vs16-x64\php.exe`.
+- ✅ **Branch-only Operation:** Aplikasi ini mendukung operasional murni Retail tanpa Gudang Pusat. `WorkLocation`, `WarehouseLocation` (Rak/Bin), dan penerimaan barang (PO/Goods Receipt) dapat langsung mengarah ke `Branch` (Toko Internal). Jangan pernah mengasumsikan bahwa entitas `Warehouse` wajib ada dalam alur pengadaan.
 
 ## 6. Alur kerja perbaikan bug
 

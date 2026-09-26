@@ -148,7 +148,7 @@
 
                 @if($product->exists && ! $product->hasCustomImage())
                     <div class="alert alert-light-warning border border-warning border-dashed d-flex align-items-center p-3 mb-4">
-                        <img src="{{ $product->main_image_url }}" alt="Default" class="rounded me-3 shadow-xs" style="width: 54px; height: 54px; object-fit: cover;">
+                        <x-metronic.image-preview url="{{ $product->main_image_url }}" title="Default" classes="rounded me-3 shadow-xs" size="" style="width: 54px; height: 54px; object-fit: cover;" />
                         <div>
                             <div class="fw-bold text-gray-800 fs-7">Produk ini saat ini menggunakan Foto Default Sistem</div>
                             <div class="text-muted fs-8">Pilih dan unggah foto asli produk di atas untuk menggantikan foto bawaan secara otomatis.</div>

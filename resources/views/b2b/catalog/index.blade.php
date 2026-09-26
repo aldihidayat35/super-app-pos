@@ -22,7 +22,7 @@
             <div class="col-md-6 col-xl-4">
                 <x-metronic.card>
                     <div class="ratio ratio-16x9 bg-light rounded mb-4 d-flex align-items-center justify-content-center overflow-hidden">
-                        <img src="{{ $product->main_image_url }}" class="rounded object-fit-cover w-100 h-100" alt="{{ $product->name }}" loading="lazy">
+                        <x-metronic.image-preview url="{{ $product->main_image_url }}" title="{{ $product->name }}" classes="rounded object-fit-cover w-100 h-100" size="" />
                     </div>
                     <div class="text-muted">{{ $product->sku }} · {{ $product->category?->name }}</div>
                     <a href="{{ route('langganan.katalog.show', $product) }}" class="fs-5 fw-bold text-gray-900 text-hover-primary">{{ $product->name }}</a>

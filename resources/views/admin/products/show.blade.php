@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="col-lg-4">
             <x-metronic.card title="Info Produk">
                 <div class="mb-4 text-center">
-                    <img src="{{ $product->main_image_url }}" alt="{{ $product->name }}" class="img-fluid rounded max-h-200px object-fit-cover shadow-sm">
+                    <x-metronic.image-preview url="{{ $product->main_image_url }}" title="{{ $product->name }}" classes="img-fluid rounded max-h-200px object-fit-cover shadow-sm" size="" />
                     @if(! $product->hasCustomImage())
                         <div class="mt-2">
                             <span class="badge badge-light-warning border border-warning fs-8">

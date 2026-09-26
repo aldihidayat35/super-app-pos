@@ -83,7 +83,21 @@
                 <tbody>
                 @forelse ($stocks as $stock)
                     <tr>
-                        <td><span class="fw-bold" data-mobile-primary>{{ $stock->product?->sku }}</span><div class="text-muted" data-mobile-secondary>{{ $stock->product?->name }}</div></td>
+                        <td>
+                            @if($stock->product)
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-35px me-3">
+                                        <x-metronic.image-preview url="{{ $stock->product->main_image_url }}" title="{{ $stock->product->name }}" />
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-gray-800" data-mobile-primary>{{ $stock->product->name }}</div>
+                                        <div class="text-muted fs-7" data-mobile-secondary>{{ $stock->product->sku }}</div>
+                                    </div>
+                                </div>
+                            @else
+                                -
+                            @endif
+                        </td>
                         <td><span data-mobile-subtitle>{{ $stock->workLocation?->name }}</span><div class="text-muted">{{ $stock->warehouseLocation?->full_code ?: 'Tanpa bin' }}</div></td>
                         <td>{{ qty($stock->quantity_on_hand) }}</td>
                         <td>{{ qty($stock->quantity_reserved) }}</td>

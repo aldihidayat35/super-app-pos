@@ -364,7 +364,7 @@
                                 <td>
                                     @if($expense->proof_path)
                                         <a href="{{ Storage::url($expense->proof_path) }}" target="_blank">
-                                            <img src="{{ Storage::url($expense->proof_path) }}" alt="Bukti" class="expense-proof-thumb">
+                                            <x-metronic.image-preview url="{{ Storage::url($expense->proof_path) }}" title="Bukti" classes="expense-proof-thumb" size="" />
                                         </a>
                                     @else
                                         <span class="text-muted">-</span>

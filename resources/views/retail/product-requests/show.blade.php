@@ -8,7 +8,7 @@
         <div class="col-lg-8">
             <x-metronic.card title="Data yang Diajukan">
                 <div class="row g-4">
-                    @if($proposal->photo_path)<div class="col-12"><img src="{{ Storage::disk('public')->url($proposal->photo_path) }}" alt="Foto {{ $proposal->name }}" class="rounded border" style="max-width:240px;max-height:240px;object-fit:contain"></div>@endif
+                    @if($proposal->photo_path)<div class="col-12"><x-metronic.image-preview url="{{ Storage::disk('public')->url($proposal->photo_path) }}" title="Foto {{ $proposal->name }}" classes="rounded border" size="" style="max-width:240px;max-height:240px;object-fit:contain" /></div>@endif
                     <div class="col-md-6"><div class="text-muted">Nama</div><div class="fw-bold">{{ $proposal->name }}</div></div>
                     <div class="col-md-6"><div class="text-muted">SKU / Barcode</div><div>{{ $proposal->proposed_sku ?: 'SKU otomatis' }} / {{ $proposal->barcode ?: '-' }}</div></div>
                     <div class="col-md-6"><div class="text-muted">Kategori / Merek</div><div>{{ $proposal->category?->name }} / {{ $proposal->brand?->name ?: '-' }}</div></div>

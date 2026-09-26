@@ -138,7 +138,7 @@
                     <article class="{{ $cardClass }}">
                         <div class="storefront-photo">
                             @if ($product->main_image_url)
-                                <img src="{{ $product->main_image_url }}" alt="{{ $product->name }}" loading="lazy">
+                                <x-metronic.image-preview url="{{ $product->main_image_url }}" title="{{ $product->name }}" classes="" size="" />
                             @else
                                 <i class="ki-outline ki-package" aria-hidden="true"></i>
                             @endif
