@@ -10,6 +10,7 @@ use App\Models\ProductCategory;
 use App\Models\RetailProductPlacement;
 use App\Models\Stock;
 use App\Models\User;
+use App\Models\WarehouseLocation;
 use App\Services\Pricing\PriceResolverService;
 use App\Services\Retail\EmergencyStockService;
 use App\Support\Decimal;
@@ -91,6 +92,9 @@ class StorefrontController extends Controller
             'placements' => $placements,
             'cards' => $cards,
             'areas' => RetailProductPlacement::query()->where('branch_id', $branchId)->distinct()->orderBy('area')->pluck('area'),
+            'storeLocations' => $branch instanceof Branch
+                ? WarehouseLocation::query()->where('branch_id', $branch->id)->where('is_active', true)->orderBy('full_code')->get()
+                : collect(),
             'categories' => ProductCategory::query()
                 ->where('is_active', true)
                 ->whereHas('products', fn ($query) => $query

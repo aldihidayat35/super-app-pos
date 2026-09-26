@@ -23,7 +23,7 @@ class StockController extends Controller
             'stocks' => $this->query($request)->paginate(20)->withQueryString(),
             'products' => Product::query()->where('status', 'active')->whereHas('stocks', fn ($query) => $query->whereIn('work_location_id', $locationIds))->orderBy('name')->limit(200)->get(),
             'workLocations' => WorkLocation::query()->whereIn('id', $locationIds)->orderBy('name')->get(),
-            'warehouseLocations' => WarehouseLocation::query()->where('is_active', true)->whereHas('warehouse', fn ($query) => $query->whereIn('work_location_id', $locationIds))->orderBy('full_code')->limit(300)->get(),
+            'warehouseLocations' => WarehouseLocation::query()->where('is_active', true)->forWorkLocationIds($locationIds)->orderBy('full_code')->limit(300)->get(),
             'filters' => $request->only(['product_id', 'work_location_id', 'warehouse_location_id', 'status']),
         ]);
     }

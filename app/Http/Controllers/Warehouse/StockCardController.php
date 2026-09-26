@@ -25,7 +25,7 @@ class StockCardController extends Controller
             'mutations' => $this->query($request)->paginate(25)->withQueryString(),
             'products' => Product::query()->where('status', 'active')->whereHas('stockMutations', fn ($query) => $query->whereIn('work_location_id', $locationIds))->orderBy('name')->limit(200)->get(),
             'workLocations' => WorkLocation::query()->whereIn('id', $locationIds)->orderBy('name')->get(),
-            'warehouseLocations' => WarehouseLocation::query()->where('is_active', true)->whereHas('warehouse', fn ($query) => $query->whereIn('work_location_id', $locationIds))->orderBy('full_code')->limit(300)->get(),
+            'warehouseLocations' => WarehouseLocation::query()->where('is_active', true)->forWorkLocationIds($locationIds)->orderBy('full_code')->limit(300)->get(),
             'users' => User::query()->where('is_active', true)->orderBy('name')->limit(200)->get(),
             'types' => StockMutationType::options(),
             'filters' => $request->only(['product_id', 'work_location_id', 'warehouse_location_id', 'mutation_type', 'reference_no', 'user_id', 'date_from', 'date_to']),

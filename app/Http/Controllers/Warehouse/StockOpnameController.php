@@ -35,9 +35,9 @@ class StockOpnameController extends Controller
             'opnames' => $this->query($request)->paginate(15)->withQueryString(),
             'workLocations' => WorkLocation::query()->whereIn('id', $permittedWorkLocationIds)->where('is_active', true)->orderBy('name')->get(),
             'warehouseLocations' => WarehouseLocation::query()
-                ->with('warehouse:id,work_location_id')
+                ->with(['warehouse:id,work_location_id', 'branch:id,work_location_id'])
                 ->where('is_active', true)
-                ->whereHas('warehouse', fn ($query) => $query->whereIn('work_location_id', $permittedWorkLocationIds))
+                ->forWorkLocationIds($permittedWorkLocationIds)
                 ->orderBy('full_code')
                 ->get(),
             'categories' => ProductCategory::query()->where('is_active', true)->orderBy('name')->get(),

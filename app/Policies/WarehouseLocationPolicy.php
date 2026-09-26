@@ -9,27 +9,27 @@ class WarehouseLocationPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('stock.view');
+        return $user->can('stock.view') || $user->can('retail.catalog.view');
     }
 
     public function view(User $user, WarehouseLocation $warehouseLocation): bool
     {
-        if (! $user->can('stock.view')) {
+        if (! ($user->can('stock.view') || $user->can('retail.catalog.view'))) {
             return false;
         }
 
-        $workLocationId = $warehouseLocation->warehouse?->work_location_id;
+        $workLocationId = $warehouseLocation->workLocationId();
 
         return $workLocationId === null || $user->canAccessWorkLocation((int) $workLocationId);
     }
 
     public function create(User $user): bool
     {
-        return $user->can('stock.create');
+        return $user->can('stock.create') || $user->can('retail.catalog.manage');
     }
 
     public function update(User $user, WarehouseLocation $warehouseLocation): bool
     {
-        return $user->can('stock.update') && $this->view($user, $warehouseLocation);
+        return ($user->can('stock.update') || $user->can('retail.catalog.manage')) && $this->view($user, $warehouseLocation);
     }
 }

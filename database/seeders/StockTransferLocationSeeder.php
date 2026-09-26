@@ -27,9 +27,10 @@ class StockTransferLocationSeeder extends Seeder
             $warehouse = $this->warehouse($sync);
             $branch = $this->branch($sync, $warehouse);
             $bin = $this->locations($warehouse);
+            $branchBin = $this->branchLocations($branch);
 
             $this->assignDemoUsers($warehouse, $branch);
-            $this->moveBranchDemoStockIntoBin($branch, $bin);
+            $this->moveBranchDemoStockIntoBin($branch, $branchBin);
         });
     }
 
@@ -108,6 +109,48 @@ class StockTransferLocationSeeder extends Seeder
                 'type' => 'bin',
                 'full_code' => "{$warehouse->code}-ZONA-A-RAK-01-BIN-01",
                 'name' => 'Bin 01 Demo',
+                'capacity' => 250,
+                'is_active' => true,
+            ],
+        );
+    }
+
+    private function branchLocations(Branch $branch): WarehouseLocation
+    {
+        $zone = WarehouseLocation::query()->updateOrCreate(
+            ['branch_id' => $branch->id, 'code' => 'ZONA-DISPLAY'],
+            [
+                'warehouse_id' => null,
+                'parent_id' => null,
+                'type' => 'zone',
+                'full_code' => "{$branch->code}-ZONA-DISPLAY",
+                'name' => 'Zona Display Depan',
+                'capacity' => 1000,
+                'is_active' => true,
+            ],
+        );
+
+        $rack = WarehouseLocation::query()->updateOrCreate(
+            ['branch_id' => $branch->id, 'code' => 'RAK-DPN'],
+            [
+                'warehouse_id' => null,
+                'parent_id' => $zone->id,
+                'type' => 'rack',
+                'full_code' => "{$branch->code}-ZONA-DISPLAY-RAK-DPN",
+                'name' => 'Rak Display Utama',
+                'capacity' => 500,
+                'is_active' => true,
+            ],
+        );
+
+        return WarehouseLocation::query()->updateOrCreate(
+            ['branch_id' => $branch->id, 'code' => 'BIN-KASIR'],
+            [
+                'warehouse_id' => null,
+                'parent_id' => $rack->id,
+                'type' => 'bin',
+                'full_code' => "{$branch->code}-ZONA-DISPLAY-RAK-DPN-BIN-KASIR",
+                'name' => 'Bin Display Kasir',
                 'capacity' => 250,
                 'is_active' => true,
             ],

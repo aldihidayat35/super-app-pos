@@ -6,6 +6,7 @@ use Database\Factories\BranchFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Branch extends Model
@@ -56,5 +57,11 @@ class Branch extends Model
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_user_id');
+    }
+
+    /** @return HasMany<WarehouseLocation, $this> */
+    public function locations(): HasMany
+    {
+        return $this->hasMany(WarehouseLocation::class);
     }
 }

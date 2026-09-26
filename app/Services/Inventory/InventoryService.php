@@ -362,7 +362,7 @@ class InventoryService
 
     private function lockedStock(Product $product, WorkLocation $workLocation, ?WarehouseLocation $warehouseLocation): Stock
     {
-        if ($warehouseLocation !== null && ! in_array((int) $warehouseLocation->warehouse_id, $this->warehouseIdsForWorkLocation($workLocation), true)) {
+        if ($warehouseLocation !== null && ! $this->locationBelongsToWorkLocation($warehouseLocation, $workLocation)) {
             throw ServiceException::validation('Lokasi bin tidak sesuai dengan gudang/lokasi kerja.');
         }
 
@@ -409,6 +409,24 @@ class InventoryService
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function locationBelongsToWorkLocation(WarehouseLocation $warehouseLocation, WorkLocation $workLocation): bool
+    {
+        if ($warehouseLocation->branch_id !== null) {
+            $branchWorkLocationId = Branch::query()
+                ->where('id', $warehouseLocation->branch_id)
+                ->where('is_active', true)
+                ->value('work_location_id');
+
+            return $branchWorkLocationId !== null && (int) $branchWorkLocationId === (int) $workLocation->id;
+        }
+
+        if ($warehouseLocation->warehouse_id !== null) {
+            return in_array((int) $warehouseLocation->warehouse_id, $this->warehouseIdsForWorkLocation($workLocation), true);
+        }
+
+        return false;
     }
 
     private function scopeKey(WorkLocation $workLocation, ?WarehouseLocation $warehouseLocation): string

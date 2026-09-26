@@ -149,6 +149,24 @@
                                     <form method="POST" action="{{ route('retail.storefront.placement.update', $product) }}">
                                         @csrf @method('PUT')
                                         <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+
+                                        @if ($storeLocations->isNotEmpty())
+                                            <div class="mb-2">
+                                                <label class="form-label fs-9 text-muted mb-1">Pilih dari Lokasi Toko:</label>
+                                                <select class="form-select form-select-sm" onchange="if(this.value){ const opt=this.options[this.selectedIndex]; document.getElementById('area-{{ $product->id }}').value=opt.dataset.area||''; document.getElementById('rack-{{ $product->id }}').value=opt.dataset.rack||''; document.getElementById('shelf-{{ $product->id }}').value=opt.dataset.shelf||''; }">
+                                                    <option value="">-- Pilih Lokasi Fisik --</option>
+                                                    @foreach ($storeLocations as $loc)
+                                                        <option value="{{ $loc->id }}"
+                                                            data-area="{{ $loc->parent ? ($loc->parent->parent?->name ?? $loc->parent->name) : $loc->name }}"
+                                                            data-rack="{{ $loc->type->value === 'rack' ? $loc->name : ($loc->parent?->type->value === 'rack' ? $loc->parent->name : '') }}"
+                                                            data-shelf="{{ $loc->type->value === 'bin' ? $loc->name : '' }}">
+                                                            {{ $loc->full_code }} ({{ $loc->name }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @endif
+
                                         <label class="form-label fs-8" for="area-{{ $product->id }}">Area</label>
                                         <input id="area-{{ $product->id }}" name="area" value="{{ $placement?->area }}" required maxlength="80" class="form-control form-control-sm mb-2">
                                         <label class="form-label fs-8" for="rack-{{ $product->id }}">Rak</label>

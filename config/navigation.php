@@ -369,6 +369,12 @@ return [
                 'permission' => 'retail.catalog.view',
             ],
             [
+                'label' => 'Lokasi Toko',
+                'route' => 'retail.locations.index',
+                'active' => ['retail.locations.*'],
+                'permission' => 'retail.catalog.view',
+            ],
+            [
                 'label' => 'Pembelian Darurat',
                 'route' => 'retail.emergency.index',
                 'active' => ['retail.emergency.*'],

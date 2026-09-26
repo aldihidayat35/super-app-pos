@@ -89,6 +89,7 @@ use App\Http\Controllers\Retail\PosController;
 use App\Http\Controllers\Retail\PosSaleController;
 use App\Http\Controllers\Retail\ProductRequestController;
 use App\Http\Controllers\Retail\RestockRequestController;
+use App\Http\Controllers\Retail\RetailLocationController;
 use App\Http\Controllers\Retail\StorefrontController;
 use App\Http\Controllers\Returns\InventoryLossController;
 use App\Http\Controllers\Returns\ReturnController;
@@ -121,19 +122,20 @@ use App\Http\Controllers\Warehouse\StockTransferController;
 use App\Http\Controllers\Warehouse\WarehouseDashboardController;
 use App\Http\Controllers\Warehouse\WarehouseLocationController;
 use App\Http\Controllers\WorkChecklist\WorkChecklistController;
+use App\Models\SystemSetting;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
 
 Route::get('/manifest.json', function () {
-    $companyName = \App\Models\SystemSetting::getCompanyName();
-    $uploadedLogo = \App\Models\SystemSetting::getCompanyLogo();
+    $companyName = SystemSetting::getCompanyName();
+    $uploadedLogo = SystemSetting::getCompanyLogo();
     $logoUrl = $uploadedLogo ?? asset('assets/media/logos/custom-1.png');
-    
+
     $mimeType = 'image/png';
     if ($uploadedLogo) {
         $ext = strtolower(pathinfo(parse_url($logoUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
-        $mimeType = match($ext) {
+        $mimeType = match ($ext) {
             'jpg', 'jpeg' => 'image/jpeg',
             'svg' => 'image/svg+xml',
             'webp' => 'image/webp',
@@ -142,33 +144,33 @@ Route::get('/manifest.json', function () {
             default => 'image/png',
         };
     }
-    
+
     return response()->json([
-        "name" => $companyName,
-        "short_name" => $companyName,
-        "start_url" => url('/'),
-        "display" => "standalone",
-        "background_color" => "#ffffff",
-        "theme_color" => "#009ef7",
-        "icons" => [
+        'name' => $companyName,
+        'short_name' => $companyName,
+        'start_url' => url('/'),
+        'display' => 'standalone',
+        'background_color' => '#ffffff',
+        'theme_color' => '#009ef7',
+        'icons' => [
             [
-                "src" => $logoUrl,
-                "sizes" => "192x192",
-                "type" => $mimeType,
-                "purpose" => "any maskable"
+                'src' => $logoUrl,
+                'sizes' => '192x192',
+                'type' => $mimeType,
+                'purpose' => 'any maskable',
             ],
             [
-                "src" => $logoUrl,
-                "sizes" => "512x512",
-                "type" => $mimeType,
-                "purpose" => "any maskable"
+                'src' => $logoUrl,
+                'sizes' => '512x512',
+                'type' => $mimeType,
+                'purpose' => 'any maskable',
             ],
             [
-                "src" => $logoUrl,
-                "sizes" => "any",
-                "type" => $mimeType
-            ]
-        ]
+                'src' => $logoUrl,
+                'sizes' => 'any',
+                'type' => $mimeType,
+            ],
+        ],
     ]);
 });
 
@@ -1378,6 +1380,24 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::put('/etalase/produk/{product}/lokasi', [StorefrontController::class, 'updatePlacement'])
             ->middleware('permission:retail.catalog.manage')
             ->name('storefront.placement.update');
+        Route::get('/locations', [RetailLocationController::class, 'index'])
+            ->middleware('permission:retail.catalog.view|stock.view')
+            ->name('locations.index');
+        Route::get('/locations/create', [RetailLocationController::class, 'create'])
+            ->middleware('permission:retail.catalog.manage|stock.create')
+            ->name('locations.create');
+        Route::post('/locations', [RetailLocationController::class, 'store'])
+            ->middleware('permission:retail.catalog.manage|stock.create')
+            ->name('locations.store');
+        Route::get('/locations/{location}/edit', [RetailLocationController::class, 'edit'])
+            ->middleware('permission:retail.catalog.manage|stock.update')
+            ->name('locations.edit');
+        Route::put('/locations/{location}', [RetailLocationController::class, 'update'])
+            ->middleware('permission:retail.catalog.manage|stock.update')
+            ->name('locations.update');
+        Route::patch('/locations/{location}/deactivate', [RetailLocationController::class, 'deactivate'])
+            ->middleware('permission:retail.catalog.manage|stock.update')
+            ->name('locations.deactivate');
         Route::get('/dashboard/data', [RetailDashboardController::class, 'data'])
             ->middleware('permission:dashboard.view|cash_shifts.view|reports.view')
             ->name('dashboard.data');

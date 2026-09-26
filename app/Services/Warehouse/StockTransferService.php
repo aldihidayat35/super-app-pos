@@ -684,7 +684,10 @@ class StockTransferService
         $belongs = WarehouseLocation::query()
             ->whereKey((int) $warehouseLocationId)
             ->where('is_active', true)
-            ->whereIn('warehouse_id', $this->warehouseIdsForWorkLocation($workLocation))
+            ->where(function ($query) use ($workLocation): void {
+                $query->whereIn('warehouse_id', $this->warehouseIdsForWorkLocation($workLocation))
+                    ->orWhereHas('branch', fn ($q) => $q->where('work_location_id', $workLocation->id)->where('is_active', true));
+            })
             ->exists();
 
         if (! $belongs) {
