@@ -910,22 +910,22 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:stock_adjustments.view')
             ->name('stock-opnames.index');
         Route::get('/opening-stocks/import', [OpeningStockImportController::class, 'index'])
-            ->middleware('permission:opening_stocks.view|products.import|stock.view|retail.catalog.manage')
+            ->middleware('permission:opening_stocks.import')
             ->name('opening-stocks.import.index');
         Route::get('/stocks/import', [OpeningStockImportController::class, 'index'])
-            ->middleware('permission:opening_stocks.view|products.import|stock.view|retail.catalog.manage')
+            ->middleware('permission:opening_stocks.import')
             ->name('stocks.import');
         Route::get('/opening-stocks/import/template', [OpeningStockImportController::class, 'template'])
-            ->middleware('permission:opening_stocks.view|products.import|stock.view|retail.catalog.manage')
+            ->middleware('permission:opening_stocks.import')
             ->name('opening-stocks.import.template');
         Route::post('/opening-stocks/import/preview', [OpeningStockImportController::class, 'preview'])
-            ->middleware('permission:opening_stocks.create|products.import|stock_adjustments.create|retail.catalog.manage')
+            ->middleware('permission:opening_stocks.import')
             ->name('opening-stocks.import.preview');
         Route::post('/opening-stocks/import/commit', [OpeningStockImportController::class, 'commit'])
-            ->middleware('permission:opening_stocks.create|products.import|stock_adjustments.create|retail.catalog.manage')
+            ->middleware('permission:opening_stocks.import')
             ->name('opening-stocks.import.commit');
         Route::post('/opening-stocks/import/cancel', [OpeningStockImportController::class, 'cancel'])
-            ->middleware('permission:opening_stocks.view|products.import|stock.view|retail.catalog.manage')
+            ->middleware('permission:opening_stocks.import')
             ->name('opening-stocks.import.cancel');
         Route::get('/opening-stocks/export', [OpeningStockController::class, 'export'])
             ->middleware('permission:opening_stocks.export')

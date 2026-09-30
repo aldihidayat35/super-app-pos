@@ -4,7 +4,7 @@
 @section('page_title', 'Pendataan Stok Lokasi')
 
 @section('toolbar_actions')
-    @can('opening_stocks.create')
+    @can('opening_stocks.import')
         <a href="{{ route('warehouse.opening-stocks.import.index') }}" class="btn btn-light-primary me-2">
             <i class="ki-outline ki-file-up fs-2 me-1"></i> Import Excel
         </a>

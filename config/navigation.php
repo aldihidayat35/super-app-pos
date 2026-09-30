@@ -215,7 +215,7 @@ return [
                 'label' => 'Import Stok Produk',
                 'route' => 'warehouse.opening-stocks.import.index',
                 'active' => ['warehouse.opening-stocks.import.*', 'warehouse.stocks.import.*'],
-                'permission' => 'opening_stocks.view',
+                'permission' => 'opening_stocks.import',
             ],
             [
                 'label' => 'Penerimaan Barang',

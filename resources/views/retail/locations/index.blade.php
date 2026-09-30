@@ -31,9 +31,11 @@
 @endsection
 
 @section('toolbar_actions')
-    <a href="{{ route('warehouse.opening-stocks.import.index') }}" class="btn btn-light-primary me-2">
-        <i class="ki-outline ki-file-up fs-2 me-1"></i> Import Stok Toko
-    </a>
+    @can('opening_stocks.import')
+        <a href="{{ route('warehouse.opening-stocks.import.index') }}" class="btn btn-light-primary me-2">
+            <i class="ki-outline ki-file-up fs-2 me-1"></i> Import Stok Toko
+        </a>
+    @endcan
     <x-metronic.permission-button permission="stock.create" :href="route('retail.locations.create')" icon="ki-outline ki-plus">Tambah Lokasi Toko</x-metronic.permission-button>
 @endsection
 

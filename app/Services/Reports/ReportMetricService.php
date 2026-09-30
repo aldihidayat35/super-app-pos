@@ -594,7 +594,7 @@ class ReportMetricService
             ->leftJoin('products', 'products.id', '=', 'price_histories.product_id')
             ->whereBetween('price_histories.created_at', [$filters['start'], $filters['end']])
             ->when($filters['channel'], fn (Builder $query, $channel) => $query->where('price_histories.channel', $channel))
-            ->selectRaw('products.sku, products.name as product, products.image_path, price_histories.channel, price_histories.old_price, price_histories.new_price, price_histories.hpp_snapshot, price_histories.minimum_price_snapshot, price_histories.reason, price_histories.created_at')
+            ->selectRaw('products.sku, products.name as product, products.main_image_path as image_path, price_histories.channel, price_histories.old_price, price_histories.new_price, price_histories.hpp_snapshot, price_histories.minimum_price_snapshot, price_histories.reason, price_histories.created_at')
             ->latest('price_histories.created_at')
             ->limit(200)
             ->get()

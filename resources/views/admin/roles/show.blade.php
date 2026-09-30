@@ -51,68 +51,130 @@
         class="mb-5"
     />
 
-    <div class="row g-6">
-        <div class="col-lg-4">
-            <x-metronic.card title="Informasi Role">
-                <div class="mb-4"><div class="text-muted fs-7">Nama Role</div><div class="fw-bold fs-4">{{ $role->label ?: str_replace('_', ' ', $role->name) }}</div><div class="text-muted">{{ $role->name }}</div></div>
-                <div class="mb-4"><div class="text-muted fs-7">Guard</div><span class="badge badge-light">{{ $role->guard_name }}</span></div>
-                <div class="mb-4"><div class="text-muted fs-7">Status Role</div><span class="badge {{ $role->is_system ? 'badge-light-info' : 'badge-light-secondary' }}">{{ $role->is_system ? 'Sistem' : 'Kustom' }}</span></div>
-                <div class="mb-4"><div class="text-muted fs-7">Deskripsi</div><div class="fw-semibold">{{ $role->description ?: '-' }}</div></div>
-                <div class="mb-4"><div class="text-muted fs-7">Jumlah Pengguna</div><div class="fw-semibold">{{ $role->users->count() }}</div></div>
-                <div><div class="text-muted fs-7">Jumlah Permission</div><div class="fw-semibold">{{ $role->permissions->count() }}</div></div>
-            </x-metronic.card>
-
-            <x-metronic.card title="Pengguna dengan Role Ini" class="mt-6">
-                @forelse ($role->users as $user)
-                    <div class="d-flex justify-content-between align-items-center border rounded p-3 mb-3">
-                        <div>
-                            <div class="fw-bold">{{ $user->name }}</div>
-                            <div class="text-muted fs-7">{{ $user->email }}</div>
-                        </div>
-                        <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-light">Detail</a>
+    <div class="row g-6 mb-6">
+        <div class="col-lg-6">
+            <x-metronic.card title="Informasi Peran (Role)">
+                <div class="d-flex align-items-center mb-4">
+                    <i class="ki-outline ki-shield-tick fs-1 text-primary me-4"></i>
+                    <div>
+                        <div class="text-muted fs-7">Nama Role</div>
+                        <div class="fw-bold fs-4">{{ $role->label ?: str_replace('_', ' ', $role->name) }}</div>
+                        <div class="text-muted">{{ $role->name }}</div>
                     </div>
-                @empty
-                    <x-metronic.empty-state title="Belum ada pengguna" description="Belum ada pengguna yang memakai role ini." />
-                @endforelse
+                </div>
+                <div class="d-flex align-items-center mb-4">
+                    <i class="ki-outline ki-security-user fs-1 text-info me-4"></i>
+                    <div>
+                        <div class="text-muted fs-7">Tipe Keamanan (Guard)</div>
+                        <span class="badge badge-light-info">{{ $role->guard_name }}</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-4">
+                    <i class="ki-outline ki-flag fs-1 text-success me-4"></i>
+                    <div>
+                        <div class="text-muted fs-7">Status Role</div>
+                        <span class="badge {{ $role->is_system ? 'badge-light-primary' : 'badge-light-secondary' }}">{{ $role->is_system ? 'Sistem Default' : 'Kustomisasi' }}</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-6">
+                    <i class="ki-outline ki-text fs-1 text-warning me-4"></i>
+                    <div>
+                        <div class="text-muted fs-7">Deskripsi</div>
+                        <div class="fw-semibold">{{ $role->description ?: '-' }}</div>
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="border border-dashed rounded p-4 text-center bg-light">
+                            <i class="ki-outline ki-profile-user fs-2x text-primary mb-2"></i>
+                            <div class="fs-2 fw-bold text-gray-800">{{ $role->users->count() }}</div>
+                            <div class="text-muted fs-7">Jumlah Pengguna</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border border-dashed rounded p-4 text-center bg-light">
+                            <i class="ki-outline ki-setting-2 fs-2x text-primary mb-2"></i>
+                            <div class="fs-2 fw-bold text-gray-800">{{ $role->permissions->count() }}</div>
+                            <div class="text-muted fs-7">Hak Akses Aktif</div>
+                        </div>
+                    </div>
+                </div>
             </x-metronic.card>
         </div>
 
-        <div class="col-lg-8">
-            <x-metronic.card title="Matriks Permission">
+        <div class="col-lg-6">
+            <x-metronic.card title="Pengguna dengan Peran Ini">
+                <div class="overflow-auto" style="max-height: 425px;">
+                    @forelse ($role->users as $user)
+                        <div class="d-flex justify-content-between align-items-center border border-dashed rounded p-3 mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="symbol symbol-40px me-3">
+                                    <div class="symbol-label bg-light-primary text-primary fs-3 fw-bold">{{ strtoupper(substr($user->name, 0, 1)) }}</div>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ $user->name }}</div>
+                                    <div class="text-muted fs-7">{{ $user->email }}</div>
+                                </div>
+                            </div>
+                            <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-icon btn-light-primary" title="Lihat Profil">
+                                <i class="ki-outline ki-arrow-right fs-2"></i>
+                            </a>
+                        </div>
+                    @empty
+                        <div class="py-10 text-center">
+                            <x-metronic.empty-state title="Belum ada pengguna" description="Belum ada pengguna yang memiliki role ini." />
+                        </div>
+                    @endforelse
+                </div>
+            </x-metronic.card>
+        </div>
+    </div>
+
+    <div class="row g-6">
+        <div class="col-lg-12">
+            <x-metronic.card title="Matriks Hak Akses (Permissions)">
                 <form method="POST" action="{{ route('admin.roles.permissions.update', $role) }}">
                     @csrf
                     @method('PUT')
 
-                    @foreach ($permissions as $group => $groupPermissions)
-                        <div class="mb-8">
-                            <h4 class="fw-bold text-gray-900 mb-4 d-flex align-items-center">
-                                {{ strtoupper($group) }}
-                                @include('admin.roles._help-icon', ['text' => 'Bagian ini berisi hak akses untuk satu area kerja. Centang berarti role ini boleh melakukan tindakan tersebut.'])
-                            </h4>
-                            <div class="row g-3">
-                                @foreach ($groupPermissions as $permission)
-                                    <div class="col-md-6">
-                                        <label class="form-check form-check-custom form-check-solid border rounded p-3 h-100">
-                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->id }}" @checked(collect(old('permissions', $selectedPermissions))->contains($permission->id)) @disabled(! auth()->user()?->can('updatePermissions', $role))>
-                                            <span class="form-check-label ms-2">
-                                                <span class="fw-semibold d-flex align-items-center">
-                                                    {{ $permission->label ?: $permission->name }}
-                                                    @include('admin.roles._help-icon', ['text' => $permission->help_text])
-                                                </span>
-                                                <span class="text-muted fs-8">{{ $permission->name }} · {{ $permission->guard_name }}</span>
-                                            </span>
-                                        </label>
+                    <div class="row">
+                        @foreach ($permissions as $group => $groupPermissions)
+                            <div class="col-md-4 mb-8">
+                                <div class="card card-bordered h-100 shadow-sm">
+                                    <div class="card-header bg-light-primary min-h-40px px-4 py-2 border-bottom-0">
+                                        <h4 class="card-title fw-bold text-primary m-0 d-flex align-items-center fs-5">
+                                            <i class="ki-outline ki-abstract-26 fs-3 me-2"></i>
+                                            {{ strtoupper($group) }}
+                                            @include('admin.roles._help-icon', ['text' => 'Bagian ini berisi hak akses untuk satu area kerja. Centang berarti role ini boleh melakukan tindakan tersebut.'])
+                                        </h4>
                                     </div>
-                                @endforeach
+                                    <div class="card-body p-4">
+                                        <div class="d-flex flex-column gap-3">
+                                            @foreach ($groupPermissions as $permission)
+                                                <label class="form-check form-check-custom form-check-solid border border-dashed rounded p-3">
+                                                    <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->id }}" @checked(collect(old('permissions', $selectedPermissions))->contains($permission->id)) @disabled(! auth()->user()?->can('updatePermissions', $role))>
+                                                    <span class="form-check-label ms-2 d-flex flex-column">
+                                                        <span class="fw-bold text-gray-800 d-flex align-items-center">
+                                                            {{ $permission->label ?: $permission->name }}
+                                                            @include('admin.roles._help-icon', ['text' => $permission->help_text])
+                                                        </span>
+                                                        <span class="text-muted fs-8">{{ $permission->description ?? ($permission->name . ' · ' . $permission->guard_name) }}</span>
+                                                    </span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
 
-                    @error('permissions')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    @error('permissions')<div class="invalid-feedback d-block mb-4">{{ $message }}</div>@enderror
 
                     @can('updatePermissions', $role)
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">Simpan Matriks Permission</button>
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i> Simpan Matriks Permission</button>
                         </div>
                     @endcan
                 </form>

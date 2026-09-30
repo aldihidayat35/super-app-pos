@@ -86,6 +86,7 @@ $config = [
         'opening_stocks.create' => ['label' => 'Isi Pendataan Stok Lokasi', 'module' => 'opening_stocks', 'action' => 'create', 'description' => 'Membuat dan mengajukan saldo fisik lokasi.'],
         'opening_stocks.approve' => ['label' => 'Posting Pendataan Stok Lokasi', 'module' => 'opening_stocks', 'action' => 'approve', 'description' => 'Memeriksa dan memposting pendataan stok lokasi.'],
         'opening_stocks.export' => ['label' => 'Export Pendataan Stok Lokasi', 'module' => 'opening_stocks', 'action' => 'export', 'description' => 'Mengunduh riwayat pendataan stok lokasi.'],
+        'opening_stocks.import' => ['label' => 'Import Pendataan Stok Lokasi', 'module' => 'opening_stocks', 'action' => 'create', 'description' => 'Mengunggah data stok awal via Excel/CSV.'],
         'returns.view' => ['label' => 'Lihat Retur', 'module' => 'returns', 'action' => 'view', 'description' => 'Melihat retur dan settlement.'],
         'returns.create' => ['label' => 'Buat Retur', 'module' => 'returns', 'action' => 'create', 'description' => 'Mengajukan retur.'],
         'returns.inspect' => ['label' => 'QC Retur', 'module' => 'returns', 'action' => 'update', 'description' => 'Melakukan pemeriksaan retur.'],
@@ -199,6 +200,7 @@ $headPermissions = [
     'opening_stocks.create',
     'opening_stocks.approve',
     'opening_stocks.export',
+    'opening_stocks.import',
 ];
 
 $config['roles']['kepala_gudang']['permissions'] = array_values(array_unique(array_merge($config['roles']['kepala_gudang']['permissions'], $headPermissions)));
