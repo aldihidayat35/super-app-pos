@@ -1444,6 +1444,11 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/pos/holds/{hold}/cancel', [PosController::class, 'cancelHold'])
             ->middleware('permission:pos.create')
             ->name('pos.holds.cancel');
+
+        Route::get('/sales', [PosSaleController::class, 'index'])
+            ->middleware('permission:pos.view')
+            ->name('sales.index');
+
         Route::get('/sales/{sale}', [PosSaleController::class, 'show'])
             ->middleware('permission:pos.view')
             ->name('sales.show');

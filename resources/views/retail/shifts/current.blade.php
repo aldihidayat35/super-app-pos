@@ -306,7 +306,7 @@
                                         $statusColor = match($sale->status?->value ?? '') {
                                             'completed' => 'success',
                                             'returned' => 'warning',
-                                            'voided' => 'danger',
+                                            'void_approved' => 'danger',
                                             default => 'secondary',
                                         };
                                     @endphp

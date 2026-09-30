@@ -4,7 +4,7 @@
 @section('page_title', 'Produktivitas Shift dan POS')
 
 @section('content')
-    <x-metronic.page-title title="Produktivitas Shift dan POS" description="HR-08 korelasi karyawan hadir, omzet, transaksi, void, diskon, selisih kas, dan closing. Bukan penilaian otomatis mutlak." />
+    <x-metronic.page-title title="Produktivitas Shift dan POS" description="HR-08 korelasi karyawan hadir, omzet, transaksi, batal, diskon, selisih kas, dan closing. Bukan penilaian otomatis mutlak." />
     <x-metronic.card title="Filter & Data">
         <form method="GET" class="row g-3 mb-5"><div class="col-md-3"><input type="date" name="from" value="{{ $filters['from'] }}" class="form-control"></div><div class="col-md-3"><input type="date" name="to" value="{{ $filters['to'] }}" class="form-control"></div><div class="col-md-2"><button class="btn btn-light-primary w-100">Filter</button></div></form>
         <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Shift</th><th>Kasir</th><th>Cabang</th><th>Attendance</th><th>Transaksi</th><th>Omzet</th><th>Diskon</th><th>Selisih Closing</th><th>Status</th></tr></thead><tbody>

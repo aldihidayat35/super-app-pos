@@ -70,7 +70,7 @@
         ],
         'retail' => [
             ['label' => 'Closing pending', 'value' => $summary['closing_pending_count'] ?? 0, 'tone' => 'warning', 'note' => 'Periksa sebelum pergantian hari.'],
-            ['label' => 'Void', 'value' => $summary['void_count'] ?? 0, 'tone' => 'danger', 'note' => 'Pastikan alasan dan approval sesuai.'],
+            ['label' => 'Transaksi Batal', 'value' => $summary['void_count'] ?? 0, 'tone' => 'danger', 'note' => 'Pastikan alasan dan approval sesuai.'],
             ['label' => 'Retur', 'value' => CurrencyFormatter::rupiah($summary['return_amount'] ?? 0), 'tone' => 'info', 'note' => 'Nilai pengembalian periode ini.'],
         ],
         'b2b' => [

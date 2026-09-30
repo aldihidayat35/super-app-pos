@@ -31,12 +31,6 @@ Schedule::command('notifications:business --owner-report')
     ->name('owner-nightly-whatsapp-report')
     ->withoutOverlapping();
 
-Schedule::command('checklists:generate')
-    ->everyFifteenMinutes()
-    ->timezone(config('work-checklists.timezone', 'Asia/Jakarta'))
-    ->name('work-checklist-generator')
-    ->withoutOverlapping();
-
 Schedule::command('attendance:schedules-generate')
     ->dailyAt('00:05')
     ->timezone('Asia/Jakarta')

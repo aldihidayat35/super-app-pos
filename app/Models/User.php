@@ -141,6 +141,12 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasMany(StaffBonusResult::class);
     }
 
+    /** @return HasMany<PosSale, $this> */
+    public function posSales(): HasMany
+    {
+        return $this->hasMany(PosSale::class, 'cashier_user_id');
+    }
+
     public function hasOnlyB2bPortalRoles(): bool
     {
         $roles = $this->roles()->pluck('name')->all();

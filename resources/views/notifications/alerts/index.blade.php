@@ -4,7 +4,7 @@
 @section('page_title', 'Aturan Alert Bisnis')
 
 @section('content')
-    <x-metronic.page-title title="Aturan Alert Bisnis" description="NTF-07 threshold stok, overdue, pending order, overpricing, margin, selisih, void, severity, cooldown, channel, status, dan preview." />
+    <x-metronic.page-title title="Aturan Alert Bisnis" description="NTF-07 threshold stok, overdue, pending order, overpricing, margin, selisih, batal, severity, cooldown, channel, status, dan preview." />
 
     @if(session('notification_preview'))
         <div class="alert alert-info"><strong>{{ session('notification_preview')['subject'] }}</strong><br>{{ session('notification_preview')['body'] }}</div>
@@ -15,7 +15,7 @@
             @csrf
             <div class="col-md-2"><label class="form-label">Rule Key</label><input name="rule_key" class="form-control" required></div>
             <div class="col-md-3"><label class="form-label">Nama</label><input name="name" class="form-control" required></div>
-            <div class="col-md-2"><label class="form-label">Tipe Alert</label><select name="alert_type" class="form-select"><option value="critical_stock">Stok Kritis</option><option value="receivable_due">Piutang Due</option><option value="pending_order">Order Tertunda</option><option value="overpricing">Overpricing</option><option value="margin">Margin</option><option value="closing_difference">Selisih Closing</option><option value="void">Void</option></select></div>
+            <div class="col-md-2"><label class="form-label">Tipe Alert</label><select name="alert_type" class="form-select"><option value="critical_stock">Stok Kritis</option><option value="receivable_due">Piutang Due</option><option value="pending_order">Order Tertunda</option><option value="overpricing">Overpricing</option><option value="margin">Margin</option><option value="closing_difference">Selisih Closing</option><option value="void">Pembatalan</option></select></div>
             <div class="col-md-2"><label class="form-label">Severity</label><select name="severity" class="form-select"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
             <div class="col-md-1"><label class="form-label">Threshold</label><input name="threshold_value" type="number" step="0.0001" class="form-control"></div>
             <div class="col-md-1"><label class="form-label">Cooldown</label><input name="cooldown_minutes" type="number" value="60" class="form-control"></div>
@@ -43,7 +43,7 @@
                         <td class="text-end"><form method="POST" action="{{ route('admin.notifications.alerts.preview', $rule) }}">@csrf <button class="btn btn-sm btn-light-info">Preview</button></form></td>
                     </tr>
                 @empty
-                    <tr><td colspan="9"><x-metronic.empty-state title="Belum ada aturan alert" description="Tambahkan threshold untuk stok, piutang, order, margin, closing, atau void." /></td></tr>
+                    <tr><td colspan="9"><x-metronic.empty-state title="Belum ada aturan alert" description="Tambahkan threshold untuk stok, piutang, order, margin, closing, atau batal." /></td></tr>
                 @endforelse
                 </tbody>
             </table>

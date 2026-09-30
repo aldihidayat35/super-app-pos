@@ -65,7 +65,7 @@
         ['label' => 'Closing Pending', 'value' => $kpis['closing_pending_count'], 'icon' => 'ki-verify', 'color' => 'warning', 'help' => 'Closing yang menunggu pemeriksaan.'],
         ['label' => 'Selisih Kas', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['cash_difference']), 'icon' => 'ki-wallet', 'color' => ((float) $kpis['cash_difference'] === 0.0 ? 'success' : 'danger'), 'help' => 'Selisih kas pada closing periode aktif.'],
         ['label' => 'Piutang Terbit', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['receivable_today']), 'icon' => 'ki-credit-cart', 'color' => 'warning', 'help' => 'Piutang retail yang diterbitkan pada periode.'],
-        ['label' => 'Transaksi Void', 'value' => $kpis['void_count'], 'icon' => 'ki-cross-circle', 'color' => 'danger', 'help' => 'Transaksi dengan void disetujui.'],
+        ['label' => 'Transaksi Batal', 'value' => $kpis['void_count'], 'icon' => 'ki-cross-circle', 'color' => 'danger', 'help' => 'Transaksi dengan pembatalan disetujui.'],
         ['label' => 'Nilai Retur', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['return_amount']), 'icon' => 'ki-arrow-circle-left', 'color' => 'warning', 'help' => 'Nilai pengembalian pada periode aktif.'],
     ];
     if ($canViewSensitiveMargin) {

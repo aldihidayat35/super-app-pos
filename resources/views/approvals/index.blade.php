@@ -4,7 +4,7 @@
 @section('page_title', 'Kotak Masuk Approval')
 
 @section('content')
-    <x-metronic.page-title title="Kotak Masuk Approval" description="APP-01 approval sensitif lintas modul: harga, stok, void, retur, kredit, absensi, dan tindakan berisiko." />
+    <x-metronic.page-title title="Kotak Masuk Approval" description="APP-01 approval sensitif lintas modul: harga, stok, pembatalan, retur, kredit, absensi, dan tindakan berisiko." />
     <x-metronic.card title="Filter Approval">
         <form method="GET" class="row g-3 mb-5">
             @if(request()->integer('requester_user_id') > 0)<input type="hidden" name="requester_user_id" value="{{ request()->integer('requester_user_id') }}">@endif

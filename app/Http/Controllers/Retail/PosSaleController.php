@@ -13,8 +13,58 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
+use App\Models\User;
+
 class PosSaleController extends Controller
 {
+    public function index(Request $request): View
+    {
+        $this->authorize('viewAny', PosSale::class);
+
+        $user = $request->user();
+        
+        $query = PosSale::with(['cashier', 'customer', 'items'])
+            ->whereIn('work_location_id', $user->permittedWorkLocationIds());
+
+        // Batasi hanya bisa lihat transaksi sendiri jika bukan kepala toko/supervisor (tidak punya akses void atau manage)
+        if (!$user->can('pos.void') && !$user->hasRole('super_admin')) {
+            $query->where('cashier_user_id', $user->id);
+        }
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00', 
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('cashier_id')) {
+            $query->where('cashier_user_id', $request->cashier_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('number', 'like', "%{$search}%")
+                  ->orWhereHas('customer', fn($q2) => $q2->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        $sales = $query->latest()->paginate(25)->withQueryString();
+
+        $cashiers = User::whereHas('posSales', function($q) use ($user) {
+            $q->whereIn('work_location_id', $user->permittedWorkLocationIds());
+        })->get();
+
+        return view('retail.sales.index', [
+            'sales' => $sales,
+            'cashiers' => $cashiers,
+        ]);
+    }
     public function show(PosSale $sale): View
     {
         $this->authorize('view', $sale);

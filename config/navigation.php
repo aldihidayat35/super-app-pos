@@ -15,14 +15,7 @@ return [
         'active' => ['owner.dashboard'],
         'permission' => 'reports.view',
     ],
-    [
-        'label' => 'Checklist Kerja',
-        'icon' => 'ki-outline ki-check-square',
-        'route' => 'work-checklists.index',
-        'active' => ['work-checklists.*'],
-        'permission' => 'work_checklists.view_own',
-        'badge' => 'work_checklists.pending',
-    ],
+
     [
         'label' => 'Target & Bonus',
         'icon' => 'ki-outline ki-award',
@@ -360,6 +353,12 @@ return [
                 'label' => 'Kasir POS',
                 'route' => 'retail.pos.index',
                 'active' => ['retail.pos.*'],
+                'permission' => 'pos.view',
+            ],
+            [
+                'label' => 'Riwayat Transaksi',
+                'route' => 'retail.sales.index',
+                'active' => ['retail.sales.*'],
                 'permission' => 'pos.view',
             ],
             [

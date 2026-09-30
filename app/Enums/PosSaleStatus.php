@@ -15,8 +15,8 @@ enum PosSaleStatus: string
         return match ($this) {
             self::ACTIVE => 'Aktif',
             self::COMPLETED => 'Selesai',
-            self::VOID_PENDING => 'Menunggu Void',
-            self::VOID_APPROVED => 'Void Disetujui',
+            self::VOID_PENDING => 'Menunggu Pembatalan',
+            self::VOID_APPROVED => 'Pembatalan Disetujui',
             self::RETURNED => 'Diretur',
         };
     }

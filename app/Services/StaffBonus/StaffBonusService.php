@@ -8,8 +8,7 @@ use App\Enums\AttendanceVerificationStatus;
 use App\Enums\PosSaleStatus;
 use App\Enums\StaffBonusPeriodStatus;
 use App\Enums\StaffBonusProgramStatus;
-use App\Enums\WorkChecklistFrequency;
-use App\Enums\WorkChecklistStatus;
+
 use App\Exceptions\ServiceException;
 use App\Models\Attendance;
 use App\Models\AttendanceRequest;
@@ -26,7 +25,7 @@ use App\Models\StaffBonusResult;
 use App\Models\StockOpname;
 use App\Models\StockTransfer;
 use App\Models\User;
-use App\Models\WorkChecklist;
+
 use App\Services\Control\ApprovalWorkflowService;
 use App\Services\Control\AuditLogService;
 use App\Support\ApprovalAuthority;
@@ -248,7 +247,6 @@ class StaffBonusService
             'cash_accuracy' => $this->cashAccuracy((int) $result->work_location_id, $start, $end),
             'b2b_net_sales' => $this->b2bNetSales((int) $result->user_id, $start, $end),
             'attendance_rate' => $this->attendanceRate((int) $result->user_id, $start, $end),
-            'checklist_on_time' => $this->checklistRate((int) $result->user_id, $result->work_location_id, $start, $end),
             default => '0.0000',
         };
     }
@@ -331,19 +329,6 @@ class StaffBonusService
         $present = Attendance::query()->where('user_id', $userId)->whereIn('attendance_date', $requiredDates)->where('verification_status', AttendanceVerificationStatus::APPROVED->value)->distinct()->count('attendance_date');
 
         return bcmul(bcdiv((string) $present, (string) $requiredDates->count(), 8), '100', 4);
-    }
-
-    private function checklistRate(int $userId, ?int $locationId, CarbonImmutable $start, CarbonImmutable $end): string
-    {
-        $query = WorkChecklist::query()->where('user_id', $userId)->where('frequency', WorkChecklistFrequency::DAILY->value)->whereBetween('period_start', [$start->toDateString(), $end->toDateString()]);
-        $locationId === null ? $query->whereNull('work_location_id') : $query->where('work_location_id', $locationId);
-        $runs = $query->get();
-        if ($runs->isEmpty()) {
-            return '0.0000';
-        }
-        $onTime = $runs->filter(fn ($run): bool => $run->status === WorkChecklistStatus::COMPLETED && $run->first_completed_at !== null && $run->first_completed_at->lte($run->due_at))->count();
-
-        return bcmul(bcdiv((string) $onTime, (string) $runs->count(), 8), '100', 4);
     }
 
     /** @return array<string, mixed> */

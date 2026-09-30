@@ -45,9 +45,7 @@
 
     $initial = strtoupper(substr($displayName, 0, 1));
     $avatarUrl = $user?->avatar_url ?? asset('assets/media/avatars/default-avatar.png');
-    $workChecklistPending = $user?->can('work_checklists.view_own')
-        ? app(\App\Services\WorkChecklist\WorkChecklistService::class)->pendingCount($user)
-        : 0;
+
 @endphp
 
 <aside id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar"
@@ -87,11 +85,7 @@
                                         +{{ $userRoles->count() - 1 }}
                                     </span>
                                 @endif
-                                @if ($workChecklistPending > 0)
-                                    <a href="{{ route('work-checklists.index') }}" class="badge badge-light-warning text-warning fw-bold fs-9 px-1.5 ms-auto text-decoration-none" title="{{ $workChecklistPending }} checklist pending">
-                                        <i class="ki-outline ki-notification-status fs-9 text-warning me-0.5"></i>{{ $workChecklistPending }}
-                                    </a>
-                                @endif
+
                             </div>
 
                             <div class="d-flex align-items-center gap-1 text-gray-600 fs-9 mt-1 text-truncate" title="{{ $workLocationName ?: 'Semua Lokasi' }}">
@@ -156,9 +150,7 @@
                                     <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                                 </span>
                                 <span class="menu-title">{{ $item['label'] }}</span>
-                                @if (($item['badge'] ?? null) === 'work_checklists.pending' && $workChecklistPending > 0)
-                                    <span class="badge badge-circle badge-danger ms-auto">{{ min($workChecklistPending, 99) }}</span>
-                                @endif
+
                             </a>
                         </div>
                     @endif

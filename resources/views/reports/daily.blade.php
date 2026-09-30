@@ -57,7 +57,7 @@
         'retail' => [
             ['Shift Aktif', $summary['active_shift_count'], 'ki-clock', 'success'],
             ['Closing Pending', $summary['closing_pending_count'], 'ki-time', 'warning'],
-            ['Void', $summary['void_count'], 'ki-cross-circle', 'danger'],
+            ['Transaksi Batal', $summary['void_count'], 'ki-cross-circle', 'danger'],
             ['Nilai Retur', CurrencyFormatter::rupiah($summary['return_amount']), 'ki-arrow-left', 'danger'],
             ['Selisih Kas', CurrencyFormatter::rupiah($summary['cash_difference']), 'ki-wallet', 'warning'],
             ['Stok Kosong', $summary['empty_stock_count'], 'ki-parcel', 'danger'],

@@ -15,7 +15,7 @@
             <ol><li>Sistem membaca role dan penugasan lokasi kerja akun.</li><li>Cabang aktif ditentukan dan divalidasi di server.</li><li>Semua KPI, grafik, stok, shift, dan transaksi dihitung hanya dari cabang aktif.</li><li>Pergantian cabang mengambil data melalui AJAX.</li><li>Tindakan lanjutan dilakukan melalui POS, shift, piutang, stok, atau laporan.</li></ol>
         </x-slot:workflow>
         <x-slot:parts>
-            <ul><li><strong>Kinerja Cabang:</strong> target dan pencapaian omzet.</li><li><strong>KPI:</strong> omzet, transaksi, stok, shift, closing, piutang, void, dan retur.</li><li><strong>Tren:</strong> grafik omzet serta volume transaksi harian, bulanan, atau tahunan.</li><li><strong>Produk:</strong> produk terlaris, belum bergerak, serta peringatan stok.</li><li><strong>Operasional:</strong> transaksi terbaru dan shift yang masih berjalan.</li><li><strong>Pembayaran:</strong> komposisi dan rincian metode pembayaran.</li></ul>
+            <ul><li><strong>Kinerja Cabang:</strong> target dan pencapaian omzet.</li><li><strong>KPI:</strong> omzet, transaksi, stok, shift, closing, piutang, batal, dan retur.</li><li><strong>Tren:</strong> grafik omzet serta volume transaksi harian, bulanan, atau tahunan.</li><li><strong>Produk:</strong> produk terlaris, belum bergerak, serta peringatan stok.</li><li><strong>Operasional:</strong> transaksi terbaru dan shift yang masih berjalan.</li><li><strong>Pembayaran:</strong> komposisi dan rincian metode pembayaran.</li></ul>
         </x-slot:parts>
         <x-slot:impacts>
             <p>Filter hanya mengubah data yang dibaca dan tidak mengubah transaksi. Margin dan nilai stok hanya dikirim kepada pengguna yang memiliki izin melihat margin sensitif.</p>
@@ -24,7 +24,7 @@
             <ol><li>Pastikan cabang aktif sudah benar.</li><li>Pilih periode lalu klik <strong>Terapkan</strong>.</li><li>Periksa target, closing pending, selisih kas, dan stok kritis.</li><li>Tinjau produk terlaris serta produk belum bergerak.</li><li>Gunakan aktivitas terbaru dan tombol tindakan untuk membuka proses terkait.</li></ol>
         </x-slot:operation>
         <x-slot:warnings>
-            <div class="alert alert-warning mb-0"><ul><li>Server menolak cabang di luar cakupan penugasan akun.</li><li>Void dan retur tidak boleh dinilai sebagai penjualan normal.</li><li>Selisih kas harus diperiksa melalui proses closing, bukan diubah dari dashboard.</li><li>Stok kritis perlu ditindaklanjuti melalui restock atau transfer resmi.</li></ul></div>
+            <div class="alert alert-warning mb-0"><ul><li>Server menolak cabang di luar cakupan penugasan akun.</li><li>Pembatalan dan retur tidak boleh dinilai sebagai penjualan normal.</li><li>Selisih kas harus diperiksa melalui proses closing, bukan diubah dari dashboard.</li><li>Stok kritis perlu ditindaklanjuti melalui restock atau transfer resmi.</li></ul></div>
         </x-slot:warnings>
         <x-slot:example>
             <p>Kepala Toko A hanya melihat Cabang A. Owner memilih Cabang B; omzet, grafik, stok, shift, dan aktivitas langsung berubah ke data Cabang B tanpa refresh halaman.</p>

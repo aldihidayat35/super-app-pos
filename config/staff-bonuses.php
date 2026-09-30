@@ -15,6 +15,5 @@ return [
         'cash_accuracy' => ['label' => 'Shift kas tanpa selisih melebihi toleransi', 'scope' => 'team', 'roles' => ['staf_toko', 'kasir']],
         'b2b_net_sales' => ['label' => 'Penjualan B2B bersih', 'scope' => 'individual', 'roles' => ['sales']],
         'attendance_rate' => ['label' => 'Kehadiran terverifikasi', 'scope' => 'individual', 'roles' => ['staff_gudang', 'picker_packer', 'staf_toko', 'kasir', 'sales']],
-        'checklist_on_time' => ['label' => 'Checklist harian tepat waktu', 'scope' => 'individual', 'roles' => ['staff_gudang', 'picker_packer', 'staf_toko', 'kasir', 'sales']],
     ],
 ];
