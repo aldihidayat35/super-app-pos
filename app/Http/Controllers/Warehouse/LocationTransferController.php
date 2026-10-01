@@ -121,7 +121,7 @@ class LocationTransferController extends Controller
 
         return WarehouseLocation::query()
             ->where('is_active', true)
-            ->whereHas('warehouse', fn ($query) => $query->whereIn('work_location_id', $permittedLocationIds))
+            ->forWorkLocationIds($permittedLocationIds)
             ->find($id);
     }
 
@@ -131,7 +131,7 @@ class LocationTransferController extends Controller
         $perPage = $request->integer('per_page', 20);
         $locations = WarehouseLocation::query()
             ->where('is_active', true)
-            ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $workLocationId))
+            ->forWorkLocation($workLocationId)
             ->when($search !== '', fn ($query) => $query->where(function ($inner) use ($search): void {
                 $inner->where('full_code', 'like', "%{$search}%")
                     ->orWhere('name', 'like', "%{$search}%");
@@ -181,7 +181,7 @@ class LocationTransferController extends Controller
         $belongs = WarehouseLocation::query()
             ->whereKey($warehouseLocationId)
             ->where('is_active', true)
-            ->whereHas('warehouse', fn ($query) => $query->where('work_location_id', $workLocationId))
+            ->forWorkLocation($workLocationId)
             ->exists();
 
         if (! $belongs) {

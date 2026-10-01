@@ -1,30 +1,30 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Transfer Lokasi - ' . config('app.name'))
-@section('page_title', 'Transfer Antar Lokasi Internal')
+@section('title', 'Restok Cepat - ' . config('app.name'))
+@section('page_title', 'Restok Cepat (Direct Transfer)')
 
 @section('page_guide')
-    <x-metronic.page-guide id="warehouse-location-transfers" title="Panduan Halaman Transfer Lokasi">
+    <x-metronic.page-guide id="warehouse-location-transfers" title="Panduan Halaman Restok Cepat">
         <x-slot:function>
-            <p>Halaman ini melakukan transfer stok internal antar lokasi atau gudang. Staff dan Kepala Gudang menggunakannya untuk memindahkan produk secara cepat dengan pencatatan mutasi otomatis. Di sisi kanan terdapat histori transfer yang mencatat semua perpindahan sebelumnya.</p>
+            <p>Halaman ini digunakan untuk melakukan pemindahan barang/stok instan antar lokasi (misalnya dari Gudang Belakang ke Etalase Toko). Proses ini langsung memotong stok di lokasi asal dan menambah stok di tujuan dalam satu klik (tanpa status In-Transit). Di sisi kanan terdapat histori mutasi restok cepat sebelumnya.</p>
         </x-slot:function>
         <x-slot:workflow>
             <ol><li>Pilih lokasi kerja sumber.</li><li>Pilih zona/rak/bin yang ditampilkan sesuai lokasi sumber.</li><li>Pilih produk yang memiliki stok tersedia pada bin tersebut.</li><li>Pilih lokasi tujuan dan qty yang akan dipindahkan.</li><li>Sistem mencatat mutasi keluar dan masuk secara atomik.</li></ol>
         </x-slot:workflow>
         <x-slot:parts>
-            <ul><li><strong>Lokasi Kerja Sumber:</strong> gudang asal pemindahan.</li><li><strong>Zona/Rak/Bin Sumber:</strong> lokasi fisik asal yang disaring berdasarkan lokasi kerja.</li><li><strong>Produk:</strong> hanya produk dengan stok tersedia pada lokasi sumber.</li><li><strong>Lokasi Kerja Tujuan:</strong> gudang tujuan pemindahan.</li><li><strong>Zona/Rak/Bin Tujuan:</strong> lokasi fisik tujuan.</li><li><strong>Qty:</strong> jumlah yang dipindahkan.</li><li><strong>Alasan:</strong> keterangan atau alasan transfer.</li><li><strong>Histori Transfer:</strong> daftar riwayat perpindahan.</li></ul>
+            <ul><li><strong>Lokasi Kerja Sumber:</strong> lokasi gudang/toko asal.</li><li><strong>Zona/Rak/Bin Sumber:</strong> rak/etalase asal yang disaring berdasarkan lokasi kerja.</li><li><strong>Produk:</strong> hanya produk dengan stok tersedia pada lokasi sumber.</li><li><strong>Lokasi Kerja Tujuan:</strong> gudang/toko tujuan.</li><li><strong>Zona/Rak/Bin Tujuan:</strong> rak/etalase tujuan (misal: Etalase Depan).</li><li><strong>Qty:</strong> jumlah yang dipindahkan.</li><li><strong>Alasan:</strong> keterangan restok (opsional).</li><li><strong>Histori Pemindahan:</strong> daftar riwayat pemindahan instan.</li></ul>
         </x-slot:parts>
         <x-slot:impacts>
-            <p>Transfer lokasi mengurangi on hand sumber dan menambah on hand tujuan. Kedua perubahan dicatat sebagai mutasi terpisah. Histori transfer tampil pada tabel di sebelah kanan.</p>
+            <p>Restok Cepat mengurangi stok di lokasi sumber dan secara simultan menambah stok di lokasi tujuan saat itu juga. Mutasi tercatat otomatis.</p>
         </x-slot:impacts>
         <x-slot:operation>
             <ol><li>Pilih lokasi kerja sumber.</li><li>Pilih zona/rak/bin sumber.</li><li>Cari dan pilih produk yang tersedia.</li><li>Pilih lokasi kerja dan bin tujuan.</li><li>Masukkan qty dan alasan transfer.</li><li>Klik <strong>Proses Transfer</strong>.</li><li>Verifikasi mutasi tampil pada histori transfer.</li></ol>
         </x-slot:operation>
         <x-slot:warnings>
-            <div class="alert alert-warning mb-0"><ul><li>Pastikan lokasi tujuan sesuai scope akun Anda.</li><li>Jangan memasukkan qty melebihi stok tersedia di sumber.</li><li>Alasan wajib diisi untuk keperluan audit.</li></ul></div>
+            <div class="alert alert-warning mb-0"><ul><li>Pastikan lokasi tujuan sesuai scope akun Anda.</li><li>Jangan memasukkan qty melebihi stok tersedia di sumber.</li><li>Seluruh mutasi tercatat otomatis tanpa bisa dibatalkan secara sepihak.</li></ul></div>
         </x-slot:warnings>
         <x-slot:example>
-            <p>Pindahkan 10 unit Kopi Robusta dari Gudang Pusat Bin A-01 ke Cabang Bogor Bin B-02. Alasan: "Restock cabang". Sistem mencatat mutasi keluar -10 pada sumber dan +10 pada tujuan.</p>
+            <p>Memindahkan 10 unit Kopi Robusta dari Gudang Belakang ke Etalase Depan Toko. Sistem mencatat mutasi keluar -10 pada sumber dan masuk +10 pada tujuan.</p>
         </x-slot:example>
     </x-metronic.page-guide>
 @endsection
@@ -32,7 +32,7 @@
 @section('content')
     <div class="row g-5">
         <div class="col-lg-4">
-            <x-metronic.card title="Form Transfer">
+            <x-metronic.card title="Form Restok Cepat">
                 <form method="POST" action="{{ route('warehouse.location-transfers.store') }}">
                     @csrf
 
@@ -123,12 +123,12 @@
                     </x-metronic.form-group>
 
                     <input type="hidden" name="idempotency_key" value="{{ (string) str()->uuid() }}">
-                    <button class="btn btn-primary w-100" type="submit">Proses Transfer</button>
+                    <button class="btn btn-primary w-100" type="submit">Pindahkan Stok Sekarang</button>
                 </form>
             </x-metronic.card>
         </div>
         <div class="col-lg-8">
-            <x-metronic.card title="Histori Transfer">
+            <x-metronic.card title="Histori Restok Cepat">
                 <div class="table-responsive">
                     <table class="table table-row-dashed align-middle">
                         <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Waktu</th><th>Produk</th><th>Jenis</th><th>Lokasi</th><th>Qty</th><th>User</th><th></th></tr></thead>
@@ -144,7 +144,7 @@
                                 <td class="text-end"><a href="{{ route('warehouse.stock-mutations.show', $mutation) }}" class="btn btn-sm btn-light">Detail</a></td>
                             </tr>
                         @empty
-                            <tr><td colspan="7"><x-metronic.empty-state title="Belum ada transfer lokasi" description="Transfer internal akan menghasilkan mutasi keluar dan masuk." /></td></tr>
+                            <tr><td colspan="7"><x-metronic.empty-state title="Belum ada riwayat" description="Aktivitas restok cepat (direct transfer) yang Anda lakukan akan tampil di sini." /></td></tr>
                         @endforelse
                         </tbody>
                     </table>

@@ -91,7 +91,7 @@
                     
                     <!-- Fallback & Test Compatibility Elements -->
                     <div class="d-none">
-                        <select id="opening-product-picker" multiple>
+                        <select id="opening-product-picker" class="form-select form-select-solid" multiple>
                             @foreach($products as $product)
                                 <option value="{{ $product->id }}">{{ $product->sku }} — {{ $product->name }}</option>
                             @endforeach

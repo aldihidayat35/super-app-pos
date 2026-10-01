@@ -17,6 +17,9 @@ Dokumen ini adalah aturan domain dan guardrail alur bisnis (*business flow*) waj
    - Setiap transaksi dan saldo stok terikat pada `work_location_id`.
    - Cabang/toko memiliki saldo stok terpisah dan tidak berbagi baris saldo stok secara langsung dengan gudang.
    - Pengecekan otorisasi wajib selalu memverifikasi lokasi kerja pengguna via `$request->user()->permittedWorkLocationIds()` atau `canAccessWorkLocation()`.
+3. **Hirarki Fleksibel Lokasi Penyimpanan (Rak/Bin)**:
+   - Rak atau lokasi penyimpanan (`WarehouseLocation`) bisa berelasi langsung ke `Warehouse` (via `warehouse_id`) ATAU langsung ke `Branch` (via `branch_id`).
+   - DILARANG mengasumsikan lokasi rak hanya terikat pada gudang. Saat memfilter rak berdasarkan lokasi kerja (`WorkLocation`), WAJIB menggunakan *query scope* `WarehouseLocation::forWorkLocation($id)` atau memanggil fungsi pendeteksi milik model `$bin->workLocationId()`.
 
 ---
 

@@ -76,14 +76,14 @@ class StoreLocationTransferRequest extends FormRequest
         }
 
         $warehouseLocation = WarehouseLocation::query()
-            ->with('warehouse:id,work_location_id')
+            ->with(['warehouse:id,work_location_id', 'branch:id,work_location_id'])
             ->find($warehouseLocationId);
 
         if ($warehouseLocation === null) {
             return;
         }
 
-        if ((int) $warehouseLocation->warehouse?->work_location_id !== $workLocationId) {
+        if ((int) $warehouseLocation->workLocationId() !== $workLocationId) {
             $validator->errors()->add($warehouseLocationField, "{$label} harus berada di dalam lokasi kerja yang dipilih.");
         }
     }
