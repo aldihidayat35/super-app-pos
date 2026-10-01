@@ -30,7 +30,7 @@ class StockDirectAdjustmentPolicy
 
     public function decide(User $user, StockDirectAdjustment $adjustment): bool
     {
-        if (! $user->can('stock_direct_adjustments.approve') || $adjustment->status !== 'pending_approval' || (int) $adjustment->created_by === (int) $user->id) {
+        if (! $user->can('stock_direct_adjustments.approve') || $adjustment->status !== 'pending_approval') {
             return false;
         }
         if ($user->hasRole('super_admin')) {

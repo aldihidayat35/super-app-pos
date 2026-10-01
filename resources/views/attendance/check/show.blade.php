@@ -52,29 +52,7 @@
                     <span class="nav-link-inner"><i class="ki-duotone ki-checkbox fs-2 me-2"></i><span>Persetujuan Absensi</span></span>
                 </a>
             @endif
-            @can('attendance.view')
-                <a href="{{ route('attendance.schedules.index') }}" class="nav-link">
-                    <span class="nav-link-inner"><i class="ki-duotone ki-calendar fs-2 me-2"></i><span>Jadwal Mingguan</span></span>
-                </a>
-            @endcan
-            @if(auth()->user()->can('attendance.check') || auth()->user()->can('attendance.approve'))
-                <a href="{{ route('attendance.requests.index') }}" class="nav-link">
-                    <span class="nav-link-inner"><i class="ki-duotone ki-leave fs-2 me-2"></i><span>Pengajuan Izin</span></span>
-                </a>
-            @endif
-            @if(auth()->user()->can('attendance.update') || auth()->user()->can('attendance.approve'))
-                <a href="{{ route('attendance.corrections.index') }}" class="nav-link">
-                    <span class="nav-link-inner"><i class="ki-duotone ki-reload fs-2 me-2"></i><span>Koreksi Absensi</span></span>
-                </a>
-            @endif
-            @can('attendance.update')
-                <a href="{{ route('attendance.employees.index') }}" class="nav-link">
-                    <span class="nav-link-inner"><i class="ki-duotone ki-employee fs-2 me-2"></i><span>Pengaturan Karyawan</span></span>
-                </a>
-                <a href="{{ route('attendance.work-shifts.index') }}" class="nav-link">
-                    <span class="nav-link-inner"><i class="ki-duotone ki-time fs-2 me-2"></i><span>Pengaturan Shift</span></span>
-                </a>
-            @endcan
+
         </div>
         <style>
             .nav-tabs-custom { border-bottom: 2px solid var(--kt-border-color, #e5e7eb); }

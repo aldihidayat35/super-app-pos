@@ -402,9 +402,44 @@ return [
     [
         'label' => 'Kehadiran',
         'icon' => 'ki-outline ki-calendar-tick',
-        'route' => 'attendance.dashboard',
-        'active' => ['attendance.*'],
-        'permission' => 'attendance.check|attendance.view',
+        'children' => [
+            [
+                'label' => 'Absensi & Tim',
+                'route' => 'attendance.dashboard',
+                'active' => ['attendance.dashboard', 'attendance.check.*'],
+                'permission' => 'attendance.check|attendance.view',
+            ],
+            [
+                'label' => 'Jadwal Mingguan',
+                'route' => 'attendance.schedules.index',
+                'active' => ['attendance.schedules.*'],
+                'permission' => 'attendance.view',
+            ],
+            [
+                'label' => 'Pengajuan Izin',
+                'route' => 'attendance.requests.index',
+                'active' => ['attendance.requests.*'],
+                'permission' => 'attendance.check|attendance.approve',
+            ],
+            [
+                'label' => 'Koreksi Absensi',
+                'route' => 'attendance.corrections.index',
+                'active' => ['attendance.corrections.*'],
+                'permission' => 'attendance.update|attendance.approve',
+            ],
+            [
+                'label' => 'Pengaturan Karyawan',
+                'route' => 'attendance.employees.index',
+                'active' => ['attendance.employees.*'],
+                'permission' => 'attendance.update',
+            ],
+            [
+                'label' => 'Pengaturan Shift',
+                'route' => 'attendance.work-shifts.index',
+                'active' => ['attendance.work-shifts.*'],
+                'permission' => 'attendance.update',
+            ],
+        ],
     ],
     [
         'label' => 'Kontrol & Audit',

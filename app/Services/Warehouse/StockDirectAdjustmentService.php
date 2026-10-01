@@ -219,9 +219,7 @@ class StockDirectAdjustmentService
         if ($adjustment->status !== 'pending_approval') {
             throw ServiceException::validation('Dokumen belum menunggu persetujuan.');
         }
-        if ((int) $adjustment->created_by === (int) $actor->id) {
-            throw ServiceException::validation('Pembuat dokumen tidak boleh menyetujui atau menolak dokumennya sendiri.');
-        }
+
         if (! $actor->hasRole('super_admin')) {
             $this->assertHeadAt($actor, $adjustment->workLocation);
         }
