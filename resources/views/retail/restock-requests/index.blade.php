@@ -106,7 +106,7 @@
                             <span class="metric-recommendation badge badge-light-primary fw-bold fs-7">0</span>
                         </td>
                         <td>
-                            <input name="items[__INDEX__][quantity_requested]" type="number" min="0.0001" step="0.0001" class="form-control form-control-sm restock-qty" placeholder="0" required>
+                            <input name="items[__INDEX__][quantity_requested]" type="number" min="0" step="any" class="form-control form-control-sm restock-qty" placeholder="0" required>
                         </td>
                         <td>
                             <select name="items[__INDEX__][priority]" class="form-select form-select-sm" data-searchable="false">

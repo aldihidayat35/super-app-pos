@@ -64,7 +64,7 @@
                             </x-metronic.form-group>
                             <input type="hidden" name="items[0][unit_id]" value="{{ old('items.0.unit_id') }}">
                             <x-metronic.form-group name="items.0.quantity" label="Jumlah Dibutuhkan" required help="Jumlah barang yang diminta untuk dibeli. Satuan dasar produk digunakan jika satuan tidak ditentukan.">
-                                <input name="items[0][quantity]" value="{{ old('items.0.quantity') }}" type="number" step="0.0001" min="0.0001" class="form-control form-control-solid" required>
+                                <input name="items[0][quantity]" value="{{ old('items.0.quantity') }}" type="number" step="any" min="0" class="form-control form-control-solid" required>
                             </x-metronic.form-group>
                             <x-metronic.form-group name="items.0.reason" label="Catatan Item" help="Catatan khusus untuk produk ini, bila diperlukan.">
                                 <input name="items[0][reason]" value="{{ old('items.0.reason') }}" class="form-control form-control-solid">

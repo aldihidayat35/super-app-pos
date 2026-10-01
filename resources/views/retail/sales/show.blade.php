@@ -77,14 +77,12 @@
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <div class="symbol symbol-45px symbol-2by3 me-3">
-                                            @if($item->product?->main_image_url)
-                                                <img src="{{ $item->product->main_image_url }}" alt="" class="object-fit-cover rounded">
-                                            @else
-                                                <div class="symbol-label bg-light rounded">
-                                                    <i class="ki-outline ki-basket text-muted fs-3"></i>
-                                                </div>
-                                            @endif
+                                        <div class="symbol symbol-45px me-3">
+                                            <x-metronic.image-preview 
+                                                url="{{ $item->product?->main_image_url ?? \App\Models\Product::defaultImageUrl() }}" 
+                                                title="{{ $item->product_name_snapshot }}" 
+                                                size="45px" 
+                                                classes="rounded object-fit-cover border border-gray-200" />
                                         </div>
                                         <div class="d-flex flex-column">
                                             <span class="text-gray-800 fw-bold">{{ $item->product_name_snapshot }}</span>

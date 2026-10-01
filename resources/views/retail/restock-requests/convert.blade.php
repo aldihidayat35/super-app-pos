@@ -59,7 +59,7 @@
                                         <input type="number" 
                                             min="0.0001" 
                                             max="{{ qty_input($item->quantity_approved) }}" 
-                                            step="0.0001" 
+                                            step="any" 
                                             name="items[{{ $item->id }}][quantity_transfer]" 
                                             value="{{ old("items.{$item->id}.quantity_transfer", qty_input($item->quantity_approved)) }}" 
                                             class="form-control text-end transfer-qty fw-bold fs-5 bg-transparent border-0" 

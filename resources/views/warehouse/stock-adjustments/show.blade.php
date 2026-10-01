@@ -206,7 +206,7 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Stok Fisik Final</label>
-                                <input type="number" step="0.0001" min="0" name="items[{{ $index }}][physical_qty]" value="{{ $item->physical_qty }}" class="form-control form-control-solid" required>
+                                <input type="number" step="any" min="0" name="items[{{ $index }}][physical_qty]" value="{{ qty_input($item->physical_qty) }}" class="form-control form-control-solid" required>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label">Catatan Item</label>

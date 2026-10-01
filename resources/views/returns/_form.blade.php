@@ -219,7 +219,7 @@
             @if($showCost)<div class="col-6 col-md-3"><span class="text-muted fs-8 d-block">HPP SNAPSHOT</span><strong class="unit-cost">-</strong></div>@endif
             <div class="col-md-4">
                 <label class="form-label required">Qty Retur</label>
-                <div class="input-group input-group-solid"><input type="number" min="0.0001" step="0.0001" class="form-control return-qty" name="items[__INDEX__][quantity_requested]" required><span class="input-group-text return-unit">Unit</span></div>
+                <div class="input-group input-group-solid"><input type="number" min="0" step="any" class="form-control return-qty" name="items[__INDEX__][quantity_requested]" required><span class="input-group-text return-unit">Unit</span></div>
             </div>
             <div class="col-md-4">
                 <label class="form-label required">Kondisi Awal</label>

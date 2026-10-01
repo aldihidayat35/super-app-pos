@@ -28,9 +28,9 @@
                                 <td><input type="hidden" name="items[{{ $index }}][pos_sale_item_id]" value="{{ $item->id }}"></td>
                                 <td data-label="Produk">{{ $item->product_name_snapshot }}</td>
                                 <td data-label="Terjual / sudah retur">{{ qty($item->base_quantity) }} / {{ qty($item->returned_quantity) }}</td>
-                                <td data-label="Qty retur"><input type="number" step="0.0001" min="0" name="items[{{ $index }}][quantity]" value="0" class="form-control"></td>
-                                <td data-label="Qty normal"><input type="number" step="0.0001" min="0" name="items[{{ $index }}][normal_quantity]" value="0" class="form-control"><small class="text-muted">Sisa: {{ qty($normalRemaining) }}</small></td>
-                                <td data-label="Qty darurat"><input type="number" step="0.0001" min="0" name="items[{{ $index }}][emergency_quantity]" value="0" class="form-control"><small class="text-muted">Sisa: {{ qty($emergencyRemaining) }}</small></td>
+                                <td data-label="Qty retur"><input type="number" step="any" min="0" name="items[{{ $index }}][quantity]" value="0" class="form-control"></td>
+                                <td data-label="Qty normal"><input type="number" step="any" min="0" name="items[{{ $index }}][normal_quantity]" value="0" class="form-control"><small class="text-muted">Sisa: {{ qty($normalRemaining) }}</small></td>
+                                <td data-label="Qty darurat"><input type="number" step="any" min="0" name="items[{{ $index }}][emergency_quantity]" value="0" class="form-control"><small class="text-muted">Sisa: {{ qty($emergencyRemaining) }}</small></td>
                                 <td data-label="Kondisi"><select name="items[{{ $index }}][condition]" class="form-select"><option value="good">Baik</option><option value="damaged">Rusak</option></select></td>
                             </tr>
                         @endforeach

@@ -130,7 +130,7 @@
                                 @endforeach
                             </select>
                         </td>
-                        <td><input name="items[{{ $i }}][quantity_ordered]" value="{{ qty_input($item['quantity_ordered'] ?? 1) }}" type="number" step="0.0001" min="0.0001" class="form-control form-control-solid po-calc po-qty" required aria-label="Jumlah dipesan item {{ $i + 1 }}"></td>
+                        <td><input name="items[{{ $i }}][quantity_ordered]" value="{{ qty_input($item['quantity_ordered'] ?? 1) }}" type="number" step="any" min="0" class="form-control form-control-solid po-calc po-qty" required aria-label="Jumlah dipesan item {{ $i + 1 }}"></td>
                         <td><input name="items[{{ $i }}][unit_price]" value="{{ $item['unit_price'] ?? 0 }}" type="number" step="0.01" min="0" class="form-control form-control-solid po-calc po-price" required aria-label="Harga satuan item {{ $i + 1 }}"></td>
                         <td><input name="items[{{ $i }}][discount_amount]" value="{{ $item['discount_amount'] ?? 0 }}" type="number" step="0.01" min="0" class="form-control form-control-solid po-calc po-discount" aria-label="Diskon item {{ $i + 1 }}"></td>
                         <td><input name="items[{{ $i }}][tax_amount]" value="{{ $item['tax_amount'] ?? 0 }}" type="number" step="0.01" min="0" class="form-control form-control-solid po-calc po-tax" aria-label="Pajak item {{ $i + 1 }}"></td>

@@ -3,6 +3,7 @@ import './bootstrap';
 import { initializeStockTransferForm } from './modules/warehouse-stock-transfer-form';
 import { initializeResponsiveTables, refreshResponsiveTable } from './modules/responsive-mobile-tables';
 import { initializeWhatsappConnection } from './modules/whatsapp-connection';
+import { initializeNumberInputStepper } from './modules/number-input-stepper';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 const loadingOverlay = document.querySelector('[data-app-loading]');
@@ -394,6 +395,7 @@ const initializeApplication = () => {
     initializeConfirmations();
     initializePasswordToggles();
     initializeResponsiveTables();
+    initializeNumberInputStepper();
 };
 
 window.GudangTokoResponsiveTables = {

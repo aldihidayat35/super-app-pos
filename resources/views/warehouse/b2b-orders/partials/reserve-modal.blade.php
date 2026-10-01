@@ -19,7 +19,7 @@
                         @foreach($order->items as $item)
                             <div class="col-md-6">
                                 <x-metronic.form-group :name="'approved_quantities[' . $item->id . ']'" :label="'Qty disetujui · ' . $item->product_name_snapshot">
-                                    <input type="number" step="0.0001" min="0" name="approved_quantities[{{ $item->id }}]" value="{{ old('approved_quantities.' . $item->id, $item->quantity) }}" class="form-control form-control-solid">
+                                    <input type="number" step="any" min="0" name="approved_quantities[{{ $item->id }}]" value="{{ old('approved_quantities.' . $item->id, qty_input($item->quantity)) }}" class="form-control form-control-solid">
                                 </x-metronic.form-group>
                             </div>
                         @endforeach

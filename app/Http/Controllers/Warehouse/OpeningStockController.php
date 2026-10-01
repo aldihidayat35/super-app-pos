@@ -35,7 +35,7 @@ class OpeningStockController extends Controller
         abort_if($locationId && ! $locations->contains('id', $locationId), 403);
         $binIds = $this->binIds($locationId);
 
-        $products = Product::query()->with(['baseUnit', 'category'])
+        $products = Product::query()->with(['baseUnit', 'category', 'images'])
             ->where('status', ProductStatus::ACTIVE->value)
             ->when($request->filled('q'), function (Builder $query) use ($request): void {
                 $term = '%'.addcslashes($request->string('q')->toString(), '%_').'%';
@@ -165,10 +165,7 @@ class OpeningStockController extends Controller
     /** @return list<int> */
     private function binIds(int $locationId): array
     {
-        $warehouseIds = Warehouse::query()->where('work_location_id', $locationId)->pluck('id')
-            ->merge(Branch::query()->where('work_location_id', $locationId)->pluck('primary_warehouse_id'))->filter()->unique();
-
-        return WarehouseLocation::query()->whereIn('warehouse_id', $warehouseIds)->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        return WarehouseLocation::query()->forWorkLocation($locationId)->pluck('id')->map(fn ($id): int => (int) $id)->all();
     }
 
     private function assertView(Request $request, StockDirectAdjustment $document): void

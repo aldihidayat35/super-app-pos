@@ -8,7 +8,7 @@
             </div>
             <div class="modal-body text-center pt-0 pb-10">
                 <h3 class="fw-bold mb-5" id="globalPreviewTitle">Preview Gambar</h3>
-                <img id="globalPreviewImage" src="" alt="Preview" class="img-fluid rounded shadow-sm" style="max-height: 70vh; object-fit: contain;">
+                <img id="globalPreviewImage" src="" alt="Preview" class="img-fluid rounded shadow-sm" style="max-height: 70vh; object-fit: contain;" onerror="this.onerror=null; this.src='/assets/media/products/default-product.png';">
             </div>
         </div>
     </div>

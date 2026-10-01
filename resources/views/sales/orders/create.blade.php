@@ -85,7 +85,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3"><label class="form-label">Qty</label><input type="number" min="0.0001" step="0.0001" name="items[{{ $index }}][quantity]" value="{{ $item['quantity'] ?? 1 }}" class="form-control" required></div>
+                        <div class="col-md-3"><label class="form-label">Qty</label><input type="number" min="0" step="any" name="items[{{ $index }}][quantity]" value="{{ qty_input($item['quantity'] ?? 1) }}" class="form-control" required></div>
                         <div class="col-md-1"><button type="button" class="btn btn-light-danger remove-item">×</button></div>
                     </div>
                 @endforeach
@@ -111,7 +111,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-3"><label class="form-label">Qty</label><input type="number" min="0.0001" step="0.0001" value="1" class="form-control quantity-input" required></div>
+            <div class="col-md-3"><label class="form-label">Qty</label><input type="number" min="0" step="any" value="1" class="form-control quantity-input" required></div>
             <div class="col-md-1"><button type="button" class="btn btn-light-danger remove-item">×</button></div>
         </div>
     </template>

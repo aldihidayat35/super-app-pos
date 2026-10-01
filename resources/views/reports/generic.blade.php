@@ -232,7 +232,7 @@
                     @if($column === 'product' && isset($row['sku']))
                         <div class="d-flex align-items-center">
                             <div class="symbol symbol-35px me-3">
-                                @php($imgUrl = isset($row['image_path']) ? asset('storage/'.$row['image_path']) : asset('assets/media/svg/files/blank-image.svg'))
+                                @php($imgUrl = !empty($row['image_path']) ? '/storage/'.ltrim($row['image_path'], '/') : \App\Models\Product::defaultImageUrl())
                                 <x-metronic.image-preview url="{{ $imgUrl }}" title="{{ $value }}" />
                             </div>
                             <div>

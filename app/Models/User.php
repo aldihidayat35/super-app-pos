@@ -77,10 +77,10 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function getAvatarUrlAttribute(): string
     {
         if (! empty($this->avatar_path)) {
-            return asset('storage/'.$this->avatar_path);
+            return '/storage/'.ltrim($this->avatar_path, '/');
         }
 
-        return asset('assets/media/avatars/default-avatar.png');
+        return '/assets/media/avatars/default-avatar.png';
     }
 
     /**

@@ -21,7 +21,7 @@
             <div class="col-12"><div class="table-responsive"><table class="table align-middle emergency-entry-table" data-mobile-table="off"><thead><tr><th>Produk</th><th style="min-width:110px">Qty kebutuhan</th><th style="min-width:150px">Estimasi biaya per satuan dasar</th><th style="min-width:180px">Pratinjau</th></tr></thead><tbody id="emergency-items">
                 <tr><td data-label="Produk"><select name="items[0][product_id]" class="form-select emergency-product" required><option value="">Pilih produk</option>
                     @foreach($products as $product)<option value="{{ $product->id }}" @selected(old('items.0.product_id', $productId) == $product->id)>{{ $product->sku }} — {{ $product->name }} ({{ $product->baseUnit?->name }})</option>@endforeach
-                </select></td><td data-label="Qty jual"><input name="items[0][quantity]" type="number" step="0.0001" min="0.0001" value="{{ old('items.0.quantity', 1) }}" required class="form-control emergency-qty"></td>
+                </select></td><td data-label="Qty jual"><input name="items[0][quantity]" type="number" step="any" min="0" value="{{ old('items.0.quantity', 1) }}" required class="form-control emergency-qty"></td>
                 <td data-label="Estimasi biaya per satuan dasar"><input name="items[0][unit_cost]" type="number" step="0.01" min="0.01" value="{{ old('items.0.unit_cost') }}" required class="form-control emergency-cost"></td>
                 <td data-label="Pratinjau" class="emergency-margin text-muted">Isi produk dan biaya</td></tr>
             </tbody></table></div><button type="button" class="btn btn-light btn-sm" id="add-emergency-item">Tambah produk</button></div>

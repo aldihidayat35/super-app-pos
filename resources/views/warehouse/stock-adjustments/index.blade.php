@@ -212,7 +212,7 @@
                                                  class="vcm-card-img" 
                                                  alt="{{ $stock->product?->name }}" 
                                                  loading="lazy" 
-                                                 onerror="this.src='/assets/media/products/default-product.png'" />
+                                                 onerror="this.onerror=null; this.src='/assets/media/products/default-product.png';" />
                                         </div>
 
                                         <!-- Card Body -->
@@ -260,6 +260,7 @@
                                                         data-id="{{ $stock->id }}"
                                                         data-name="{{ $stock->product?->name }}"
                                                         data-sku="{{ $stock->product?->sku }}"
+                                                        data-image="{{ $stock->product?->main_image_url ?? \App\Models\Product::defaultImageUrl() }}"
                                                         data-stock="{{ qty($stock->quantity_on_hand) }}"
                                                         data-unit="{{ $stock->product?->baseUnit?->symbol ?? 'unit' }}"
                                                         data-location="{{ $stock->warehouseLocation?->full_code ?? 'Lokasi Utama' }}">
@@ -364,6 +365,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // State of selected stocks: id => { id, name, sku, stock, unit, location }
     const selectedStocks = {};
 
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     function updateCardUI(card, isSelected) {
         if (!card) return;
         const badge = card.querySelector('.vcm-selected-badge');
@@ -407,6 +418,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 id: id,
                 name: btn.dataset.name,
                 sku: btn.dataset.sku,
+                image: btn.dataset.image || '/assets/media/products/default-product.png',
                 stock: btn.dataset.stock,
                 unit: btn.dataset.unit,
                 location: btn.dataset.location
@@ -470,6 +482,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 id: id,
                                 name: btn.dataset.name,
                                 sku: btn.dataset.sku,
+                                image: btn.dataset.image || '/assets/media/products/default-product.png',
                                 stock: btn.dataset.stock,
                                 unit: btn.dataset.unit,
                                 location: btn.dataset.location
@@ -533,19 +546,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 itemsArray.forEach((item, index) => {
                     const preserved = preservedData[item.id] || { qty: '', note: '' };
+                    const itemImage = item.image || '/assets/media/products/default-product.png';
                     const rowHtml = `
-                        <div class="row g-4 mb-4 align-items-center adjustment-row p-4 border border-dashed rounded bg-light-primary" data-id="${item.id}">
-                            <input type="hidden" name="items[${index}][stock_id]" value="${item.id}">
+                        <div class="row g-4 mb-4 align-items-center adjustment-row p-4 border border-dashed rounded bg-light-primary" data-id="${escapeHtml(item.id)}">
+                            <input type="hidden" name="items[${index}][stock_id]" value="${escapeHtml(item.id)}">
                             <div class="col-md-5">
-                                <div class="d-flex flex-column">
-                                    <span class="fw-bold text-gray-800 fs-6">${item.name}</span>
-                                    <span class="text-muted fs-7 mt-1">SKU: ${item.sku} &bull; Lokasi: ${item.location}</span>
-                                    <div class="mt-2"><span class="badge badge-light-dark fw-bold fs-7">Stok Sistem: ${item.stock} ${item.unit}</span></div>
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-50px me-3 flex-shrink-0 bg-light rounded" style="width: 50px; height: 50px; min-width: 50px; min-height: 50px;">
+                                        <img src="${escapeHtml(itemImage)}" 
+                                             alt="${escapeHtml(item.name)}" 
+                                             class="rounded object-fit-cover border border-gray-200 cursor-pointer" 
+                                             style="width: 50px; height: 50px; min-width: 50px; min-height: 50px; object-fit: cover; display: block;"
+                                             data-bs-toggle="modal" 
+                                             data-bs-target="#globalImagePreviewModal" 
+                                             onclick="const img=document.getElementById('globalPreviewImage'); if(img){ img.src=this.src; } const t=document.getElementById('globalPreviewTitle'); if(t){ t.innerText=this.alt; }" 
+                                             onerror="this.onerror=null; this.src='/assets/media/products/default-product.png';" 
+                                             loading="lazy" 
+                                             title="Klik untuk memperbesar">
+                                    </div>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold text-gray-800 fs-6">${escapeHtml(item.name)}</span>
+                                        <span class="text-muted fs-7 mt-1">SKU: ${escapeHtml(item.sku)} &bull; Lokasi: ${escapeHtml(item.location)}</span>
+                                        <div class="mt-2"><span class="badge badge-light-dark fw-bold fs-7">Stok Sistem: ${escapeHtml(item.stock)} ${escapeHtml(item.unit)}</span></div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label fw-semibold text-gray-800">Fisik Final <span class="text-danger">*</span></label>
-                                <input type="number" step="0.0001" min="0" name="items[${index}][physical_qty]" class="form-control bg-white qty-input border-gray-300" value="${preserved.qty}" placeholder="Contoh: 10" required>
+                                <input type="number" step="any" min="0" name="items[${index}][physical_qty]" class="form-control bg-white qty-input border-gray-300" value="${preserved.qty}" placeholder="Contoh: 10" required>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label fw-semibold text-gray-800">Catatan Item</label>

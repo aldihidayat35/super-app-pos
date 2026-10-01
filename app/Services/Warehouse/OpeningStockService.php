@@ -277,10 +277,8 @@ final class OpeningStockService
 
     private function binBelongsToLocation(WarehouseLocation $bin, WorkLocation $location): bool
     {
-        $warehouseIds = Warehouse::query()->where('work_location_id', $location->id)->pluck('id')
-            ->merge(Branch::query()->where('work_location_id', $location->id)->pluck('primary_warehouse_id'))
-            ->filter()->map(fn ($id): int => (int) $id)->unique()->all();
+        $bin->loadMissing(['warehouse', 'branch']);
 
-        return in_array((int) $bin->warehouse_id, $warehouseIds, true);
+        return (int) $bin->workLocationId() === (int) $location->id;
     }
 }

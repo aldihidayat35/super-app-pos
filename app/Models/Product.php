@@ -161,7 +161,7 @@ class Product extends Model
 
     public static function defaultImageUrl(): string
     {
-        return asset(self::DEFAULT_IMAGE_PATH);
+        return '/'.ltrim(self::DEFAULT_IMAGE_PATH, '/');
     }
 
     public function hasCustomImage(): bool

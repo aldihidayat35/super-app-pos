@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const name = item.name || (parts.length > 1 ? parts[1] : text);
                     const unit = item.unit || '';
                     const category = item.category || 'Tanpa Kategori';
-                    const image = item.image_url || item.main_image_url || item.image || '/assets/media/svg/files/blank-image.svg';
+                    const image = item.image_url || item.main_image_url || item.image || '/assets/media/products/default-product.png';
                     
                     categories.add(category);
                     products.push({ id, sku, name, unit, category, image });
@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let name = el.dataset.name || text;
                 const unit = el.dataset.unit || '';
                 const category = el.dataset.category || 'Tanpa Kategori';
-                const image = el.dataset.image || '/assets/media/svg/files/blank-image.svg';
+                const image = el.dataset.image || '/assets/media/products/default-product.png';
                 
                 categories.add(category);
                 
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="col-sm-6 col-md-4 col-lg-3">
                     <div class="card h-100 border border-gray-300 catalog-card vcm-card" data-id="${p.id}">
                         <div class="vcm-card-img-wrap">
-                            <img src="${p.image}" class="vcm-card-img" alt="${p.name}" loading="lazy" onerror="this.src='/assets/media/svg/files/blank-image.svg'">
+                            <img src="${p.image}" class="vcm-card-img" alt="${p.name}" loading="lazy" onerror="this.onerror=null; this.src='/assets/media/products/default-product.png'">
                         </div>
                         <div class="card-body p-4 d-flex flex-column">
                             <div class="d-flex align-items-center justify-content-between mb-2">

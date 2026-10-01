@@ -1,10 +1,9 @@
 <?php
 require __DIR__.'/vendor/autoload.php';
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
+$app = require_once __DIR__.'/bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
 
-$manager = new ImageManager(new Driver());
-$image = $manager->decodePath('public/assets/media/avatars/300-1.jpg');
-$image->scaleDown(width: 800, height: 800);
-$image->encodeUsingFormat(\Intervention\Image\Format::WEBP, quality: 80)->save('test_output.webp');
-echo "OK";
+$locationId = 2;
+$ids = App\Models\WarehouseLocation::query()->forWorkLocation($locationId)->pluck('id')->map(fn ($id) => (int) $id)->all();
+echo json_encode($ids);
