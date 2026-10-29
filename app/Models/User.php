@@ -191,4 +191,17 @@ class User extends Authenticatable implements MustVerifyEmailContract
     {
         return in_array($workLocationId, $this->permittedWorkLocationIds(), true);
     }
+
+    public function hasPermittedWorkLocationType(string ...$types): bool
+    {
+        if ($types === []) {
+            return false;
+        }
+
+        return WorkLocation::query()
+            ->whereIn('id', $this->permittedWorkLocationIds())
+            ->whereIn('type', $types)
+            ->where('is_active', true)
+            ->exists();
+    }
 }

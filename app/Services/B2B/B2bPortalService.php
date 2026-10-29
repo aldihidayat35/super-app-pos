@@ -33,6 +33,17 @@ class B2bPortalService
         private readonly TaxComplianceService $taxes,
     ) {}
 
+    public function canAccessPortal(User $user): bool
+    {
+        try {
+            $this->activeCustomerFor($user);
+
+            return true;
+        } catch (ServiceException) {
+            return false;
+        }
+    }
+
     public function activeCustomerFor(User $user): Customer
     {
         $activeCustomers = Customer::query()

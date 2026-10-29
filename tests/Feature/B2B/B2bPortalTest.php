@@ -92,6 +92,31 @@ class B2bPortalTest extends TestCase
             ->assertSee($this->customer->business_name);
     }
 
+    public function test_portal_navigation_is_only_visible_for_users_with_active_customer_access(): void
+    {
+        $warehouseHead = User::factory()->create();
+        $warehouseHead->assignRole(Role::findOrCreate('kepala_gudang'));
+
+        $this->actingAs($warehouseHead);
+        $this->assertStringNotContainsString('Portal Langganan', $this->renderSidebar());
+
+        $this->actingAs($this->owner);
+        $this->assertStringContainsString('Portal Langganan', $this->renderSidebar());
+
+        $this->customer->forceFill(['account_status' => CustomerStatus::FROZEN])->save();
+        $this->assertStringNotContainsString('Portal Langganan', $this->renderSidebar());
+    }
+
+    public function test_super_admin_sees_portal_navigation_when_an_active_customer_exists(): void
+    {
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole(Role::findOrCreate('super_admin'));
+
+        $this->actingAs($superAdmin);
+
+        $this->assertStringContainsString('Portal Langganan', $this->renderSidebar());
+    }
+
     public function test_catalog_uses_customer_price_and_hides_sensitive_cost(): void
     {
         CustomerPriceOverride::query()->create([
@@ -214,5 +239,10 @@ class B2bPortalTest extends TestCase
         $this->customer->forceFill(['account_status' => CustomerStatus::FROZEN])->save();
 
         $this->actingAs($this->owner)->get(route('langganan.katalog.index'))->assertForbidden();
+    }
+
+    private function renderSidebar(): string
+    {
+        return view('layouts.metronic.partials.sidebar')->render();
     }
 }

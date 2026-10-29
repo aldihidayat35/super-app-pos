@@ -238,8 +238,22 @@ return [
             [
                 'label' => 'Transfer Stok',
                 'route' => 'warehouse.stock-transfers.index',
-                'active' => ['warehouse.stock-transfers.*', 'retail.stock-transfers.*', 'warehouse.location-transfers.*'],
+                'active' => ['warehouse.stock-transfers.*', 'warehouse.location-transfers.*'],
                 'permission' => 'stock_transfers.view',
+            ],
+            [
+                'label' => 'Permintaan Restok Cabang',
+                'route' => 'retail.restock-requests.index',
+                'active' => ['retail.restock-requests.*'],
+                'permission' => 'stock_transfers.view|stock_transfers.approve',
+                'access' => 'warehouse.location',
+            ],
+            [
+                'label' => 'Penerimaan Transfer',
+                'route' => 'retail.stock-transfers.receiving',
+                'active' => ['retail.stock-transfers.*'],
+                'permission' => 'stock_transfers.receive',
+                'access' => 'warehouse.location',
             ],
             [
                 'label' => 'Stok Opname',
@@ -342,6 +356,7 @@ return [
     [
         'label' => 'Toko Internal',
         'icon' => 'ki-outline ki-shop',
+        'access' => 'retail.location',
         'children' => [
             [
                 'label' => 'Dashboard Cabang',
@@ -637,6 +652,7 @@ return [
     [
         'label' => 'Portal Langganan',
         'icon' => 'ki-outline ki-basket',
+        'access' => 'b2b.customer',
         'children' => [
             [
                 'label' => 'Dashboard Langganan',

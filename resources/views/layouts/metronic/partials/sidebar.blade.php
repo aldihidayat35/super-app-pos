@@ -3,20 +3,30 @@
     $hiddenRoutes = config('ui_visibility.hidden_navigation_routes', []);
     $canOpen = fn (?string $permission): bool => empty($permission)
         || collect(explode('|', $permission))->contains(fn (string $name): bool => $user?->can($name) === true);
-    $menuItems = collect(config('navigation'))->filter(function (array $item) use ($user, $hiddenRoutes, $canOpen): bool {
-        if (in_array($item['route'] ?? null, $hiddenRoutes, true)) {
-            return false;
+    $accessCache = [];
+    $canAccess = function (?string $access) use ($user, &$accessCache): bool {
+        if ($access === null || $access === '') {
+            return true;
         }
-        if (!$canOpen($item['permission'] ?? null)) {
+
+        return $accessCache[$access] ??= match ($access) {
+            'b2b.customer' => $user !== null && app(\App\Services\B2B\B2bPortalService::class)->canAccessPortal($user),
+            'retail.location' => $user?->hasPermittedWorkLocationType('branch') === true,
+            'warehouse.location' => $user?->hasPermittedWorkLocationType('warehouse') === true,
+            default => false,
+        };
+    };
+    $isVisible = fn (array $item): bool => !in_array($item['route'] ?? null, $hiddenRoutes, true)
+        && $canOpen($item['permission'] ?? null)
+        && $canAccess($item['access'] ?? null);
+    $menuItems = collect(config('navigation'))->filter(function (array $item) use ($isVisible): bool {
+        if (!$isVisible($item)) {
             return false;
         }
         if (empty($item['children'])) {
             return true;
         }
-        return collect($item['children'])->contains(
-            fn(array $child): bool => !in_array($child['route'] ?? null, $hiddenRoutes, true)
-                && $canOpen($child['permission'] ?? null),
-        );
+        return collect($item['children'])->contains($isVisible);
     });
 
     // Get work location and role info
@@ -106,10 +116,7 @@
 
                 @forelse ($menuItems as $item)
                     @php
-                        $children = collect($item['children'] ?? [])->filter(
-                            fn(array $child): bool => !in_array($child['route'] ?? null, $hiddenRoutes, true)
-                                && $canOpen($child['permission'] ?? null),
-                        );
+                        $children = collect($item['children'] ?? [])->filter($isVisible);
                         $isOpen =
                             collect($item['active'] ?? [])->contains(
                                 fn(string $pattern): bool => request()->routeIs($pattern),
