@@ -18,6 +18,7 @@ use App\Models\Stock;
 use App\Models\User;
 use App\Services\Control\ApprovalWorkflowService;
 use App\Services\Inventory\InventoryService;
+use App\Services\Inventory\StockLayerService;
 use App\Services\Notifications\BusinessNotificationService;
 use App\Services\Organization\DocumentNumberService;
 use App\Support\CurrencyFormatter;
@@ -32,6 +33,7 @@ class EmergencyPurchaseService
         private readonly PosCatalogService $catalog,
         private readonly ApprovalWorkflowService $approvals,
         private readonly InventoryService $inventory,
+        private readonly StockLayerService $layers,
         private readonly BusinessNotificationService $notifications,
     ) {}
 
@@ -54,19 +56,7 @@ class EmergencyPurchaseService
                 }
 
                 $product = Product::query()->lockForUpdate()->findOrFail($item->product_id);
-                $beforeQty = Decimal::normalize(Stock::query()->where('product_id', $product->id)->sum('quantity_on_hand'));
-                $hppBefore = Decimal::normalize($product->cost_price ?? 0, 2);
-                $qtyAfter = Decimal::add($beforeQty, $free, 4);
-                $incomingCost = Decimal::mul($free, (string) $item->unit_cost, 4, 2, 2);
-                $hppAfter = Decimal::div(
-                    Decimal::add(Decimal::mul($beforeQty, $hppBefore, 4, 2, 2), $incomingCost, 2),
-                    $qtyAfter,
-                    2,
-                    4,
-                    2,
-                );
-
-                $this->inventory->receive(
+                $mutation = $this->inventory->receive(
                     product: $product,
                     workLocation: $purchase->branch->workLocation,
                     warehouseLocation: null,
@@ -77,7 +67,29 @@ class EmergencyPurchaseService
                     idempotencyKey: "emergency-{$purchase->id}-item-{$item->id}-regularize",
                     metadata: ['emergency_purchase_item_id' => $item->id, 'unit_cost' => $item->unit_cost],
                 );
-                $product->forceFill(['cost_price' => $hppAfter])->save();
+                $this->layers->createLayer([
+                    'source_batch_id' => null,
+                    'product_id' => $product->id,
+                    'stock_id' => $mutation->stock_id,
+                    'work_location_id' => $purchase->work_location_id,
+                    'warehouse_location_id' => null,
+                    'source_type' => 'emergency_regularization',
+                    'source_id' => $purchase->id,
+                    'source_item_id' => $item->id,
+                    'supplier_id' => null,
+                    'goods_receipt_id' => null,
+                    'goods_receipt_item_id' => null,
+                    'unit_id' => $product->base_unit_id,
+                    'conversion_factor_snapshot' => '1.000000',
+                    'batch_no' => 'EMERGENCY-'.$purchase->id.'-'.$item->id,
+                    'received_at' => now()->toDateString(),
+                    'expires_at' => null,
+                    'cost_price' => (string) $item->unit_cost,
+                    'entry_sale_price_snapshot' => (string) $item->expected_sale_price,
+                    'quantity_on_hand' => $free,
+                    'quantity_reserved' => '0.0000',
+                    'quantity_damaged' => '0.0000',
+                ]);
                 $item->forceFill(['regularized_quantity' => Decimal::add((string) $item->regularized_quantity, $free, 4)])->save();
                 $converted = Decimal::add($converted, $free, 4);
             }

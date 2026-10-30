@@ -574,6 +574,125 @@
             padding: 6px 10px;
         }
 
+        .pos-cart-batch-panel {
+            margin-top: 12px;
+            padding: 12px;
+            border: 1px solid rgba(var(--bs-primary-rgb), .2);
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), .055), rgba(var(--bs-primary-rgb), .015));
+        }
+
+        .pos-cart-batch-panel.is-empty {
+            border-color: rgba(var(--bs-warning-rgb), .35);
+            background: rgba(var(--bs-warning-rgb), .06);
+        }
+
+        .pos-cart-batch-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 9px;
+        }
+
+        .pos-cart-batch-title {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--bs-gray-900);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .pos-cart-batch-title>span:first-child {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            color: var(--bs-primary);
+            background: rgba(var(--bs-primary-rgb), .12);
+        }
+
+        .pos-batch-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 7px;
+        }
+
+        .pos-batch-option {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            min-width: 0;
+            padding: 9px 10px;
+            border: 1px solid var(--bs-gray-300);
+            border-radius: 8px;
+            background: var(--bs-body-bg);
+            cursor: pointer;
+            transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+        }
+
+        .pos-batch-option:hover {
+            border-color: var(--bs-primary);
+            transform: translateY(-1px);
+        }
+
+        .pos-batch-option.is-selected {
+            border-color: var(--bs-primary);
+            box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), .1);
+        }
+
+        .pos-batch-option input {
+            width: 17px;
+            height: 17px;
+            margin: 0;
+            accent-color: var(--bs-primary);
+            flex: 0 0 auto;
+        }
+
+        .pos-batch-option-main {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .pos-batch-option-code {
+            display: block;
+            color: var(--bs-gray-900);
+            font-size: 11px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .pos-batch-option-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px 8px;
+            margin-top: 2px;
+            color: var(--bs-gray-600);
+            font-size: 9px;
+        }
+
+        .pos-batch-fifo-mark {
+            color: var(--bs-primary);
+            font-size: 9px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .pos-cart-batch-help {
+            display: flex;
+            align-items: flex-start;
+            gap: 5px;
+            margin-top: 8px;
+            color: var(--bs-gray-600);
+            font-size: 9px;
+            line-height: 1.4;
+        }
+
         .pos-cart-label {
             display: block;
             color: var(--bs-gray-600);
@@ -1245,12 +1364,34 @@
                         }]).map(unit =>
                             `<option value="${unit.id}" ${Number(unit.id) === Number(item.unit_id) ? 'selected' : ''}>${escapeHtml(unit.text)}</option>`
                             ).join('');
-                        const batchOptions = (item.stock_batches || []).map(batch =>
-                            `<option value="${batch.id}" ${(item.selected_stock_batch_ids || []).map(Number).includes(Number(batch.id)) ? 'selected' : ''}>${escapeHtml(batch.batch_no)} · masuk ${escapeHtml(batch.received_at || '-')} · stok ${qty(batch.available_quantity)}</option>`
-                        ).join('');
+                        const selectedBatchIds = (item.selected_stock_batch_ids || []).map(Number);
+                        const batchCards = (item.stock_batches || []).map((batch, batchIndex) => {
+                            const selected = selectedBatchIds.includes(Number(batch.id));
+                            return `<label class="pos-batch-option ${selected ? 'is-selected' : ''}">
+                                <input type="checkbox" class="cart-batch-check" value="${batch.id}" ${selected ? 'checked' : ''}>
+                                <span class="pos-batch-option-main">
+                                    <span class="pos-batch-option-code">${escapeHtml(batch.batch_no)}</span>
+                                    <span class="pos-batch-option-meta"><span>Masuk ${escapeHtml(batch.received_at || '-')}</span><span>Stok ${qty(batch.available_quantity)}</span>${batch.expires_at ? `<span>Exp ${escapeHtml(batch.expires_at)}</span>` : ''}</span>
+                                </span>
+                                ${batchIndex === 0 ? '<span class="pos-batch-fifo-mark">TERLAMA</span>' : ''}
+                            </label>`;
+                        }).join('');
                         const batchPicker = (item.stock_batches || []).length > 0
-                            ? `<div class="pos-cart-batch-picker mt-3 pt-3 border-top border-dashed"><div class="d-flex align-items-center justify-content-between mb-1"><span class="pos-cart-label mb-0"><i class="ki-outline ki-cube-2 me-1"></i>Batch Stok (FIFO otomatis)</span><span class="badge badge-light-primary fs-9">Default: paling lama</span></div><select class="form-select form-select-sm cart-batches" multiple size="${Math.min((item.stock_batches || []).length, 3)}">${batchOptions}</select><div class="text-muted fs-9 mt-1">Batch tertua sudah dipilih otomatis. Pilih batch lain hanya jika barang fisik yang diambil berbeda.</div></div>`
-                            : '';
+                            ? `<div class="pos-cart-batch-panel">
+                                <div class="pos-cart-batch-heading">
+                                    <div class="pos-cart-batch-title"><span><i class="ki-outline ki-package fs-5"></i></span><span>Batch Pengambilan</span></div>
+                                    <div class="d-flex align-items-center gap-2"><span class="badge badge-light-success fs-9">FIFO otomatis</span><span class="text-muted fs-9">${selectedBatchIds.length} dipilih</span></div>
+                                </div>
+                                <div class="pos-batch-options">${batchCards}</div>
+                                <div class="pos-cart-batch-help"><i class="ki-outline ki-information-5 fs-7"></i><span>Sistem memilih batch paling lama lebih dahulu. Centang batch lain hanya bila barang fisik yang diambil berbeda.</span></div>
+                            </div>`
+                            : `<div class="pos-cart-batch-panel is-empty">
+                                <div class="pos-cart-batch-heading mb-0">
+                                    <div class="pos-cart-batch-title"><span class="text-warning bg-light-warning"><i class="ki-outline ki-information-5 fs-5"></i></span><span>Batch belum tersedia</span></div>
+                                    <span class="badge badge-light-warning fs-9">Perlu sinkronisasi stok</span>
+                                </div>
+                                <div class="pos-cart-batch-help mt-2"><span>Saldo produk ada, tetapi belum memiliki lapisan batch. Muat ulang halaman setelah sinkronisasi data stok selesai.</span></div>
+                            </div>`;
                         const row = document.createElement('article');
                         row.className = `pos-cart-item pos-price-${statusClass}`;
                         row.innerHTML = `
@@ -1337,11 +1478,16 @@
                             item.manual_price = false;
                             requote(item);
                         });
-                        row.querySelector('.cart-batches')?.addEventListener('change', event => {
-                            item.selected_stock_batch_ids = Array.from(event.target.selectedOptions).map(option => Number(option.value));
+                        row.querySelectorAll('.cart-batch-check').forEach(input => input.addEventListener('change', () => {
+                            item.selected_stock_batch_ids = Array.from(row.querySelectorAll('.cart-batch-check:checked'))
+                                .map(checkbox => Number(checkbox.value));
                             item.batch_selection_mode = item.selected_stock_batch_ids.length ? 'manual' : 'auto';
-                            if (item.batch_selection_mode === 'auto') requote(item);
-                        });
+                            if (item.batch_selection_mode === 'auto') {
+                                requote(item);
+                            } else {
+                                renderCart();
+                            }
+                        }));
                         row.querySelector('.cart-remove').addEventListener('click', () => {
                             cart.splice(index, 1);
                             renderCart();

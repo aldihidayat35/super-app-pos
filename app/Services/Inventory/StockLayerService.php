@@ -357,7 +357,8 @@ class StockLayerService
             return [['batch' => $only, 'quantity' => $quantity]];
         }
 
-        // Lebih dari 1 lapisan → wajib pilih
+        // Jika kasir tidak mengganti pilihan, gunakan seluruh kandidat dalam
+        // urutan FIFO; loop alokasi hanya mengambil sebanyak yang dibutuhkan.
         if (empty($selectedBatchIds)) {
             $selectedBatchIds = $available->pluck('id')->map(fn ($id): int => (int) $id)->all();
         }

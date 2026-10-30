@@ -176,7 +176,14 @@ class StoreInboundWorkflowTest extends TestCase
         $service->regularize($purchase->fresh(), $this->storeHead);
 
         $this->assertSame('6.0000', Stock::query()->where('product_id', $product->id)->where('work_location_id', $this->storeLocation->id)->firstOrFail()->quantity_on_hand);
-        $this->assertSame('133.33', $product->fresh()->cost_price);
+        $this->assertSame('100.00', $product->fresh()->cost_price);
+        $this->assertDatabaseHas('stock_batches', [
+            'product_id' => $product->id,
+            'work_location_id' => $this->storeLocation->id,
+            'source_type' => 'emergency_regularization',
+            'cost_price' => '150.00',
+            'quantity_on_hand' => '4.0000',
+        ]);
         $this->assertSame('completed', $purchase->fresh()->status);
         $this->assertSame('0.0000', app(EmergencyStockService::class)->available($this->branch, $product->id));
     }
