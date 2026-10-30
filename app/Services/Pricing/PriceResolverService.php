@@ -12,7 +12,6 @@ use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\ProductUnit;
 use App\Models\User;
-use App\Models\WorkLocation;
 use App\Support\Decimal;
 use Illuminate\Support\Carbon;
 
@@ -213,17 +212,26 @@ class PriceResolverService
             ->where('product_id', $product->id)
             ->where('status', ProductPriceStatus::ACTIVE->value)
             ->where(fn ($query) => $query->where('channel', $channel)->orWhere('channel', 'all'))
+            ->where(function ($query) use ($branch): void {
+                $query->whereNull('work_location_id');
+                if ($branch?->work_location_id !== null) {
+                    $query->orWhere('work_location_id', $branch->work_location_id);
+                }
+            })
             ->where(fn ($query) => $query->whereNull('branch_id')->when($branch !== null, fn ($branchQuery) => $branchQuery->orWhere('branch_id', $branch->id)))
             ->where(fn ($query) => $query->whereNull('customer_category')->when($customer !== null, fn ($customerQuery) => $customerQuery->orWhere('customer_category', $customer->price_category)))
             ->where('minimum_qty', '<=', $baseQuantity)
             ->where(fn ($query) => $query->whereNull('starts_at')->orWhereDate('starts_at', '<=', $at->toDateString()))
             ->where(fn ($query) => $query->whereNull('ends_at')->orWhereDate('ends_at', '>=', $at->toDateString()))
             ->orderBy('priority')
+            ->orderByDesc('work_location_id')
             ->orderByDesc('customer_category')
             ->orderByDesc('branch_id')
             ->get()
             ->each(function (ProductPrice $price) use (&$candidates): void {
-                $specificity = ($price->customer_category !== null ? 20 : 0) + ($price->branch_id !== null ? 10 : 0);
+                $specificity = ($price->customer_category !== null ? 20 : 0)
+                    + ($price->work_location_id !== null ? 15 : 0)
+                    + ($price->branch_id !== null ? 10 : 0);
                 $candidates[] = [
                     'source' => 'product_price',
                     'priority' => 100 + (int) $price->priority - $specificity,

@@ -15,6 +15,7 @@ use App\Models\DocumentStatusHistory;
 use App\Models\Product;
 use App\Models\RestockRequest;
 use App\Models\Stock;
+use App\Models\StockBatch;
 use App\Models\StockTransfer;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -70,13 +71,14 @@ class StockTransferController extends Controller
 
         $validated = $request->validate([
             'work_location_id' => ['required', 'integer', Rule::exists('work_locations', 'id')->where('is_active', true)],
-            'context' => ['required', Rule::in(['source', 'destination', 'product'])],
+            'context' => ['required', Rule::in(['source', 'destination', 'product', 'batch'])],
             'warehouse_location_id' => [
-                Rule::requiredIf(fn (): bool => $request->input('context') === 'product'),
+                Rule::requiredIf(fn (): bool => in_array($request->input('context'), ['product', 'batch'], true)),
                 'nullable',
                 'integer',
                 Rule::exists('warehouse_locations', 'id')->where('is_active', true),
             ],
+            'product_id' => [Rule::requiredIf(fn (): bool => $request->input('context') === 'batch'), 'nullable', 'integer', 'exists:products,id'],
             'q' => ['nullable', 'string', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
@@ -86,8 +88,28 @@ class StockTransferController extends Controller
         ]);
         $workLocationId = (int) $validated['work_location_id'];
 
-        if (in_array($validated['context'], ['source', 'product'], true)) {
+        if (in_array($validated['context'], ['source', 'product', 'batch'], true)) {
             $this->ensureLocationScope($request, $workLocationId);
+        }
+
+        if ($validated['context'] === 'batch') {
+            $batches = StockBatch::query()
+                ->available()
+                ->where('product_id', (int) $validated['product_id'])
+                ->where('work_location_id', $workLocationId)
+                ->where('warehouse_location_id', (int) $validated['warehouse_location_id'])
+                ->orderBy('received_at')
+                ->orderBy('id')
+                ->get();
+
+            return response()->json([
+                'results' => $batches->map(fn (StockBatch $batch): array => array_filter([
+                    'id' => $batch->id,
+                    'text' => $batch->batch_no.' · masuk '.optional($batch->received_at)->format('d/m/Y').' · tersedia '.qty($batch->availableQuantity()),
+                    'available_quantity' => $batch->availableQuantity(),
+                    'cost_price' => $request->user()->can('margins.view_sensitive') ? $batch->cost_price : null,
+                ], fn ($value): bool => $value !== null))->values(),
+            ]);
         }
 
         $search = trim((string) ($validated['q'] ?? ''));
@@ -124,18 +146,18 @@ class StockTransferController extends Controller
                     'text' => "{$product->sku} — {$product->name}",
                     'sku' => $product->sku,
                     'name' => $product->name,
-                    'category' => $product->category->name,
+                    'category' => $product->category?->name,
                     'image_url' => $product->main_image_url,
                     'units' => collect([[
                         'id' => $product->base_unit_id,
-                        'text' => $product->baseUnit->name,
+                        'text' => $product->baseUnit()->value('name') ?? 'Satuan dasar',
                         'factor' => '1.000000',
                     ]])->merge($product->units
                         ->where('is_active', true)
                         ->where('unit_id', '!=', $product->base_unit_id)
                         ->map(fn ($unit): array => [
                             'id' => $unit->unit_id,
-                            'text' => $unit->unit->name,
+                            'text' => $unit->unit()->value('name') ?? $unit->name,
                             'factor' => (string) $unit->conversion_factor,
                         ]))->values(),
                 ])->values(),

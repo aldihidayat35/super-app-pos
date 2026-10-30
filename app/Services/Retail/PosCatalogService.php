@@ -9,11 +9,13 @@ use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\ProductUnit;
 use App\Models\Stock;
+use App\Models\StockBatch;
 use App\Models\User;
 use App\Services\Pricing\PriceResolverService;
 use App\Support\CurrencyFormatter;
 use App\Support\Decimal;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PosCatalogService
@@ -161,6 +163,27 @@ class PosCatalogService
             'status_message' => $status['message'],
             'rings' => $this->priceRings($pricing),
         ];
+        $availableBatches = StockBatch::query()
+            ->available()
+            ->where('product_id', $product->id)
+            ->where('work_location_id', $branch->work_location_id)
+            ->when(
+                $stock?->warehouse_location_id !== null,
+                fn (Builder $query) => $query->where('warehouse_location_id', $stock->warehouse_location_id),
+                fn (Builder $query) => $query->whereNull('warehouse_location_id'),
+            )
+            ->orderBy('received_at')
+            ->orderBy('id')
+            ->get();
+        $defaultBatchIds = $this->defaultBatchIds($availableBatches, $requiredBase);
+        $batches = $availableBatches
+            ->map(fn (StockBatch $batch): array => [
+                'id' => $batch->id,
+                'batch_no' => $batch->batch_no,
+                'received_at' => optional($batch->received_at)->format('d/m/Y'),
+                'expires_at' => optional($batch->expires_at)->format('d/m/Y'),
+                'available_quantity' => $batch->availableQuantity(),
+            ])->values()->all();
         if ($showSensitive) {
             $pricingPayload['hpp'] = $pricing['hpp_unit'];
             $pricingPayload['margin_amount'] = $pricing['margin_amount'];
@@ -191,8 +214,35 @@ class PosCatalogService
             'stock_sufficient' => Decimal::compare($sellableBase, $requiredBase) >= 0,
             'stock_low' => Decimal::compare($sellableBase, (string) $product->minimum_stock) <= 0,
             'warehouse_location_id' => $stock instanceof Stock ? $stock->warehouse_location_id : null,
+            'stock_batches' => $batches,
+            'selected_stock_batch_ids' => $defaultBatchIds,
+            'batch_selection_mode' => 'auto',
             'pricing' => $pricingPayload,
         ];
+    }
+
+    /**
+     * @param  Collection<int, StockBatch>  $batches
+     * @return list<int>
+     */
+    private function defaultBatchIds(Collection $batches, string $requiredBase): array
+    {
+        $remaining = $requiredBase;
+        $selected = [];
+
+        foreach ($batches as $batch) {
+            if (Decimal::compare($remaining, '0', 4) <= 0) {
+                break;
+            }
+
+            $selected[] = (int) $batch->id;
+            $take = Decimal::compare($remaining, $batch->availableQuantity(), 4) <= 0
+                ? $remaining
+                : $batch->availableQuantity();
+            $remaining = Decimal::sub($remaining, $take, 4);
+        }
+
+        return $selected;
     }
 
     /** @return array{id: int, name: string, factor: string} */

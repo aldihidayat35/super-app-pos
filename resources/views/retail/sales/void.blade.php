@@ -1,7 +1,7 @@
 @extends('layouts.metronic.app')
 
 @section('title', 'Pembatalan Transaksi POS - ' . config('app.name'))
-@section('page_title', 'Pembatalan Transaksi')
+@section('page_title', 'Void/Pembatalan Transaksi')
 
 @section('content')
     <x-metronic.card title="Pembatalan Transaksi {{ $sale->number }}">

@@ -102,7 +102,7 @@
             </div>
             <div class="table-responsive">
                 <table class="table align-middle">
-                    <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th class="min-w-200px">Produk</th><th class="min-w-130px">Satuan</th><th>Jumlah Diminta</th><th>Jumlah Disetujui</th><th class="min-w-180px">Lokasi Ambil</th><th class="min-w-180px">Lokasi Tujuan</th><th>Catatan</th><th class="text-end">Aksi</th></tr></thead>
+                    <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th class="min-w-200px">Produk</th><th class="min-w-130px">Satuan</th><th>Jumlah Diminta</th><th>Jumlah Disetujui</th><th class="min-w-180px">Lokasi Ambil</th><th class="min-w-180px">Batch HPP</th><th class="min-w-150px">Harga Jual Tujuan</th><th class="min-w-180px">Lokasi Tujuan</th><th>Catatan</th><th class="text-end">Aksi</th></tr></thead>
                     <tbody id="transfer-items">
                         @foreach($initialItems as $index => $item)
                             <tr class="transfer-item-row">
@@ -111,6 +111,8 @@
                                 <td><input name="items[{{ $index }}][quantity_requested]" type="number" step="1" min="1" value="{{ $item['quantity_requested'] ?? 1 }}" class="form-control form-control-sm" required></td>
                                 <td><input name="items[{{ $index }}][quantity_approved]" type="number" step="1" min="0" value="{{ $item['quantity_approved'] ?? 1 }}" class="form-control form-control-sm"></td>
                                 <td><select name="items[{{ $index }}][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2" data-selected="{{ $item['source_warehouse_location_id'] ?? '' }}"><option value="">Gunakan default</option>@if($selectedWarehouseLocations->has((int)($item['source_warehouse_location_id'] ?? 0)))<option value="{{ $item['source_warehouse_location_id'] }}" selected>{{ $selectedWarehouseLocations->get((int)$item['source_warehouse_location_id'])->full_code }}</option>@endif</select></td>
+                                <td><select name="items[{{ $index }}][selected_stock_batch_ids][]" class="form-select form-select-sm batch-select" multiple data-selected='@json(array_values((array)($item['selected_stock_batch_ids'] ?? [])))'></select><div class="text-muted fs-9 mt-1">Otomatis jika hanya satu batch.</div></td>
+                                <td><input name="items[{{ $index }}][destination_sale_price]" type="number" step="0.01" min="0.01" value="{{ $item['destination_sale_price'] ?? '' }}" class="form-control form-control-sm" @disabled(!auth()->user()->can('prices.update'))><div class="text-muted fs-9 mt-1">Default mengikuti sumber.</div></td>
                                 <td><select name="items[{{ $index }}][destination_warehouse_location_id]" class="form-select form-select-sm destination-bin-select" data-control="select2" data-selected="{{ $item['destination_warehouse_location_id'] ?? '' }}"><option value="">Gunakan default</option>@if($selectedWarehouseLocations->has((int)($item['destination_warehouse_location_id'] ?? 0)))<option value="{{ $item['destination_warehouse_location_id'] }}" selected>{{ $selectedWarehouseLocations->get((int)$item['destination_warehouse_location_id'])->full_code }}</option>@endif</select></td>
                                 <td><input name="items[{{ $index }}][notes]" value="{{ $item['notes'] ?? '' }}" class="form-control form-control-sm"></td>
                                 <td class="text-end"><button type="button" class="btn btn-sm btn-icon btn-light-danger remove-transfer-item" title="Hapus produk"><i class="ki-outline ki-trash fs-5"></i></button></td>
@@ -131,6 +133,8 @@
             <td><input name="items[__INDEX__][quantity_requested]" type="number" step="1" min="1" value="1" class="form-control form-control-sm" required></td>
             <td><input name="items[__INDEX__][quantity_approved]" type="number" step="1" min="0" value="1" class="form-control form-control-sm"></td>
             <td><select name="items[__INDEX__][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2"><option value="">Gunakan default</option></select></td>
+            <td><select name="items[__INDEX__][selected_stock_batch_ids][]" class="form-select form-select-sm batch-select" multiple></select><div class="text-muted fs-9 mt-1">Otomatis jika hanya satu batch.</div></td>
+            <td><input name="items[__INDEX__][destination_sale_price]" type="number" step="0.01" min="0.01" class="form-control form-control-sm" @disabled(!auth()->user()->can('prices.update'))></td>
             <td><select name="items[__INDEX__][destination_warehouse_location_id]" class="form-select form-select-sm destination-bin-select" data-control="select2"><option value="">Gunakan default</option></select></td>
             <td><input name="items[__INDEX__][notes]" class="form-control form-control-sm"></td>
             <td class="text-end"><button type="button" class="btn btn-sm btn-icon btn-light-danger remove-transfer-item" title="Hapus produk"><i class="ki-outline ki-trash fs-5"></i></button></td>
@@ -162,6 +166,49 @@ document.addEventListener('DOMContentLoaded', function() {
         
         btnCatalog.dataset.urlParams = JSON.stringify(params);
     });
+
+    const form = document.getElementById('stock-transfer-form');
+    const endpoint = form.dataset.optionsUrl;
+    const sourceWork = document.getElementById('source-work-location');
+    const defaultSourceBin = form.querySelector('select[name="source_warehouse_location_id"]');
+
+    async function refreshBatches(row) {
+        const productId = row.querySelector('.product-select')?.value;
+        const rowBin = row.querySelector('.source-bin-select')?.value;
+        const binId = rowBin || defaultSourceBin?.value;
+        const select = row.querySelector('.batch-select');
+        if (!select || !productId || !sourceWork.value || !binId) {
+            if (select) select.innerHTML = '';
+            return;
+        }
+        const selected = new Set(JSON.parse(select.dataset.selected || '[]').map(String));
+        const params = new URLSearchParams({
+            context: 'batch', work_location_id: sourceWork.value,
+            warehouse_location_id: binId, product_id: productId,
+        });
+        const response = await fetch(`${endpoint}?${params.toString()}`, {headers: {'Accept': 'application/json'}});
+        if (!response.ok) return;
+        const payload = await response.json();
+        select.innerHTML = '';
+        (payload.results || []).forEach((batch) => {
+            const option = new Option(batch.text, batch.id, false, selected.has(String(batch.id)));
+            select.add(option);
+        });
+        if ((payload.results || []).length === 1) select.options[0].selected = true;
+        select.dataset.selected = '[]';
+    }
+
+    function bindBatchRow(row) {
+        row.querySelector('.product-select')?.addEventListener('change', () => refreshBatches(row));
+        row.querySelector('.source-bin-select')?.addEventListener('change', () => refreshBatches(row));
+        refreshBatches(row);
+    }
+    document.querySelectorAll('.transfer-item-row').forEach(bindBatchRow);
+    sourceWork.addEventListener('change', () => document.querySelectorAll('.transfer-item-row').forEach(refreshBatches));
+    defaultSourceBin?.addEventListener('change', () => document.querySelectorAll('.transfer-item-row').forEach(refreshBatches));
+    new MutationObserver((mutations) => mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1 && node.matches?.('.transfer-item-row')) bindBatchRow(node);
+    }))).observe(document.getElementById('transfer-items'), {childList: true});
 });
 
 function handleCatalogSelect(product) {

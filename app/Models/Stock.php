@@ -66,4 +66,10 @@ class Stock extends Model
     {
         return $this->hasMany(StockMutation::class);
     }
+
+    /** @return HasMany<StockBatch, $this> */
+    public function batches(): HasMany
+    {
+        return $this->hasMany(StockBatch::class);
+    }
 }

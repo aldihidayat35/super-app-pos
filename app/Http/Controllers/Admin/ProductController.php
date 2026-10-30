@@ -14,11 +14,13 @@ use App\Models\ProductBrand;
 use App\Models\ProductCategory;
 use App\Models\ProductImage;
 use App\Models\Stock;
+use App\Models\StockBatch;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Services\Product\ProductImageService;
 use App\Services\Product\ProductSkuService;
 use App\Services\Product\UnitConversionService;
+use App\Support\Decimal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +28,11 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Format;
+use Intervention\Image\ImageManager;
 use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -107,32 +113,133 @@ class ProductController extends Controller
         return redirect()->route('admin.products.show', $product)->with('notification', ['type' => 'success', 'message' => 'Produk berhasil dibuat.']);
     }
 
-    public function show(Product $product): View
+    public function show(Request $request, Product $product): View
     {
         $this->authorize('view', $product);
+
+        $user = $request->user();
+        $permittedWorkLocationIds = $user?->permittedWorkLocationIds() ?? [];
+        $canViewSensitiveMargin = $user?->can('margins.view_sensitive') ?? false;
 
         $product = $product->load([
             'category', 'subcategory', 'brand', 'baseUnit', 'defaultWarehouse',
             'units.unit',
             'barcodes.productUnit.unit',
             'images' => fn ($q) => $q->orderBy('sort_order'),
-            'stocks' => fn ($q) => $q->with('warehouseLocation.warehouse'),
-            'prices' => fn ($q) => $q->where('status', 'active')->orderBy('priority'),
+            'stocks' => fn ($q) => $q->whereIn('work_location_id', $permittedWorkLocationIds)->with(['workLocation', 'warehouseLocation.warehouse']),
+            'prices' => fn ($q) => $q
+                ->where('status', 'active')
+                ->where(fn ($priceQuery) => $priceQuery->whereNull('work_location_id')->orWhereIn('work_location_id', $permittedWorkLocationIds))
+                ->with('workLocation')
+                ->orderBy('priority'),
             'supplierProducts' => fn ($q) => $q->with('supplier'),
-            'stockMutations' => fn ($q) => $q->with(['product', 'warehouseLocation', 'actor'])->orderBy('occurred_at', 'desc')->limit(20),
+            'stockMutations' => fn ($q) => $q
+                ->whereIn('work_location_id', $permittedWorkLocationIds)
+                ->with(['product', 'workLocation', 'warehouseLocation', 'actor'])
+                ->orderBy('occurred_at', 'desc')
+                ->limit(20),
         ]);
 
         $stockSummary = Stock::query()
-            ->join('products', 'products.id', '=', 'stocks.product_id')
             ->where('stocks.product_id', $product->id)
+            ->whereIn('stocks.work_location_id', $permittedWorkLocationIds)
             ->selectRaw('
                 COUNT(*) as total_locations,
                 SUM(stocks.quantity_on_hand) as total_on_hand,
                 SUM(stocks.quantity_reserved) as total_reserved,
-                SUM(stocks.quantity_damaged) as total_damaged,
-                SUM('.Stock::inventoryValueSql().') as total_value
+                SUM(stocks.quantity_damaged) as total_damaged
             ')
             ->first();
+
+        $stockBatches = StockBatch::query()
+            ->forProduct($product->id)
+            ->whereIn('work_location_id', $permittedWorkLocationIds)
+            ->with(['workLocation', 'warehouseLocation.warehouse', 'unit', 'sourceBatch:id,batch_no'])
+            ->orderBy('work_location_id')
+            ->orderByDesc('received_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $globalRetailPrice = $product->prices
+            ->first(fn ($price): bool => $price->work_location_id === null && $price->channel === 'retail');
+
+        $stockLayerSummaries = $stockBatches
+            ->groupBy('work_location_id')
+            ->map(function ($batches) use ($product, $globalRetailPrice, $canViewSensitiveMargin): array {
+                $firstBatch = $batches->first();
+                $locationPrice = $product->prices->first(
+                    fn ($price): bool => (int) $price->work_location_id === (int) $firstBatch->work_location_id
+                        && $price->channel === 'retail'
+                ) ?? $globalRetailPrice;
+
+                $summary = [
+                    'work_location' => $firstBatch->workLocation,
+                    'layer_count' => $batches->count(),
+                    'quantity_on_hand' => '0.0000',
+                    'quantity_reserved' => '0.0000',
+                    'quantity_damaged' => '0.0000',
+                    'quantity_available' => '0.0000',
+                    'sale_price' => $locationPrice?->recommended_price,
+                    'uses_global_price' => $locationPrice?->work_location_id === null,
+                ];
+
+                if ($canViewSensitiveMargin) {
+                    $summary['inventory_value'] = '0.00';
+                }
+
+                foreach ($batches as $batch) {
+                    $summary['quantity_on_hand'] = Decimal::add($summary['quantity_on_hand'], (string) $batch->quantity_on_hand);
+                    $summary['quantity_reserved'] = Decimal::add($summary['quantity_reserved'], (string) $batch->quantity_reserved);
+                    $summary['quantity_damaged'] = Decimal::add($summary['quantity_damaged'], (string) $batch->quantity_damaged);
+                    $summary['quantity_available'] = Decimal::add($summary['quantity_available'], $batch->availableQuantity());
+
+                    if ($canViewSensitiveMargin) {
+                        $summary['inventory_value'] = Decimal::add(
+                            $summary['inventory_value'],
+                            Decimal::mul((string) $batch->quantity_on_hand, (string) $batch->cost_price),
+                            2,
+                        );
+                    }
+                }
+
+                return $summary;
+            })
+            ->values();
+
+        $stockLayers = $stockBatches->map(function (StockBatch $batch) use ($canViewSensitiveMargin): array {
+            $layer = [
+                'id' => $batch->id,
+                'batch_no' => $batch->batch_no,
+                'source_batch_no' => $batch->sourceBatch?->batch_no,
+                'source_type' => $batch->source_type,
+                'work_location' => $batch->workLocation,
+                'warehouse_location' => $batch->warehouseLocation,
+                'unit' => $batch->unit,
+                'conversion_factor' => $batch->conversion_factor_snapshot,
+                'received_at' => $batch->received_at,
+                'expires_at' => $batch->expires_at,
+                'quantity_on_hand' => $batch->quantity_on_hand,
+                'quantity_reserved' => $batch->quantity_reserved,
+                'quantity_damaged' => $batch->quantity_damaged,
+                'quantity_available' => $batch->availableQuantity(),
+                'entry_sale_price' => $batch->entry_sale_price_snapshot,
+                'status' => $batch->status,
+            ];
+
+            if ($canViewSensitiveMargin) {
+                $layer['cost_price'] = $batch->cost_price;
+                $layer['inventory_value'] = Decimal::mul((string) $batch->quantity_on_hand, (string) $batch->cost_price);
+            }
+
+            return $layer;
+        });
+
+        $layerInventoryValue = $canViewSensitiveMargin
+            ? $stockLayerSummaries->reduce(
+                fn (string $total, array $summary): string => Decimal::add($total, $summary['inventory_value'], 2),
+                '0.00'
+            )
+            : null;
 
         $activities = Activity::query()
             ->where('subject_type', Product::class)
@@ -151,7 +258,16 @@ class ProductController extends Controller
             'default_warehouse_id' => Warehouse::query()->pluck('name', 'id')->all(),
         ];
 
-        return view('admin.products.show', compact('product', 'stockSummary', 'activities', 'auditRelations'));
+        return view('admin.products.show', compact(
+            'product',
+            'stockSummary',
+            'stockLayers',
+            'stockLayerSummaries',
+            'layerInventoryValue',
+            'canViewSensitiveMargin',
+            'activities',
+            'auditRelations',
+        ));
     }
 
     public function edit(Product $product): View
@@ -360,20 +476,20 @@ class ProductController extends Controller
         }
     }
 
-    private function processAndStoreImage(\Illuminate\Http\UploadedFile $file): string
+    private function processAndStoreImage(UploadedFile $file): string
     {
-        $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
-        $filename = \Illuminate\Support\Str::random(40) . '.webp';
-        $path = 'products/' . $filename;
-        
-        \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('products');
+        $manager = new ImageManager(new Driver);
+        $filename = Str::random(40).'.webp';
+        $path = 'products/'.$filename;
+
+        Storage::disk('public')->makeDirectory('products');
         $image = $manager->decodePath($file->path());
         $image->scaleDown(width: 800, height: 800);
-        
+
         // Save as WebP
-        $fullPath = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
-        $image->encodeUsingFormat(\Intervention\Image\Format::WEBP, quality: 80)->save($fullPath);
-        
+        $fullPath = Storage::disk('public')->path($path);
+        $image->encodeUsingFormat(Format::WEBP, quality: 80)->save($fullPath);
+
         return $path;
     }
 

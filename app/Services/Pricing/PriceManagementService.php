@@ -76,6 +76,7 @@ class PriceManagementService
                 [
                     'product_id' => $product->id,
                     'branch_id' => $data['branch_id'] ?? null,
+                    'work_location_id' => $data['work_location_id'] ?? null,
                     'channel' => $data['channel'] ?? 'retail',
                     'price_ring' => $data['price_ring'] ?? 'retail',
                     'customer_category' => $data['customer_category'] ?? null,
@@ -97,7 +98,7 @@ class PriceManagementService
                 $this->requestApproval('product_price', $price->id, $product, null, $price->branch_id, $actor, (string) $price->recommended_price, $resolved, $data['notes'] ?? null);
             }
 
-            return $price->fresh(['product', 'branch']);
+            return $price->fresh(['product', 'branch', 'workLocation']);
         });
     }
 

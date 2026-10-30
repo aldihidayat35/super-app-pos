@@ -17,7 +17,7 @@
 @section('page_guide')
     <x-metronic.page-guide id="admin-product-show" title="Panduan Detail Produk">
         <x-slot:function><p>Halaman menampilkan rincian produk dengan foto, barcode, stok, harga, supplier, dan histori mutasi.</p></x-slot:function>
-        <x-slot:parts><ul><li><strong>Ringkasan:</strong> nama, SKU, kategori, merek, satuan, lokasi default, stok, harga.</li><li><strong>Tab Foto & Barcode:</strong> preview gambar dan barcode produk.</li><li><strong>Tab Stok:</strong> stok per lokasi dan histori mutasi.</li><li><strong>Tab Harga:</strong> harga jual dan harga pokok.</li><li><strong>Tab Supplier:</strong> supplier yang menyediakan produk ini.</li></ul></x-slot:parts>
+        <x-slot:parts><ul><li><strong>Ringkasan:</strong> nama, SKU, kategori, merek, satuan, lokasi default, stok, harga.</li><li><strong>Tab Foto & Barcode:</strong> preview gambar dan barcode produk.</li><li><strong>Tab Stok & HPP:</strong> saldo, harga jual lokasi, lapisan HPP, dan histori mutasi.</li><li><strong>Tab Harga:</strong> harga jual aktif per lokasi dan fallback master.</li><li><strong>Tab Supplier:</strong> supplier yang menyediakan produk ini.</li></ul></x-slot:parts>
         <x-slot:impacts><p>Halaman ini read-only. Edit produk dari tombol toolbar.</p></x-slot:impacts>
         <x-slot:operation><ol><li>Periksa ringkasan produk.</li><li>Buka tab sesuai kebutuhan.</li></ol></x-slot:operation>
     </x-metronic.page-guide>
@@ -108,17 +108,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="col-6">
                         <div class="text-muted fs-7">Available</div>
-                        <div class="fw-bold fs-4">{{ number_format((float)$stockSummary->total_on_hand - (float)$stockSummary->total_reserved, 0) }}</div>
+                        <div class="fw-bold fs-4">{{ qty(\App\Support\Decimal::sub(\App\Support\Decimal::sub((string) $stockSummary->total_on_hand, (string) $stockSummary->total_reserved), (string) $stockSummary->total_damaged)) }}</div>
                     </div>
                     <div class="col-6">
                         <div class="text-muted fs-7">Lokasi</div>
                         <div class="fw-bold fs-4">{{ $stockSummary->total_locations }}</div>
                     </div>
                 </div>
-                @if($stockSummary->total_value > 0)
+                @if($canViewSensitiveMargin && $layerInventoryValue !== null)
                 <div class="mt-3 pt-3 border-top">
-                    <div class="text-muted fs-7">Nilai Stok (HPP)</div>
-                    <div class="fw-bold fs-5">Rp {{ number_format((float)$stockSummary->total_value, 0, ',', '.') }}</div>
+                    <div class="text-muted fs-7">Nilai Persediaan dari Lapisan HPP</div>
+                    <div class="fw-bold fs-5">{{ \App\Support\CurrencyFormatter::rupiah($layerInventoryValue) }}</div>
                 </div>
                 @endif
             </x-metronic.card>
@@ -129,10 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <x-metronic.card title="Harga" class="mt-6">
                 <table class="table table-row-dashed align-middle fs-7">
                     <tbody>
-                        @if($product->cost_price > 0)
+                        @if($canViewSensitiveMargin && $product->cost_price > 0)
                         <tr>
-                            <td class="text-muted">HPP (Cost)</td>
-                            <td class="fw-semibold text-end">Rp {{ number_format((float)$product->cost_price, 0, ',', '.') }}</td>
+                            <td class="text-muted">HPP Fallback Master</td>
+                            <td class="fw-semibold text-end">{{ \App\Support\CurrencyFormatter::rupiah((string) $product->cost_price) }}</td>
                         </tr>
                         @endif
                         @if($product->minimum_price > 0)
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab">Foto & Barcode</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock" type="button" role="tab">Stok & Mutasi</button>
+                        <button class="nav-link" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock" type="button" role="tab">Stok & HPP</button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="pricing-tab" data-bs-toggle="tab" data-bs-target="#pricing" type="button" role="tab">Harga</button>
@@ -398,6 +398,121 @@ document.addEventListener('DOMContentLoaded', () => {
                             @endif
                         </div>
 
+                        {{-- Lapisan HPP dan harga jual per lokasi --}}
+                        <div class="border-top pt-5 mb-6">
+                            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
+                                <div>
+                                    <h6 class="text-muted fs-7 text-uppercase mb-1">Lapisan Stok per Lokasi</h6>
+                                    <div class="text-muted fs-7">
+                                        Setiap penerimaan mempertahankan HPP asalnya. Harga jual aktif tetap satu per produk pada tiap lokasi.
+                                    </div>
+                                </div>
+                                <span class="badge badge-light-primary">{{ $stockLayers->count() }} lapisan</span>
+                            </div>
+
+                            @if($stockLayerSummaries->isNotEmpty())
+                                <div class="table-responsive mb-5">
+                                    <table class="table table-row-dashed align-middle fs-7">
+                                        <thead>
+                                            <tr class="text-muted fw-bold">
+                                                <th>Lokasi Kerja</th>
+                                                <th class="text-end">Lapisan</th>
+                                                <th class="text-end">On Hand</th>
+                                                <th class="text-end">Tersedia</th>
+                                                <th class="text-end">Harga Jual Aktif</th>
+                                                @if($canViewSensitiveMargin)
+                                                    <th class="text-end">Nilai Persediaan</th>
+                                                @endif
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($stockLayerSummaries as $summary)
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-semibold">{{ $summary['work_location']?->name ?: 'Lokasi tidak tersedia' }}</div>
+                                                        <div class="text-muted">{{ $summary['work_location']?->code ?: '-' }}</div>
+                                                    </td>
+                                                    <td class="text-end">{{ $summary['layer_count'] }}</td>
+                                                    <td class="text-end">{{ qty($summary['quantity_on_hand']) }}</td>
+                                                    <td class="text-end fw-bold">{{ qty($summary['quantity_available']) }}</td>
+                                                    <td class="text-end">
+                                                        @if($summary['sale_price'] !== null)
+                                                            <span class="fw-semibold text-success">{{ \App\Support\CurrencyFormatter::rupiah((string) $summary['sale_price']) }}</span>
+                                                            @if($summary['uses_global_price'])
+                                                                <div class="text-muted fs-8">fallback global</div>
+                                                            @endif
+                                                        @else
+                                                            <span class="text-muted">Belum diatur</span>
+                                                        @endif
+                                                    </td>
+                                                    @if($canViewSensitiveMargin)
+                                                        <td class="text-end fw-semibold">{{ \App\Support\CurrencyFormatter::rupiah($summary['inventory_value']) }}</td>
+                                                    @endif
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-row-dashed align-middle fs-7">
+                                        <thead>
+                                            <tr class="text-muted fw-bold">
+                                                <th>Batch / Sumber</th>
+                                                <th>Lokasi / Rak</th>
+                                                <th>Tanggal</th>
+                                                <th class="text-end">On Hand</th>
+                                                <th class="text-end">Reserved</th>
+                                                <th class="text-end">Rusak</th>
+                                                <th class="text-end">Tersedia</th>
+                                                @if($canViewSensitiveMargin)
+                                                    <th class="text-end">HPP / Unit Dasar</th>
+                                                    <th class="text-end">Nilai Lapisan</th>
+                                                @endif
+                                                <th class="text-end">Harga Saat Masuk</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($stockLayers as $layer)
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-semibold">{{ $layer['batch_no'] }}</div>
+                                                        <div class="text-muted fs-8">
+                                                            {{ str($layer['source_type'] ?: 'manual')->replace('_', ' ')->headline() }}
+                                                            @if($layer['source_batch_no'])
+                                                                · dari {{ $layer['source_batch_no'] }}
+                                                            @endif
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div>{{ $layer['work_location']?->name ?: '-' }}</div>
+                                                        <div class="text-muted fs-8">{{ $layer['warehouse_location']?->full_code ?: 'Tanpa rak/bin' }}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div>Masuk: {{ $layer['received_at']?->format('d/m/Y') ?: '-' }}</div>
+                                                        <div class="text-muted fs-8">Kedaluwarsa: {{ $layer['expires_at']?->format('d/m/Y') ?: '-' }}</div>
+                                                    </td>
+                                                    <td class="text-end">{{ qty($layer['quantity_on_hand']) }}</td>
+                                                    <td class="text-end text-warning">{{ qty($layer['quantity_reserved']) }}</td>
+                                                    <td class="text-end text-danger">{{ qty($layer['quantity_damaged']) }}</td>
+                                                    <td class="text-end fw-bold">{{ qty($layer['quantity_available']) }}</td>
+                                                    @if($canViewSensitiveMargin)
+                                                        <td class="text-end text-warning fw-semibold">{{ \App\Support\CurrencyFormatter::rupiah((string) $layer['cost_price']) }}</td>
+                                                        <td class="text-end fw-semibold">{{ \App\Support\CurrencyFormatter::rupiah($layer['inventory_value']) }}</td>
+                                                    @endif
+                                                    <td class="text-end">
+                                                        {{ $layer['entry_sale_price'] !== null ? \App\Support\CurrencyFormatter::rupiah((string) $layer['entry_sale_price']) : '-' }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <x-metronic.empty-state title="Belum ada lapisan stok" description="Lapisan akan terbentuk dari stok awal, penerimaan supplier, transfer masuk, retur, atau koreksi positif. HPP master lama hanya menjadi fallback kompatibilitas." icon="ki-outline ki-layer" />
+                            @endif
+                        </div>
+
                         {{-- Histori Mutasi --}}
                         <div>
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -451,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
                                 <div>
                                     <h6 class="text-muted fs-7 text-uppercase mb-1">Harga Jual dan Price Ring</h6>
-                                    <div class="text-muted fs-7">Harga per channel, cabang, segmen, dan minimum kuantitas.</div>
+                                    <div class="text-muted fs-7">Harga per lokasi kerja, channel, segmen, dan minimum kuantitas.</div>
                                 </div>
                                 @can('prices.view')
                                     <a href="{{ route('pricing.product-prices.index', ['product_id' => $product->id]) }}" class="btn btn-sm btn-light-primary">
@@ -465,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <thead>
                                             <tr class="text-muted fw-bold">
                                                 <th>Price Ring</th>
+                                                <th>Lokasi</th>
                                                 <th>Channel</th>
                                                 <th class="text-end">Min</th>
                                                 <th class="text-end">Recommended</th>
@@ -477,6 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                             @foreach($product->prices as $price)
                                                 <tr>
                                                     <td class="fw-semibold">{{ ucfirst($price->price_ring) }}</td>
+                                                    <td>{{ $price->workLocation?->name ?: 'Global (fallback)' }}</td>
                                                     <td><span class="badge bg-light">{{ ucfirst($price->channel) }}</span></td>
                                                     <td class="text-end text-muted">{{ $price->min_price > 0 ? 'Rp ' . number_format((float)$price->min_price, 0) : '-' }}</td>
                                                     <td class="text-end text-success fw-bold">Rp {{ number_format((float)$price->recommended_price, 0) }}</td>
@@ -491,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </table>
                                 </div>
                             @else
-                                <x-metronic.empty-state title="Harga jual belum dibuat" description="HPP dan harga minimum sudah tersimpan pada master. Tambahkan harga jual melalui modul Harga agar price ring, channel, histori, dan approval tercatat." icon="ki-outline ki-price-tag">
+                                <x-metronic.empty-state title="Harga jual belum dibuat" description="Tambahkan harga jual per lokasi melalui modul Harga. Harga global dapat dipakai sebagai fallback untuk lokasi yang belum mempunyai harga sendiri." icon="ki-outline ki-price-tag">
                                     @can('prices.view')
                                         <a href="{{ route('pricing.product-prices.index', ['product_id' => $product->id]) }}" class="btn btn-sm btn-light-primary">Tambah Harga Jual</a>
                                     @endcan
@@ -499,33 +616,40 @@ document.addEventListener('DOMContentLoaded', () => {
                             @endif
                         </div>
 
+                        @if($canViewSensitiveMargin)
                         <div>
-                            <h6 class="text-muted fs-7 text-uppercase mb-3">Harga Pokok (HPP)</h6>
+                            <h6 class="text-muted fs-7 text-uppercase mb-3">Ringkasan Harga Pokok (HPP)</h6>
                             <div class="row g-3">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="border rounded p-3 text-center">
-                                        <div class="text-muted fs-7 mb-1">HPP Saat Ini</div>
-                                        <div class="fw-bold fs-4 text-warning">Rp {{ number_format((float)$product->cost_price, 0) }}</div>
+                                        <div class="text-muted fs-7 mb-1">Jumlah Lapisan Stok</div>
+                                        <div class="fw-bold fs-4 text-primary">{{ $stockLayers->count() }}</div>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 text-center">
+                                        <div class="text-muted fs-7 mb-1">Nilai Persediaan Berlapis</div>
+                                        <div class="fw-bold fs-4 text-warning">{{ \App\Support\CurrencyFormatter::rupiah($layerInventoryValue ?? '0') }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 text-center">
+                                        <div class="text-muted fs-7 mb-1">HPP Fallback Master</div>
+                                        <div class="fw-bold fs-4 text-muted">{{ \App\Support\CurrencyFormatter::rupiah((string) $product->cost_price) }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
                                     <div class="border rounded p-3 text-center">
                                         <div class="text-muted fs-7 mb-1">Min. Harga Jual</div>
-                                        <div class="fw-bold fs-4 text-danger">Rp {{ number_format((float)$product->minimum_price, 0) }}</div>
+                                        <div class="fw-bold fs-4 text-danger">{{ \App\Support\CurrencyFormatter::rupiah((string) $product->minimum_price) }}</div>
                                     </div>
                                 </div>
-                                @if($product->cost_price > 0 && $product->minimum_price > 0)
-                                <div class="col-md-4">
-                                    <div class="border rounded p-3 text-center">
-                                        <div class="text-muted fs-7 mb-1">Margin Minimum</div>
-                                        <div class="fw-bold fs-4 text-success">
-                                            {{ number_format((($product->minimum_price - $product->cost_price) / $product->cost_price) * 100, 1) }}%
-                                        </div>
-                                    </div>
-                                </div>
-                                @endif
+                            </div>
+                            <div class="text-muted fs-8 mt-3">
+                                HPP fallback master hanya dipakai untuk kompatibilitas data lama. HPP transaksi baru berasal dari lapisan yang dialokasikan saat stok keluar.
                             </div>
                         </div>
+                        @endif
                     </div>
 
                     {{-- Tab: Supplier --}}
@@ -536,7 +660,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <thead>
                                         <tr class="text-muted fw-bold">
                                             <th>Supplier</th>
-                                            <th class="text-end">Last Price</th>
+                                            @if($canViewSensitiveMargin)
+                                                <th class="text-end">Harga Beli Terakhir</th>
+                                            @endif
                                             <th>Last Supplied</th>
                                         </tr>
                                     </thead>
@@ -544,7 +670,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                         @foreach($product->supplierProducts as $sp)
                                             <tr>
                                                 <td class="fw-semibold">{{ $sp->supplier?->name ?: '-' }}</td>
-                                                <td class="text-end">Rp {{ number_format((float)$sp->last_price, 0) }}</td>
+                                                @if($canViewSensitiveMargin)
+                                                    <td class="text-end">{{ \App\Support\CurrencyFormatter::rupiah((string) $sp->last_price) }}</td>
+                                                @endif
                                                 <td>{{ $sp->last_supplied_at?->format('d/m/Y') ?: '-' }}</td>
                                             </tr>
                                         @endforeach

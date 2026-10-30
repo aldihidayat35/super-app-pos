@@ -143,13 +143,15 @@
                                     <th style="min-width: 190px;">Rak / Tempat Simpan <span class="text-danger">*</span></th>
                                     <th class="text-end" style="min-width: 140px;">Jumlah Sistem</th>
                                     <th style="min-width: 180px;">Jumlah Fisik Sekarang <span class="text-danger">*</span></th>
+                                    <th style="min-width: 150px;">HPP / Unit <span class="text-danger">*</span></th>
+                                    <th style="min-width: 160px;">Harga Jual Lokasi <span class="text-danger">*</span></th>
                                     <th style="min-width: 200px;">Catatan Item</th>
                                     <th class="text-end" style="width: 50px;"></th>
                                 </tr>
                             </thead>
                             <tbody id="opening-product-rows">
                                 <tr id="opening-empty-row">
-                                    <td colspan="6" class="text-center text-muted py-10">
+                                    <td colspan="8" class="text-center text-muted py-10">
                                         <i class="ki-outline ki-handcart fs-3x text-muted mb-2 d-block"></i>
                                         <span class="fw-semibold">Belum ada produk yang dipilih.</span>
                                         <div class="fs-8 mt-1">Silakan klik tombol <strong>"Buka Katalog Produk"</strong> di atas untuk menambahkan produk ke daftar ini.</div>
@@ -704,6 +706,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const escapedUnit = escapeHtml(product.unit || 'unit');
             const escapedImg = escapeHtml(product.image || '/assets/media/products/default-product.png');
             const escapedPhysicalQty = escapeHtml(product.physicalQty !== undefined && product.physicalQty !== null ? product.physicalQty : '');
+            const escapedUnitCost = escapeHtml(product.unitCost || product.cost || '');
+            const escapedSalePrice = escapeHtml(product.salePrice || product.cost || '');
             const escapedNote = escapeHtml(product.note || '');
 
             row.innerHTML = `
@@ -740,6 +744,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <input type="number" step="any" min="0" name="items[${escapeHtml(product.id)}][physical_qty]" class="form-control form-control-sm physical-input" value="${escapedPhysicalQty}" placeholder="0" required>
                     <div class="small text-muted mt-1 difference-preview">Selisih: -</div>
                 </td>
+                <td><input type="number" step="0.01" min="0.01" name="items[${escapeHtml(product.id)}][unit_cost_snapshot]" class="form-control form-control-sm" value="${escapedUnitCost}" required></td>
+                <td><input type="number" step="0.01" min="0.01" name="items[${escapeHtml(product.id)}][sale_price_snapshot]" class="form-control form-control-sm" value="${escapedSalePrice}" required></td>
                 <td>
                     <input name="items[${escapeHtml(product.id)}][note]" class="form-control form-control-sm note-input" value="${escapedNote}" placeholder="Opsional (kondisi/keterangan)">
                 </td>
@@ -845,6 +851,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         stocks: JSON.parse(btn.dataset.stocks || '{}'),
                         binId: item.warehouse_location_id || '',
                         physicalQty: item.physical_qty || '',
+                        unitCost: item.unit_cost_snapshot || btn.dataset.cost,
+                        salePrice: item.sale_price_snapshot || btn.dataset.cost,
                         note: item.note || ''
                     };
                     updateCardUI(card, true);

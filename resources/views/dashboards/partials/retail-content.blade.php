@@ -54,49 +54,241 @@
     </div>
 </div>
 
-@php
-    $statCards = [
-        ['label' => 'Omzet', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['revenue']), 'icon' => 'ki-dollar', 'color' => 'primary', 'help' => 'Penjualan selesai pada periode aktif.'],
-        ['label' => 'Transaksi', 'value' => $kpis['transaction_count'], 'icon' => 'ki-receipt-square', 'color' => 'info', 'help' => 'Jumlah nota selesai dan retur.'],
-        ['label' => 'Rata-rata Nota', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['average_ticket']), 'icon' => 'ki-chart-line-up-2', 'color' => 'success', 'help' => 'Rata-rata nilai setiap transaksi.'],
-        ['label' => 'Stok Tersedia', 'value' => qty($kpis['available_stock']), 'icon' => 'ki-package', 'color' => 'primary', 'help' => 'Stok fisik dikurangi reserved dan rusak.'],
-        ['label' => 'Stok Kritis / Kosong', 'value' => $kpis['critical_stock_count'].' / '.$kpis['empty_stock_count'], 'icon' => 'ki-information-5', 'color' => 'danger', 'help' => 'Produk di batas minimum / tanpa stok tersedia.'],
-        ['label' => 'Shift Aktif', 'value' => $kpis['active_shift_count'], 'icon' => 'ki-time', 'color' => 'success', 'help' => 'Shift buka atau menunggu closing.'],
-        ['label' => 'Closing Pending', 'value' => $kpis['closing_pending_count'], 'icon' => 'ki-verify', 'color' => 'warning', 'help' => 'Closing yang menunggu pemeriksaan.'],
-        ['label' => 'Selisih Kas', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['cash_difference']), 'icon' => 'ki-wallet', 'color' => ((float) $kpis['cash_difference'] === 0.0 ? 'success' : 'danger'), 'help' => 'Selisih kas pada closing periode aktif.'],
-        ['label' => 'Piutang Terbit', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['receivable_today']), 'icon' => 'ki-credit-cart', 'color' => 'warning', 'help' => 'Piutang retail yang diterbitkan pada periode.'],
-        ['label' => 'Transaksi Batal', 'value' => $kpis['void_count'], 'icon' => 'ki-cross-circle', 'color' => 'danger', 'help' => 'Transaksi dengan pembatalan disetujui.'],
-        ['label' => 'Nilai Retur', 'value' => \App\Support\CurrencyFormatter::rupiah($kpis['return_amount']), 'icon' => 'ki-arrow-circle-left', 'color' => 'warning', 'help' => 'Nilai pengembalian pada periode aktif.'],
-    ];
-    if ($canViewSensitiveMargin) {
-        array_splice($statCards, 1, 0, [[
-            'label' => 'Margin',
-            'value' => \App\Support\CurrencyFormatter::rupiah($kpis['margin']).' · '.qty($kpis['margin_percent'], 2, '0').'%',
-            'icon' => 'ki-graph-up',
-            'color' => 'success',
-            'help' => 'Margin aktual berdasarkan snapshot HPP.',
-        ]]);
-    }
-@endphp
-
-<div class="row g-5 mb-5">
-    @foreach ($statCards as $stat)
-        <div class="col-sm-6 col-xl-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body p-5">
-                    <div class="d-flex align-items-start justify-content-between mb-4">
-                        <div class="symbol symbol-45px">
-                            <span class="symbol-label bg-light-{{ $stat['color'] }}"><i class="ki-outline {{ $stat['icon'] }} fs-2 text-{{ $stat['color'] }}"></i></span>
+<div class="row g-4 g-xl-5 mb-5">
+    {{-- Grup 1: Penjualan & Margin --}}
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-5 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="symbol symbol-35px symbol-circle bg-light-primary me-3">
+                                <i class="ki-outline ki-dollar fs-3 text-primary"></i>
+                            </span>
+                            <div>
+                                <div class="fs-6 fw-bold text-gray-900">Penjualan</div>
+                                <div class="text-muted fs-8">Kinerja omzet toko</div>
+                            </div>
                         </div>
-                        <span class="badge badge-light-{{ $stat['color'] }}">Periode aktif</span>
+                        <span class="badge badge-light-primary fs-8">Retail</span>
                     </div>
-                    <div class="fs-3 fw-bold text-gray-900 mb-1">{{ $stat['value'] }}</div>
-                    <div class="fw-semibold text-gray-700 mb-1">{{ $stat['label'] }}</div>
-                    <div class="text-muted fs-8">{{ $stat['help'] }}</div>
+                    <div class="mb-4">
+                        <div class="text-muted fs-8 fw-semibold text-uppercase mb-1">Omzet</div>
+                        <div class="fs-2 fw-bold text-gray-900 mb-1">{{ \App\Support\CurrencyFormatter::rupiah($kpis['revenue']) }}</div>
+                        <div class="text-muted fs-8">Penjualan selesai pada periode aktif.</div>
+                    </div>
+                </div>
+                <div class="pt-3 border-top border-gray-100">
+                    <div class="d-flex flex-column gap-2">
+                        @if ($canViewSensitiveMargin)
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="text-gray-600 fs-7" data-bs-toggle="tooltip" title="Margin aktual berdasarkan snapshot HPP.">
+                                    <i class="ki-outline ki-graph-up text-success fs-6 me-1"></i> Margin
+                                </span>
+                                <span class="fw-bold text-success fs-7">
+                                    {{ \App\Support\CurrencyFormatter::rupiah($kpis['margin']) }} <span class="badge badge-light-success fs-9 ms-1">{{ qty($kpis['margin_percent'], 2, '0') }}%</span>
+                                </span>
+                            </div>
+                        @endif
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7" data-bs-toggle="tooltip" title="Jumlah nota selesai dan retur.">
+                                <i class="ki-outline ki-receipt-square text-primary fs-6 me-1"></i> Transaksi
+                            </span>
+                            <span class="fw-bold text-gray-900 fs-7">{{ $kpis['transaction_count'] }}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7" data-bs-toggle="tooltip" title="Rata-rata nilai setiap transaksi.">
+                                <i class="ki-outline ki-chart-line-up-2 text-info fs-6 me-1"></i> Rata-rata Nota
+                            </span>
+                            <span class="fw-bold text-gray-900 fs-7">{{ \App\Support\CurrencyFormatter::rupiah($kpis['average_ticket']) }}</span>
+                        </div>
+                        @if (! $canViewSensitiveMargin)
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="text-gray-600 fs-7">
+                                    <i class="ki-outline ki-chart-simple text-primary fs-6 me-1"></i> Target Terpenuhi
+                                </span>
+                                <span class="fw-bold text-primary fs-7">{{ qty($kpis['target_achievement'], 1, '0') }}%</span>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
-    @endforeach
+    </div>
+
+    {{-- Grup 2: Kasir & Kas Shift --}}
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-5 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="symbol symbol-35px symbol-circle bg-light-{{ (float) $kpis['cash_difference'] === 0.0 ? 'success' : 'danger' }} me-3">
+                                <i class="ki-outline ki-wallet fs-3 text-{{ (float) $kpis['cash_difference'] === 0.0 ? 'success' : 'danger' }}"></i>
+                            </span>
+                            <div>
+                                <div class="fs-6 fw-bold text-gray-900">Kasir & Shift</div>
+                                <div class="text-muted fs-8">Status kas & operasional</div>
+                            </div>
+                        </div>
+                        <span class="badge badge-light-{{ (float) $kpis['cash_difference'] === 0.0 ? 'success' : 'danger' }} fs-8">
+                            {{ (float) $kpis['cash_difference'] === 0.0 ? 'Seimbang' : 'Selisih' }}
+                        </span>
+                    </div>
+                    <div class="mb-4">
+                        <div class="text-muted fs-8 fw-semibold text-uppercase mb-1">Selisih Kas</div>
+                        <div class="fs-2 fw-bold {{ (float) $kpis['cash_difference'] === 0.0 ? 'text-gray-900' : 'text-danger' }} mb-1">
+                            {{ \App\Support\CurrencyFormatter::rupiah($kpis['cash_difference']) }}
+                        </div>
+                        <div class="text-muted fs-8">Selisih kas pada closing periode aktif.</div>
+                    </div>
+                </div>
+                <div class="pt-3 border-top border-gray-100">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7" data-bs-toggle="tooltip" title="Shift buka atau menunggu closing.">
+                                <i class="ki-outline ki-time text-success fs-6 me-1"></i> Shift Aktif
+                            </span>
+                            <span class="fw-bold text-gray-900 fs-7">{{ $kpis['active_shift_count'] }}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7" data-bs-toggle="tooltip" title="Closing yang menunggu pemeriksaan.">
+                                <i class="ki-outline ki-verify text-warning fs-6 me-1"></i> Closing Pending
+                            </span>
+                            <span class="fw-bold {{ (int) $kpis['closing_pending_count'] > 0 ? 'text-warning' : 'text-gray-900' }} fs-7">
+                                {{ $kpis['closing_pending_count'] }}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7">
+                                <i class="ki-outline ki-shield-tick text-info fs-6 me-1"></i> Kondisi Kas
+                            </span>
+                            <span class="badge {{ (float) $kpis['cash_difference'] === 0.0 ? 'badge-light-success' : 'badge-light-danger' }} fs-9">
+                                {{ (float) $kpis['cash_difference'] === 0.0 ? 'Kas Sesuai' : 'Perlu Diperiksa' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Grup 3: Persediaan Cabang --}}
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-5 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="symbol symbol-35px symbol-circle bg-light-primary me-3">
+                                <i class="ki-outline ki-package fs-3 text-primary"></i>
+                            </span>
+                            <div>
+                                <div class="fs-6 fw-bold text-gray-900">Persediaan</div>
+                                <div class="text-muted fs-8">Kesehatan stok cabang</div>
+                            </div>
+                        </div>
+                        <span class="badge badge-light-{{ ((int) $kpis['critical_stock_count'] > 0 || (int) $kpis['empty_stock_count'] > 0) ? 'warning' : 'success' }} fs-8">
+                            {{ ((int) $kpis['critical_stock_count'] > 0 || (int) $kpis['empty_stock_count'] > 0) ? 'Perhatian' : 'Aman' }}
+                        </span>
+                    </div>
+                    <div class="mb-4">
+                        <div class="text-muted fs-8 fw-semibold text-uppercase mb-1">Stok Tersedia</div>
+                        <div class="fs-2 fw-bold text-gray-900 mb-1">{{ qty($kpis['available_stock']) }} <span class="fs-7 text-muted fw-normal">unit</span></div>
+                        <div class="text-muted fs-8">Stok fisik dikurangi reserved dan rusak.</div>
+                    </div>
+                </div>
+                <div class="pt-3 border-top border-gray-100">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7" data-bs-toggle="tooltip" title="Produk di batas minimum / tanpa stok tersedia.">
+                                <i class="ki-outline ki-information-5 text-danger fs-6 me-1"></i> Stok Kritis / Kosong
+                            </span>
+                            <span class="fw-bold text-gray-900 fs-7">
+                                {{ $kpis['critical_stock_count'].' / '.$kpis['empty_stock_count'] }}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7">
+                                <i class="ki-outline ki-badge text-warning fs-6 me-1"></i> Peringatan
+                            </span>
+                            <span>
+                                <span class="badge {{ (int) $kpis['critical_stock_count'] > 0 ? 'badge-light-warning text-warning fw-bold' : 'badge-light-secondary text-gray-700' }} fs-9">{{ $kpis['critical_stock_count'] }} Kritis</span>
+                                <span class="badge {{ (int) $kpis['empty_stock_count'] > 0 ? 'badge-light-danger text-danger fw-bold' : 'badge-light-secondary text-gray-700' }} fs-9 ms-1">{{ $kpis['empty_stock_count'] }} Kosong</span>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7">
+                                <i class="ki-outline ki-eye text-primary fs-6 me-1"></i> Rincian Stok
+                            </span>
+                            @can('stock.view')
+                                <a href="{{ route('warehouse.stocks.index', ['work_location_id' => $activeBranch?->work_location_id, 'status' => 'critical']) }}" class="text-primary fs-8 fw-semibold text-hover-underline">Buka Saldo <i class="ki-outline ki-arrow-right fs-9"></i></a>
+                            @else
+                                <span class="text-muted fs-8">Cabang aktif</span>
+                            @endcan
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Grup 4: Pengawasan & Retur --}}
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-5 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="symbol symbol-35px symbol-circle bg-light-warning me-3">
+                                <i class="ki-outline ki-credit-cart fs-3 text-warning"></i>
+                            </span>
+                            <div>
+                                <div class="fs-6 fw-bold text-gray-900">Pengawasan</div>
+                                <div class="text-muted fs-8">Piutang & transaksi khusus</div>
+                            </div>
+                        </div>
+                        <span class="badge badge-light-{{ ((int) $kpis['void_count'] > 0 || (float) $kpis['return_amount'] > 0) ? 'warning' : 'success' }} fs-8">
+                            {{ ((int) $kpis['void_count'] > 0 || (float) $kpis['return_amount'] > 0) ? 'Perlu Tinjau' : 'Terkontrol' }}
+                        </span>
+                    </div>
+                    <div class="mb-4">
+                        <div class="text-muted fs-8 fw-semibold text-uppercase mb-1">Piutang Terbit</div>
+                        <div class="fs-2 fw-bold text-gray-900 mb-1">{{ \App\Support\CurrencyFormatter::rupiah($kpis['receivable_today']) }}</div>
+                        <div class="text-muted fs-8">Piutang retail yang diterbitkan pada periode.</div>
+                    </div>
+                </div>
+                <div class="pt-3 border-top border-gray-100">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7" data-bs-toggle="tooltip" title="Transaksi dengan pembatalan disetujui.">
+                                <i class="ki-outline ki-cross-circle text-danger fs-6 me-1"></i> Transaksi Batal
+                            </span>
+                            <span class="fw-bold {{ (int) $kpis['void_count'] > 0 ? 'text-danger' : 'text-gray-900' }} fs-7">
+                                {{ $kpis['void_count'] }}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7" data-bs-toggle="tooltip" title="Nilai pengembalian pada periode aktif.">
+                                <i class="ki-outline ki-arrow-circle-left text-warning fs-6 me-1"></i> Nilai Retur
+                            </span>
+                            <span class="fw-bold {{ (float) $kpis['return_amount'] > 0 ? 'text-warning' : 'text-gray-900' }} fs-7">
+                                {{ \App\Support\CurrencyFormatter::rupiah($kpis['return_amount']) }}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-600 fs-7">
+                                <i class="ki-outline ki-shield-cross text-danger fs-6 me-1"></i> Pengecualian
+                            </span>
+                            <span class="badge {{ ((int) $kpis['void_count'] > 0 || (float) $kpis['return_amount'] > 0) ? 'badge-light-warning' : 'badge-light-success' }} fs-9">
+                                {{ ((int) $kpis['void_count'] > 0 || (float) $kpis['return_amount'] > 0) ? 'Ada Catatan' : 'Nihil' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-5 mb-5">

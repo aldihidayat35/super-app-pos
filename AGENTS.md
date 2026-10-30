@@ -180,4 +180,5 @@ Daftar route + permission setiap modul ada di [guide/super-admin.md](guide/super
 - Demo seed: [docs/DEMO-SEED.md](docs/DEMO-SEED.md)
 - Backlog fase: [docs/BACKLOG.md](docs/BACKLOG.md)
 - Testing: [docs/TESTING.md](docs/TESTING.md)
+- Ekosistem Sub-Agent: [.agents/SUBAGENTS.md](.agents/SUBAGENTS.md)
 - Bahasa & format jawaban: [bahasa-indonesia.instructions.md](bahasa-indonesia.instructions.md)

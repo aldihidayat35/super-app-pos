@@ -104,6 +104,12 @@ export const navigateTo = async (url, pushState = true) => {
     const targetUrl = new URL(url, window.location.origin);
     const mainContent = document.getElementById('kt_app_main_content');
 
+    // Halaman POS adalah workstation full-screen independen, navigasi selalu native
+    if (targetUrl.pathname === '/retail/pos' || window.location.pathname === '/retail/pos') {
+        window.location.assign(targetUrl.href);
+        return;
+    }
+
     if (!mainContent) {
         window.location.assign(targetUrl.href);
         return;
@@ -153,6 +159,43 @@ export const navigateTo = async (url, pushState = true) => {
             if (existingMeta) existingMeta.content = newCsrf;
             if (window.axios) window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newCsrf;
         }
+
+        // 1b. Sinkronkan Class & Attributes pada <html> dan <body>
+        if (newDoc.documentElement.className !== document.documentElement.className) {
+            document.documentElement.className = newDoc.documentElement.className;
+        }
+        if (newDoc.body.className !== document.body.className) {
+            document.body.className = newDoc.body.className;
+        }
+        Array.from(document.body.attributes).forEach((attr) => {
+            if (attr.name !== 'id' && !newDoc.body.hasAttribute(attr.name)) {
+                document.body.removeAttribute(attr.name);
+            }
+        });
+        Array.from(newDoc.body.attributes).forEach((attr) => {
+            if (attr.name !== 'id') {
+                document.body.setAttribute(attr.name, attr.value);
+            }
+        });
+
+        // 1c. Sinkronkan style halaman di <head>
+        document.querySelectorAll('head style.spa-page-style, head link.spa-page-style').forEach((el) => el.remove());
+        newDoc.head.querySelectorAll('style, link[rel="stylesheet"]').forEach((el) => {
+            const href = el.getAttribute('href') || '';
+            if (
+                !href.includes('style.bundle.css') &&
+                !href.includes('app.css') &&
+                !href.includes('fonts.googleapis.com') &&
+                !href.includes('ki-icons-fallback.css') &&
+                !href.includes('sidebar-custom.css') &&
+                !href.includes('header-custom.css') &&
+                !href.includes('spa-transitions.css')
+            ) {
+                const cloned = el.cloneNode(true);
+                cloned.classList.add('spa-page-style');
+                document.head.appendChild(cloned);
+            }
+        });
 
         // 2. Perbarui History Browser
         if (pushState) {
@@ -263,6 +306,11 @@ export const initializeSpaRouter = () => {
 
         // Abaikan file asset/download (.pdf, .xlsx, .csv, gambar, zip)
         if (/\.(pdf|xlsx|xls|csv|zip|png|jpe?g|svg|webp)$/i.test(targetUrl.pathname)) {
+            return;
+        }
+
+        // Halaman POS adalah workstation full-screen independen, navigasi selalu native
+        if (targetUrl.pathname === '/retail/pos' || window.location.pathname === '/retail/pos') {
             return;
         }
 

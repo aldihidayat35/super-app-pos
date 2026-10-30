@@ -358,7 +358,7 @@
                             <textarea name="notes" class="form-control bg-light-success border-success" rows="3" placeholder="Tambahkan catatan posting..." required></textarea>
                             <div class="d-flex justify-content-end mt-4">
                                 <button type="submit" class="btn btn-success" onclick="return confirm('Apakah Anda yakin? Stok akan langsung ter-update di sistem.')">
-                                    <i class="ki-outline ki-check-circle fs-3 me-2"></i> Posting Sekarang
+                                    <i class="ki-outline ki-check-circle fs-3 me-2"></i> Posting sebagai Saldo Akhir
                                 </button>
                             </div>
                         </form>

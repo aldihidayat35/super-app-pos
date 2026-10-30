@@ -22,10 +22,13 @@ use App\Models\PosSaleItem;
 use App\Models\Product;
 use App\Models\SalePayment;
 use App\Models\Stock;
+use App\Models\StockBatch;
+use App\Models\StockLayerAllocation;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\WarehouseLocation;
 use App\Services\Inventory\InventoryService;
+use App\Services\Inventory\StockLayerService;
 use App\Services\Organization\DocumentNumberService;
 use App\Services\Pricing\PriceResolverService;
 use App\Services\Receivables\ReceivableService;
@@ -38,6 +41,7 @@ class PosService
     public function __construct(
         private readonly DocumentNumberService $numbers,
         private readonly InventoryService $inventory,
+        private readonly StockLayerService $layers,
         private readonly PriceResolverService $prices,
         private readonly ReceivableService $receivables,
         private readonly TaxComplianceService $taxes,
@@ -134,7 +138,7 @@ class PosService
                     'conversion_factor_snapshot' => $itemData['unit_factor'],
                     'quantity' => $itemData['quantity'],
                     'base_quantity' => $itemData['base_quantity'],
-                    'hpp_snapshot' => $itemData['price']['hpp_base'],
+                    'hpp_snapshot' => $allocationPlan['items'][$index]['weighted_hpp'],
                     'minimum_price_snapshot' => $itemData['price']['minimum_price'],
                     'selected_price' => $itemData['selected_price'],
                     'discount_percent' => $itemData['discount_percent'],
@@ -147,7 +151,7 @@ class PosService
                 ]);
 
                 foreach ($allocationPlan['items'][$index]['allocations'] as $allocation) {
-                    PosSaleAllocation::query()->create([
+                    $saleAllocation = PosSaleAllocation::query()->create([
                         'pos_sale_item_id' => $saleItem->id,
                         'emergency_purchase_item_id' => $allocation['emergency_item']?->id,
                         'source' => $allocation['source'], 'base_quantity' => $allocation['quantity'],
@@ -159,6 +163,20 @@ class PosService
                         'actual_margin_amount' => $allocation['margin'],
                         'lost_margin_amount' => $allocation['lost_margin'],
                     ]);
+                    foreach ($allocation['layers'] ?? [] as $layerAllocation) {
+                        $batch = $layerAllocation['batch'];
+                        $this->layers->deductLayer($batch, $layerAllocation['quantity']);
+                        $this->layers->recordAllocation($batch, [
+                            'reference_type' => 'pos_sale_item',
+                            'reference_id' => $saleItem->id,
+                            'event_type' => 'sale',
+                            'quantity' => $layerAllocation['quantity'],
+                            'sale_price_snapshot' => $itemData['selected_price'],
+                            'actor_user_id' => $cashier->id,
+                            'metadata' => ['pos_sale_id' => $sale->id, 'pos_sale_allocation_id' => $saleAllocation->id],
+                            'occurred_at' => now(),
+                        ]);
+                    }
                     if ($allocation['emergency_item'] instanceof EmergencyPurchaseItem) {
                         $emergencyItem = $allocation['emergency_item'];
                         $emergencyItem->forceFill(['allocated_quantity' => Decimal::add((string) $emergencyItem->allocated_quantity, $allocation['quantity'], 4)])->save();
@@ -242,6 +260,8 @@ class PosService
                         'quantity' => $item['quantity'],
                         'selected_price' => $item['selected_price'],
                         'discount_percent' => $item['discount_percent'],
+                        'selected_stock_batch_ids' => $item['selected_stock_batch_ids'],
+                        'batch_selection_mode' => empty($item['selected_stock_batch_ids']) ? 'auto' : 'manual',
                         'line_total' => $item['line_total'],
                         'pricing' => [
                             'ring' => $item['price']['price_ring'],
@@ -377,6 +397,7 @@ class PosService
                     $reason,
                     "pos-sale-{$sale->id}-item-{$item->id}-void",
                 );
+                $this->restoreSaleLayers($item, $normalRemaining, 'void', $sale->id, $actor, false);
             }
 
             $sale->forceFill([
@@ -503,6 +524,7 @@ class PosService
                         $data['reason'] ?? 'Retur pelanggan POS.',
                         "pos-return-{$return->id}-item-{$item->id}-in",
                     );
+                    $this->restoreSaleLayers($item, $normalQuantity, 'return', $return->id, $actor, $condition === 'damaged');
                 }
 
                 if ($condition === 'damaged' && Decimal::compare($normalQuantity, '0', 4) > 0) {
@@ -564,7 +586,7 @@ class PosService
      * @param  list<array<string, mixed>>  $items
      * @return array{
      *     margin: string,
-     *     items: array<int, array{margin: string, normal_quantity: string, allocations: list<array<string, mixed>>}>,
+     *     items: array<int, array{margin: string, normal_quantity: string, allocations: list<array<string, mixed>>, weighted_hpp: string}>,
      *     purchase_ids: list<int>
      * }
      */
@@ -680,8 +702,16 @@ class PosService
 
             $rawAllocations = [];
             if (Decimal::compare($normal, '0', 4) > 0) {
+                $layerAllocations = $this->layers->resolveLayers(
+                    $productId,
+                    (int) $branch->work_location_id,
+                    $normal,
+                    $item['warehouse_location']?->id,
+                    $item['selected_stock_batch_ids'],
+                );
                 $rawAllocations[] = ['source' => 'normal', 'quantity' => $normal,
-                    'emergency_item' => null, 'target_item' => null];
+                    'emergency_item' => null, 'target_item' => null,
+                    'layers' => $layerAllocations];
             }
             array_push($rawAllocations, ...$pieces);
             $netRevenue = Decimal::mul($item['quantity'], (string) $item['price']['discounted_price'], 4, 2, 2);
@@ -697,7 +727,7 @@ class PosService
                 $hpp = (string) $item['price']['hpp_base'];
                 $cost = $allocation['source'] === 'emergency'
                     ? (string) $allocation['emergency_item']->unit_cost
-                    : $hpp;
+                    : $this->layers->weightedAverageCost($allocation['layers']);
                 $normalCogs = Decimal::mul($allocatedQty, $hpp, 4, 2, 2);
                 $actualCogs = Decimal::mul($allocatedQty, $cost, 4, 2, 2);
                 $margin = Decimal::sub($revenue, $actualCogs, 2);
@@ -709,7 +739,17 @@ class PosService
                 fn (string $sum, array $allocation): string => Decimal::add($sum, $allocation['margin'], 2),
                 '0.00');
             $marginTotal = Decimal::add($marginTotal, $lineMargin, 2);
-            $plan[$index] = ['margin' => $lineMargin, 'normal_quantity' => $normal, 'allocations' => $allocations];
+            $actualCogs = array_reduce($allocations,
+                fn (string $sum, array $allocation): string => Decimal::add($sum, $allocation['actual_cogs'], 2),
+                '0.00');
+            $plan[$index] = [
+                'margin' => $lineMargin,
+                'normal_quantity' => $normal,
+                'allocations' => $allocations,
+                'weighted_hpp' => Decimal::compare($quantity, '0', 4) > 0
+                    ? Decimal::div($actualCogs, $quantity, 2, 4, 2)
+                    : '0.00',
+            ];
         }
 
         return ['margin' => $marginTotal, 'items' => $plan, 'purchase_ids' => array_map('intval', array_keys($purchaseIds))];
@@ -842,10 +882,67 @@ class PosService
                 ],
                 'line_total' => $lineTotal,
                 'margin_amount' => $marginAmount,
+                'selected_stock_batch_ids' => array_values(array_map('intval', (array) ($row['selected_stock_batch_ids'] ?? []))),
             ];
         }
 
         return ['subtotal' => $subtotal, 'discount' => $discountTotal, 'tax' => $taxTotal, 'grand_total' => $grandTotal, 'margin' => $marginTotal, 'items' => $rows];
+    }
+
+    private function restoreSaleLayers(
+        PosSaleItem $item,
+        string $quantity,
+        string $eventType,
+        int $referenceId,
+        User $actor,
+        bool $damaged,
+    ): void {
+        $remaining = $quantity;
+        $sales = StockLayerAllocation::query()
+            ->with('batch')
+            ->where('reference_type', 'pos_sale_item')
+            ->where('reference_id', $item->id)
+            ->where('event_type', 'sale')
+            ->orderByDesc('id')
+            ->get();
+
+        foreach ($sales as $saleAllocation) {
+            if (Decimal::compare($remaining, '0', 4) <= 0) {
+                break;
+            }
+            $restored = StockLayerAllocation::query()
+                ->where('reference_type', 'stock_layer_sale_allocation')
+                ->where('reference_id', $saleAllocation->id)
+                ->whereIn('event_type', ['return', 'void'])
+                ->sum('quantity');
+            $available = Decimal::sub((string) $saleAllocation->quantity, (string) $restored, 4);
+            if (Decimal::compare($available, '0', 4) <= 0) {
+                continue;
+            }
+            $take = Decimal::compare($remaining, $available, 4) <= 0 ? $remaining : $available;
+            $this->layers->restoreLayer($saleAllocation->batch, $take);
+            if ($damaged) {
+                $batch = StockBatch::query()->lockForUpdate()->findOrFail($saleAllocation->stock_batch_id);
+                $batch->forceFill([
+                    'quantity_damaged' => Decimal::add((string) $batch->quantity_damaged, $take, 4),
+                ])->save();
+            }
+            $this->layers->recordAllocation($saleAllocation->batch, [
+                'reference_type' => 'stock_layer_sale_allocation',
+                'reference_id' => $saleAllocation->id,
+                'event_type' => $eventType,
+                'quantity' => $take,
+                'sale_price_snapshot' => $saleAllocation->sale_price_snapshot === null ? null : (string) $saleAllocation->sale_price_snapshot,
+                'actor_user_id' => $actor->id,
+                'metadata' => ['document_id' => $referenceId, 'pos_sale_item_id' => $item->id, 'damaged' => $damaged],
+                'occurred_at' => now(),
+            ]);
+            $remaining = Decimal::sub($remaining, $take, 4);
+        }
+
+        if (Decimal::compare($remaining, '0', 4) > 0) {
+            throw ServiceException::validation('Alokasi HPP penjualan tidak cukup untuk void atau retur.');
+        }
     }
 
     /**

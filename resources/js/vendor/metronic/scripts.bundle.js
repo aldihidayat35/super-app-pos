@@ -7893,7 +7893,7 @@ var KTAppSidebar = function () {
 	var handleToggle = function () {
 		var toggleObj = KTToggle.getInstance(toggle);
 
-		if ( toggleObj === null) {
+		if ( !toggleObj ) {
 			return;
 		}
 
@@ -7967,16 +7967,18 @@ var KTThemeModeUser = function () {
     
     var handleSubmit = function() {
 		// Update chart on theme mode change
-        KTThemeMode.on("kt.thememode.change", function() {                
-            var menuMode = KTThemeMode.getMenuMode();
-            var mode = KTThemeMode.getMode();
-            console.log("user selected theme mode:" + menuMode);
-            console.log("theme mode:" + mode);
+        if (typeof KTThemeMode !== 'undefined' && KTThemeMode && typeof KTThemeMode.on === 'function') {
+            KTThemeMode.on("kt.thememode.change", function() {                
+                var menuMode = KTThemeMode.getMenuMode();
+                var mode = KTThemeMode.getMode();
+                console.log("user selected theme mode:" + menuMode);
+                console.log("theme mode:" + mode);
 
-            // Submit selected theme mode menu option via ajax and 
-            // store it in user profile and set the user opted theme mode via HTML attribute
-            // <html data-theme-mode="light"> .... </html>
-        });
+                // Submit selected theme mode menu option via ajax and 
+                // store it in user profile and set the user opted theme mode via HTML attribute
+                // <html data-theme-mode="light"> .... </html>
+            });
+        }
     }
 
     return {

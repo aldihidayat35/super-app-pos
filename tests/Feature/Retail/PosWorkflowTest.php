@@ -16,6 +16,8 @@ use App\Models\ProductImage;
 use App\Models\ProductPrice;
 use App\Models\ProductUnit;
 use App\Models\Stock;
+use App\Models\StockBatch;
+use App\Models\StockLayerAllocation;
 use App\Models\StockMutation;
 use App\Models\Unit;
 use App\Models\User;
@@ -85,9 +87,11 @@ class PosWorkflowTest extends TestCase
             ->assertSee('autofocus', false)
             ->assertSee('class="pos-page-root"', false)
             ->assertSee('app-default pos-page', false)
-            ->assertSee('data-kt-app-sidebar-collapse=on', false)
-            ->assertSee('aria-expanded="false"', false)
-            ->assertSee('ki-arrow-right', false)
+            ->assertDontSee('data-kt-app-sidebar-collapse=on', false)
+            ->assertSee('aria-expanded="true"', false)
+            ->assertSee('ki-arrow-left', false)
+            ->assertSee('pos-section-products', false)
+            ->assertSee('pos-section-cart', false)
             ->assertSee('modal-xl', false)
             ->assertSee('pos-cart-main', false)
             ->assertSee('pos-cart-details', false)
@@ -128,6 +132,44 @@ class PosWorkflowTest extends TestCase
         $this->assertSame('3.0000', Stock::query()->where('product_id', $product->id)->firstOrFail()->quantity_on_hand);
         $this->assertDatabaseHas('stock_mutations', ['reference_type' => 'pos_sale', 'reference_id' => $sale->id, 'mutation_type' => 'issue']);
         $this->assertDatabaseHas('sale_payments', ['pos_sale_id' => $sale->id, 'method' => 'cash', 'amount' => '300.00']);
+    }
+
+    public function test_cart_exposes_batch_picker_and_checkout_defaults_to_oldest_fifo_batch(): void
+    {
+        $product = $this->stockedProduct('5');
+        $stock = Stock::query()->where('product_id', $product->id)->firstOrFail();
+        $oldBatch = $this->stockBatch($product, $stock, 'BATCH-LAMA', '2.0000', '90.00', '2026-01-01');
+        $newBatch = $this->stockBatch($product, $stock, 'BATCH-BARU', '3.0000', '110.00', '2026-02-01');
+
+        $this->actingAs($this->cashier)
+            ->get(route('retail.pos.index'))
+            ->assertOk()
+            ->assertSee('Batch Stok (FIFO otomatis)', false)
+            ->assertSee('Default: paling lama', false);
+
+        $this->actingAs($this->cashier)
+            ->getJson(route('retail.pos.products', ['q' => $product->sku]))
+            ->assertOk()
+            ->assertJsonPath('results.0.stock_batches.0.id', $oldBatch->id)
+            ->assertJsonPath('results.0.stock_batches.1.id', $newBatch->id)
+            ->assertJsonPath('results.0.selected_stock_batch_ids.0', $oldBatch->id)
+            ->assertJsonPath('results.0.batch_selection_mode', 'auto')
+            ->assertJsonMissingPath('results.0.stock_batches.0.cost_price');
+
+        $sale = $this->checkoutSale($product, quantity: '3', paid: '500');
+        $item = $sale->items()->firstOrFail();
+        $allocations = StockLayerAllocation::query()
+            ->where('reference_type', 'pos_sale_item')
+            ->where('reference_id', $item->id)
+            ->where('event_type', 'sale')
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(2, $allocations);
+        $this->assertSame($oldBatch->id, (int) $allocations[0]->stock_batch_id);
+        $this->assertSame('2.0000', $allocations[0]->quantity);
+        $this->assertSame($newBatch->id, (int) $allocations[1]->stock_batch_id);
+        $this->assertSame('1.0000', $allocations[1]->quantity);
     }
 
     public function test_unit_conversion_reduces_base_stock(): void
@@ -367,6 +409,32 @@ class PosWorkflowTest extends TestCase
             ]],
             'payments' => [['method' => 'cash', 'amount' => $paid]],
         ], $this->cashier);
+    }
+
+    private function stockBatch(
+        Product $product,
+        Stock $stock,
+        string $batchNo,
+        string $quantity,
+        string $cost,
+        string $receivedAt,
+    ): StockBatch {
+        return StockBatch::query()->create([
+            'product_id' => $product->id,
+            'stock_id' => $stock->id,
+            'work_location_id' => $this->branchLocation->id,
+            'warehouse_location_id' => null,
+            'source_type' => 'test_receipt',
+            'unit_id' => $product->base_unit_id,
+            'conversion_factor_snapshot' => '1.000000',
+            'batch_no' => $batchNo,
+            'received_at' => $receivedAt,
+            'cost_price' => $cost,
+            'quantity_on_hand' => $quantity,
+            'quantity_reserved' => '0.0000',
+            'quantity_damaged' => '0.0000',
+            'status' => 'active',
+        ]);
     }
 
     private function defaultRule(): void

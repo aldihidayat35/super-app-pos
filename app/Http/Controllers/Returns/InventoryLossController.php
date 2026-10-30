@@ -92,7 +92,7 @@ class InventoryLossController extends Controller
             'text' => $stock->product->sku.' — '.$stock->product->name,
             'sku' => $stock->product->sku,
             'name' => $stock->product->name,
-            'category' => $stock->product->category?->name ?? 'Tanpa kategori',
+            'category' => $stock->product->category->name ?? 'Tanpa kategori',
             'image_url' => $stock->product->main_image_url,
             'cost_price' => (string) $stock->product->cost_price,
             'available' => $stock->available_quantity,

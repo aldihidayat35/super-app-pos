@@ -42,6 +42,7 @@ class ProductPrice extends Model
         return $this->belongsTo(Branch::class);
     }
 
+    /** @return BelongsTo<WorkLocation, $this> */
     public function workLocation(): BelongsTo
     {
         return $this->belongsTo(WorkLocation::class);

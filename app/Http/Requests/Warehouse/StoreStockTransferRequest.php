@@ -49,6 +49,9 @@ class StoreStockTransferRequest extends FormRequest
             'items.*.destination_warehouse_location_id' => ['nullable', Rule::exists('warehouse_locations', 'id')->where('is_active', true)],
             'items.*.quantity_requested' => ['required', 'numeric', 'gt:0'],
             'items.*.quantity_approved' => ['nullable', 'numeric', 'min:0'],
+            'items.*.selected_stock_batch_ids' => ['nullable', 'array'],
+            'items.*.selected_stock_batch_ids.*' => ['integer', 'distinct', 'exists:stock_batches,id'],
+            'items.*.destination_sale_price' => ['nullable', 'numeric', 'gt:0'],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
         ];
     }

@@ -145,7 +145,8 @@
                                 @foreach ($children as $child)
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs(...$child['active']) ? 'active' : '' }}"
-                                            href="{{ route($child['route']) }}" title="{{ $child['label'] }}">
+                                            href="{{ route($child['route']) }}" title="{{ $child['label'] }}"
+                                            {{ $child['route'] === 'retail.pos.index' ? 'data-no-spa' : '' }}>
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">{{ $child['label'] }}</span>
                                         </a>

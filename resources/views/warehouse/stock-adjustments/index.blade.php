@@ -262,6 +262,8 @@
                                                         data-sku="{{ $stock->product?->sku }}"
                                                         data-image="{{ $stock->product?->main_image_url ?? \App\Models\Product::defaultImageUrl() }}"
                                                         data-stock="{{ qty($stock->quantity_on_hand) }}"
+                                                        data-cost="{{ $stock->product?->cost_price }}"
+                                                        data-batches='@json($stock->batches->map(fn($batch) => ["id" => $batch->id, "text" => $batch->batch_no." · tersedia ".qty($batch->availableQuantity())])->values())'
                                                         data-unit="{{ $stock->product?->baseUnit?->symbol ?? 'unit' }}"
                                                         data-location="{{ $stock->warehouseLocation?->full_code ?? 'Lokasi Utama' }}">
                                                     <i class="ki-outline ki-plus fs-6"></i> Pilih Stok
@@ -422,6 +424,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 stock: btn.dataset.stock,
                 unit: btn.dataset.unit,
                 location: btn.dataset.location
+                ,cost: btn.dataset.cost
+                ,batches: JSON.parse(btn.dataset.batches || '[]')
             };
             updateCardUI(card, true);
         }
@@ -486,6 +490,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                 stock: btn.dataset.stock,
                                 unit: btn.dataset.unit,
                                 location: btn.dataset.location
+                                ,cost: btn.dataset.cost
+                                ,batches: JSON.parse(btn.dataset.batches || '[]')
                             };
                             updateCardUI(card, true);
                         }
@@ -519,9 +525,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     const id = row.dataset.id;
                     const qtyEl = row.querySelector('.qty-input');
                     const noteEl = row.querySelector('.note-input');
+                    const costEl = row.querySelector('.cost-input');
+                    const saleEl = row.querySelector('.sale-input');
+                    const batchEl = row.querySelector('.batch-input');
                     preservedData[id] = {
                         qty: qtyEl ? qtyEl.value : '',
-                        note: noteEl ? noteEl.value : ''
+                        note: noteEl ? noteEl.value : '',
+                        cost: costEl ? costEl.value : '',
+                        sale: saleEl ? saleEl.value : '',
+                        batches: batchEl ? Array.from(batchEl.selectedOptions).map(option => option.value) : []
                     };
                 });
 
@@ -545,12 +557,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 rowsContainer.innerHTML = '<h5 class="mb-5 d-flex align-items-center text-gray-800"><i class="ki-outline ki-edit text-primary fs-2 me-2"></i> Input Stok Fisik Final untuk Produk Terpilih:</h5>';
 
                 itemsArray.forEach((item, index) => {
-                    const preserved = preservedData[item.id] || { qty: '', note: '' };
+                    const preserved = preservedData[item.id] || { qty: '', note: '', cost: item.cost || '', sale: item.cost || '', batches: [] };
                     const itemImage = item.image || '/assets/media/products/default-product.png';
+                    const batchOptions = (item.batches || []).map(batch => `<option value="${escapeHtml(batch.id)}" ${preserved.batches.includes(String(batch.id)) ? 'selected' : ''}>${escapeHtml(batch.text)}</option>`).join('');
                     const rowHtml = `
                         <div class="row g-4 mb-4 align-items-center adjustment-row p-4 border border-dashed rounded bg-light-primary" data-id="${escapeHtml(item.id)}">
                             <input type="hidden" name="items[${index}][stock_id]" value="${escapeHtml(item.id)}">
-                            <div class="col-md-5">
+                            <div class="col-md-4">
                                 <div class="d-flex align-items-center">
                                     <div class="symbol symbol-50px me-3 flex-shrink-0 bg-light rounded" style="width: 50px; height: 50px; min-width: 50px; min-height: 50px;">
                                         <img src="${escapeHtml(itemImage)}" 
@@ -571,11 +584,24 @@ document.addEventListener('DOMContentLoaded', function () {
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label fw-semibold text-gray-800">Fisik Final <span class="text-danger">*</span></label>
                                 <input type="number" step="any" min="0" name="items[${index}][physical_qty]" class="form-control bg-white qty-input border-gray-300" value="${preserved.qty}" placeholder="Contoh: 10" required>
                             </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold text-gray-800">HPP <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0.01" name="items[${index}][unit_cost_snapshot]" class="form-control bg-white cost-input border-gray-300" value="${escapeHtml(preserved.cost)}" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold text-gray-800">Harga Jual <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0.01" name="items[${index}][sale_price_snapshot]" class="form-control bg-white sale-input border-gray-300" value="${escapeHtml(preserved.sale)}" required>
+                            </div>
                             <div class="col-md-3">
+                                <label class="form-label fw-semibold text-gray-800">Batch Dikurangi</label>
+                                <select name="items[${index}][selected_stock_batch_ids][]" class="form-select bg-white batch-input border-gray-300" multiple>${batchOptions}</select>
+                                <div class="text-muted fs-9">Wajib jika koreksi mengurangi stok multi-batch.</div>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label fw-semibold text-gray-800">Catatan Item</label>
                                 <input name="items[${index}][note]" class="form-control bg-white note-input border-gray-300" value="${preserved.note}" placeholder="Opsional (misal: Rusak)">
                             </div>

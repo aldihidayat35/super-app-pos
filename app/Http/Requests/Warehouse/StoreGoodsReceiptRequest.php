@@ -36,9 +36,20 @@ class StoreGoodsReceiptRequest extends FormRequest
             'items.*.quantity_rejected' => ['nullable', 'numeric', 'min:0'],
             'items.*.quantity_damaged' => ['nullable', 'numeric', 'min:0'],
             'items.*.quantity_returned_to_supplier' => ['nullable', 'numeric', 'min:0'],
+            'items.*.actual_unit_cost' => ['required', 'numeric', 'gt:0'],
+            'items.*.sale_price' => ['required', 'numeric', 'gt:0'],
             'items.*.batch_no' => ['nullable', 'string', 'max:120'],
             'items.*.qc_notes' => ['nullable', 'string', 'max:500'],
             'action' => ['nullable', 'in:draft,post'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'items.*.actual_unit_cost' => 'HPP aktual',
+            'items.*.sale_price' => 'harga jual lokasi',
         ];
     }
 

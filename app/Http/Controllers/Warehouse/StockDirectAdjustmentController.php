@@ -29,7 +29,7 @@ class StockDirectAdjustmentController extends Controller
             'adjustments' => $this->query($request)->paginate(20)->withQueryString(),
             'locations' => $locations,
             'selectedLocationId' => $selectedLocationId,
-            'stocks' => Stock::query()->with(['product.category', 'product.baseUnit', 'warehouseLocation'])->where('work_location_id', $selectedLocationId)->orderBy('product_id')->get(),
+            'stocks' => Stock::query()->with(['product.category', 'product.baseUnit', 'warehouseLocation', 'batches' => fn ($query) => $query->available()->orderBy('received_at')->orderBy('id')])->where('work_location_id', $selectedLocationId)->orderBy('product_id')->get(),
             'access' => StockAdjustmentAccess::query()->where('work_location_id', $selectedLocationId)->first(),
             'filters' => $request->only(['work_location_id', 'status']),
         ]);

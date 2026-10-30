@@ -16,6 +16,7 @@ class StockTransferItem extends Model
         'stock_transfer_id', 'restock_request_item_id', 'product_id', 'unit_id', 'source_warehouse_location_id',
         'destination_warehouse_location_id', 'product_sku_snapshot', 'product_name_snapshot', 'unit_name_snapshot',
         'conversion_factor_snapshot', 'source_sale_price_snapshot', 'destination_sale_price', 'quantity_requested', 'quantity_approved', 'quantity_reserved',
+        'selected_stock_batch_ids',
         'quantity_picked', 'quantity_short', 'quantity_shipped', 'quantity_received', 'quantity_damaged',
         'quantity_discrepancy', 'notes',
     ];
@@ -26,6 +27,7 @@ class StockTransferItem extends Model
             'conversion_factor_snapshot' => 'decimal:6',
             'source_sale_price_snapshot' => 'decimal:2',
             'destination_sale_price' => 'decimal:2',
+            'selected_stock_batch_ids' => 'array',
             'quantity_requested' => 'decimal:4',
             'quantity_approved' => 'decimal:4',
             'quantity_reserved' => 'decimal:4',

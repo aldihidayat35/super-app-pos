@@ -14,14 +14,15 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\ReceiptQcResult;
 use App\Models\Stock;
-use App\Models\StockBatch;
 use App\Models\SupplierProduct;
 use App\Models\SupplierScore;
 use App\Models\User;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Inventory\InventoryService;
+use App\Services\Inventory\StockLayerService;
 use App\Services\Organization\DocumentNumberService;
+use App\Services\Pricing\LocationProductPriceService;
 use App\Services\Purchasing\PurchaseOrderService;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,8 @@ class GoodsReceiptService
     public function __construct(
         private readonly DocumentNumberService $numbers,
         private readonly InventoryService $inventory,
+        private readonly StockLayerService $layers,
+        private readonly LocationProductPriceService $locationPrices,
         private readonly PurchaseOrderService $purchaseOrders,
     ) {}
 
@@ -222,6 +225,13 @@ class GoodsReceiptService
                 'quantity_damaged' => $damaged,
                 'quantity_returned_to_supplier' => $returned,
                 'unit_price' => $poItem->unit_price,
+                // Fallback menjaga kompatibilitas integrasi lama yang membuat draft langsung
+                // lewat service. Form HTTP baru tetap mewajibkan kedua nilai ini.
+                'actual_unit_cost' => $itemData['actual_unit_cost'] ?? $poItem->unit_price,
+                'sale_price' => $itemData['sale_price']
+                    ?? (Decimal::compare((string) $poItem->product->minimum_price, '0', 2) > 0
+                        ? $poItem->product->minimum_price
+                        : $poItem->unit_price),
                 'batch_no' => $itemData['batch_no'] ?? null,
                 'qc_notes' => $itemData['qc_notes'] ?? null,
             ]);
@@ -316,28 +326,46 @@ class GoodsReceiptService
             'effective_at' => now(),
         ]);
 
-        StockBatch::query()->updateOrCreate(
-            ['product_id' => $product->id, 'batch_no' => $item->batch_no ?: "{$receipt->number}-{$item->id}"],
-            [
-                'supplier_id' => $receipt->supplier_id,
-                'stock_id' => $mutation->stock_id,
-                'work_location_id' => $destination->id,
-                'warehouse_location_id' => $bin?->id,
-                'goods_receipt_id' => $receipt->id,
-                'goods_receipt_item_id' => $item->id,
-                'source_type' => 'goods_receipt',
-                'source_id' => $receipt->id,
-                'source_item_id' => $item->id,
-                'unit_id' => $item->unit_id,
-                'conversion_factor_snapshot' => $item->conversion_factor_snapshot,
-                'received_at' => $receipt->received_at,
-                'cost_price' => $actualUnitCost,                         // HPP aktual per item
-                'entry_sale_price_snapshot' => $item->sale_price,
-                'quantity_on_hand' => Decimal::add($acceptedBase, $item->damagedBaseQuantity()),
-                'quantity_reserved' => 0,
-                'quantity_damaged' => $item->damagedBaseQuantity(),
-                'status' => 'active',
-            ],
+        $layer = $this->layers->createLayer([
+            'source_batch_id' => null,
+            'product_id' => $product->id,
+            'supplier_id' => $receipt->supplier_id,
+            'stock_id' => $mutation->stock_id,
+            'work_location_id' => $destination->id,
+            'warehouse_location_id' => $bin?->id,
+            'goods_receipt_id' => $receipt->id,
+            'goods_receipt_item_id' => $item->id,
+            'source_type' => 'goods_receipt',
+            'source_id' => $receipt->id,
+            'source_item_id' => $item->id,
+            'unit_id' => $item->unit_id,
+            'conversion_factor_snapshot' => (string) $item->conversion_factor_snapshot,
+            'received_at' => $receipt->received_at,
+            'cost_price' => $actualUnitCost,                         // HPP aktual per item
+            'entry_sale_price_snapshot' => $item->sale_price === null ? null : (string) $item->sale_price,
+            'quantity_on_hand' => Decimal::add($acceptedBase, $item->damagedBaseQuantity()),
+            'quantity_reserved' => '0.0000',
+            'quantity_damaged' => $item->damagedBaseQuantity(),
+            'expires_at' => null,
+            'batch_no' => $item->batch_no ?: "{$receipt->number}-{$item->id}",
+        ]);
+        $this->layers->recordAllocation($layer, [
+            'reference_type' => 'goods_receipt_item',
+            'reference_id' => $item->id,
+            'event_type' => 'goods_receipt',
+            'quantity' => Decimal::add($acceptedBase, $item->damagedBaseQuantity()),
+            'sale_price_snapshot' => $item->sale_price === null ? null : (string) $item->sale_price,
+            'actor_user_id' => $actor->id,
+            'metadata' => ['goods_receipt_id' => $receipt->id],
+            'occurred_at' => now(),
+        ]);
+        $this->locationPrices->setActivePrice(
+            $product,
+            $destination,
+            (string) $item->sale_price,
+            $actor,
+            'goods_receipt',
+            "Penerimaan {$receipt->number}",
         );
     }
 

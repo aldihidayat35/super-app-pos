@@ -21,6 +21,10 @@ class StoreOpeningStockRequest extends FormRequest
             'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
             'items.*.warehouse_location_id' => ['required', 'integer', 'exists:warehouse_locations,id'],
             'items.*.physical_qty' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_cost_snapshot' => ['required', 'numeric', 'gt:0'],
+            'items.*.sale_price_snapshot' => ['required', 'numeric', 'gt:0'],
+            'items.*.selected_stock_batch_ids' => ['nullable', 'array'],
+            'items.*.selected_stock_batch_ids.*' => ['integer', 'distinct', 'exists:stock_batches,id'],
             'items.*.note' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -33,6 +37,8 @@ class StoreOpeningStockRequest extends FormRequest
             'items.*.product_id' => 'produk',
             'items.*.warehouse_location_id' => 'rak atau lokasi penyimpanan',
             'items.*.physical_qty' => 'jumlah fisik sekarang',
+            'items.*.unit_cost_snapshot' => 'HPP stok awal',
+            'items.*.sale_price_snapshot' => 'harga jual lokasi',
             'items.*.note' => 'catatan produk',
         ];
     }

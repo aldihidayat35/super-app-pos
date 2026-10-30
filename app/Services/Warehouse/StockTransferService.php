@@ -15,6 +15,8 @@ use App\Models\ProductUnit;
 use App\Models\RestockRequest;
 use App\Models\RestockRequestItem;
 use App\Models\Stock;
+use App\Models\StockBatch;
+use App\Models\StockLayerAllocation;
 use App\Models\StockTransfer;
 use App\Models\StockTransferDiscrepancyResolution;
 use App\Models\StockTransferItem;
@@ -24,8 +26,11 @@ use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Inventory\InventoryService;
+use App\Services\Inventory\StockLayerService;
 use App\Services\Organization\DocumentNumberService;
+use App\Services\Pricing\LocationProductPriceService;
 use App\Support\Decimal;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class StockTransferService
@@ -33,6 +38,8 @@ class StockTransferService
     public function __construct(
         private readonly DocumentNumberService $numbers,
         private readonly InventoryService $inventory,
+        private readonly StockLayerService $layers,
+        private readonly LocationProductPriceService $locationPrices,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -50,6 +57,9 @@ class StockTransferService
             $this->ensureBinBelongsToWorkLocation($data['destination_warehouse_location_id'] ?? null, $destination, 'Lokasi tujuan default');
 
             foreach ($data['items'] ?? [] as $itemData) {
+                if (filled($itemData['destination_sale_price'] ?? null) && ! $actor->can('prices.update')) {
+                    throw ServiceException::validation('Anda tidak berwenang mengubah harga jual lokasi tujuan.');
+                }
                 $this->ensureBinBelongsToWorkLocation($itemData['source_warehouse_location_id'] ?? null, $source, 'Lokasi ambil item');
                 $this->ensureBinBelongsToWorkLocation($itemData['destination_warehouse_location_id'] ?? null, $destination, 'Lokasi tujuan item');
             }
@@ -67,7 +77,7 @@ class StockTransferService
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            $this->replaceItems($transfer, $data['items'] ?? []);
+            $this->replaceItems($transfer, $data['items'] ?? [], ($data['action'] ?? null) === 'submit');
             $this->history($transfer, null, StockTransferStatus::DRAFT, $actor, 'Transfer dibuat sebagai draft.');
 
             if (($data['action'] ?? null) === 'submit') {
@@ -234,6 +244,21 @@ class StockTransferService
                     metadata: ['stock_transfer_item_id' => $item->id],
                 );
 
+                $rawSelectedBatchIds = $item->getAttribute('selected_stock_batch_ids');
+                $selectedBatchIds = is_array($rawSelectedBatchIds)
+                    ? array_values(array_map('intval', $rawSelectedBatchIds))
+                    : null;
+                $layerAllocations = $this->layers->resolveLayers(
+                    $item->product_id,
+                    (int) $transfer->source_work_location_id,
+                    $approvedBase,
+                    $sourceBin?->id,
+                    $selectedBatchIds,
+                );
+                foreach ($layerAllocations as $allocation) {
+                    $this->layers->reserveLayer($allocation['batch'], $allocation['quantity']);
+                }
+
                 $item->forceFill(['quantity_approved' => $approved, 'quantity_reserved' => $approvedBase])->save();
             }
 
@@ -324,6 +349,41 @@ class StockTransferService
                             'destination_warehouse_location' => $this->destinationBin($transfer, $item),
                         ],
                     );
+
+                    $remainingLayerQty = $shippedBase;
+                    foreach ($this->selectedReservedLayers($item) as $batch) {
+                        if (Decimal::compare($remainingLayerQty, '0', 4) <= 0) {
+                            break;
+                        }
+                        $take = Decimal::compare($remainingLayerQty, (string) $batch->quantity_reserved, 4) <= 0
+                            ? $remainingLayerQty
+                            : (string) $batch->quantity_reserved;
+                        if (Decimal::compare($take, '0', 4) <= 0) {
+                            continue;
+                        }
+                        $this->layers->issueReservedLayer($batch, $take);
+                        $this->layers->recordAllocation($batch, [
+                            'reference_type' => 'stock_transfer_item',
+                            'reference_id' => $item->id,
+                            'event_type' => 'transfer_out',
+                            'quantity' => $take,
+                            'sale_price_snapshot' => $item->source_sale_price_snapshot === null ? null : (string) $item->source_sale_price_snapshot,
+                            'actor_user_id' => $actor->id,
+                            'metadata' => ['stock_transfer_id' => $transfer->id],
+                            'occurred_at' => now(),
+                        ]);
+                        $remainingLayerQty = Decimal::sub($remainingLayerQty, $take, 4);
+                    }
+                    if (Decimal::compare($remainingLayerQty, '0', 4) > 0) {
+                        throw ServiceException::validation('Alokasi batch transfer tidak mencukupi qty yang dikirim.');
+                    }
+
+                    // Qty approved yang tidak jadi dikirim tidak boleh tetap mengunci batch.
+                    foreach ($this->selectedReservedLayers($item) as $batch) {
+                        if (Decimal::compare((string) $batch->quantity_reserved, '0', 4) > 0) {
+                            $this->layers->releaseLayerReservation($batch, (string) $batch->quantity_reserved);
+                        }
+                    }
                 }
 
                 $item->forceFill(['quantity_reserved' => '0.0000', 'quantity_shipped' => $shipped])->save();
@@ -404,12 +464,14 @@ class StockTransferService
 
                 if (Decimal::compare($received, '0') > 0) {
                     $this->inventory->transferIn($item->product, $transfer->destinationWorkLocation, $this->destinationBin($transfer, $item), $this->toBaseQuantity($item, $received), $actor, $this->reference($transfer), 'Transfer diterima di tujuan.', "stock-transfer-{$transfer->id}-item-{$item->id}-receipt-{$receipt->id}-in", ['stock_transfer_item_id' => $item->id, 'stock_transfer_receipt_id' => $receipt->id, 'source_work_location' => $transfer->sourceWorkLocation, 'source_warehouse_location' => $this->sourceBin($transfer, $item)]);
+                    $this->receiveLayers($transfer, $item, $receipt->id, $this->toBaseQuantity($item, $received), false, $actor);
                 }
 
                 if (Decimal::compare($damaged, '0') > 0) {
                     $damagedBase = $this->toBaseQuantity($item, $damaged);
                     $this->inventory->transferIn($item->product, $transfer->destinationWorkLocation, $this->destinationBin($transfer, $item), $damagedBase, $actor, $this->reference($transfer), 'Transfer diterima dalam kondisi rusak.', "stock-transfer-{$transfer->id}-item-{$item->id}-receipt-{$receipt->id}-damaged-in", ['stock_transfer_item_id' => $item->id, 'stock_transfer_receipt_id' => $receipt->id]);
                     $this->inventory->damage($item->product, $transfer->destinationWorkLocation, $this->destinationBin($transfer, $item), $damagedBase, $actor, $this->reference($transfer), 'Barang transfer rusak saat diterima.', "stock-transfer-{$transfer->id}-item-{$item->id}-receipt-{$receipt->id}-damaged-qc", ['stock_transfer_item_id' => $item->id, 'stock_transfer_receipt_id' => $receipt->id]);
+                    $this->receiveLayers($transfer, $item, $receipt->id, $damagedBase, true, $actor);
                 }
 
                 $receipt->items()->create([
@@ -551,7 +613,8 @@ class StockTransferService
                 ]);
                 // Tidak ada issue kedua: stok sudah keluar dari sumber ketika status SHIPPED.
             } else {
-                if (! $actor->can('stock_transfers.approve')) {
+                if (! $actor->can('stock_transfers.approve')
+                    || ! $actor->canAccessWorkLocation((int) $transfer->source_work_location_id)) {
                     throw ServiceException::validation('Penerimaan kekurangan sebagai final memerlukan izin approval transfer.');
                 }
             }
@@ -605,6 +668,11 @@ class StockTransferService
                 if (Decimal::compare((string) $item->quantity_reserved, '0') > 0) {
                     $this->inventory->releaseReservation($item->product, $transfer->sourceWorkLocation, $this->sourceBin($transfer, $item), (string) $item->quantity_reserved, $actor, $this->reference($transfer), 'Batal transfer, reserve dilepas.', "stock-transfer-{$transfer->id}-item-{$item->id}-cancel-release", ['stock_transfer_item_id' => $item->id]);
                     $item->forceFill(['quantity_reserved' => '0.0000'])->save();
+                    foreach ($this->selectedReservedLayers($item) as $batch) {
+                        if (Decimal::compare((string) $batch->quantity_reserved, '0', 4) > 0) {
+                            $this->layers->releaseLayerReservation($batch, (string) $batch->quantity_reserved);
+                        }
+                    }
                 }
             }
 
@@ -617,7 +685,7 @@ class StockTransferService
     }
 
     /** @param list<array<string, mixed>> $items */
-    private function replaceItems(StockTransfer $transfer, array $items): void
+    private function replaceItems(StockTransfer $transfer, array $items, bool $requireLayers = true): void
     {
         if ($items === []) {
             throw ServiceException::validation('Minimal satu item transfer wajib diisi.');
@@ -635,6 +703,45 @@ class StockTransferService
             $conversion = $productUnit instanceof ProductUnit ? $productUnit->conversion_factor : '1.000000';
             $requested = Decimal::normalize($itemData['quantity_requested'] ?? $itemData['quantity_approved'] ?? 0);
             $approved = Decimal::normalize($itemData['quantity_approved'] ?? $requested);
+            $requestedBase = Decimal::mul($requested, (string) $conversion, 4, 6, 4);
+            $sourceBinId = $itemData['source_warehouse_location_id'] ?? $transfer->source_warehouse_location_id;
+            $selectedBatchIds = array_values(array_map('intval', (array) ($itemData['selected_stock_batch_ids'] ?? [])));
+            try {
+                $resolvedLayers = $this->layers->resolveLayers(
+                    $product->id,
+                    (int) $transfer->source_work_location_id,
+                    $requestedBase,
+                    $sourceBinId ? (int) $sourceBinId : null,
+                    $selectedBatchIds === [] ? null : $selectedBatchIds,
+                );
+            } catch (ServiceException $exception) {
+                $availableLayers = $this->layers->availableLayers(
+                    $product->id,
+                    (int) $transfer->source_work_location_id,
+                    $sourceBinId ? (int) $sourceBinId : null,
+                );
+                $selectedLayers = $selectedBatchIds === []
+                    ? $availableLayers
+                    : $availableLayers->whereIn('id', $selectedBatchIds)->values();
+                $isInsufficient = str_contains($exception->getMessage(), 'Stok tidak mencukupi');
+
+                if ($isInsufficient && $selectedLayers->isNotEmpty()
+                    && ($availableLayers->count() === 1 || $selectedBatchIds !== [])) {
+                    $resolvedLayers = $selectedLayers->map(fn (StockBatch $batch): array => [
+                        'batch' => $batch,
+                        'quantity' => '0.0000',
+                    ])->all();
+                } elseif ($requireLayers) {
+                    throw $exception;
+                } else {
+                    $resolvedLayers = [];
+                }
+            }
+
+            $sourcePrice = $this->locationPrices->activePrice($product, $transfer->sourceWorkLocation);
+            $destinationPrice = filled($itemData['destination_sale_price'] ?? null)
+                ? Decimal::normalize((string) $itemData['destination_sale_price'], 2)
+                : $sourcePrice;
 
             if (Decimal::compare($requested, '0') <= 0) {
                 throw ServiceException::validation("Qty produk {$product->sku} harus lebih dari nol.");
@@ -654,10 +761,106 @@ class StockTransferService
                 'product_name_snapshot' => $product->name,
                 'unit_name_snapshot' => $productUnit instanceof ProductUnit ? $productUnit->unit->name : $product->baseUnit->name,
                 'conversion_factor_snapshot' => $conversion,
+                'source_sale_price_snapshot' => $sourcePrice,
+                'destination_sale_price' => $destinationPrice,
+                'selected_stock_batch_ids' => array_map(
+                    fn (array $allocation): int => (int) $allocation['batch']->id,
+                    $resolvedLayers,
+                ),
                 'quantity_requested' => $requested,
                 'quantity_approved' => $approved,
                 'notes' => $itemData['notes'] ?? null,
             ]);
+        }
+    }
+
+    /** @return Collection<int, StockBatch> */
+    private function selectedReservedLayers(StockTransferItem $item): Collection
+    {
+        return StockBatch::query()
+            ->whereIn('id', $item->selected_stock_batch_ids ?? [])
+            ->orderBy('received_at')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    private function receiveLayers(
+        StockTransfer $transfer,
+        StockTransferItem $item,
+        int $receiptId,
+        string $quantity,
+        bool $damaged,
+        User $actor,
+    ): void {
+        $remaining = $quantity;
+        $destinationBin = $this->destinationBin($transfer, $item);
+        $sourceAllocations = StockLayerAllocation::query()
+            ->with('batch')
+            ->where('reference_type', 'stock_transfer_item')
+            ->where('reference_id', $item->id)
+            ->where('event_type', 'transfer_out')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($sourceAllocations as $sourceAllocation) {
+            if (Decimal::compare($remaining, '0', 4) <= 0) {
+                break;
+            }
+            $alreadyReceived = StockLayerAllocation::query()
+                ->where('reference_type', 'stock_transfer_source_allocation')
+                ->where('reference_id', $sourceAllocation->id)
+                ->where('event_type', 'transfer_in')
+                ->sum('quantity');
+            $available = Decimal::sub((string) $sourceAllocation->quantity, (string) $alreadyReceived, 4);
+            if (Decimal::compare($available, '0', 4) <= 0) {
+                continue;
+            }
+            $take = Decimal::compare($remaining, $available, 4) <= 0 ? $remaining : $available;
+            $stock = Stock::query()
+                ->where('product_id', $item->product_id)
+                ->where('work_location_id', $transfer->destination_work_location_id)
+                ->where('warehouse_location_id', $destinationBin?->id)
+                ->first();
+            $layer = $this->layers->deriveLayer($sourceAllocation->batch, [
+                'stock_id' => $stock?->id,
+                'work_location_id' => $transfer->destination_work_location_id,
+                'warehouse_location_id' => $destinationBin?->id,
+                'source_type' => 'stock_transfer',
+                'source_id' => $transfer->id,
+                'source_item_id' => $item->id,
+                'entry_sale_price_snapshot' => $item->destination_sale_price === null ? null : (string) $item->destination_sale_price,
+                'quantity_on_hand' => $take,
+                'quantity_reserved' => '0.0000',
+                'quantity_damaged' => $damaged ? $take : '0.0000',
+                'received_at' => now()->toDateString(),
+            ]);
+            $this->layers->recordAllocation($layer, [
+                'reference_type' => 'stock_transfer_source_allocation',
+                'reference_id' => $sourceAllocation->id,
+                'event_type' => 'transfer_in',
+                'quantity' => $take,
+                'sale_price_snapshot' => $item->destination_sale_price === null ? null : (string) $item->destination_sale_price,
+                'actor_user_id' => $actor->id,
+                'metadata' => ['stock_transfer_id' => $transfer->id, 'receipt_id' => $receiptId, 'damaged' => $damaged],
+                'occurred_at' => now(),
+            ]);
+            $remaining = Decimal::sub($remaining, $take, 4);
+        }
+
+        if (Decimal::compare($remaining, '0', 4) > 0) {
+            throw ServiceException::validation('Lapisan HPP sumber transfer tidak mencukupi penerimaan.');
+        }
+
+        if ($item->destination_sale_price !== null) {
+            $this->locationPrices->setActivePrice(
+                $item->product,
+                $transfer->destinationWorkLocation,
+                (string) $item->destination_sale_price,
+                $actor,
+                'stock_transfer',
+                "Transfer {$transfer->number}",
+            );
         }
     }
 

@@ -4,18 +4,18 @@ namespace App\Services\Warehouse;
 
 use App\Enums\ProductStatus;
 use App\Exceptions\ServiceException;
-use App\Models\Branch;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\StockDirectAdjustment;
 use App\Models\StockDirectAdjustmentItem;
 use App\Models\User;
-use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Control\AuditLogService;
 use App\Services\Inventory\InventoryService;
+use App\Services\Inventory\StockLayerService;
 use App\Services\Organization\DocumentNumberService;
+use App\Services\Pricing\LocationProductPriceService;
 use App\Support\ApprovalAuthority;
 use App\Support\Decimal;
 use Illuminate\Http\Request;
@@ -26,11 +26,13 @@ final class OpeningStockService
     public function __construct(
         private readonly DocumentNumberService $numbers,
         private readonly InventoryService $inventory,
+        private readonly StockLayerService $layers,
+        private readonly LocationProductPriceService $locationPrices,
         private readonly StockAdjustmentAccessService $access,
         private readonly AuditLogService $audit,
     ) {}
 
-    /** @param array{work_location_id:int, notes?:string|null, items:list<array{product_id:int, warehouse_location_id:int, physical_qty:string, note?:string|null}>} $data */
+    /** @param array{work_location_id:int, notes?:string|null, items:list<array{product_id:int, warehouse_location_id:int, physical_qty:string, unit_cost_snapshot?:string, sale_price_snapshot?:string, selected_stock_batch_ids?:list<int>, note?:string|null}>} $data */
     public function create(array $data, User $actor, ?Request $request = null): StockDirectAdjustment
     {
         return DB::transaction(function () use ($data, $actor, $request): StockDirectAdjustment {
@@ -54,7 +56,7 @@ final class OpeningStockService
         });
     }
 
-    /** @param array{work_location_id:int, notes?:string|null, items:list<array{product_id:int, warehouse_location_id:int, physical_qty:string, note?:string|null}>} $data */
+    /** @param array{work_location_id:int, notes?:string|null, items:list<array{product_id:int, warehouse_location_id:int, physical_qty:string, unit_cost_snapshot?:string, sale_price_snapshot?:string, selected_stock_batch_ids?:list<int>, note?:string|null}>} $data */
     public function update(StockDirectAdjustment $document, array $data, User $actor, ?Request $request = null): StockDirectAdjustment
     {
         return DB::transaction(function () use ($document, $data, $actor, $request): StockDirectAdjustment {
@@ -138,6 +140,53 @@ final class OpeningStockService
                     ['opening_stock_item_id' => $item->id, 'creator_user_id' => $document->created_by, 'approver_user_id' => $actor->id, 'unit_cost_snapshot' => $item->unit_cost_snapshot],
                 );
                 $item->forceFill(['stock_id' => $mutation->stock_id, 'posted_qty_before' => $mutation->quantity_on_hand_before, 'posted_qty_after' => $mutation->quantity_on_hand_after])->save();
+                $difference = Decimal::sub((string) $item->physical_qty, (string) $item->system_qty_snapshot, 4);
+                if (Decimal::compare($difference, '0', 4) > 0) {
+                    $layer = $this->layers->createLayer([
+                        'source_batch_id' => null,
+                        'product_id' => $item->product_id,
+                        'stock_id' => $mutation->stock_id,
+                        'work_location_id' => $document->work_location_id,
+                        'warehouse_location_id' => $item->warehouse_location_id,
+                        'source_type' => 'opening_stock',
+                        'source_id' => $document->id,
+                        'source_item_id' => $item->id,
+                        'supplier_id' => null,
+                        'goods_receipt_id' => null,
+                        'goods_receipt_item_id' => null,
+                        'unit_id' => $item->product->base_unit_id,
+                        'conversion_factor_snapshot' => '1.000000',
+                        'batch_no' => "OPENING-{$document->id}-{$item->id}",
+                        'received_at' => now()->toDateString(),
+                        'expires_at' => null,
+                        'cost_price' => (string) $item->unit_cost_snapshot,
+                        'entry_sale_price_snapshot' => $item->sale_price_snapshot === null ? null : (string) $item->sale_price_snapshot,
+                        'quantity_on_hand' => $difference,
+                        'quantity_reserved' => '0.0000',
+                        'quantity_damaged' => '0.0000',
+                    ]);
+                    $this->layers->recordAllocation($layer, [
+                        'reference_type' => 'stock_direct_adjustment_item', 'reference_id' => $item->id,
+                        'event_type' => 'opening_stock', 'quantity' => $difference,
+                        'sale_price_snapshot' => $item->sale_price_snapshot === null ? null : (string) $item->sale_price_snapshot,
+                        'actor_user_id' => $actor->id, 'metadata' => ['document_id' => $document->id], 'occurred_at' => now(),
+                    ]);
+                    if ($item->sale_price_snapshot !== null) {
+                        $this->locationPrices->setActivePrice($item->product, $document->workLocation, (string) $item->sale_price_snapshot, $actor, 'opening_stock', $document->number);
+                    }
+                } elseif (Decimal::compare($difference, '0', 4) < 0) {
+                    $selectedIds = is_array($item->getAttribute('selected_stock_batch_ids'))
+                        ? array_map('intval', $item->getAttribute('selected_stock_batch_ids')) : null;
+                    foreach ($this->layers->resolveLayers($item->product_id, $document->work_location_id, ltrim($difference, '-'), $item->warehouse_location_id, $selectedIds) as $allocation) {
+                        $this->layers->deductLayer($allocation['batch'], $allocation['quantity']);
+                        $this->layers->recordAllocation($allocation['batch'], [
+                            'reference_type' => 'stock_direct_adjustment_item', 'reference_id' => $item->id,
+                            'event_type' => 'adjustment_negative', 'quantity' => $allocation['quantity'],
+                            'sale_price_snapshot' => null, 'actor_user_id' => $actor->id,
+                            'metadata' => ['document_id' => $document->id], 'occurred_at' => now(),
+                        ]);
+                    }
+                }
             }
 
             $document->approvals()->create(['approver_user_id' => $actor->id, 'decision' => 'approved', 'notes' => $notes, 'decided_at' => now()]);
@@ -178,7 +227,7 @@ final class OpeningStockService
         });
     }
 
-    /** @param list<array{product_id:int, warehouse_location_id:int, physical_qty:string, note?:string|null}> $items */
+    /** @param list<array{product_id:int, warehouse_location_id:int, physical_qty:string, unit_cost_snapshot?:string, sale_price_snapshot?:string, selected_stock_batch_ids?:list<int>, note?:string|null}> $items */
     private function replaceItems(StockDirectAdjustment $document, array $items, WorkLocation $location): void
     {
         foreach ($items as $row) {
@@ -196,6 +245,9 @@ final class OpeningStockService
                 throw ServiceException::validation('Jumlah fisik tidak boleh lebih kecil dari stok reserved dan rusak.');
             }
             $difference = Decimal::sub($physical, $system);
+            $unitCost = (string) ($row['unit_cost_snapshot'] ?? $product->cost_price);
+            $salePrice = (string) ($row['sale_price_snapshot']
+                ?? (Decimal::compare((string) $product->minimum_price, '0', 2) > 0 ? $product->minimum_price : $unitCost));
             $document->items()->create([
                 'product_id' => $product->id,
                 'stock_id' => $stock?->id,
@@ -207,8 +259,10 @@ final class OpeningStockService
                 'difference_qty' => $difference,
                 'reserved_qty_snapshot' => $reserved,
                 'damaged_qty_snapshot' => $damaged,
-                'unit_cost_snapshot' => $product->cost_price,
-                'difference_value' => Decimal::mul(ltrim($difference, '-'), (string) $product->cost_price),
+                'unit_cost_snapshot' => $unitCost,
+                'sale_price_snapshot' => $salePrice,
+                'selected_stock_batch_ids' => array_map('intval', $row['selected_stock_batch_ids'] ?? []),
+                'difference_value' => Decimal::mul(ltrim($difference, '-'), $unitCost),
                 'note' => filled($row['note'] ?? null) ? $row['note'] : 'Hasil hitung fisik stok lokasi',
             ]);
         }

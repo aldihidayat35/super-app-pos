@@ -3,6 +3,8 @@
 namespace App\Services\Inventory;
 
 use App\Exceptions\ServiceException;
+use App\Models\Product;
+use App\Models\Stock;
 use App\Models\StockBatch;
 use App\Models\StockLayerAllocation;
 use App\Support\Decimal;
@@ -38,6 +40,7 @@ class StockLayerService
      *   quantity_reserved: string,
      *   quantity_damaged: string,
      * } $data
+     *
      * @throws ServiceException
      */
     public function createLayer(array $data): StockBatch
@@ -75,17 +78,17 @@ class StockLayerService
         return DB::transaction(function () use ($source, $overrides): StockBatch {
             /** @var StockBatch */
             return StockBatch::create(array_merge([
-                'source_batch_id'            => $source->id,
-                'product_id'                 => $source->product_id,
-                'supplier_id'                => $source->supplier_id,
-                'unit_id'                    => $source->unit_id,
+                'source_batch_id' => $source->id,
+                'product_id' => $source->product_id,
+                'supplier_id' => $source->supplier_id,
+                'unit_id' => $source->unit_id,
                 'conversion_factor_snapshot' => (string) $source->conversion_factor_snapshot,
-                'batch_no'                   => $source->batch_no,
-                'expires_at'                 => $source->expires_at instanceof \DateTimeInterface
-                    ? $source->expires_at->format('Y-m-d')
-                    : (filled($source->expires_at) ? (string) $source->expires_at : null),
-                'cost_price'                 => (string) $source->cost_price,
-                'status'                     => 'active',
+                'batch_no' => $source->batch_no,
+                'expires_at' => filled($source->getRawOriginal('expires_at'))
+                    ? (string) $source->getRawOriginal('expires_at')
+                    : null,
+                'cost_price' => (string) $source->cost_price,
+                'status' => 'active',
             ], $overrides));
         });
     }
@@ -103,6 +106,7 @@ class StockLayerService
      *   metadata: array<string,mixed>|null,
      *   occurred_at: Carbon|null,
      * } $data
+     *
      * @throws ServiceException
      */
     public function recordAllocation(StockBatch $batch, array $data): StockLayerAllocation
@@ -114,19 +118,19 @@ class StockLayerService
         return DB::transaction(function () use ($batch, $data): StockLayerAllocation {
             /** @var StockLayerAllocation */
             return StockLayerAllocation::create([
-                'stock_batch_id'       => $batch->id,
-                'product_id'           => $batch->product_id,
-                'work_location_id'     => $batch->work_location_id,
-                'warehouse_location_id'=> $batch->warehouse_location_id,
-                'reference_type'       => $data['reference_type'],
-                'reference_id'         => $data['reference_id'],
-                'event_type'           => $data['event_type'],
-                'quantity'             => $data['quantity'],
-                'unit_cost'            => (string) $batch->cost_price,
-                'sale_price_snapshot'  => $data['sale_price_snapshot'] ?? null,
-                'actor_user_id'        => $data['actor_user_id'] ?? null,
-                'metadata'             => $data['metadata'] ?? null,
-                'occurred_at'          => $data['occurred_at'] ?? now(),
+                'stock_batch_id' => $batch->id,
+                'product_id' => $batch->product_id,
+                'work_location_id' => $batch->work_location_id,
+                'warehouse_location_id' => $batch->warehouse_location_id,
+                'reference_type' => $data['reference_type'],
+                'reference_id' => $data['reference_id'],
+                'event_type' => $data['event_type'],
+                'quantity' => $data['quantity'],
+                'unit_cost' => (string) $batch->cost_price,
+                'sale_price_snapshot' => $data['sale_price_snapshot'] ?? null,
+                'actor_user_id' => $data['actor_user_id'] ?? null,
+                'metadata' => $data['metadata'] ?? null,
+                'occurred_at' => $data['occurred_at'] ?? now(),
             ]);
         });
     }
@@ -150,10 +154,71 @@ class StockLayerService
                 throw ServiceException::validation('Stok batch tidak mencukupi.');
             }
 
-            $locked->quantity_on_hand = Decimal::sub((string) $locked->quantity_on_hand, $quantity);
-            $locked->save();
+            $locked->forceFill([
+                'quantity_on_hand' => Decimal::sub((string) $locked->quantity_on_hand, $quantity),
+            ])->save();
+        });
+    }
 
+    /** Reserve kuantitas pada lapisan yang dipilih tanpa mengubah saldo on hand. */
+    public function reserveLayer(StockBatch $batch, string $quantity): void
+    {
+        if (! Decimal::isPositive($quantity)) {
+            throw ServiceException::validation('Kuantitas reserve harus lebih dari 0.');
+        }
+
+        DB::transaction(function () use ($batch, $quantity): void {
+            $locked = StockBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            if (Decimal::compare($quantity, $locked->availableQuantity()) > 0) {
+                throw ServiceException::validation('Stok batch tidak mencukupi untuk di-reserve.');
+            }
+            $locked->forceFill([
+                'quantity_reserved' => Decimal::add((string) $locked->quantity_reserved, $quantity),
+            ])->save();
+            $batch->quantity_reserved = $locked->quantity_reserved;
+        });
+    }
+
+    /** Lepas reserve lapisan. Dipakai sebelum pengeluaran atau pembatalan. */
+    public function releaseLayerReservation(StockBatch $batch, string $quantity): void
+    {
+        if (! Decimal::isPositive($quantity)) {
+            throw ServiceException::validation('Kuantitas pelepasan reserve harus lebih dari 0.');
+        }
+
+        DB::transaction(function () use ($batch, $quantity): void {
+            $locked = StockBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            if (Decimal::compare($quantity, (string) $locked->quantity_reserved) > 0) {
+                throw ServiceException::validation('Kuantitas pelepasan melebihi reserve batch.');
+            }
+            $locked->forceFill([
+                'quantity_reserved' => Decimal::sub((string) $locked->quantity_reserved, $quantity),
+            ])->save();
+            $batch->quantity_reserved = $locked->quantity_reserved;
+        });
+    }
+
+    /**
+     * Mengeluarkan lapisan yang sebelumnya sudah di-reserve.
+     */
+    public function issueReservedLayer(StockBatch $batch, string $quantity): void
+    {
+        if (! Decimal::isPositive($quantity)) {
+            throw ServiceException::validation('Kuantitas pengeluaran harus lebih dari 0.');
+        }
+
+        DB::transaction(function () use ($batch, $quantity): void {
+            $locked = StockBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            if (Decimal::compare($quantity, (string) $locked->quantity_reserved) > 0
+                || Decimal::compare($quantity, (string) $locked->quantity_on_hand) > 0) {
+                throw ServiceException::validation('Stok atau reserve batch tidak mencukupi.');
+            }
+            $locked->forceFill([
+                'quantity_on_hand' => Decimal::sub((string) $locked->quantity_on_hand, $quantity),
+                'quantity_reserved' => Decimal::sub((string) $locked->quantity_reserved, $quantity),
+            ])->save();
             $batch->quantity_on_hand = $locked->quantity_on_hand;
+            $batch->quantity_reserved = $locked->quantity_reserved;
         });
     }
 
@@ -172,10 +237,9 @@ class StockLayerService
             /** @var StockBatch $locked */
             $locked = StockBatch::lockForUpdate()->findOrFail($batch->id);
 
-            $locked->quantity_on_hand = Decimal::add((string) $locked->quantity_on_hand, $quantity);
-            $locked->save();
-
-            $batch->quantity_on_hand = $locked->quantity_on_hand;
+            $locked->forceFill([
+                'quantity_on_hand' => Decimal::add((string) $locked->quantity_on_hand, $quantity),
+            ])->save();
         });
     }
 
@@ -219,9 +283,10 @@ class StockLayerService
     /**
      * Otomatis pilih lapisan jika hanya ada 1, atau validasi pilihan manual.
      *
-     * @param list<int>|null $selectedBatchIds  null = auto-select
-     * @param string         $quantity          Kuantitas yang dibutuhkan (base unit)
+     * @param  list<int>|null  $selectedBatchIds  null = auto-select
+     * @param  string  $quantity  Kuantitas yang dibutuhkan (base unit)
      * @return list<array{batch: StockBatch, quantity: string}>
+     *
      * @throws ServiceException
      */
     public function resolveLayers(
@@ -232,6 +297,50 @@ class StockLayerService
         ?array $selectedBatchIds = null,
     ): array {
         $available = $this->availableLayers($productId, $workLocationId, $warehouseLocationId);
+
+        if ($available->isEmpty()) {
+            // Jembatan aman untuk saldo lama/integrasi teknis yang sudah menambah Stock
+            // sebelum layer tersedia. Transaksi baru tetap wajib memakai layer sesudah ini.
+            $stock = Stock::query()
+                ->where('product_id', $productId)
+                ->where('work_location_id', $workLocationId)
+                ->when($warehouseLocationId !== null,
+                    fn ($query) => $query->where('warehouse_location_id', $warehouseLocationId),
+                    fn ($query) => $query->whereNull('warehouse_location_id'))
+                ->lockForUpdate()
+                ->first();
+            $product = Product::query()->find($productId);
+            if ($stock instanceof Stock && $product instanceof Product
+                && Decimal::compare((string) $stock->quantity_on_hand, '0', 4) > 0) {
+                // Saldo legacy boleh membawa HPP 0 persis seperti data lama; larangan
+                // HPP 0 tetap berlaku untuk createLayer pada transaksi stok masuk baru.
+                StockBatch::query()->create([
+                    'source_batch_id' => null,
+                    'product_id' => $productId,
+                    'stock_id' => $stock->id,
+                    'work_location_id' => $workLocationId,
+                    'warehouse_location_id' => $warehouseLocationId,
+                    'source_type' => 'legacy_runtime_bridge',
+                    'source_id' => $stock->id,
+                    'source_item_id' => null,
+                    'supplier_id' => null,
+                    'goods_receipt_id' => null,
+                    'goods_receipt_item_id' => null,
+                    'unit_id' => $product->base_unit_id,
+                    'conversion_factor_snapshot' => '1.000000',
+                    'batch_no' => 'LEGACY-'.$stock->id,
+                    'received_at' => now()->toDateString(),
+                    'expires_at' => null,
+                    'cost_price' => (string) $product->cost_price,
+                    'entry_sale_price_snapshot' => null,
+                    'quantity_on_hand' => (string) $stock->quantity_on_hand,
+                    'quantity_reserved' => (string) $stock->quantity_reserved,
+                    'quantity_damaged' => (string) $stock->quantity_damaged,
+                    'status' => 'active',
+                ]);
+                $available = $this->availableLayers($productId, $workLocationId, $warehouseLocationId);
+            }
+        }
 
         if ($available->isEmpty()) {
             throw ServiceException::validation('Tidak ada stok tersedia untuk produk ini di lokasi yang dipilih.');
@@ -250,13 +359,17 @@ class StockLayerService
 
         // Lebih dari 1 lapisan → wajib pilih
         if (empty($selectedBatchIds)) {
-            throw ServiceException::validation('Pilih batch yang akan digunakan untuk transaksi ini.');
+            $selectedBatchIds = $available->pluck('id')->map(fn ($id): int => (int) $id)->all();
         }
 
         // Filter ke lapisan yang dipilih (pertahankan urutan FIFO)
         $selected = $available->filter(
             fn (StockBatch $b) => in_array($b->id, $selectedBatchIds, true)
         )->values();
+
+        if ($selected->count() !== count(array_unique($selectedBatchIds))) {
+            throw ServiceException::validation('Pilihan batch tidak valid atau tidak berada di lokasi transaksi.');
+        }
 
         // Hitung total ketersediaan dari batch yang dipilih
         $totalAvailable = '0.0000';
@@ -269,7 +382,7 @@ class StockLayerService
         }
 
         // Distribusi quantity secara berurutan (FIFO dari pilihan)
-        $result   = [];
+        $result = [];
         $remaining = $quantity;
 
         foreach ($selected as $batch) {
@@ -281,10 +394,29 @@ class StockLayerService
                 ? $remaining
                 : $batch->availableQuantity();
 
-            $result[]  = ['batch' => $batch, 'quantity' => $take];
+            $result[] = ['batch' => $batch, 'quantity' => $take];
             $remaining = Decimal::sub($remaining, $take);
         }
 
         return $result;
+    }
+
+    /** @param list<array{batch: StockBatch, quantity: string}> $allocations */
+    public function weightedAverageCost(array $allocations): string
+    {
+        $quantity = '0.0000';
+        $value = '0.00';
+        foreach ($allocations as $allocation) {
+            $quantity = Decimal::add($quantity, $allocation['quantity'], 4);
+            $value = Decimal::add(
+                $value,
+                Decimal::mul($allocation['quantity'], (string) $allocation['batch']->cost_price, 4, 2, 2),
+                2,
+            );
+        }
+
+        return Decimal::compare($quantity, '0', 4) > 0
+            ? Decimal::div($value, $quantity, 2, 4, 2)
+            : '0.00';
     }
 }

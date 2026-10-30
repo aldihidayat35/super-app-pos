@@ -111,7 +111,7 @@ class GoodsReceiptWorkflowTest extends TestCase
         $this->assertSame('5.0000', Stock::query()->where('product_id', $product->id)->firstOrFail()->quantity_on_hand);
     }
 
-    public function test_landed_cost_allocation_and_moving_average_hpp_are_recorded(): void
+    public function test_landed_cost_creates_a_new_hpp_layer_without_overwriting_product_fallback(): void
     {
         [$warehouse, $supplier, $product, $unit, $bin] = $this->fixture(costPrice: '10');
         $this->assignLocationScope($warehouse);
@@ -126,7 +126,13 @@ class GoodsReceiptWorkflowTest extends TestCase
         $this->assertSame('300.00', $history->incoming_cost);
         $this->assertSame('100.00', $history->landed_cost_allocated);
         $this->assertSame('20.00', $history->hpp_after);
-        $this->assertSame('20.00', $product->fresh()->cost_price);
+        $this->assertSame('10.00', $product->fresh()->cost_price);
+        $this->assertDatabaseHas('stock_batches', [
+            'goods_receipt_id' => $receipt->id,
+            'product_id' => $product->id,
+            'cost_price' => '20.00',
+            'quantity_on_hand' => '10.0000',
+        ]);
 
         $secondHistory = $history->replicate();
         $secondHistory->hpp_after = '21.00';

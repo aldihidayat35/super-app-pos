@@ -57,6 +57,8 @@
                             <th>Selisih QC</th>
                             <th>Lokasi</th>
                             <th>Batch</th>
+                            <th>HPP Aktual</th>
+                            <th>Harga Jual Lokasi</th>
                             <th>Alasan QC</th>
                         </tr>
                     </thead>
@@ -83,6 +85,8 @@
                             <td><span class="badge qc-status">Memeriksa...</span><div class="small mt-1 qc-difference"></div></td>
                             <td><select name="items[{{ $index }}][warehouse_location_id]" class="form-select form-select-sm"><option value="">Default gudang</option>@foreach($warehouseLocations as $location)<option value="{{ $location->id }}" @selected(old("items.$index.warehouse_location_id", $draftItem?->warehouse_location_id) == $location->id)>{{ $location->full_code }}</option>@endforeach</select></td>
                             <td><input name="items[{{ $index }}][batch_no]" value="{{ old("items.$index.batch_no", $draftItem?->batch_no) }}" class="form-control form-control-sm"></td>
+                            <td><input type="number" step="0.01" min="0.01" name="items[{{ $index }}][actual_unit_cost]" value="{{ old("items.$index.actual_unit_cost", $draftItem?->actual_unit_cost ?? $item->unit_price) }}" class="form-control form-control-sm" required><div class="text-muted fs-8">Per satuan dasar</div></td>
+                            <td><input type="number" step="0.01" min="0.01" name="items[{{ $index }}][sale_price]" value="{{ old("items.$index.sale_price", $draftItem?->sale_price ?? $item->product?->selling_price ?? 0) }}" class="form-control form-control-sm" required><div class="text-muted fs-8">Aktif hanya di lokasi penerima</div></td>
                             <td><input name="items[{{ $index }}][qc_notes]" value="{{ old("items.$index.qc_notes", $draftItem?->qc_notes) }}" class="form-control form-control-sm"></td>
                         </tr>
                     @endforeach

@@ -20,12 +20,16 @@ class StoreStockDirectAdjustmentRequest extends FormRequest
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.stock_id' => ['required', 'integer', 'distinct', 'exists:stocks,id'],
             'items.*.physical_qty' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_cost_snapshot' => ['required', 'numeric', 'gt:0'],
+            'items.*.sale_price_snapshot' => ['required', 'numeric', 'gt:0'],
+            'items.*.selected_stock_batch_ids' => ['nullable', 'array'],
+            'items.*.selected_stock_batch_ids.*' => ['integer', 'distinct', 'exists:stock_batches,id'],
             'items.*.note' => ['required', 'string', 'min:3', 'max:1000'],
         ];
     }
 
     public function attributes(): array
     {
-        return ['work_location_id' => 'lokasi kerja', 'items' => 'produk koreksi', 'items.*.stock_id' => 'stok produk', 'items.*.physical_qty' => 'stok fisik final', 'items.*.note' => 'catatan koreksi'];
+        return ['work_location_id' => 'lokasi kerja', 'items' => 'produk koreksi', 'items.*.stock_id' => 'stok produk', 'items.*.physical_qty' => 'stok fisik final', 'items.*.unit_cost_snapshot' => 'HPP koreksi positif', 'items.*.sale_price_snapshot' => 'harga jual lokasi', 'items.*.note' => 'catatan koreksi'];
     }
 }

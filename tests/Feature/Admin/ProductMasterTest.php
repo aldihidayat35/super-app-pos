@@ -187,7 +187,7 @@ class ProductMasterTest extends TestCase
             ->assertSee('Minimum Order')
             ->assertSee('Minimum Stock')
             ->assertSee('Safety Stock')
-            ->assertSee('HPP Saat Ini')
+            ->assertSee('HPP Fallback Master')
             ->assertSee('Min. Harga Jual')
             ->assertSee('Harga jual belum dibuat')
             ->assertSee('Belum ada saldo stok')

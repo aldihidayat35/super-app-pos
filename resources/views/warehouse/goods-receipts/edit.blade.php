@@ -15,7 +15,7 @@
             <ul><li><strong>Header Receipt:</strong> informasi awal yang dapat diedit.</li><li><strong>Item:</strong> qty, QC, lokasi, batch per baris.</li><li><strong>Simpan Draft:</strong> menyimpan perubahan tanpa posting.</li><li><strong>Simpan & Posting:</strong> menyimpan dan langsung posting.</li></ul>
         </x-slot:parts>
         <x-slot:impacts>
-            <p>Hanya draft yang dapat diedit. Posting mengunci receipt dan memperbarui stok, PO, dan HPP.</p>
+            <p>Hanya draft yang dapat diedit. Posting mengunci receipt, membuat lapisan HPP baru, dan memperbarui stok serta PO.</p>
         </x-slot:impacts>
         <x-slot:operation>
             <ol><li>Periksa data receipt.</li><li>Ubah nilai yang perlu dikoreksi.</li><li>Klik <strong>Simpan Draft</strong> atau <strong>Simpan & Posting</strong>.</li></ol>

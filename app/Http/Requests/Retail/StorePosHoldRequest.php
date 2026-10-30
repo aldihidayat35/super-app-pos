@@ -25,6 +25,9 @@ class StorePosHoldRequest extends FormRequest
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
             'items.*.selected_price' => ['nullable', 'numeric', 'min:0'],
             'items.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'items.*.selected_stock_batch_ids' => ['nullable', 'array'],
+            'items.*.selected_stock_batch_ids.*' => ['integer', 'distinct', 'exists:stock_batches,id'],
+            'items.*.batch_selection_mode' => ['nullable', Rule::in(['auto', 'manual'])],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
