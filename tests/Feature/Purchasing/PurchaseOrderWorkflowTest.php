@@ -63,6 +63,7 @@ class PurchaseOrderWorkflowTest extends TestCase
         $this->assertSame('12.000000', $item->conversion_factor_snapshot);
         $this->assertSame('20100.00', $item->subtotal);
         $this->assertSame('21900.00', $purchaseOrder->grand_total);
+        $this->assertTrue($product->units()->where('unit_id', $unit->id)->firstOrFail()->is_locked);
     }
 
     public function test_invalid_state_transition_is_rejected(): void

@@ -158,7 +158,7 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        return view('admin.products.edit', $this->formData($product->load(['units', 'barcodes', 'images' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('sort_order')])));
+        return view('admin.products.edit', $this->formData($product->load(['units', 'barcodes.productUnit', 'images' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('sort_order')])));
     }
 
     public function update(UpdateProductRequest $request, Product $product, UnitConversionService $conversion, ProductImageService $imageService): RedirectResponse
@@ -278,7 +278,11 @@ class ProductController extends Controller
                 throw ValidationException::withMessages(["barcodes.{$index}.code" => 'Barcode sudah dipakai produk lain.']);
             }
 
-            $productUnitId = $product->units->firstWhere('unit_id', $product->base_unit_id)?->id;
+            $unitId = (int) ($barcode['unit_id'] ?? $product->base_unit_id);
+            $productUnitId = $product->units->firstWhere('unit_id', $unitId)?->id;
+            if ($productUnitId === null) {
+                throw ValidationException::withMessages(["barcodes.{$index}.unit_id" => 'Satuan barcode harus terdaftar pada produk.']);
+            }
             $saved = ProductBarcode::query()->updateOrCreate(
                 ['id' => $existingId],
                 [
@@ -387,7 +391,10 @@ class ProductController extends Controller
             'warehouses' => Warehouse::query()->where('is_active', true)->orderBy('name')->get(),
             'statuses' => ProductStatus::options(),
             'unitRows' => $unitsPayload ?: $product->units->map(fn ($unit): array => $unit->only(['unit_id', 'name', 'conversion_factor', 'is_sellable', 'is_active']))->values()->all(),
-            'barcodeRows' => $product->barcodes->map(fn ($barcode): array => $barcode->only(['id', 'code', 'type']))->values()->all(),
+            'barcodeRows' => $product->barcodes->map(fn ($barcode): array => [
+                ...$barcode->only(['id', 'code', 'type']),
+                'unit_id' => $barcode->productUnit?->unit_id,
+            ])->values()->all(),
         ];
     }
 }

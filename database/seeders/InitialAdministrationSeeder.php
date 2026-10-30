@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
@@ -33,13 +32,8 @@ class InitialAdministrationSeeder extends Seeder
         );
         $superAdmin->syncRoles([Role::findOrCreate('super_admin')]);
 
-        // 3. Buat Satuan Dasar Produk (Unit Konversi)
-        Unit::query()->updateOrCreate(['code' => 'PCS'], ['name' => 'Pieces', 'symbol' => 'pcs', 'precision' => 0, 'is_active' => true]);
-        Unit::query()->updateOrCreate(['code' => 'PACK'], ['name' => 'Pack', 'symbol' => 'pack', 'precision' => 0, 'is_active' => true]);
-        Unit::query()->updateOrCreate(['code' => 'BOX'], ['name' => 'Box', 'symbol' => 'box', 'precision' => 0, 'is_active' => true]);
-        Unit::query()->updateOrCreate(['code' => 'LSN'], ['name' => 'Lusin', 'symbol' => 'lusin', 'precision' => 0, 'is_active' => true]);
-        Unit::query()->updateOrCreate(['code' => 'KG'], ['name' => 'Kilogram', 'symbol' => 'kg', 'precision' => 2, 'is_active' => true]);
-        Unit::query()->updateOrCreate(['code' => 'GR'], ['name' => 'Gram', 'symbol' => 'gr', 'precision' => 0, 'is_active' => true]);
+        // 3. Buat satuan standar. Faktor konversi tetap ditentukan per produk.
+        $this->call(UnitSeeder::class);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

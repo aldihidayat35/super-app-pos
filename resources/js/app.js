@@ -4,6 +4,8 @@ import { initializeStockTransferForm } from './modules/warehouse-stock-transfer-
 import { initializeResponsiveTables, refreshResponsiveTable } from './modules/responsive-mobile-tables';
 import { initializeWhatsappConnection } from './modules/whatsapp-connection';
 import { initializeNumberInputStepper } from './modules/number-input-stepper';
+import { initializeSidebarPin } from './modules/sidebar-pin';
+import { initializeSpaRouter } from './modules/spa-router';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 const loadingOverlay = document.querySelector('[data-app-loading]');
@@ -380,7 +382,7 @@ const initializePasswordToggles = () => {
     });
 };
 
-const initializeApplication = () => {
+export const initializeApplication = () => {
     initializeWhatsappConnection();
     initializeTheme();
     initializeSelect2();
@@ -396,7 +398,11 @@ const initializeApplication = () => {
     initializePasswordToggles();
     initializeResponsiveTables();
     initializeNumberInputStepper();
+    initializeSidebarPin();
+    initializeSpaRouter();
 };
+
+window.initializeApplication = initializeApplication;
 
 window.GudangTokoResponsiveTables = {
     initialize: initializeResponsiveTables,

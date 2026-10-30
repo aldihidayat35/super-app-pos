@@ -12,6 +12,18 @@ php artisan db:seed --class=DemoFullApplicationSeeder
 
 Pada environment `local`, `php artisan migrate --seed` juga akan memanggil `DemoFullApplicationSeeder` melalui `DatabaseSeeder`.
 
+Seeder di atas hanya menyiapkan akun dan hak akses. Untuk mengaktifkan lingkup
+operasional akun gudang dan toko pada instalasi demo, jalankan juga:
+
+```bash
+php artisan db:seed --class=StockTransferLocationSeeder
+```
+
+Perintah tersebut membuat lokasi demo secara idempotent dan menugaskan akun
+`manajemen-gudang`, `staff-gudang`, `toko-internal`, serta `kasir` ke lokasi
+yang sesuai. Tanpa penugasan lokasi, kelompok menu Gudang atau Toko Internal
+memang disembunyikan oleh filter akses sidebar.
+
 ## Akun Demo
 
 Semua akun aktif, email sudah terverifikasi, dan memakai password:

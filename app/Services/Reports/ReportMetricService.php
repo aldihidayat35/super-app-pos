@@ -467,7 +467,7 @@ class ReportMetricService
             'rows' => DB::table('stocks')->join('products', 'products.id', '=', 'stocks.product_id')
                 ->leftJoin('work_locations', 'work_locations.id', '=', 'stocks.work_location_id')
                 ->whereIn('stocks.work_location_id', $filters['location_ids'])
-                ->selectRaw('products.sku, products.name as product, products.image_path, work_locations.name as location, stocks.quantity_on_hand, stocks.quantity_reserved, stocks.quantity_damaged, (stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) as available, '.Stock::inventoryValueSql().' as cost_value')
+                ->selectRaw('products.sku, products.name as product, products.main_image_path as image_path, work_locations.name as location, stocks.quantity_on_hand, stocks.quantity_reserved, stocks.quantity_damaged, (stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) as available, '.Stock::inventoryValueSql().' as cost_value')
                 ->orderBy('products.name')
                 ->limit(200)
                 ->get()

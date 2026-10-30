@@ -195,6 +195,7 @@ class StockTransferService
 
             foreach ($transfer->items as $item) {
                 $approved = Decimal::normalize($approvedQuantities[$item->id] ?? $item->quantity_approved);
+                $approvedBase = $this->toBaseQuantity($item, $approved);
 
                 if (Decimal::compare($approved, (string) $item->quantity_requested) > 0) {
                     throw ServiceException::validation("Qty approved produk {$item->product_sku_snapshot} tidak boleh melebihi request.");
@@ -213,19 +214,19 @@ class StockTransferService
                     ->firstOrNew([], ['quantity_on_hand' => '0.0000', 'quantity_reserved' => '0.0000', 'quantity_damaged' => '0.0000']);
                 $available = $stock->available_quantity;
 
-                if (Decimal::compare($available, $approved) < 0) {
+                if (Decimal::compare($available, $approvedBase) < 0) {
                     $location = $sourceBin instanceof WarehouseLocation ? $sourceBin->full_code : ($transfer->sourceWorkLocation->name ?? '-');
                     throw ServiceException::validation(
                         "Stok {$item->product_sku_snapshot} — {$item->product_name_snapshot} di {$location} tidak cukup. "
                         .'On hand: '.$stock->quantity_on_hand.'; reserved: '.$stock->quantity_reserved
-                        .'; rusak: '.$stock->quantity_damaged."; tersedia: {$available}; dibutuhkan: {$approved}; kurang: ".Decimal::sub($approved, $available).'.'
+                        .'; rusak: '.$stock->quantity_damaged."; tersedia: {$available}; dibutuhkan: {$approvedBase}; kurang: ".Decimal::sub($approvedBase, $available).'.'
                     );
                 }
                 $this->inventory->reserve(
                     product: $item->product,
                     workLocation: $transfer->sourceWorkLocation,
                     warehouseLocation: $sourceBin,
-                    quantity: $approved,
+                    quantity: $approvedBase,
                     actor: $actor,
                     reference: $this->reference($transfer),
                     reason: 'Reserve stok untuk transfer.',
@@ -233,7 +234,7 @@ class StockTransferService
                     metadata: ['stock_transfer_item_id' => $item->id],
                 );
 
-                $item->forceFill(['quantity_approved' => $approved, 'quantity_reserved' => $approved])->save();
+                $item->forceFill(['quantity_approved' => $approved, 'quantity_reserved' => $approvedBase])->save();
             }
 
             $transfer->forceFill(['status' => StockTransferStatus::APPROVED, 'approved_by' => $actor->id, 'approved_at' => now()])->save();
@@ -296,6 +297,7 @@ class StockTransferService
             $hasShipment = false;
             foreach ($transfer->items as $item) {
                 $shipped = Decimal::compare((string) $item->quantity_picked, '0') > 0 ? (string) $item->quantity_picked : (string) $item->quantity_approved;
+                $shippedBase = $this->toBaseQuantity($item, $shipped);
 
                 if (Decimal::compare($shipped, (string) $item->quantity_approved) > 0) {
                     throw ServiceException::validation("Qty shipped produk {$item->product_sku_snapshot} tidak boleh melebihi approved.");
@@ -311,7 +313,7 @@ class StockTransferService
                         product: $item->product,
                         sourceWorkLocation: $transfer->sourceWorkLocation,
                         sourceWarehouseLocation: $this->sourceBin($transfer, $item),
-                        quantity: $shipped,
+                        quantity: $shippedBase,
                         actor: $actor,
                         reference: $this->reference($transfer),
                         reason: 'Transfer stok dikirim dari sumber.',
@@ -401,12 +403,13 @@ class StockTransferService
                 }
 
                 if (Decimal::compare($received, '0') > 0) {
-                    $this->inventory->transferIn($item->product, $transfer->destinationWorkLocation, $this->destinationBin($transfer, $item), $received, $actor, $this->reference($transfer), 'Transfer diterima di tujuan.', "stock-transfer-{$transfer->id}-item-{$item->id}-receipt-{$receipt->id}-in", ['stock_transfer_item_id' => $item->id, 'stock_transfer_receipt_id' => $receipt->id, 'source_work_location' => $transfer->sourceWorkLocation, 'source_warehouse_location' => $this->sourceBin($transfer, $item)]);
+                    $this->inventory->transferIn($item->product, $transfer->destinationWorkLocation, $this->destinationBin($transfer, $item), $this->toBaseQuantity($item, $received), $actor, $this->reference($transfer), 'Transfer diterima di tujuan.', "stock-transfer-{$transfer->id}-item-{$item->id}-receipt-{$receipt->id}-in", ['stock_transfer_item_id' => $item->id, 'stock_transfer_receipt_id' => $receipt->id, 'source_work_location' => $transfer->sourceWorkLocation, 'source_warehouse_location' => $this->sourceBin($transfer, $item)]);
                 }
 
                 if (Decimal::compare($damaged, '0') > 0) {
-                    $this->inventory->transferIn($item->product, $transfer->destinationWorkLocation, $this->destinationBin($transfer, $item), $damaged, $actor, $this->reference($transfer), 'Transfer diterima dalam kondisi rusak.', "stock-transfer-{$transfer->id}-item-{$item->id}-receipt-{$receipt->id}-damaged-in", ['stock_transfer_item_id' => $item->id, 'stock_transfer_receipt_id' => $receipt->id]);
-                    $this->inventory->damage($item->product, $transfer->destinationWorkLocation, $this->destinationBin($transfer, $item), $damaged, $actor, $this->reference($transfer), 'Barang transfer rusak saat diterima.', "stock-transfer-{$transfer->id}-item-{$item->id}-receipt-{$receipt->id}-damaged-qc", ['stock_transfer_item_id' => $item->id, 'stock_transfer_receipt_id' => $receipt->id]);
+                    $damagedBase = $this->toBaseQuantity($item, $damaged);
+                    $this->inventory->transferIn($item->product, $transfer->destinationWorkLocation, $this->destinationBin($transfer, $item), $damagedBase, $actor, $this->reference($transfer), 'Transfer diterima dalam kondisi rusak.', "stock-transfer-{$transfer->id}-item-{$item->id}-receipt-{$receipt->id}-damaged-in", ['stock_transfer_item_id' => $item->id, 'stock_transfer_receipt_id' => $receipt->id]);
+                    $this->inventory->damage($item->product, $transfer->destinationWorkLocation, $this->destinationBin($transfer, $item), $damagedBase, $actor, $this->reference($transfer), 'Barang transfer rusak saat diterima.', "stock-transfer-{$transfer->id}-item-{$item->id}-receipt-{$receipt->id}-damaged-qc", ['stock_transfer_item_id' => $item->id, 'stock_transfer_receipt_id' => $receipt->id]);
                 }
 
                 $receipt->items()->create([
@@ -625,7 +628,10 @@ class StockTransferService
         foreach ($items as $itemData) {
             $product = Product::query()->with('baseUnit')->findOrFail($itemData['product_id']);
             $unitId = $itemData['unit_id'] ?? $product->base_unit_id;
-            $productUnit = ProductUnit::query()->where('product_id', $product->id)->where('unit_id', $unitId)->first();
+            $productUnit = ProductUnit::query()->with('unit')->where('product_id', $product->id)->where('unit_id', $unitId)->where('is_active', true)->first();
+            if ((int) $unitId !== (int) $product->base_unit_id && ! $productUnit instanceof ProductUnit) {
+                throw ServiceException::validation("Satuan tidak terdaftar untuk produk {$product->sku}.");
+            }
             $conversion = $productUnit instanceof ProductUnit ? $productUnit->conversion_factor : '1.000000';
             $requested = Decimal::normalize($itemData['quantity_requested'] ?? $itemData['quantity_approved'] ?? 0);
             $approved = Decimal::normalize($itemData['quantity_approved'] ?? $requested);
@@ -646,13 +652,18 @@ class StockTransferService
                 'destination_warehouse_location_id' => $itemData['destination_warehouse_location_id'] ?? $transfer->destination_warehouse_location_id,
                 'product_sku_snapshot' => $product->sku,
                 'product_name_snapshot' => $product->name,
-                'unit_name_snapshot' => $product->baseUnit?->name,
+                'unit_name_snapshot' => $productUnit instanceof ProductUnit ? $productUnit->unit->name : $product->baseUnit->name,
                 'conversion_factor_snapshot' => $conversion,
                 'quantity_requested' => $requested,
                 'quantity_approved' => $approved,
                 'notes' => $itemData['notes'] ?? null,
             ]);
         }
+    }
+
+    private function toBaseQuantity(StockTransferItem $item, string|int|float $quantity): string
+    {
+        return Decimal::mul($quantity, (string) $item->conversion_factor_snapshot, 4, 6, 4);
     }
 
     /** @return array{type: string, id: int, no: string} */

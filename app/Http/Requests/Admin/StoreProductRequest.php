@@ -45,6 +45,7 @@ class StoreProductRequest extends FormRequest
             'barcodes' => ['nullable', 'array'],
             'barcodes.*.code' => ['nullable', 'string', 'max:120', 'distinct', 'unique:product_barcodes,code'],
             'barcodes.*.type' => ['required_with:barcodes.*.code', 'in:barcode,qr'],
+            'barcodes.*.unit_id' => ['nullable', 'exists:units,id'],
             'units' => ['required', 'array', 'min:1'],
             'units.*.unit_id' => ['required', 'exists:units,id', 'distinct'],
             'units.*.name' => ['nullable', 'string', 'max:100'],

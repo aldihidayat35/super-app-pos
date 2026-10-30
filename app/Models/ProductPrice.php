@@ -13,7 +13,7 @@ class ProductPrice extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'product_id', 'branch_id', 'channel', 'price_ring', 'customer_category', 'min_price',
+        'product_id', 'branch_id', 'work_location_id', 'channel', 'price_ring', 'customer_category', 'min_price',
         'recommended_price', 'max_price', 'minimum_qty', 'priority', 'starts_at', 'ends_at', 'status', 'notes',
     ];
 
@@ -40,5 +40,10 @@ class ProductPrice extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function workLocation(): BelongsTo
+    {
+        return $this->belongsTo(WorkLocation::class);
     }
 }

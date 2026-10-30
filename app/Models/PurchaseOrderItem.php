@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LocksProductUnitOnTransaction;
 use App\Support\Decimal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseOrderItem extends Model
 {
+    use LocksProductUnitOnTransaction;
+
     protected $fillable = ['purchase_order_id', 'product_id', 'unit_id', 'product_sku_snapshot', 'product_name_snapshot', 'unit_name_snapshot', 'conversion_factor_snapshot', 'quantity_ordered', 'quantity_received', 'unit_price', 'discount_amount', 'tax_amount', 'subtotal'];
 
     protected function casts(): array

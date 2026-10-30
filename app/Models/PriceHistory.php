@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PriceHistory extends Model
 {
     protected $fillable = [
-        'priceable_type', 'priceable_id', 'product_id', 'customer_id', 'branch_id', 'channel', 'price_ring',
+        'priceable_type', 'priceable_id', 'product_id', 'customer_id', 'branch_id', 'work_location_id', 'channel', 'price_ring',
         'old_price', 'new_price', 'hpp_snapshot', 'minimum_price_snapshot', 'changed_by', 'source',
         'bulk_batch_id', 'reason', 'effective_at',
     ];

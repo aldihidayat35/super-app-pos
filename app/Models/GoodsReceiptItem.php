@@ -14,7 +14,8 @@ class GoodsReceiptItem extends Model
         'product_sku_snapshot', 'product_name_snapshot', 'unit_name_snapshot', 'conversion_factor_snapshot',
         'quantity_ordered', 'previously_received', 'outstanding_before', 'quantity_received',
         'quantity_accepted', 'quantity_rejected', 'quantity_damaged', 'quantity_returned_to_supplier',
-        'unit_price', 'landed_cost_allocated', 'batch_no', 'qc_notes', 'hpp_before', 'incoming_cost', 'hpp_after',
+        'unit_price', 'landed_cost_allocated', 'actual_unit_cost', 'sale_price',
+        'batch_no', 'qc_notes', 'hpp_before', 'incoming_cost', 'hpp_after',
     ];
 
     protected function casts(): array
@@ -31,6 +32,8 @@ class GoodsReceiptItem extends Model
             'quantity_returned_to_supplier' => 'decimal:4',
             'unit_price' => 'decimal:2',
             'landed_cost_allocated' => 'decimal:2',
+            'actual_unit_cost' => 'decimal:2',
+            'sale_price' => 'decimal:2',
             'hpp_before' => 'decimal:2',
             'incoming_cost' => 'decimal:2',
             'hpp_after' => 'decimal:2',

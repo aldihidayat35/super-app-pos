@@ -4,7 +4,9 @@ namespace Tests\Feature\Navigation;
 
 use App\Models\User;
 use App\Models\WorkLocation;
+use Database\Seeders\DemoFullApplicationSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\StockTransferLocationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -44,6 +46,21 @@ class SidebarNavigationTest extends TestCase
         $this->assertStringContainsString('Terima Transfer', $sidebar);
         $this->assertStringNotContainsString('Permintaan Restok Cabang', $sidebar);
         $this->assertStringNotContainsString('Penerimaan Transfer', $sidebar);
+    }
+
+    public function test_demo_head_store_and_cashier_accounts_see_internal_store_menu_after_location_seeding(): void
+    {
+        $this->seed(DemoFullApplicationSeeder::class);
+        $this->seed(StockTransferLocationSeeder::class);
+
+        foreach (['toko@gudangtoko.test', 'kasir@gudangtoko.test'] as $email) {
+            $user = User::query()->where('email', $email)->firstOrFail();
+
+            $this->assertTrue($user->hasPermittedWorkLocationType('branch'));
+
+            $this->actingAs($user);
+            $this->assertStringContainsString('Toko Internal', $this->renderSidebar());
+        }
     }
 
     private function userAtLocation(string $role, string $locationType): User

@@ -1,6 +1,6 @@
 /* ==========================================================================
-   GudangToko — Sidebar Icon Polish
-   Hanya styling ikon. Tidak mengubah teks menu / route / permission.
+   GudangToko — Sidebar Polish & Pin/Unpin Mode
+   Mendukung mode Pinned (selalu terbuka) dan Unpinned (icon-only + hover flyout)
    ========================================================================== */
 
 /* Container */
@@ -8,32 +8,195 @@
     background-color: var(--bs-app-sidebar-base-bg-color);
     border-right: 1px solid rgba(0, 0, 0, 0.05);
     box-shadow: 1px 0 8px rgba(0, 0, 0, 0.04);
+    display: flex !important;
+    flex-direction: column !important;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease !important;
 }
 
-/* Ensure sidebar wrapper has full height so scroll activates */
+/* Ensure sidebar wrapper has flexible scroll height between header and footer */
 .app-sidebar-menu {
-    height: 100%;
-    min-height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100% !important;
+    height: auto !important;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
 }
 
 .app-sidebar-wrapper {
-    height: auto;
+    flex: 1 1 auto;
     min-height: 0;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
     overflow-x: hidden;
     overflow-y: auto !important;
-    max-height: calc(100dvh - var(--gt-header-height, 44px) - 1.5rem);
-    padding-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
 }
 
 .app-sidebar-wrapper .menu {
     flex-grow: 1;
     overflow: visible;
-    padding-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+}
+
+/* Sidebar Header (Profile) */
+.app-sidebar-header {
+    flex-shrink: 0;
+    background-color: inherit;
+    transition: padding 0.2s ease, width 0.2s ease;
+}
+
+/* Sidebar Footer (Logout & Pin) */
+.app-sidebar-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+    background-color: inherit;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
+    transition: padding 0.2s ease;
+}
+
+[data-bs-theme='dark'] .app-sidebar-footer {
+    border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.app-sidebar-footer-actions {
+    transition: all 0.2s ease;
+}
+
+/* Base button styling matching menu links */
+.sidebar-action-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 10px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.sidebar-action-btn .sidebar-action-icon {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background-color: transparent;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.sidebar-action-btn .sidebar-action-icon i {
+    font-size: 1.35rem;
+    line-height: 1;
+    display: inline-flex;
+}
+
+/* Logout styling: Merah (Danger) outline matching menu icons */
+.sidebar-logout-btn {
+    color: var(--bs-danger, #f1416c);
+    background-color: transparent;
+}
+
+.sidebar-logout-btn .sidebar-action-label {
+    color: var(--bs-danger, #f1416c);
+}
+
+.sidebar-logout-icon i {
+    color: var(--bs-danger, #f1416c) !important;
+}
+
+.sidebar-logout-btn:hover {
+    background-color: rgba(241, 65, 108, 0.08) !important;
+    color: var(--bs-danger, #f1416c) !important;
+}
+
+.sidebar-logout-btn:hover .sidebar-logout-icon {
+    background-color: rgba(241, 65, 108, 0.12) !important;
+}
+
+.sidebar-logout-btn:hover .sidebar-logout-icon i {
+    color: var(--bs-danger, #f1416c) !important;
+}
+
+[data-bs-theme='dark'] .sidebar-logout-btn {
+    color: #ff6b8b;
+}
+
+[data-bs-theme='dark'] .sidebar-logout-btn .sidebar-action-label,
+[data-bs-theme='dark'] .sidebar-logout-icon i {
+    color: #ff6b8b !important;
+}
+
+[data-bs-theme='dark'] .sidebar-logout-btn:hover {
+    background-color: rgba(241, 65, 108, 0.14) !important;
+    color: #ff85a0 !important;
+}
+
+/* Pin styling: Hijau (Primary) outline matching menu icons */
+.sidebar-pin-btn {
+    color: var(--bs-primary, #17c653);
+    background-color: transparent;
+}
+
+.sidebar-pin-btn .sidebar-action-label {
+    color: var(--bs-primary, #17c653);
+}
+
+.sidebar-pin-icon-wrap i {
+    color: var(--bs-primary, #17c653) !important;
+}
+
+.sidebar-pin-btn:hover {
+    background-color: rgba(23, 198, 83, 0.08) !important;
+    color: var(--bs-primary, #17c653) !important;
+}
+
+.sidebar-pin-btn:hover .sidebar-pin-icon-wrap {
+    background-color: rgba(23, 198, 83, 0.12) !important;
+}
+
+.sidebar-pin-btn:hover .sidebar-pin-icon-wrap i {
+    color: var(--bs-primary, #17c653) !important;
+}
+
+/* Status Pinned: subtle active chip matching active home menu item */
+.sidebar-pin-btn.active,
+.sidebar-pin-btn.is-pinned {
+    background-color: rgba(23, 198, 83, 0.12) !important;
+    color: var(--bs-primary, #17c653) !important;
+}
+
+.sidebar-pin-btn.active .sidebar-pin-icon-wrap,
+.sidebar-pin-btn.is-pinned .sidebar-pin-icon-wrap {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.sidebar-pin-btn.active .sidebar-pin-icon-wrap i,
+.sidebar-pin-btn.is-pinned .sidebar-pin-icon-wrap i {
+    color: var(--bs-primary, #17c653) !important;
+    transform: rotate(-45deg);
+}
+
+.sidebar-pin-icon {
+    transition: transform 0.25s ease;
+}
+
+[data-bs-theme='dark'] .sidebar-pin-btn {
+    color: var(--bs-gray-400);
 }
 
 [data-bs-theme='dark'] #kt_app_sidebar {
@@ -312,4 +475,523 @@
 .menu-link:focus-visible {
     outline: 2px solid var(--bs-primary);
     outline-offset: -2px;
+}
+
+/* ==========================================================================
+   Desktop Pin/Unpin and Flyout Interactions
+   ========================================================================== */
+@media (min-width: 992px) {
+    /* Pinned layout (default) */
+    body:not([data-kt-app-sidebar-minimize="on"]) {
+        --bs-app-sidebar-width: 280px;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) #kt_app_sidebar {
+        width: 280px !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .app-wrapper {
+        margin-left: 280px !important;
+        transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .app-sidebar-header {
+        width: 280px !important;
+        max-width: 280px !important;
+        flex-shrink: 0 !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .sidebar-menu-header {
+        display: block !important;
+        height: auto !important;
+        padding: 8px 12px 4px 12px !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .sidebar-menu-header .menu-heading {
+        display: block !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .app-sidebar-footer {
+        width: 280px !important;
+        max-width: 280px !important;
+        padding: 10px 14px 12px 14px !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .app-sidebar-footer-actions {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .sidebar-logout-form {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        margin: 0 !important;
+        display: block !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .sidebar-logout-btn {
+        width: 100% !important;
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 8px 12px !important;
+        border-radius: 10px !important;
+        justify-content: flex-start !important;
+        background-color: transparent !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .sidebar-logout-btn .sidebar-action-label {
+        display: inline-block !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .sidebar-pin-btn {
+        flex-shrink: 0 !important;
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 8px 12px !important;
+        border-radius: 10px !important;
+        justify-content: center !important;
+    }
+
+    body:not([data-kt-app-sidebar-minimize="on"]) .sidebar-pin-btn .sidebar-action-label {
+        display: inline-block !important;
+    }
+
+    /* Unpinned (minimized) layout */
+    body[data-kt-app-sidebar-minimize="on"] {
+        --bs-app-sidebar-width: 76px !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar {
+        width: 76px !important;
+        overflow: visible !important;
+        z-index: 104;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] .app-wrapper {
+        margin-left: 76px !important;
+        transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Unpinned & Not Hovered: Compact Icon-Only View */
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) {
+        width: 76px !important;
+        max-width: 76px !important;
+        overflow: hidden !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .app-sidebar-header {
+        width: 76px !important;
+        max-width: 76px !important;
+        padding: 8px 6px 0 6px !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .app-sidebar-menu,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .app-sidebar-wrapper {
+        width: 76px !important;
+        max-width: 76px !important;
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    /* User Profile Card (only photo avatar) */
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-user-card {
+        width: 48px !important;
+        height: 48px !important;
+        max-width: 48px !important;
+        margin: 8px auto !important;
+        padding: 4px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 12px !important;
+        box-sizing: border-box !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-user-row {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-user-avatar {
+        display: inline-block !important;
+        width: 40px !important;
+        height: 40px !important;
+        margin: 0 auto !important;
+        flex-shrink: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-user-avatar img {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-user-details {
+        display: none !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-menu-separator {
+        width: 44px !important;
+        margin: 6px auto !important;
+    }
+
+    /* Header Menu Utama: Mutlak disembunyikan saat unpinned & not hovered */
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-menu-header,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-menu-header .menu-content,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-menu-header .menu-heading,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-heading {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    /* Menu Items */
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu {
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-item:not(.sidebar-menu-header) {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        margin-bottom: 4px !important;
+        padding: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-link {
+        width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        max-width: 44px !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-link .menu-icon {
+        width: 32px !important;
+        height: 32px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-link .menu-icon i,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-link .menu-icon .ki-outline {
+        display: inline-flex !important;
+        font-size: 1.35rem !important;
+        line-height: 1 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-link .menu-title,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-link .menu-arrow,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-bullet,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-sub,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-sub-accordion,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-item.show > .menu-sub {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        visibility: hidden !important;
+    }
+
+    /* Footer in unpinned state: Persis sama bentuk wadah 44x44 dengan menu icon */
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .app-sidebar-footer {
+        width: 76px !important;
+        max-width: 76px !important;
+        padding: 8px 6px 12px 6px !important;
+        box-sizing: border-box !important;
+        margin-top: auto !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-footer-separator {
+        width: 44px !important;
+        margin: 4px auto 8px auto !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .app-sidebar-footer-actions {
+        width: 100% !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-logout-form {
+        width: 44px !important;
+        max-width: 44px !important;
+        flex: 0 0 44px !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-logout-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        max-width: 44px !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+        background-color: transparent !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-logout-btn .sidebar-action-label {
+        display: none !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-logout-btn .sidebar-action-icon {
+        width: 32px !important;
+        height: 32px !important;
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-pin-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        max-width: 44px !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+        background-color: transparent !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-pin-btn .sidebar-action-label {
+        display: none !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-pin-btn .sidebar-action-icon {
+        width: 32px !important;
+        height: 32px !important;
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Unpinned & Hovered: Flyout Expanded View */
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover {
+        width: 280px !important;
+        box-shadow: 4px 0 28px rgba(0, 0, 0, 0.15) !important;
+        z-index: 1050;
+    }
+
+    [data-bs-theme='dark'] body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover {
+        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.45) !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-header,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-menu,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-wrapper,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-footer {
+        width: 280px !important;
+        max-width: 280px !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-header {
+        padding: 10px 12px 0 12px !important;
+        flex-shrink: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-wrapper {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-user-card {
+        width: auto !important;
+        height: auto !important;
+        max-width: none !important;
+        margin: 8px 4px !important;
+        padding: 12px !important;
+        display: block !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-user-row {
+        justify-content: flex-start !important;
+        gap: 0.75rem !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-user-avatar {
+        margin: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-user-details {
+        display: block !important;
+        animation: gtFadeIn 0.2s ease;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-menu-header {
+        display: block !important;
+        height: auto !important;
+        padding: 8px 12px 4px 12px !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        animation: gtFadeIn 0.2s ease;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-menu-header .menu-heading {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-menu-separator,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-footer-separator {
+        width: 100% !important;
+        margin: 6px 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item {
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-link {
+        width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        min-height: 40px !important;
+        padding: 9px 12px !important;
+        justify-content: flex-start !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-link .menu-icon {
+        margin-right: 8px !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-link .menu-title {
+        display: flex !important;
+        animation: gtFadeIn 0.2s ease;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-link .menu-arrow {
+        display: flex !important;
+        animation: gtFadeIn 0.2s ease;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.show > .menu-sub,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.here > .menu-sub {
+        display: block !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-footer {
+        width: 280px !important;
+        max-width: 280px !important;
+        padding: 10px 14px 12px 14px !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-footer-actions {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-logout-form {
+        width: auto !important;
+        flex: 1 1 auto !important;
+        margin: 0 !important;
+        display: block !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-logout-btn {
+        width: 100% !important;
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 8px 12px !important;
+        border-radius: 10px !important;
+        justify-content: flex-start !important;
+        background-color: transparent !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-logout-btn .sidebar-action-label {
+        display: inline-block !important;
+        animation: gtFadeIn 0.2s ease;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-pin-btn {
+        flex-shrink: 0 !important;
+        width: auto !important;
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 8px 12px !important;
+        border-radius: 10px !important;
+        justify-content: center !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-pin-btn .sidebar-action-label {
+        display: inline-block !important;
+        animation: gtFadeIn 0.2s ease;
+    }
+}
+
+@keyframes gtFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@media (max-width: 991.98px) {
+    .sidebar-pin-btn {
+        display: none !important;
+    }
+
+    .app-sidebar-footer {
+        padding: 10px 12px !important;
+    }
+
+    .sidebar-logout-form {
+        width: 100% !important;
+    }
 }

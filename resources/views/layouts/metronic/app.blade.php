@@ -12,8 +12,9 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700">
     <link rel="stylesheet" href="{{ asset('assets/vendor/metronic/css/style.bundle.css') }}">
     <link rel="stylesheet" href="{{ versioned_asset('assets/css/ki-icons-fallback.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/sidebar-custom.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/header-custom.css') }}">
+    <link rel="stylesheet" href="{{ versioned_asset('assets/css/sidebar-custom.css') }}">
+    <link rel="stylesheet" href="{{ versioned_asset('assets/css/header-custom.css') }}">
+    <link rel="stylesheet" href="{{ versioned_asset('assets/css/spa-transitions.css') }}">
     @vite(['resources/js/vendor.js', 'resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
     <script>
@@ -21,7 +22,12 @@
         window.hostUrl = @json(asset('assets') . '/');
     </script>
 </head>
-<body id="kt_app_body" class="app-default @yield('body_classes')" data-kt-app-header-fixed="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" @yield('body_attributes')>
+<body id="kt_app_body" class="app-default @yield('body_classes')" data-kt-app-header-fixed="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-hoverable="true" @yield('body_attributes')>
+    <script>
+        if (localStorage.getItem('gudangtoko-sidebar-pinned') === 'false' && window.innerWidth >= 992) {
+            document.body.setAttribute('data-kt-app-sidebar-minimize', 'on');
+        }
+    </script>
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
         <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
             @include('layouts.metronic.partials.header')
@@ -30,7 +36,7 @@
                 @include('layouts.metronic.partials.sidebar')
 
                 <main class="app-main flex-column flex-row-fluid mt-4 " id="kt_app_main" >
-                    <div class="d-flex flex-column flex-column-fluid ">
+                    <div class="d-flex flex-column flex-column-fluid" id="kt_app_main_content">
                         @include('layouts.metronic.partials.toolbar')
                         <div id="kt_app_content" class="app-content flex-column-fluid">
                             <div id="kt_app_content_container" class="app-container container-fluid mt-6">

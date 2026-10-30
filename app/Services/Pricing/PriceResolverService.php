@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\ProductUnit;
 use App\Models\User;
+use App\Models\WorkLocation;
 use App\Support\Decimal;
 use Illuminate\Support\Carbon;
 

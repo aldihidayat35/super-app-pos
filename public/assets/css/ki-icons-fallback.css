@@ -58,6 +58,8 @@
     --ki-svg-edit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 16-1 5 5-1L20 8l-4-4L4 16Zm10-10 4 4' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
     --ki-svg-trash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14m-9-3h4l1 3m2 0-1 14H8L7 7m3 4v6m4-6v6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     --ki-svg-eye: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z' fill='none' stroke='black' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+    --ki-svg-exit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpolyline points='16 17 21 12 16 7'/%3E%3Cline x1='21' y1='12' x2='9' y2='12'/%3E%3C/svg%3E");
+    --ki-svg-pin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 17h14v-2l-3-4V5h1V3H7v2h1v6l-3 4v2z'/%3E%3Cline x1='12' y1='17' x2='12' y2='22'/%3E%3C/svg%3E");
     --ki-svg-printer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 9V3h10v6M7 17H4V9h16v8h-3m-10-4h10v8H7v-8Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
     --ki-svg-download: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3v12m-5-5 5 5 5-5M4 20h16' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     --ki-svg-upload: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 17V5m-5 5 5-5 5 5M4 20h16' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -140,6 +142,9 @@ i.ki-switch { --ki-mask: var(--ki-svg-exchange); }
 i.ki-arrows-circle,
 i.ki-refresh { --ki-mask: var(--ki-svg-refresh); }
 i.ki-exit-right,
+i.ki-exit-left,
+i.ki-logout,
+i.ki-entrance-left { --ki-mask: var(--ki-svg-exit); }
 i.ki-login { --ki-mask: var(--ki-svg-arrow-right); }
 i.ki-exit-down { --ki-mask: var(--ki-svg-download); }
 
@@ -281,6 +286,7 @@ i.ki-badge { --ki-mask: var(--ki-svg-briefcase); }
 i.ki-up-box { --ki-mask: var(--ki-svg-upload); }
 i.ki-bank { --ki-mask: var(--ki-svg-bank); }
 i.ki-rocket { --ki-mask: var(--ki-svg-rocket); }
+i.ki-pin { --ki-mask: var(--ki-svg-pin); }
 
 /* Ikon dekoratif memakai bentuk grid default, bukan bullet. */
 i.ki-alert-triangle { --ki-mask: var(--ki-svg-alert-triangle); }

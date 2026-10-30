@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LocksProductUnitOnTransaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class B2bOrderItem extends Model
 {
+    use LocksProductUnitOnTransaction;
+
     protected $fillable = ['b2b_order_id', 'product_id', 'unit_id', 'sku_snapshot', 'product_name_snapshot', 'unit_name_snapshot', 'conversion_factor_snapshot', 'quantity', 'approved_quantity', 'base_quantity', 'reserved_quantity', 'issued_quantity', 'shortage_quantity', 'fulfillment_status', 'minimum_price_snapshot', 'selected_price', 'discount_amount', 'tax_amount', 'line_total', 'price_source', 'available_stock_snapshot', 'price_snapshot', 'notes'];
 
     protected function casts(): array

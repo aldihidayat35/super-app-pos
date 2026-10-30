@@ -1,0 +1,44 @@
+/* ==========================================================================
+   GudangToko — SPA Page Transitions & Top Progress Bar
+   Transisi perpindahan halaman halus tanpa layar putih berkedip.
+   ========================================================================== */
+
+/* Top Loading Progress Bar (YouTube/GitHub style) */
+.spa-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #17c653, #10b981, #22c55e);
+    box-shadow: 0 0 10px rgba(23, 198, 83, 0.75);
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+
+/* Redup halus saat memuat halaman baru */
+#kt_app_main_content.spa-loading {
+    opacity: 0.55 !important;
+    transition: opacity 0.15s ease !important;
+    pointer-events: none !important;
+}
+
+/* Animasi Masuk: Bergerak dari samping kanan ke kiri dengan fade-in */
+@keyframes spaSlideInRight {
+    0% {
+        opacity: 0;
+        transform: translate3d(30px, 0, 0);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+.spa-slide-enter {
+    animation: spaSlideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    will-change: transform, opacity;
+}
+

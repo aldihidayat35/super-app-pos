@@ -5,6 +5,7 @@ namespace App\Services\Product;
 use App\Exceptions\ServiceException;
 use App\Models\Product;
 use App\Models\ProductUnit;
+use App\Models\Unit;
 
 class UnitConversionService
 {
@@ -40,6 +41,21 @@ class UnitConversionService
                 throw new ServiceException('Faktor konversi setiap satuan harus lebih dari 0.');
             }
         });
+
+        $baseCode = strtoupper((string) Unit::query()->whereKey($baseUnitId)->value('code'));
+        if ($baseCode === 'PCS') {
+            $unitCodes = Unit::query()
+                ->whereIn('id', collect($units)->pluck('unit_id'))
+                ->pluck('code', 'id');
+            $standardFactors = ['PCS' => '1', 'LSN' => '12', 'GROS' => '144'];
+
+            foreach ($units as $unit) {
+                $code = strtoupper((string) $unitCodes->get((int) $unit['unit_id']));
+                if (isset($standardFactors[$code]) && bccomp((string) $unit['conversion_factor'], $standardFactors[$code], 6) !== 0) {
+                    throw new ServiceException("Faktor satuan {$code} terhadap PCS wajib {$standardFactors[$code]}.");
+                }
+            }
+        }
     }
 
     /** @param array<int, array<string, mixed>> $units */

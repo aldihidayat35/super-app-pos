@@ -117,6 +117,49 @@ class StockTransferWorkflowTest extends TestCase
         $this->assertSame('6.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
     }
 
+    public function test_transfer_in_sales_unit_mutates_stock_in_base_quantity(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $dozen = Unit::factory()->create(['code' => 'LSN-TRANSFER', 'name' => 'Lusin', 'symbol' => 'lsn']);
+        ProductUnit::query()->create([
+            'product_id' => $product->id,
+            'unit_id' => $dozen->id,
+            'name' => 'Lusin',
+            'conversion_factor' => '12.000000',
+            'is_sellable' => true,
+            'is_active' => true,
+        ]);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '24', $this->warehouseHead);
+
+        $transfer = $this->transfers->create([
+            'source_work_location_id' => $warehouse->work_location_id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'destination_work_location_id' => $branch->work_location_id,
+            'destination_warehouse_location_id' => $destinationBin->id,
+            'transfer_date' => now()->toDateString(),
+            'items' => [[
+                'product_id' => $product->id,
+                'unit_id' => $dozen->id,
+                'quantity_requested' => '1',
+                'quantity_approved' => '1',
+                'source_warehouse_location_id' => $sourceBin->id,
+                'destination_warehouse_location_id' => $destinationBin->id,
+            ]],
+            'action' => 'submit',
+        ], $this->warehouseStaff);
+        $transfer = $this->transfers->approve($transfer, $this->warehouseHead);
+        $this->assertSame('12.0000', $transfer->items->firstOrFail()->quantity_reserved);
+
+        $this->transfers->pack($transfer, ['items' => [$transfer->items->firstOrFail()->id => ['quantity_picked' => '1']]], $this->warehouseStaff);
+        $transfer = $this->transfers->ship($transfer, [], $this->warehouseStaff);
+        $item = $transfer->items->firstOrFail();
+        $this->transfers->receive($transfer, ['items' => [$item->id => ['quantity_received' => '1']]], $this->storeHead);
+
+        $this->assertSame('12.0000', Stock::query()->where('work_location_id', $warehouse->work_location_id)->firstOrFail()->quantity_on_hand);
+        $this->assertSame('12.0000', Stock::query()->where('work_location_id', $branch->work_location_id)->firstOrFail()->quantity_on_hand);
+    }
+
     public function test_draft_can_be_submitted_from_detail_page(): void
     {
         [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();

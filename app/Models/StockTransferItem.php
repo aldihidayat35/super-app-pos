@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LocksProductUnitOnTransaction;
 use App\Support\Decimal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,10 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StockTransferItem extends Model
 {
+    use LocksProductUnitOnTransaction;
+
     protected $fillable = [
         'stock_transfer_id', 'restock_request_item_id', 'product_id', 'unit_id', 'source_warehouse_location_id',
         'destination_warehouse_location_id', 'product_sku_snapshot', 'product_name_snapshot', 'unit_name_snapshot',
-        'conversion_factor_snapshot', 'quantity_requested', 'quantity_approved', 'quantity_reserved',
+        'conversion_factor_snapshot', 'source_sale_price_snapshot', 'destination_sale_price', 'quantity_requested', 'quantity_approved', 'quantity_reserved',
         'quantity_picked', 'quantity_short', 'quantity_shipped', 'quantity_received', 'quantity_damaged',
         'quantity_discrepancy', 'notes',
     ];
@@ -21,6 +24,8 @@ class StockTransferItem extends Model
     {
         return [
             'conversion_factor_snapshot' => 'decimal:6',
+            'source_sale_price_snapshot' => 'decimal:2',
+            'destination_sale_price' => 'decimal:2',
             'quantity_requested' => 'decimal:4',
             'quantity_approved' => 'decimal:4',
             'quantity_reserved' => 'decimal:4',

@@ -46,6 +46,21 @@ const initializeStockTransferForm = () => {
     const hideFeedback = () => feedback?.classList.add('d-none');
     const effectiveSourceBin = (row) => row?.querySelector('.source-bin-select')?.value || defaultSourceBin?.value || '';
 
+    const populateUnits = (row, units = []) => {
+        const unitSelect = row?.querySelector('.unit-select');
+        const preview = row?.querySelector('.unit-conversion-preview');
+        if (!unitSelect) return;
+        unitSelect.innerHTML = '';
+        units.forEach((unit, index) => unitSelect.add(new Option(unit.text, unit.id, index === 0, index === 0)));
+        if (!units.length) unitSelect.add(new Option('Satuan dasar', '', true, true));
+        const refreshPreview = () => {
+            const unit = units.find((candidate) => String(candidate.id) === String(unitSelect.value));
+            if (preview) preview.textContent = unit && Number(unit.factor) !== 1 ? `1 ${unit.text} = ${Number(unit.factor)} satuan dasar` : '';
+        };
+        unitSelect.onchange = refreshPreview;
+        refreshPreview();
+    };
+
     const resetProduct = (row, notify = false) => {
         const select = row?.querySelector('.product-select');
         if (!select) return;
@@ -53,6 +68,7 @@ const initializeStockTransferForm = () => {
         destroy(select);
         select.innerHTML = '<option value="">Pilih lokasi ambil terlebih dahulu</option>';
         select.disabled = true;
+        populateUnits(row);
         if (notify && hadProduct) showFeedback('Produk dikosongkan karena lokasi ambil berubah.', 'info');
     };
 
@@ -147,6 +163,9 @@ const initializeStockTransferForm = () => {
                 searching: () => 'Mencari produk…',
                 errorLoading: () => 'Produk gagal dimuat. Silakan coba kembali.',
             },
+        });
+        window.$(select).off('select2:select.stock-transfer-unit').on('select2:select.stock-transfer-unit', (event) => {
+            populateUnits(row, event.params?.data?.units || []);
         });
     };
 

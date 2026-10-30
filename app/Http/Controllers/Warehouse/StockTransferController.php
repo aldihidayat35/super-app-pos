@@ -106,7 +106,7 @@ class StockTransferController extends Controller
             abort_unless($locationIsValid, 422, 'Lokasi ambil tidak sesuai dengan lokasi kerja sumber.');
 
             $query = Product::query()
-                ->with('category')
+                ->with(['category', 'baseUnit', 'units.unit'])
                 ->where('status', 'active')
                 ->whereHas('stocks', fn ($stock) => $stock
                     ->where('work_location_id', $workLocationId)
@@ -124,8 +124,20 @@ class StockTransferController extends Controller
                     'text' => "{$product->sku} — {$product->name}",
                     'sku' => $product->sku,
                     'name' => $product->name,
-                    'category' => $product->category?->name ?? 'Tanpa kategori',
+                    'category' => $product->category->name,
                     'image_url' => $product->main_image_url,
+                    'units' => collect([[
+                        'id' => $product->base_unit_id,
+                        'text' => $product->baseUnit->name,
+                        'factor' => '1.000000',
+                    ]])->merge($product->units
+                        ->where('is_active', true)
+                        ->where('unit_id', '!=', $product->base_unit_id)
+                        ->map(fn ($unit): array => [
+                            'id' => $unit->unit_id,
+                            'text' => $unit->unit->name,
+                            'factor' => (string) $unit->conversion_factor,
+                        ]))->values(),
                 ])->values(),
                 'pagination' => ['more' => $products->hasMorePages()],
             ]);

@@ -271,9 +271,12 @@ class GoodsReceiptService
         $hppBefore = Decimal::normalize($product->cost_price ?? 0, 2);
         $lineCost = $this->acceptedLineCosts($receipt)[$item->id] ?? '0.00';
         $incomingCost = Decimal::add($lineCost, $landedCost, 2);
-        $oldInventoryValue = Decimal::mul($beforeQty, $hppBefore);
         $qtyAfter = Decimal::add($beforeQty, $acceptedBase);
-        $hppAfter = Decimal::div(Decimal::add($oldInventoryValue, $incomingCost, 2), $qtyAfter, 2, 4, 2);
+
+        // HPP aktual per item = actual_unit_cost dari GoodsReceiptItem; fallback ke unit_price
+        $actualUnitCost = filled($item->actual_unit_cost)
+            ? Decimal::normalize((string) $item->actual_unit_cost, 2)
+            : Decimal::normalize((string) $item->unit_price, 2);
 
         $mutation = $this->inventory->receive(
             product: $product,
@@ -287,12 +290,14 @@ class GoodsReceiptService
             metadata: ['goods_receipt_item_id' => $item->id],
         );
 
-        $product->forceFill(['cost_price' => $hppAfter])->save();
+        // TIDAK lagi update products.cost_price dengan moving average;
+        // products.cost_price hanya jadi fallback kompatibilitas, tidak diupdate di sini.
         $item->forceFill([
             'landed_cost_allocated' => $landedCost,
+            'actual_unit_cost' => $actualUnitCost,
             'hpp_before' => $hppBefore,
             'incoming_cost' => $incomingCost,
-            'hpp_after' => $hppAfter,
+            'hpp_after' => $actualUnitCost,
         ])->save();
 
         ProductCostHistory::query()->create([
@@ -300,14 +305,14 @@ class GoodsReceiptService
             'supplier_id' => $receipt->supplier_id,
             'goods_receipt_id' => $receipt->id,
             'goods_receipt_item_id' => $item->id,
-            'method' => 'moving_average',
+            'method' => 'actual_batch',
             'qty_before' => $beforeQty,
             'qty_incoming' => $acceptedBase,
             'qty_after' => $qtyAfter,
             'hpp_before' => $hppBefore,
-            'incoming_cost' => $incomingCost,
+            'incoming_cost' => $incomingCost,       // total biaya masuk termasuk landed cost
             'landed_cost_allocated' => $landedCost,
-            'hpp_after' => $hppAfter,
+            'hpp_after' => $actualUnitCost,          // HPP aktual per item, bukan rata-rata
             'effective_at' => now(),
         ]);
 
@@ -316,12 +321,21 @@ class GoodsReceiptService
             [
                 'supplier_id' => $receipt->supplier_id,
                 'stock_id' => $mutation->stock_id,
+                'work_location_id' => $destination->id,
+                'warehouse_location_id' => $bin?->id,
                 'goods_receipt_id' => $receipt->id,
                 'goods_receipt_item_id' => $item->id,
+                'source_type' => 'goods_receipt',
+                'source_id' => $receipt->id,
+                'source_item_id' => $item->id,
+                'unit_id' => $item->unit_id,
+                'conversion_factor_snapshot' => $item->conversion_factor_snapshot,
                 'received_at' => $receipt->received_at,
-                'cost_price' => $hppAfter,
+                'cost_price' => $actualUnitCost,                         // HPP aktual per item
+                'entry_sale_price_snapshot' => $item->sale_price,
                 'quantity_on_hand' => Decimal::add($acceptedBase, $item->damagedBaseQuantity()),
                 'quantity_reserved' => 0,
+                'quantity_damaged' => $item->damagedBaseQuantity(),
                 'status' => 'active',
             ],
         );

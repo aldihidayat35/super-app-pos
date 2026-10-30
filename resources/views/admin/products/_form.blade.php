@@ -41,7 +41,7 @@
                     <div class="col-md-3"><x-metronic.form-group name="color" label="Warna"><input name="color" value="{{ old('color', $product->color) }}" class="form-control"></x-metronic.form-group></div>
                     <div class="col-md-3"><x-metronic.form-group name="material" label="Material"><input name="material" value="{{ old('material', $product->material) }}" class="form-control"></x-metronic.form-group></div>
                     <div class="col-md-4"><x-metronic.form-group name="status" label="Status" required><select name="status" class="form-select">@foreach($statuses as $value => $label)<option value="{{ $value }}" @selected(old('status', $product->status?->value ?? 'active') === $value)>{{ $label }}</option>@endforeach</select></x-metronic.form-group></div>
-                    <div class="col-md-4"><x-metronic.form-group name="base_unit_id" label="Satuan Dasar" required><select name="base_unit_id" class="form-select @error('base_unit_id') is-invalid @enderror">@foreach($units as $unit)<option value="{{ $unit->id }}" @selected((int) old('base_unit_id', $product->base_unit_id) === $unit->id)>{{ $unit->name }} ({{ $unit->symbol }})</option>@endforeach</select></x-metronic.form-group></div>
+                    <div class="col-md-4"><x-metronic.form-group name="base_unit_id" label="Satuan Dasar" required><select name="base_unit_id" class="form-select @error('base_unit_id') is-invalid @enderror" data-base-unit-select>@foreach($units as $unit)<option value="{{ $unit->id }}" data-unit-code="{{ strtoupper($unit->code) }}" @selected((int) old('base_unit_id', $product->base_unit_id) === $unit->id)>{{ $unit->name }} ({{ $unit->symbol }})</option>@endforeach</select></x-metronic.form-group></div>
                     <div class="col-md-4"><x-metronic.form-group name="default_warehouse_id" label="Lokasi Default"><select name="default_warehouse_id" class="form-select"><option value="">Belum ditentukan</option>@foreach($warehouses as $warehouse)<option value="{{ $warehouse->id }}" @selected((int) old('default_warehouse_id', $product->default_warehouse_id) === $warehouse->id)>{{ $warehouse->name }}</option>@endforeach</select></x-metronic.form-group></div>
                 </div>
                 <x-metronic.form-group name="description" label="Deskripsi"><textarea name="description" rows="3" class="form-control">{{ old('description', $product->description) }}</textarea></x-metronic.form-group>
@@ -87,14 +87,15 @@
                                     <select name="units[{{ $index }}][unit_id]" class="form-select form-select-solid @error("units.$index.unit_id") is-invalid @enderror" data-control="native" data-unit-select required>
                                         <option value="">Pilih satuan</option>
                                         @foreach($units as $unit)
-                                            <option value="{{ $unit->id }}" @selected((int) ($row['unit_id'] ?? 0) === $unit->id)>{{ $unit->name }} ({{ $unit->symbol }})</option>
+                                            <option value="{{ $unit->id }}" data-unit-code="{{ strtoupper($unit->code) }}" @selected((int) ($row['unit_id'] ?? 0) === $unit->id)>{{ $unit->name }} ({{ $unit->symbol }})</option>
                                         @endforeach
                                     </select>
                                     @error("units.$index.unit_id")<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-12 col-md-6 col-lg-3">
                                     <label class="form-label fw-semibold required">Faktor ke Satuan Dasar</label>
-                                    <input type="number" step="0.000001" min="0.000001" name="units[{{ $index }}][conversion_factor]" value="{{ $row['conversion_factor'] ?? 1 }}" class="form-control form-control-solid @error("units.$index.conversion_factor") is-invalid @enderror" required>
+                                    <input type="number" step="0.000001" min="0.000001" name="units[{{ $index }}][conversion_factor]" value="{{ $row['conversion_factor'] ?? 1 }}" class="form-control form-control-solid @error("units.$index.conversion_factor") is-invalid @enderror" data-conversion-factor required>
+                                    <div class="form-text" data-conversion-help></div>
                                     @error("units.$index.conversion_factor")<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-12 col-md-6 col-lg-3">
@@ -129,7 +130,7 @@
         <div class="tab-pane fade" id="tab_barcode">
             <x-metronic.card title="Barcode dan QR">
                 @foreach($oldBarcodes as $index => $barcode)
-                    <div class="row mb-3"><input type="hidden" name="barcodes[{{ $index }}][id]" value="{{ $barcode['id'] ?? '' }}"><div class="col-md-8"><x-metronic.form-group name="barcodes.{{ $index }}.code" label="Kode Barcode/QR"><input name="barcodes[{{ $index }}][code]" value="{{ $barcode['code'] ?? '' }}" class="form-control"></x-metronic.form-group></div><div class="col-md-4"><x-metronic.form-group name="barcodes.{{ $index }}.type" label="Tipe"><select name="barcodes[{{ $index }}][type]" class="form-select"><option value="barcode" @selected(($barcode['type'] ?? 'barcode') === 'barcode')>Barcode</option><option value="qr" @selected(($barcode['type'] ?? '') === 'qr')>QR</option></select></x-metronic.form-group></div></div>
+                    <div class="row mb-3"><input type="hidden" name="barcodes[{{ $index }}][id]" value="{{ $barcode['id'] ?? '' }}"><div class="col-md-6"><x-metronic.form-group name="barcodes.{{ $index }}.code" label="Kode Barcode/QR"><input name="barcodes[{{ $index }}][code]" value="{{ $barcode['code'] ?? '' }}" class="form-control"></x-metronic.form-group></div><div class="col-md-3"><x-metronic.form-group name="barcodes.{{ $index }}.type" label="Tipe"><select name="barcodes[{{ $index }}][type]" class="form-select"><option value="barcode" @selected(($barcode['type'] ?? 'barcode') === 'barcode')>Barcode</option><option value="qr" @selected(($barcode['type'] ?? '') === 'qr')>QR</option></select></x-metronic.form-group></div><div class="col-md-3"><x-metronic.form-group name="barcodes.{{ $index }}.unit_id" label="Satuan Barcode"><select name="barcodes[{{ $index }}][unit_id]" class="form-select"><option value="">Satuan dasar</option>@foreach($units as $unit)<option value="{{ $unit->id }}" @selected((int)($barcode['unit_id'] ?? 0) === $unit->id)>{{ $unit->name }} ({{ $unit->symbol }})</option>@endforeach</select></x-metronic.form-group></div></div>
                 @endforeach
                 <div class="form-text">Tambahkan baris barcode baru lewat edit setelah produk tersimpan jika butuh banyak barcode.</div>
             </x-metronic.card>
@@ -277,9 +278,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== UNIT MANAGEMENT ==========
     let unitIndex = {{ count($oldUnits) }};
-    const availableUnits = @json($units->map(fn ($unit) => ['id' => $unit->id, 'text' => $unit->name.' ('.$unit->symbol.')'])->values());
+    const availableUnits = @json($units->map(fn ($unit) => ['id' => $unit->id, 'code' => strtoupper($unit->code), 'text' => $unit->name.' ('.$unit->symbol.')'])->values());
     const unitsContainer = document.getElementById('unitsContainer');
     const addUnitBtn = document.getElementById('addUnitBtn');
+    const baseUnitSelect = document.querySelector('[data-base-unit-select]');
+    const standardPcsFactors = {PCS: '1', LSN: '12', GROS: '144'};
+
+    function applyConversionDefault(row) {
+        const select = row.querySelector('[data-unit-select]');
+        const factor = row.querySelector('[data-conversion-factor]');
+        const help = row.querySelector('[data-conversion-help]');
+        if (!select || !factor) return;
+
+        const baseCode = baseUnitSelect?.selectedOptions[0]?.dataset.unitCode?.toUpperCase() || '';
+        const unitCode = select.selectedOptions[0]?.dataset.unitCode?.toUpperCase() || '';
+        const standardFactor = baseCode === 'PCS' ? standardPcsFactors[unitCode] : null;
+        const isBase = String(select.value) === String(baseUnitSelect?.value || '');
+
+        if (isBase || standardFactor) {
+            factor.value = isBase ? '1' : standardFactor;
+            factor.readOnly = true;
+            if (help) help.textContent = isBase
+                ? 'Satuan dasar selalu menggunakan faktor 1.'
+                : `Otomatis: 1 ${unitCode} = ${standardFactor} PCS.`;
+            return;
+        }
+
+        factor.readOnly = false;
+        if (help) help.textContent = 'Isi sesuai jumlah satuan dasar dalam satu kemasan.';
+    }
 
     function createUnitRow(index) {
         const row = document.createElement('div');
@@ -305,7 +332,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="col-12 col-md-6 col-lg-3">
                     <label class="form-label fw-semibold required">Faktor ke Satuan Dasar</label>
-                    <input type="number" step="0.000001" min="0.000001" name="units[${index}][conversion_factor]" value="1" class="form-control form-control-solid" required>
+                    <input type="number" step="0.000001" min="0.000001" name="units[${index}][conversion_factor]" value="1" class="form-control form-control-solid" data-conversion-factor required>
+                    <div class="form-text" data-conversion-help></div>
                 </div>
                 <div class="col-12 col-md-6 col-lg-3">
                     <label class="form-label fw-semibold">Label Tampilan</label>
@@ -325,7 +353,11 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         const select = row.querySelector('[data-unit-select]');
-        availableUnits.forEach((unit) => select.add(new Option(unit.text, String(unit.id))));
+        availableUnits.forEach((unit) => {
+            const option = new Option(unit.text, String(unit.id));
+            option.dataset.unitCode = unit.code;
+            select.add(option);
+        });
 
         return row;
     }
@@ -342,6 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 removeButton.disabled = rows.length === 1;
                 removeButton.title = rows.length === 1 ? 'Minimal satu satuan harus tersedia' : 'Hapus satuan';
             }
+            applyConversionDefault(row);
         });
     }
 
@@ -364,6 +397,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    unitsContainer.addEventListener('change', function(e) {
+        if (e.target.matches('[data-unit-select]')) applyConversionDefault(e.target.closest('.unit-row'));
+    });
+    baseUnitSelect?.addEventListener('change', refreshUnitRows);
 
     refreshUnitRows();
 

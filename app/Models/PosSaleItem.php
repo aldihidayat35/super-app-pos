@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LocksProductUnitOnTransaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PosSaleItem extends Model
 {
+    use LocksProductUnitOnTransaction;
+
     protected $fillable = [
         'pos_sale_id', 'product_id', 'unit_id', 'warehouse_location_id', 'sku_snapshot', 'product_name_snapshot',
         'unit_name_snapshot', 'conversion_factor_snapshot', 'quantity', 'base_quantity', 'hpp_snapshot',

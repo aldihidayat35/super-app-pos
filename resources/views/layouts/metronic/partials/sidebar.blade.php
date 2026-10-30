@@ -62,53 +62,56 @@
     data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true"
     data-kt-drawer-width="280px" data-kt-drawer-direction="start"
     data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle" aria-label="Navigasi utama">
-    <div class="app-sidebar-menu overflow-hidden flex-column-fluid">
-        <div class="app-sidebar-wrapper hover-scroll-overlay-y my-3 px-3" data-kt-scroll="true"
-            data-kt-scroll-height="100%" data-kt-scroll-save-state="true">
-            <div class="menu menu-column menu-rounded menu-sub-indention fw-semibold" data-kt-menu="true">
-                {{-- User info card - Modern Metronic style --}}
-                <div class="mx-1 my-2 p-3 rounded-3 bg-light-primary bg-opacity-20 border border-primary border-opacity-10 shadow-xs">
-                    <div class="d-flex align-items-center gap-3">
-                        {{-- Avatar --}}
-                        <a href="{{ route('profile.edit') }}" class="position-relative flex-shrink-0 text-decoration-none" style="width: 40px; height: 40px;" title="Lihat Profil">
-                            <img src="{{ $avatarUrl }}" alt="{{ $displayName }}" class="w-100 h-100 rounded-circle object-fit-cover border border-2 border-body shadow-xs" style="display: block;">
-                            <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-body rounded-circle" style="width: 10px; height: 10px;" title="Online"></span>
+
+    {{-- Header Sidebar: Profil Pengguna (Fixed / Tidak ikut scroll) --}}
+    <div class="app-sidebar-header d-flex flex-column flex-shrink-0 px-3 pt-3 pb-1" id="kt_app_sidebar_header">
+        <div class="sidebar-user-card mx-1 my-1 p-3 rounded-3 bg-light-primary bg-opacity-20 border border-primary border-opacity-10 shadow-xs">
+            <div class="d-flex align-items-center gap-3 sidebar-user-row">
+                {{-- Avatar --}}
+                <a href="{{ route('profile.edit') }}" class="sidebar-user-avatar position-relative flex-shrink-0 text-decoration-none" style="width: 40px; height: 40px;" title="Lihat Profil">
+                    <img src="{{ $avatarUrl }}" alt="{{ $displayName }}" class="w-100 h-100 rounded-circle object-fit-cover border border-2 border-body shadow-xs" style="display: block;">
+                    <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-body rounded-circle" style="width: 10px; height: 10px;" title="Online"></span>
+                </a>
+
+                {{-- User detail --}}
+                <div class="sidebar-user-details flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <a href="{{ route('profile.edit') }}" class="fw-bold text-gray-900 text-hover-primary fs-6 text-truncate pe-1 text-decoration-none" title="{{ $displayName }}">
+                            {{ $displayName }}
                         </a>
+                        <a href="{{ route('profile.edit') }}" class="btn btn-icon btn-custom btn-active-color-primary w-20px h-20px text-gray-400 text-hover-primary" title="Pengaturan Akun" aria-label="Pengaturan Akun">
+                            <i class="ki-outline ki-setting-3 fs-6"></i>
+                        </a>
+                    </div>
 
-                        {{-- User detail --}}
-                        <div class="flex-grow-1 min-w-0">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <a href="{{ route('profile.edit') }}" class="fw-bold text-gray-900 text-hover-primary fs-6 text-truncate pe-1 text-decoration-none" title="{{ $displayName }}">
-                                    {{ $displayName }}
-                                </a>
-                                <a href="{{ route('profile.edit') }}" class="btn btn-icon btn-custom btn-active-color-primary w-20px h-20px text-gray-400 text-hover-primary" title="Pengaturan Akun" aria-label="Pengaturan Akun">
-                                    <i class="ki-outline ki-setting-3 fs-6"></i>
-                                </a>
-                            </div>
+                    <div class="d-flex align-items-center gap-1 mt-1">
+                        <span class="badge badge-light-primary fw-semibold fs-9 px-2 py-0.5 text-truncate" style="max-width: 130px;" title="{{ $rolesString }}">
+                            {{ $primaryRoleLabel }}
+                        </span>
+                        @if ($userRoles->count() > 1)
+                            <span class="badge badge-light-secondary text-gray-600 fw-bold fs-9 px-1" title="{{ $rolesString }}">
+                                +{{ $userRoles->count() - 1 }}
+                            </span>
+                        @endif
+                    </div>
 
-                            <div class="d-flex align-items-center gap-1 mt-1">
-                                <span class="badge badge-light-primary fw-semibold fs-9 px-2 py-0.5 text-truncate" style="max-width: 130px;" title="{{ $rolesString }}">
-                                    {{ $primaryRoleLabel }}
-                                </span>
-                                @if ($userRoles->count() > 1)
-                                    <span class="badge badge-light-secondary text-gray-600 fw-bold fs-9 px-1" title="{{ $rolesString }}">
-                                        +{{ $userRoles->count() - 1 }}
-                                    </span>
-                                @endif
-
-                            </div>
-
-                            <div class="d-flex align-items-center gap-1 text-gray-600 fs-9 mt-1 text-truncate" title="{{ $workLocationName ?: 'Semua Lokasi' }}">
-                                <i class="{{ $workLocationIcon }} fs-8 text-primary"></i>
-                                <span class="text-truncate">{{ $workLocationName ?: 'Semua Lokasi' }}</span>
-                            </div>
-                        </div>
+                    <div class="d-flex align-items-center gap-1 text-gray-600 fs-9 mt-1 text-truncate" title="{{ $workLocationName ?: 'Semua Lokasi' }}">
+                        <i class="{{ $workLocationIcon }} fs-8 text-primary"></i>
+                        <span class="text-truncate">{{ $workLocationName ?: 'Semua Lokasi' }}</span>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="separator separator-dashed my-2 mx-1 opacity-75"></div>
+        <div class="separator separator-dashed my-2 mx-1 opacity-75 sidebar-menu-separator"></div>
+    </div>
 
-                <div class="menu-item pt-2 pb-1">
+    {{-- Body Sidebar: Menu Navigasi (Scrollable) --}}
+    <div class="app-sidebar-menu overflow-hidden flex-column-fluid">
+        <div class="app-sidebar-wrapper hover-scroll-overlay-y my-2 px-3" data-kt-scroll="true"
+            data-kt-scroll-height="100%" data-kt-scroll-save-state="true">
+            <div class="menu menu-column menu-rounded menu-sub-indention fw-semibold" data-kt-menu="true">
+                <div class="menu-item pt-1 pb-1 sidebar-menu-header">
                     <div class="menu-content">
                         <span class="menu-heading fw-bold text-uppercase fs-7 text-gray-500">Menu Utama</span>
                     </div>
@@ -131,7 +134,7 @@
                     @if ($children->isNotEmpty())
                         <div class="menu-item menu-accordion {{ $isOpen ? 'here show' : '' }}"
                             data-kt-menu-trigger="click">
-                            <span class="menu-link {{ $isOpen ? 'active' : '' }}">
+                            <span class="menu-link {{ $isOpen ? 'active' : '' }}" title="{{ $item['label'] }}">
                                 <span class="menu-icon">
                                     <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                                 </span>
@@ -142,7 +145,7 @@
                                 @foreach ($children as $child)
                                     <div class="menu-item">
                                         <a class="menu-link {{ request()->routeIs(...$child['active']) ? 'active' : '' }}"
-                                            href="{{ route($child['route']) }}">
+                                            href="{{ route($child['route']) }}" title="{{ $child['label'] }}">
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">{{ $child['label'] }}</span>
                                         </a>
@@ -152,12 +155,11 @@
                         </div>
                     @else
                         <div class="menu-item">
-                            <a class="menu-link {{ $isOpen ? 'active' : '' }}" href="{{ route($item['route']) }}">
+                            <a class="menu-link {{ $isOpen ? 'active' : '' }}" href="{{ route($item['route']) }}" title="{{ $item['label'] }}">
                                 <span class="menu-icon">
                                     <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                                 </span>
                                 <span class="menu-title">{{ $item['label'] }}</span>
-
                             </a>
                         </div>
                     @endif
@@ -167,6 +169,31 @@
                     </div>
                 @endforelse
             </div>
+        </div>
+    </div>
+
+    {{-- Footer Sidebar: Logout + Pin/Unpin --}}
+    <div class="app-sidebar-footer d-flex flex-column flex-shrink-0 px-3 py-3" id="kt_app_sidebar_footer">
+        <div class="separator separator-dashed mb-3 opacity-75 sidebar-footer-separator"></div>
+        <div class="app-sidebar-footer-actions d-flex align-items-center gap-2">
+            {{-- Tombol Logout --}}
+            <form method="POST" action="{{ route('logout') }}" class="m-0 flex-grow-1 sidebar-logout-form">
+                @csrf
+                <button type="submit" class="sidebar-action-btn sidebar-logout-btn" title="Keluar dari akun">
+                    <span class="sidebar-action-icon sidebar-logout-icon">
+                        <i class="ki-outline ki-exit-right"></i>
+                    </span>
+                    <span class="sidebar-action-label ms-2 fw-semibold">Keluar</span>
+                </button>
+            </form>
+
+            {{-- Tombol Pin / Unpin --}}
+            <button type="button" id="kt_app_sidebar_pin_btn" class="sidebar-action-btn sidebar-pin-btn" title="Pin / Unpin Sidebar" aria-label="Pin atau Unpin Sidebar">
+                <span class="sidebar-action-icon sidebar-pin-icon-wrap">
+                    <i class="ki-outline ki-pin sidebar-pin-icon"></i>
+                </span>
+                <span class="sidebar-action-label sidebar-pin-label ms-2 fw-semibold">Pin</span>
+            </button>
         </div>
     </div>
 </aside>

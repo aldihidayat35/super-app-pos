@@ -69,14 +69,15 @@ class ProductMasterTest extends TestCase
                 ['unit_id' => $pack->id, 'conversion_factor' => 12, 'is_sellable' => 1, 'is_active' => 1],
             ],
             'barcodes' => [
-                ['code' => '8991234567890', 'type' => 'barcode'],
+                ['code' => '8991234567890', 'type' => 'barcode', 'unit_id' => $pack->id],
             ],
         ]);
 
         $response->assertRedirect();
         $product = Product::query()->where('sku', 'PRD-TEST-001')->firstOrFail();
         $this->assertDatabaseHas('product_units', ['product_id' => $product->id, 'unit_id' => $pcs->id, 'is_base' => true]);
-        $this->assertDatabaseHas('product_barcodes', ['product_id' => $product->id, 'code' => '8991234567890']);
+        $packProductUnit = ProductUnit::query()->where('product_id', $product->id)->where('unit_id', $pack->id)->firstOrFail();
+        $this->assertDatabaseHas('product_barcodes', ['product_id' => $product->id, 'product_unit_id' => $packProductUnit->id, 'code' => '8991234567890']);
         $this->assertNotNull($product->fresh()->main_image_path);
 
         $this->actingAs($this->admin)->post(route('admin.products.store'), [
@@ -218,6 +219,30 @@ class ProductMasterTest extends TestCase
         $service->syncProductUnits($product, [
             ['unit_id' => $productUnit->unit_id, 'conversion_factor' => 10, 'is_sellable' => true, 'is_active' => true],
         ]);
+    }
+
+    public function test_standard_dozen_factor_cannot_be_manipulated_when_base_unit_is_pieces(): void
+    {
+        $category = ProductCategory::factory()->create();
+        $pcs = Unit::factory()->create(['code' => 'PCS']);
+        $dozen = Unit::factory()->create(['code' => 'LSN', 'name' => 'Lusin', 'symbol' => 'lsn']);
+
+        $this->actingAs($this->admin)->post(route('admin.products.store'), [
+            'sku' => 'GELAS-LSN-001',
+            'name' => 'Gelas Lusin',
+            'category_id' => $category->id,
+            'base_unit_id' => $pcs->id,
+            'status' => 'active',
+            'minimum_order' => 1,
+            'minimum_stock' => 0,
+            'safety_stock' => 0,
+            'units' => [
+                ['unit_id' => $pcs->id, 'conversion_factor' => 1, 'is_sellable' => 1, 'is_active' => 1],
+                ['unit_id' => $dozen->id, 'conversion_factor' => 11, 'is_sellable' => 1, 'is_active' => 1],
+            ],
+        ])->assertSessionHasErrors('units');
+
+        $this->assertDatabaseMissing('products', ['sku' => 'GELAS-LSN-001']);
     }
 
     public function test_import_preview_reports_invalid_rows(): void
