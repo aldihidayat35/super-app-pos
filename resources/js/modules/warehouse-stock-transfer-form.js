@@ -42,20 +42,114 @@ const initializeStockTransferForm = () => {
         if (!feedback) return;
         feedback.className = `alert alert-light-${type} mt-4`;
         feedback.textContent = message;
+        feedback.classList.remove('d-none');
     };
     const hideFeedback = () => feedback?.classList.add('d-none');
     const effectiveSourceBin = (row) => row?.querySelector('.source-bin-select')?.value || defaultSourceBin?.value || '';
+
+    const validateLocations = () => {
+        if (!source?.value || !destination?.value) {
+            hideFeedback();
+            toggleSubmitButton();
+            return true;
+        }
+        if (String(source.value) === String(destination.value)) {
+            showFeedback('Lokasi kerja tujuan tidak boleh sama dengan lokasi sumber.', 'danger');
+            toggleSubmitButton();
+            return false;
+        }
+        hideFeedback();
+        toggleSubmitButton();
+        return true;
+    };
+
+    const toggleSubmitButton = () => {
+        const submitBtns = form.querySelectorAll('button[name="action"]');
+        const hasInvalidQty = Array.from(body.querySelectorAll('.quantity-input')).some((input) => input.classList.contains('is-invalid'));
+        const isSameLocation = source?.value && destination?.value && String(source.value) === String(destination.value);
+
+        const shouldDisable = hasInvalidQty || Boolean(isSameLocation);
+        submitBtns.forEach((btn) => {
+            btn.disabled = shouldDisable;
+        });
+    };
+
+    const validateRowStock = (row) => {
+        const qtyInput = row?.querySelector('.quantity-input');
+        const unitSelect = row?.querySelector('.unit-select');
+        const warningEl = row?.querySelector('.stock-warning-feedback');
+        const approvedInput = row?.querySelector('.quantity-approved-input');
+        if (!qtyInput) return true;
+
+        const qty = parseFloat(qtyInput.value) || 0;
+        if (approvedInput) {
+            approvedInput.value = qtyInput.value;
+        }
+
+        const availableStr = row?.dataset?.availableQuantity;
+        if (availableStr === undefined || availableStr === '') {
+            qtyInput.classList.remove('is-invalid', 'border-danger');
+            if (warningEl) {
+                warningEl.classList.add('d-none');
+                warningEl.textContent = '';
+            }
+            toggleSubmitButton();
+            return true;
+        }
+
+        const selectedOption = unitSelect?.selectedOptions?.[0];
+        const factor = parseFloat(selectedOption?.dataset?.factor) || 1;
+        const qtyInBase = qty * factor;
+
+        const available = parseFloat(availableStr);
+        const stockPreview = row.dataset.stockPreview || `${available} Pcs`;
+        const stockQtyText = stockPreview.replace(/^Stok:\s*/i, '');
+
+        if (qtyInBase > available + 1e-7) {
+            qtyInput.classList.add('is-invalid', 'border-danger');
+            if (warningEl) {
+                warningEl.textContent = `Melebihi stok tersedia (${stockQtyText})`;
+                warningEl.classList.remove('d-none');
+            }
+            toggleSubmitButton();
+            return false;
+        } else {
+            qtyInput.classList.remove('is-invalid', 'border-danger');
+            if (warningEl) {
+                warningEl.classList.add('d-none');
+                warningEl.textContent = '';
+            }
+            toggleSubmitButton();
+            return true;
+        }
+    };
 
     const populateUnits = (row, units = []) => {
         const unitSelect = row?.querySelector('.unit-select');
         const preview = row?.querySelector('.unit-conversion-preview');
         if (!unitSelect) return;
         unitSelect.innerHTML = '';
-        units.forEach((unit, index) => unitSelect.add(new Option(unit.text, unit.id, index === 0, index === 0)));
-        if (!units.length) unitSelect.add(new Option('Satuan dasar', '', true, true));
+        units.forEach((unit, index) => {
+            const unitValue = unit.id !== null && unit.id !== undefined && unit.id !== 'null' ? String(unit.id) : '';
+            const option = new Option(unit.text, unitValue, index === 0, index === 0);
+            option.dataset.factor = String(unit.factor || '1.000000');
+            unitSelect.add(option);
+        });
+        if (!units.length) {
+            const option = new Option('Satuan dasar', '', true, true);
+            option.dataset.factor = '1.000000';
+            unitSelect.add(option);
+        }
         const refreshPreview = () => {
-            const unit = units.find((candidate) => String(candidate.id) === String(unitSelect.value));
-            if (preview) preview.textContent = unit && Number(unit.factor) !== 1 ? `1 ${unit.text} = ${Number(unit.factor)} satuan dasar` : '';
+            const unit = units.find((candidate) => {
+                const candidateId = candidate.id !== null && candidate.id !== undefined && candidate.id !== 'null' ? String(candidate.id) : '';
+                return candidateId === String(unitSelect.value);
+            });
+            const factor = unit?.factor || unitSelect.selectedOptions?.[0]?.dataset?.factor || 1;
+            if (preview) {
+                preview.textContent = unit && Number(factor) !== 1 ? `1 ${unit.text} = ${Number(factor)} satuan dasar` : '';
+            }
+            validateRowStock(row);
         };
         unitSelect.onchange = refreshPreview;
         refreshPreview();
@@ -66,16 +160,24 @@ const initializeStockTransferForm = () => {
         if (!select) return;
         const hadProduct = Boolean(select.value);
         destroy(select);
-        select.innerHTML = '<option value="">Pilih lokasi ambil terlebih dahulu</option>';
+        select.innerHTML = '<option value="">Pilih lokasi kerja sumber terlebih dahulu</option>';
         select.disabled = true;
         populateUnits(row);
+        delete row.dataset.availableQuantity;
+        delete row.dataset.stockPreview;
+        const previewEl = row.querySelector('.product-stock-preview');
+        if (previewEl) {
+            previewEl.textContent = '';
+            previewEl.classList.add('d-none');
+        }
+        validateRowStock(row);
         if (notify && hadProduct) showFeedback('Produk dikosongkan karena lokasi ambil berubah.', 'info');
     };
 
     const configureProduct = (row, preserveSelected = false) => {
         const select = row?.querySelector('.product-select');
-        const warehouseLocationId = effectiveSourceBin(row);
-        if (!select || !source.value || !warehouseLocationId) {
+        if (!select) return;
+        if (!source.value) {
             resetProduct(row);
             return;
         }
@@ -97,11 +199,19 @@ const initializeStockTransferForm = () => {
             placeholder: 'Cari SKU atau nama produk',
             ajax: {
                 url: optionsUrl, dataType: 'json', delay: 250,
-                data: (params) => ({
-                    work_location_id: source.value,
-                    warehouse_location_id: effectiveSourceBin(row),
-                    context: 'product', q: params.term || '', page: params.page || 1,
-                }),
+                data: (params) => {
+                    const reqData = {
+                        work_location_id: source.value,
+                        context: 'product',
+                        q: params.term || '',
+                        page: params.page || 1,
+                    };
+                    const binId = effectiveSourceBin(row);
+                    if (binId) {
+                        reqData.warehouse_location_id = binId;
+                    }
+                    return reqData;
+                },
                 transport: (params, success, failure) => {
                     const controller = new AbortController();
                     const query = new URLSearchParams();
@@ -165,7 +275,28 @@ const initializeStockTransferForm = () => {
             },
         });
         window.$(select).off('select2:select.stock-transfer-unit').on('select2:select.stock-transfer-unit', (event) => {
-            populateUnits(row, event.params?.data?.units || []);
+            const item = event.params?.data || {};
+            populateUnits(row, item.units || []);
+            if (item.available_quantity !== undefined) {
+                row.dataset.availableQuantity = String(item.available_quantity);
+                row.dataset.stockPreview = item.stock_preview || '';
+                const previewEl = row.querySelector('.product-stock-preview');
+                if (previewEl) {
+                    previewEl.textContent = item.stock_preview || `Tersedia: ${item.available_quantity}`;
+                    previewEl.classList.remove('d-none');
+                }
+            }
+            validateRowStock(row);
+        });
+        window.$(select).off('select2:clear.stock-transfer-unit').on('select2:clear.stock-transfer-unit', () => {
+            delete row.dataset.availableQuantity;
+            delete row.dataset.stockPreview;
+            const previewEl = row.querySelector('.product-stock-preview');
+            if (previewEl) {
+                previewEl.textContent = '';
+                previewEl.classList.add('d-none');
+            }
+            validateRowStock(row);
         });
     };
 
@@ -185,7 +316,7 @@ const initializeStockTransferForm = () => {
 
     const loadBins = async (select, workLocationId, context, selected = '') => {
         // Guard: skip non-select elements (e.g., Select2 wrapper spans)
-        if (select.tagName !== 'SELECT') return;
+        if (!select || select.tagName !== 'SELECT') return;
 
         binRequests.get(select)?.abort();
         const selectedOption = selected ? Array.from(select.options).find((option) => String(option.value) === String(selected)) : null;
@@ -243,19 +374,35 @@ const initializeStockTransferForm = () => {
 
     const bindRow = (row) => {
         row.querySelector('.remove-transfer-item').addEventListener('click', () => {
-            if (body.querySelectorAll('.transfer-item-row').length > 1) row.remove();
+            if (body.querySelectorAll('.transfer-item-row').length > 1) {
+                row.remove();
+                toggleSubmitButton();
+            }
         });
+        const qtyInput = row.querySelector('.quantity-input');
+        if (qtyInput) {
+            qtyInput.addEventListener('input', () => validateRowStock(row));
+            qtyInput.addEventListener('change', () => validateRowStock(row));
+        }
+        const unitSelect = row.querySelector('.unit-select');
+        if (unitSelect) {
+            unitSelect.addEventListener('change', () => validateRowStock(row));
+        }
         loadBins(row.querySelector('.source-bin-select'), source.value, 'source');
-        loadBins(row.querySelector('.destination-bin-select'), destination.value, 'destination');
         configureProduct(row, true);
     };
 
     bindSelectChange(source, 'stock-transfer-source', () => {
+        validateLocations();
         document.querySelectorAll('.transfer-item-row').forEach((row) => resetProduct(row));
         document.querySelectorAll('.source-bin-select').forEach((select) => { select.dataset.selected = ''; select.value = ''; });
         refreshGroup('source', false);
+        document.querySelectorAll('.transfer-item-row').forEach((row) => configureProduct(row));
     });
-    bindSelectChange(destination, 'stock-transfer-destination', () => refreshGroup('destination', false));
+    bindSelectChange(destination, 'stock-transfer-destination', () => {
+        validateLocations();
+        refreshGroup('destination', false);
+    });
     bindSelectChange(defaultSourceBin, 'stock-transfer-default-source-bin', () => {
         document.querySelectorAll('.transfer-item-row').forEach((row) => {
             if (!row.querySelector('.source-bin-select')?.value) {
@@ -277,8 +424,20 @@ const initializeStockTransferForm = () => {
 
     body.querySelectorAll('.transfer-item-row').forEach((row) => {
         row.querySelector('.remove-transfer-item').addEventListener('click', () => {
-            if (body.querySelectorAll('.transfer-item-row').length > 1) row.remove();
+            if (body.querySelectorAll('.transfer-item-row').length > 1) {
+                row.remove();
+                toggleSubmitButton();
+            }
         });
+        const qtyInput = row.querySelector('.quantity-input');
+        if (qtyInput) {
+            qtyInput.addEventListener('input', () => validateRowStock(row));
+            qtyInput.addEventListener('change', () => validateRowStock(row));
+        }
+        const unitSelect = row.querySelector('.unit-select');
+        if (unitSelect) {
+            unitSelect.addEventListener('change', () => validateRowStock(row));
+        }
         configureProduct(row, true);
     });
     refreshGroup('source');

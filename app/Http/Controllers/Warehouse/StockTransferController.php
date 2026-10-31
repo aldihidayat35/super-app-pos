@@ -73,7 +73,7 @@ class StockTransferController extends Controller
             'work_location_id' => ['required', 'integer', Rule::exists('work_locations', 'id')->where('is_active', true)],
             'context' => ['required', Rule::in(['source', 'destination', 'product', 'batch'])],
             'warehouse_location_id' => [
-                Rule::requiredIf(fn (): bool => in_array($request->input('context'), ['product', 'batch'], true)),
+                Rule::requiredIf(fn (): bool => $request->input('context') === 'batch'),
                 'nullable',
                 'integer',
                 Rule::exists('warehouse_locations', 'id')->where('is_active', true),
@@ -83,7 +83,7 @@ class StockTransferController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ], [
-            'warehouse_location_id.required' => 'Pilih lokasi ambil sebelum mencari produk.',
+            'warehouse_location_id.required' => 'Pilih lokasi ambil sebelum memilih batch.',
             'warehouse_location_id.exists' => 'Lokasi ambil tidak aktif atau tidak ditemukan.',
         ]);
         $workLocationId = (int) $validated['work_location_id'];
@@ -117,50 +117,73 @@ class StockTransferController extends Controller
         $perPage = (int) ($validated['per_page'] ?? 20);
 
         if ($validated['context'] === 'product') {
-            $warehouseLocationId = (int) $validated['warehouse_location_id'];
-            $warehouseIds = $this->warehouseIdsForWorkLocation($workLocationId);
-            $locationIsValid = WarehouseLocation::query()
-                ->whereKey($warehouseLocationId)
-                ->where('is_active', true)
-                ->whereIn('warehouse_id', $warehouseIds)
-                ->exists();
+            $warehouseLocationId = isset($validated['warehouse_location_id']) && $validated['warehouse_location_id'] !== ''
+                ? (int) $validated['warehouse_location_id']
+                : null;
 
-            abort_unless($locationIsValid, 422, 'Lokasi ambil tidak sesuai dengan lokasi kerja sumber.');
+            if ($warehouseLocationId !== null) {
+                $warehouseIds = $this->warehouseIdsForWorkLocation($workLocationId);
+                $locationIsValid = WarehouseLocation::query()
+                    ->whereKey($warehouseLocationId)
+                    ->where('is_active', true)
+                    ->whereIn('warehouse_id', $warehouseIds)
+                    ->exists();
+
+                abort_unless($locationIsValid, 422, 'Lokasi ambil tidak sesuai dengan lokasi kerja sumber.');
+            }
 
             $query = Product::query()
-                ->with(['category', 'baseUnit', 'units.unit'])
+                ->with([
+                    'category',
+                    'baseUnit',
+                    'units.unit',
+                    'stocks' => fn ($stock) => $stock
+                        ->where('work_location_id', $workLocationId)
+                        ->when($warehouseLocationId !== null, fn ($q) => $q->where('warehouse_location_id', $warehouseLocationId)),
+                ])
                 ->where('status', 'active')
                 ->whereHas('stocks', fn ($stock) => $stock
                     ->where('work_location_id', $workLocationId)
-                    ->where('warehouse_location_id', $warehouseLocationId)
+                    ->when($warehouseLocationId !== null, fn ($q) => $q->where('warehouse_location_id', $warehouseLocationId))
                     ->whereRaw('(quantity_on_hand - quantity_reserved - quantity_damaged) > 0'))
                 ->when($search !== '', fn ($product) => $product->where(function ($inner) use ($search): void {
                     $inner->where('sku', 'like', "%{$search}%")->orWhere('name', 'like', "%{$search}%");
                 }))
                 ->orderBy('name');
-            $products = $query->paginate($perPage, ['id', 'sku', 'name', 'category_id', 'photo_path'], 'page', $page);
+            $products = $query->paginate($perPage, ['id', 'sku', 'name', 'category_id', 'photo_path', 'base_unit_id'], 'page', $page);
 
             return response()->json([
-                'results' => $products->map(fn (Product $product): array => [
-                    'id' => $product->id,
-                    'text' => "{$product->sku} — {$product->name}",
-                    'sku' => $product->sku,
-                    'name' => $product->name,
-                    'category' => $product->category?->name,
-                    'image_url' => $product->main_image_url,
-                    'units' => collect([[
-                        'id' => $product->base_unit_id,
-                        'text' => $product->baseUnit()->value('name') ?? 'Satuan dasar',
-                        'factor' => '1.000000',
-                    ]])->merge($product->units
-                        ->where('is_active', true)
-                        ->where('unit_id', '!=', $product->base_unit_id)
-                        ->map(fn ($unit): array => [
-                            'id' => $unit->unit_id,
-                            'text' => $unit->unit()->value('name') ?? $unit->name,
-                            'factor' => (string) $unit->conversion_factor,
-                        ]))->values(),
-                ])->values(),
+                'results' => $products->map(function (Product $product): array {
+                    $availableBase = '0.0000';
+                    foreach ($product->stocks as $stock) {
+                        $availableBase = Decimal::add($availableBase, (string) $stock->available_quantity);
+                    }
+                    $baseUnitName = $product->baseUnit->name;
+                    $stockPreview = 'Stok: '.qty($availableBase).' '.$baseUnitName;
+
+                    return [
+                        'id' => $product->id,
+                        'text' => "{$product->sku} — {$product->name} ({$stockPreview})",
+                        'sku' => $product->sku,
+                        'name' => $product->name,
+                        'category' => $product->category?->name,
+                        'image_url' => $product->main_image_url,
+                        'available_quantity' => (float) $availableBase,
+                        'stock_preview' => $stockPreview,
+                        'units' => collect([[
+                            'id' => (int) $product->base_unit_id,
+                            'text' => $baseUnitName,
+                            'factor' => '1.000000',
+                        ]])->merge($product->units
+                            ->where('is_active', true)
+                            ->where('unit_id', '!=', $product->base_unit_id)
+                            ->map(fn ($unit): array => [
+                                'id' => (int) $unit->unit_id,
+                                'text' => $unit->unit->name,
+                                'factor' => (string) $unit->conversion_factor,
+                            ]))->values(),
+                    ];
+                })->values(),
                 'pagination' => ['more' => $products->hasMorePages()],
             ]);
         }

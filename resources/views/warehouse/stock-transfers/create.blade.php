@@ -69,7 +69,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label required">Lokasi Ambil Default</label>
+                    <label class="form-label">Lokasi Ambil Default</label>
                     <select name="source_warehouse_location_id" class="form-select form-select-solid source-bin-select" data-control="select2" data-selected="{{ old('source_warehouse_location_id') }}">
                         <option value="">Tanpa zona/rak/bin khusus</option>
                         @if($selectedWarehouseLocations->has((int) old('source_warehouse_location_id')))<option value="{{ old('source_warehouse_location_id') }}" selected>{{ $selectedWarehouseLocations->get((int) old('source_warehouse_location_id'))->full_code }}</option>@endif
@@ -102,20 +102,50 @@
             </div>
             <div class="table-responsive">
                 <table class="table align-middle">
-                    <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th class="min-w-200px">Produk</th><th class="min-w-130px">Satuan</th><th>Jumlah Diminta</th><th>Jumlah Disetujui</th><th class="min-w-180px">Lokasi Ambil</th><th class="min-w-180px">Batch HPP</th><th class="min-w-150px">Harga Jual Tujuan</th><th class="min-w-180px">Lokasi Tujuan</th><th>Catatan</th><th class="text-end">Aksi</th></tr></thead>
+                    <thead>
+                        <tr class="text-muted fw-bold text-uppercase fs-7">
+                            <th class="min-w-250px">Produk & Satuan</th>
+                            <th class="min-w-150px">Jumlah Transfer</th>
+                            <th class="min-w-200px">Lokasi Ambil (Opsional)</th>
+                            <th class="text-end min-w-80px">Aksi</th>
+                        </tr>
+                    </thead>
                     <tbody id="transfer-items">
                         @foreach($initialItems as $index => $item)
                             <tr class="transfer-item-row">
-                                <td><select name="items[{{ $index }}][product_id]" class="form-select form-select-sm product-select" data-searchable="false" required><option value="">Pilih produk</option>@if($selectedProducts->has((int)($item['product_id'] ?? 0)))<option value="{{ $item['product_id'] }}" selected>{{ $selectedProducts->get((int)$item['product_id'])->sku }} — {{ $selectedProducts->get((int)$item['product_id'])->name }}</option>@endif</select></td>
-                                <td><select name="items[{{ $index }}][unit_id]" class="form-select form-select-sm unit-select"><option value="{{ $item['unit_id'] ?? '' }}">Satuan dasar</option></select><div class="unit-conversion-preview text-muted fs-9 mt-1"></div></td>
-                                <td><input name="items[{{ $index }}][quantity_requested]" type="number" step="1" min="1" value="{{ $item['quantity_requested'] ?? 1 }}" class="form-control form-control-sm" required></td>
-                                <td><input name="items[{{ $index }}][quantity_approved]" type="number" step="1" min="0" value="{{ $item['quantity_approved'] ?? 1 }}" class="form-control form-control-sm"></td>
-                                <td><select name="items[{{ $index }}][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2" data-selected="{{ $item['source_warehouse_location_id'] ?? '' }}"><option value="">Gunakan default</option>@if($selectedWarehouseLocations->has((int)($item['source_warehouse_location_id'] ?? 0)))<option value="{{ $item['source_warehouse_location_id'] }}" selected>{{ $selectedWarehouseLocations->get((int)$item['source_warehouse_location_id'])->full_code }}</option>@endif</select></td>
-                                <td><select name="items[{{ $index }}][selected_stock_batch_ids][]" class="form-select form-select-sm batch-select" multiple data-selected='@json(array_values((array)($item['selected_stock_batch_ids'] ?? [])))'></select><div class="text-muted fs-9 mt-1">Otomatis jika hanya satu batch.</div></td>
-                                <td><input name="items[{{ $index }}][destination_sale_price]" type="number" step="0.01" min="0.01" value="{{ $item['destination_sale_price'] ?? '' }}" class="form-control form-control-sm" @disabled(!auth()->user()->can('prices.update'))><div class="text-muted fs-9 mt-1">Default mengikuti sumber.</div></td>
-                                <td><select name="items[{{ $index }}][destination_warehouse_location_id]" class="form-select form-select-sm destination-bin-select" data-control="select2" data-selected="{{ $item['destination_warehouse_location_id'] ?? '' }}"><option value="">Gunakan default</option>@if($selectedWarehouseLocations->has((int)($item['destination_warehouse_location_id'] ?? 0)))<option value="{{ $item['destination_warehouse_location_id'] }}" selected>{{ $selectedWarehouseLocations->get((int)$item['destination_warehouse_location_id'])->full_code }}</option>@endif</select></td>
-                                <td><input name="items[{{ $index }}][notes]" value="{{ $item['notes'] ?? '' }}" class="form-control form-control-sm"></td>
-                                <td class="text-end"><button type="button" class="btn btn-sm btn-icon btn-light-danger remove-transfer-item" title="Hapus produk"><i class="ki-outline ki-trash fs-5"></i></button></td>
+                                <td>
+                                    <select name="items[{{ $index }}][product_id]" class="form-select form-select-sm product-select" data-searchable="false" required>
+                                        <option value="">Pilih produk</option>
+                                        @if($selectedProducts->has((int)($item['product_id'] ?? 0)))
+                                            <option value="{{ $item['product_id'] }}" selected>{{ $selectedProducts->get((int)$item['product_id'])->sku }} — {{ $selectedProducts->get((int)$item['product_id'])->name }}</option>
+                                        @endif
+                                    </select>
+                                    <div class="product-stock-preview badge badge-light-info mt-1 d-none"></div>
+                                    <div class="d-flex align-items-center gap-2 mt-2">
+                                        <label class="fs-8 text-muted mb-0">Satuan:</label>
+                                        <select name="items[{{ $index }}][unit_id]" class="form-select form-select-sm unit-select w-auto">
+                                            <option value="{{ $item['unit_id'] ?? '' }}">Satuan dasar</option>
+                                        </select>
+                                    </div>
+                                    <div class="unit-conversion-preview text-muted fs-9 mt-1"></div>
+                                </td>
+                                <td>
+                                    <input name="items[{{ $index }}][quantity_requested]" type="number" step="any" min="0.0001" value="{{ $item['quantity_requested'] ?? $item['quantity'] ?? 1 }}" class="form-control form-control-sm quantity-input" required>
+                                    <input type="hidden" name="items[{{ $index }}][quantity_approved]" class="quantity-approved-input" value="{{ $item['quantity_approved'] ?? $item['quantity_requested'] ?? $item['quantity'] ?? 1 }}">
+                                    <div class="stock-warning-feedback text-danger fs-8 mt-1 d-none"></div>
+                                </td>
+                                <td>
+                                    <select name="items[{{ $index }}][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2" data-selected="{{ $item['source_warehouse_location_id'] ?? '' }}">
+                                        <option value="">Otomatis / Default</option>
+                                        @if($selectedWarehouseLocations->has((int)($item['source_warehouse_location_id'] ?? 0)))
+                                            <option value="{{ $item['source_warehouse_location_id'] }}" selected>{{ $selectedWarehouseLocations->get((int)$item['source_warehouse_location_id'])->full_code }}</option>
+                                        @endif
+                                    </select>
+                                    <div class="text-muted fs-9 mt-1">Kosongkan untuk alokasi otomatis (FIFO)</div>
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-icon btn-light-danger remove-transfer-item" title="Hapus produk"><i class="ki-outline ki-trash fs-5"></i></button>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -128,16 +158,33 @@
 
     <template id="transfer-item-template">
         <tr class="transfer-item-row">
-            <td><select name="items[__INDEX__][product_id]" class="form-select form-select-sm product-select" data-searchable="false" required><option value="">Pilih produk</option></select></td>
-            <td><select name="items[__INDEX__][unit_id]" class="form-select form-select-sm unit-select"><option value="">Satuan dasar</option></select><div class="unit-conversion-preview text-muted fs-9 mt-1"></div></td>
-            <td><input name="items[__INDEX__][quantity_requested]" type="number" step="1" min="1" value="1" class="form-control form-control-sm" required></td>
-            <td><input name="items[__INDEX__][quantity_approved]" type="number" step="1" min="0" value="1" class="form-control form-control-sm"></td>
-            <td><select name="items[__INDEX__][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2"><option value="">Gunakan default</option></select></td>
-            <td><select name="items[__INDEX__][selected_stock_batch_ids][]" class="form-select form-select-sm batch-select" multiple></select><div class="text-muted fs-9 mt-1">Otomatis jika hanya satu batch.</div></td>
-            <td><input name="items[__INDEX__][destination_sale_price]" type="number" step="0.01" min="0.01" class="form-control form-control-sm" @disabled(!auth()->user()->can('prices.update'))></td>
-            <td><select name="items[__INDEX__][destination_warehouse_location_id]" class="form-select form-select-sm destination-bin-select" data-control="select2"><option value="">Gunakan default</option></select></td>
-            <td><input name="items[__INDEX__][notes]" class="form-control form-control-sm"></td>
-            <td class="text-end"><button type="button" class="btn btn-sm btn-icon btn-light-danger remove-transfer-item" title="Hapus produk"><i class="ki-outline ki-trash fs-5"></i></button></td>
+            <td>
+                <select name="items[__INDEX__][product_id]" class="form-select form-select-sm product-select" data-searchable="false" required>
+                    <option value="">Pilih produk</option>
+                </select>
+                <div class="product-stock-preview badge badge-light-info mt-1 d-none"></div>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                    <label class="fs-8 text-muted mb-0">Satuan:</label>
+                    <select name="items[__INDEX__][unit_id]" class="form-select form-select-sm unit-select w-auto">
+                        <option value="">Satuan dasar</option>
+                    </select>
+                </div>
+                <div class="unit-conversion-preview text-muted fs-9 mt-1"></div>
+            </td>
+            <td>
+                <input name="items[__INDEX__][quantity_requested]" type="number" step="any" min="0.0001" value="1" class="form-control form-control-sm quantity-input" required>
+                <input type="hidden" name="items[__INDEX__][quantity_approved]" class="quantity-approved-input" value="1">
+                <div class="stock-warning-feedback text-danger fs-8 mt-1 d-none"></div>
+            </td>
+            <td>
+                <select name="items[__INDEX__][source_warehouse_location_id]" class="form-select form-select-sm source-bin-select" data-control="select2">
+                    <option value="">Otomatis / Default</option>
+                </select>
+                <div class="text-muted fs-9 mt-1">Kosongkan untuk alokasi otomatis (FIFO)</div>
+            </td>
+            <td class="text-end">
+                <button type="button" class="btn btn-sm btn-icon btn-light-danger remove-transfer-item" title="Hapus produk"><i class="ki-outline ki-trash fs-5"></i></button>
+            </td>
         </tr>
     </template>
 
@@ -155,60 +202,19 @@ document.addEventListener('DOMContentLoaded', function() {
     btnCatalog.addEventListener('click', function() {
         // Set dynamic URL params based on current selected locations
         const sourceLoc = document.getElementById('source-work-location').value;
-        const sourceBin = document.querySelector('select[name="source_warehouse_location_id"]').value;
+        const sourceBin = document.querySelector('select[name="source_warehouse_location_id"]')?.value || '';
         
         const params = {
             work_location_id: sourceLoc,
-            warehouse_location_id: sourceBin,
             context: 'product',
             per_page: 100 // fetch more for the catalog
         };
+        if (sourceBin) {
+            params.warehouse_location_id = sourceBin;
+        }
         
         btnCatalog.dataset.urlParams = JSON.stringify(params);
     });
-
-    const form = document.getElementById('stock-transfer-form');
-    const endpoint = form.dataset.optionsUrl;
-    const sourceWork = document.getElementById('source-work-location');
-    const defaultSourceBin = form.querySelector('select[name="source_warehouse_location_id"]');
-
-    async function refreshBatches(row) {
-        const productId = row.querySelector('.product-select')?.value;
-        const rowBin = row.querySelector('.source-bin-select')?.value;
-        const binId = rowBin || defaultSourceBin?.value;
-        const select = row.querySelector('.batch-select');
-        if (!select || !productId || !sourceWork.value || !binId) {
-            if (select) select.innerHTML = '';
-            return;
-        }
-        const selected = new Set(JSON.parse(select.dataset.selected || '[]').map(String));
-        const params = new URLSearchParams({
-            context: 'batch', work_location_id: sourceWork.value,
-            warehouse_location_id: binId, product_id: productId,
-        });
-        const response = await fetch(`${endpoint}?${params.toString()}`, {headers: {'Accept': 'application/json'}});
-        if (!response.ok) return;
-        const payload = await response.json();
-        select.innerHTML = '';
-        (payload.results || []).forEach((batch) => {
-            const option = new Option(batch.text, batch.id, false, selected.has(String(batch.id)));
-            select.add(option);
-        });
-        if ((payload.results || []).length === 1) select.options[0].selected = true;
-        select.dataset.selected = '[]';
-    }
-
-    function bindBatchRow(row) {
-        row.querySelector('.product-select')?.addEventListener('change', () => refreshBatches(row));
-        row.querySelector('.source-bin-select')?.addEventListener('change', () => refreshBatches(row));
-        refreshBatches(row);
-    }
-    document.querySelectorAll('.transfer-item-row').forEach(bindBatchRow);
-    sourceWork.addEventListener('change', () => document.querySelectorAll('.transfer-item-row').forEach(refreshBatches));
-    defaultSourceBin?.addEventListener('change', () => document.querySelectorAll('.transfer-item-row').forEach(refreshBatches));
-    new MutationObserver((mutations) => mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
-        if (node.nodeType === 1 && node.matches?.('.transfer-item-row')) bindBatchRow(node);
-    }))).observe(document.getElementById('transfer-items'), {childList: true});
 });
 
 function handleCatalogSelect(product) {
@@ -222,12 +228,19 @@ function handleCatalogSelect(product) {
     // Set the product select value
     const select = newRow.querySelector('.product-select');
     if (select) {
-        // Since it's select2 AJAX, we need to create an option element
-        const option = new Option(product.sku + ' — ' + product.name, product.id, true, true);
+        // Since it's select2 AJAX, create option element
+        const displayText = product.text || (product.sku + ' — ' + product.name);
+        const option = new Option(displayText, product.id, true, true);
         window.$(select).append(option).trigger('change');
+        window.$(select).trigger({
+            type: 'select2:select',
+            params: { data: product }
+        });
     }
     
-    toastr && toastr.success(product.name + ' ditambahkan ke daftar transfer.');
+    if (typeof toastr !== 'undefined') {
+        toastr.success(product.name + ' ditambahkan ke daftar transfer.');
+    }
 }
 </script>
 @endpush

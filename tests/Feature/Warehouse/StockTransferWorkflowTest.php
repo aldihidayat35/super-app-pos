@@ -603,23 +603,27 @@ class StockTransferWorkflowTest extends TestCase
         $otherProduct = Product::factory()->create(['base_unit_id' => $product->base_unit_id, 'status' => 'active', 'sku' => 'ONLY-OTHER-BIN']);
         $this->inventory->receive($otherProduct, $warehouse->workLocation, $otherBin, '2', $this->warehouseHead);
 
-        $this->actingAs($this->warehouseStaff)->getJson(route('warehouse.stock-transfers.location-options', [
+        $sourceResponse = $this->actingAs($this->warehouseStaff)->getJson(route('warehouse.stock-transfers.location-options', [
             'work_location_id' => $warehouse->work_location_id, 'warehouse_location_id' => $sourceBin->id,
             'context' => 'product', 'q' => $product->sku, 'page' => 1,
-        ]))->assertOk()->assertJsonPath('results.0.id', $product->id)->assertJsonMissing(['id' => $otherProduct->id])->assertJsonStructure(['results', 'pagination' => ['more']]);
+        ]))->assertOk()->assertJsonPath('results.0.id', $product->id)->assertJsonMissing(['sku' => $otherProduct->sku])->assertJsonStructure(['results', 'pagination' => ['more']]);
+        $this->assertNotContains($otherProduct->id, collect($sourceResponse->json('results'))->pluck('id')->all());
 
-        $this->getJson(route('warehouse.stock-transfers.location-options', [
+        $otherResponse = $this->getJson(route('warehouse.stock-transfers.location-options', [
             'work_location_id' => $warehouse->work_location_id, 'warehouse_location_id' => $otherBin->id,
             'context' => 'product', 'q' => $otherProduct->sku,
-        ]))->assertOk()->assertJsonPath('results.0.id', $otherProduct->id)->assertJsonMissing(['id' => $product->id]);
+        ]))->assertOk()->assertJsonPath('results.0.id', $otherProduct->id)->assertJsonMissing(['sku' => $product->sku]);
+        $this->assertNotContains($product->id, collect($otherResponse->json('results'))->pluck('id')->all());
 
         $this->getJson(route('warehouse.stock-transfers.location-options', [
             'work_location_id' => $warehouse->work_location_id, 'context' => 'product',
-        ]))->assertUnprocessable()->assertJsonValidationErrors('warehouse_location_id');
+        ]))->assertOk();
 
         $createHtml = $this->get(route('warehouse.stock-transfers.create'))->assertOk()->assertDontSee('@foreach($products', false)->getContent();
         $this->assertStringContainsString('data-options-url=', $createHtml);
         $this->assertStringContainsString('class="form-select form-select-sm product-select" data-searchable="false"', $createHtml);
+        $this->assertStringContainsString('<label class="form-label">Lokasi Ambil Default</label>', $createHtml);
+        $this->assertStringNotContainsString('<label class="form-label required">Lokasi Ambil Default</label>', $createHtml);
         $cascadeScript = file_get_contents(resource_path('js/modules/warehouse-stock-transfer-form.js'));
         $this->assertIsString($cascadeScript);
         $this->assertStringContainsString('Memuat zona/rak/bin ${label}...', $cascadeScript);
@@ -683,6 +687,318 @@ class StockTransferWorkflowTest extends TestCase
         $this->actingAs($otherStoreHead)
             ->get(route('retail.stock-transfers.receive-form', $transfer))
             ->assertForbidden();
+    }
+
+    public function test_transfer_can_be_created_with_simplified_four_column_payload(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '10', $this->warehouseHead);
+
+        $response = $this->actingAs($this->warehouseStaff)->post(route('warehouse.stock-transfers.store'), [
+            'source_work_location_id' => $warehouse->work_location_id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'destination_work_location_id' => $branch->work_location_id,
+            'transfer_date' => now()->toDateString(),
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => '3',
+                ],
+            ],
+            'action' => 'submit',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $transfer = StockTransfer::query()->latest('id')->firstOrFail();
+        $this->assertSame(StockTransferStatus::PENDING_APPROVAL, $transfer->status);
+        $this->assertCount(1, $transfer->items);
+        $this->assertSame('3.0000', (string) $transfer->items->first()->quantity_requested);
+        $this->assertSame('3.0000', (string) $transfer->items->first()->quantity_approved);
+    }
+
+    public function test_location_options_returns_base_unit_with_matching_integer_id(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '10', $this->warehouseHead);
+
+        $dusUnit = Unit::factory()->create(['code' => 'DUS', 'name' => 'Dus', 'is_active' => true]);
+        ProductUnit::query()->create([
+            'product_id' => $product->id,
+            'unit_id' => $dusUnit->id,
+            'name' => 'Dus',
+            'conversion_factor' => '12.000000',
+            'is_base' => false,
+            'is_sellable' => true,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->warehouseStaff)->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $warehouse->work_location_id,
+            'warehouse_location_id' => $sourceBin->id,
+            'context' => 'product',
+            'q' => $product->sku,
+        ]))->assertOk();
+
+        $response->assertJsonPath('results.0.id', $product->id);
+
+        // Pastikan base unit memiliki id bertipe integer yang cocok dengan base_unit_id produk (bukan null)
+        /** @var array<string, mixed> $baseUnitOption */
+        $baseUnitOption = $response->json('results.0.units.0');
+        $this->assertNotNull($baseUnitOption['id'], 'Base unit ID pada location-options tidak boleh null');
+        $this->assertIsInt($baseUnitOption['id']);
+        $this->assertSame($product->base_unit_id, $baseUnitOption['id']);
+        $this->assertSame('1.000000', $baseUnitOption['factor']);
+
+        // Pastikan secondary unit juga terdaftar dengan id integer yang tepat
+        /** @var array<string, mixed> $secondaryUnitOption */
+        $secondaryUnitOption = $response->json('results.0.units.1');
+        $this->assertNotNull($secondaryUnitOption['id']);
+        $this->assertIsInt($secondaryUnitOption['id']);
+        $this->assertSame($dusUnit->id, $secondaryUnitOption['id']);
+        $this->assertSame('12.000000', $secondaryUnitOption['factor']);
+    }
+
+    public function test_transfer_can_be_created_with_browser_payload_using_units_from_location_options(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        // Terima 30 PCS di gudang sumber
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '30', $this->warehouseHead);
+
+        $dusUnit = Unit::factory()->create(['code' => 'DUS', 'name' => 'Dus', 'is_active' => true]);
+        ProductUnit::query()->create([
+            'product_id' => $product->id,
+            'unit_id' => $dusUnit->id,
+            'name' => 'Dus',
+            'conversion_factor' => '12.000000',
+            'is_base' => false,
+            'is_sellable' => true,
+            'is_active' => true,
+        ]);
+
+        // 1. Ambil opsi produk dari endpoint location-options persis seperti AJAX browser
+        $optionsResponse = $this->actingAs($this->warehouseStaff)->getJson(route('warehouse.stock-transfers.location-options', [
+            'work_location_id' => $warehouse->work_location_id,
+            'warehouse_location_id' => $sourceBin->id,
+            'context' => 'product',
+            'q' => $product->sku,
+        ]))->assertOk();
+
+        /** @var array<string, mixed> $productData */
+        $productData = $optionsResponse->json('results.0');
+        /** @var int $baseUnitId */
+        $baseUnitId = $productData['units'][0]['id'];
+        /** @var int $secondaryUnitId */
+        $secondaryUnitId = $productData['units'][1]['id'];
+
+        $this->assertSame($product->base_unit_id, $baseUnitId);
+        $this->assertSame($dusUnit->id, $secondaryUnitId);
+
+        // 2. Submit payload form browser menggunakan base unit id
+        $responseBase = $this->actingAs($this->warehouseStaff)->post(route('warehouse.stock-transfers.store'), [
+            'source_work_location_id' => $warehouse->work_location_id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'destination_work_location_id' => $branch->work_location_id,
+            'transfer_date' => now()->toDateString(),
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'unit_id' => $baseUnitId,
+                    'quantity_requested' => '5',
+                    'quantity_approved' => '5',
+                ],
+            ],
+            'action' => 'submit',
+        ]);
+
+        $responseBase->assertSessionHasNoErrors();
+        $transferBase = StockTransfer::query()->latest('id')->firstOrFail();
+        $this->assertSame(StockTransferStatus::PENDING_APPROVAL, $transferBase->status);
+        $itemBase = $transferBase->items->firstOrFail();
+        $this->assertSame($product->base_unit_id, $itemBase->unit_id);
+        $this->assertSame('5.0000', (string) $itemBase->quantity_requested);
+        $this->assertSame('1.000000', (string) $itemBase->conversion_factor_snapshot);
+
+        // 3. Submit payload form browser menggunakan secondary unit id (2 Dus = 24 PCS)
+        $responseSecondary = $this->actingAs($this->warehouseStaff)->post(route('warehouse.stock-transfers.store'), [
+            'source_work_location_id' => $warehouse->work_location_id,
+            'source_warehouse_location_id' => $sourceBin->id,
+            'destination_work_location_id' => $branch->work_location_id,
+            'transfer_date' => now()->toDateString(),
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'unit_id' => $secondaryUnitId,
+                    'quantity' => '2',
+                ],
+            ],
+            'action' => 'submit',
+        ]);
+
+        $responseSecondary->assertSessionHasNoErrors();
+        $transferSecondary = StockTransfer::query()->latest('id')->firstOrFail();
+        $this->assertSame(StockTransferStatus::PENDING_APPROVAL, $transferSecondary->status);
+        $itemSecondary = $transferSecondary->items->firstOrFail();
+        $this->assertSame($dusUnit->id, $itemSecondary->unit_id);
+        $this->assertSame('2.0000', (string) $itemSecondary->quantity_requested);
+        $this->assertSame('2.0000', (string) $itemSecondary->quantity_approved);
+        $this->assertSame('12.000000', (string) $itemSecondary->conversion_factor_snapshot);
+        $this->assertSame('Dus', $itemSecondary->unit_name_snapshot);
+    }
+
+    public function test_receive_full_shipment_via_one_click_payload(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '10', $this->warehouseHead);
+
+        // Buat transfer, setujui, pack, dan kirim barang
+        $transfer = $this->makeApprovedTransfer($warehouse, $branch, $product, $sourceBin, $destinationBin, '5');
+        $item = $transfer->items->firstOrFail();
+        $this->transfers->pack($transfer, ['items' => [$item->id => ['quantity_picked' => '5']]], $this->warehouseStaff);
+        $transfer = $this->transfers->ship($transfer, ['carrier' => 'Internal Delivery'], $this->warehouseStaff);
+
+        $this->assertSame(StockTransferStatus::SHIPPED, $transfer->fresh()->status);
+        $inTransitQty = $item->fresh()->inTransitQuantity();
+        $this->assertSame('5.0000', $inTransitQty);
+
+        // Buka form receive: tombol 1-klik dan indikator visual berstatus sempurna tertera
+        $this->actingAs($this->storeHead)
+            ->get(route('retail.stock-transfers.receive-form', $transfer))
+            ->assertOk()
+            ->assertSee('Penerimaan Transfer')
+            ->assertSee('1-Klik: Terima Semua Sesuai Pengiriman')
+            ->assertSee('Semua barang tiba sesuai pengiriman dalam kondisi sempurna');
+
+        // Submit payload 1-klik: quantity_received = inTransitQuantity, damaged = 0, discrepancy = 0
+        $oneClickPayload = [
+            'idempotency_key' => 'one-click-receive-test-key',
+            'items' => [
+                $item->id => [
+                    'quantity_received' => $inTransitQty,
+                    'quantity_damaged' => 0,
+                    'quantity_discrepancy' => 0,
+                    'notes' => 'Penerimaan 1-klik berhasil sempurna',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->storeHead)
+            ->post(route('retail.stock-transfers.receive', $transfer), $oneClickPayload);
+
+        $response->assertRedirect(route('retail.stock-transfers.receiving'))
+            ->assertSessionHas('notification.type', 'success');
+
+        // Transfer berpindah status ke FULLY_RECEIVED, lalu dapat diselesaikan menjadi COMPLETED
+        $freshTransfer = $transfer->fresh();
+        $this->assertSame(StockTransferStatus::FULLY_RECEIVED, $freshTransfer->status);
+
+        $completed = $this->transfers->complete($freshTransfer, $this->storeHead);
+        $this->assertSame(StockTransferStatus::COMPLETED, $completed->status);
+
+        // Stok di lokasi tujuan bertambah sesuai kuantitas yang diterima
+        $destinationStock = Stock::query()
+            ->where('product_id', $product->id)
+            ->where('work_location_id', $branch->work_location_id)
+            ->firstOrFail();
+
+        $this->assertSame('5.0000', $destinationStock->quantity_on_hand);
+    }
+
+    public function test_detail_page_hero_action_card_and_compact_table_rendering(): void
+    {
+        [$warehouse, $branch, $product, $sourceBin, $destinationBin] = $this->fixture();
+        $this->assignScope($warehouse, $branch);
+        $this->inventory->receive($product, $warehouse->workLocation, $sourceBin, '20', $this->warehouseHead);
+
+        // 1. DRAFT status
+        $transfer = $this->transfers->create([
+            'source_work_location_id' => $warehouse->work_location_id,
+            'destination_work_location_id' => $branch->work_location_id,
+            'transfer_date' => now()->toDateString(),
+            'items' => [[
+                'product_id' => $product->id,
+                'quantity_requested' => '5',
+                'quantity_approved' => '5',
+                'source_warehouse_location_id' => $sourceBin->id,
+            ]],
+            'action' => 'draft',
+        ], $this->warehouseStaff);
+
+        $this->actingAs($this->warehouseStaff)
+            ->get(route('warehouse.stock-transfers.show', $transfer))
+            ->assertOk()
+            ->assertSee('Aksi Utama Sekarang')
+            ->assertSee('Ajukan untuk Persetujuan')
+            ->assertSee('Produk & Satuan', false)
+            ->assertSee('Rencana (Diminta / Disetujui)')
+            ->assertSee('Pengiriman (Diambil / Dikirim)')
+            ->assertSee('Penerimaan & Status', false);
+
+        // 2. Submit to PENDING_APPROVAL
+        $this->transfers->submit($transfer, $this->warehouseStaff);
+
+        $this->actingAs($this->warehouseHead)
+            ->get(route('warehouse.stock-transfers.show', $transfer))
+            ->assertOk()
+            ->assertSee('Aksi Utama Sekarang')
+            ->assertSee('Setujui Transfer');
+
+        // 3. Approve to APPROVED
+        $this->transfers->approve($transfer, $this->warehouseHead);
+
+        $this->actingAs($this->warehouseStaff)
+            ->get(route('warehouse.stock-transfers.show', $transfer))
+            ->assertOk()
+            ->assertSee('Aksi Utama Sekarang')
+            ->assertSee('Buka Halaman Packing');
+
+        // 4. Pack and Ship to SHIPPED
+        $this->transfers->pack($transfer, [
+            'package_no' => 'PKG-01',
+            'items' => [$transfer->items->firstOrFail()->id => ['quantity_picked' => '5']],
+        ], $this->warehouseStaff);
+        $this->transfers->ship($transfer, [
+            'carrier' => 'Internal',
+            'vehicle_number' => 'B 1234 CD',
+        ], $this->warehouseStaff);
+
+        $this->actingAs($this->storeHead)
+            ->get(route('warehouse.stock-transfers.show', $transfer))
+            ->assertOk()
+            ->assertSee('Aksi Utama Sekarang')
+            ->assertSee('Proses Terima Barang')
+            ->assertSee(route('retail.stock-transfers.receive-form', $transfer), false);
+
+        // 5. Partially receive to PARTIALLY_RECEIVED
+        $item = $transfer->fresh('items')->items->firstOrFail();
+        $this->transfers->receive($transfer, [
+            'idempotency_key' => 'receive-part-1',
+            'items' => [$item->id => ['quantity_received' => '2', 'quantity_damaged' => '0', 'quantity_discrepancy' => '0']],
+        ], $this->storeHead);
+
+        $this->actingAs($this->storeHead)
+            ->get(route('warehouse.stock-transfers.show', $transfer))
+            ->assertOk()
+            ->assertSee('Aksi Utama Sekarang')
+            ->assertSee('Lanjutkan Penerimaan Barang');
+
+        // 6. Complete receiving to FULLY_RECEIVED and COMPLETE
+        $this->transfers->receive($transfer, [
+            'idempotency_key' => 'receive-part-2',
+            'items' => [$item->id => ['quantity_received' => '3', 'quantity_damaged' => '0', 'quantity_discrepancy' => '0']],
+        ], $this->storeHead);
+
+        $this->transfers->complete($transfer, $this->storeHead);
+
+        $this->actingAs($this->warehouseHead)
+            ->get(route('warehouse.stock-transfers.show', $transfer))
+            ->assertOk()
+            ->assertSee('Aksi Utama Sekarang')
+            ->assertSee('Transfer Selesai')
+            ->assertSee('Cetak Surat Jalan');
     }
 
     /** @return array{Warehouse, Branch, Product, WarehouseLocation, WarehouseLocation} */

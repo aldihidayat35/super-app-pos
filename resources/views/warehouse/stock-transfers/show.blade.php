@@ -12,7 +12,7 @@
             <ol><li>Halaman menampilkan ringkasan transfer dan tabel item dengan setiap tahap qty.</li><li>Mutasi stok terdaftar untuk audit perubahan saldo.</li><li>Timeline mencatat setiap perubahan status transfer.</li><li>Aksi tersedia sesuai role dan status transfer.</li></ol>
         </x-slot:workflow>
         <x-slot:parts>
-            <ul><li><strong>Sumber/Tujuan:</strong> gudang asal dan tujuan.</li><li><strong>Tanggal:</strong> tanggal pelaksanaan transfer.</li><li><strong>Status:</strong> progress proses transfer.</li><li><strong>Request Asal:</strong> nomor restock request jika ada.</li><li><strong>Pengirim/Penerima:</strong> user yang menangani.</li><li><strong>Resi/Kendaraan:</strong> info pengiriman.</li><li><strong>Request/Approved/Picked/Short/Shipped/Received/Damaged/Discrepancy:</strong> qty per tahap item.</li><li><strong>In Transit:</strong> qty masih dalam perjalanan.</li><li><strong>Mutasi Stok:</strong> daftar perubahan saldo akibat transfer.</li><li><strong>Aksi Dokumen:</strong> Approve, Selesaikan, Cancel.</li><li><strong>Timeline:</strong> histori perubahan status.</li><li><strong>Paket dan Bukti:</strong> daftar paket packing.</li><li><strong>Surat Jalan:</strong> cetak bukti pengiriman.</li><li><strong>Packing:</strong> halaman picking/packing.</li><li><strong>Kirim:</strong> halaman konfirmasi pengiriman.</li><li><strong>Terima di Cabang:</strong> halaman penerimaan tujuan.</li></ul>
+            <ul><li><strong>Sumber/Tujuan:</strong> gudang asal dan tujuan.</li><li><strong>Tanggal:</strong> tanggal pelaksanaan transfer.</li><li><strong>Status:</strong> progress proses transfer.</li><li><strong>Request Asal:</strong> nomor restock request jika ada.</li><li><strong>Pengirim/Penerima:</strong> user yang menangani.</li><li><strong>Resi/Kendaraan:</strong> info pengiriman.</li><li><strong>Rencana/Pengiriman/Penerimaan:</strong> ringkasan status kuantitas per produk.</li><li><strong>Mutasi Stok:</strong> daftar perubahan saldo akibat transfer.</li><li><strong>Aksi Dokumen:</strong> Approve, Selesaikan, Cancel.</li><li><strong>Timeline:</strong> histori perubahan status.</li><li><strong>Paket dan Bukti:</strong> daftar paket packing.</li><li><strong>Surat Jalan:</strong> cetak bukti pengiriman.</li><li><strong>Packing:</strong> halaman picking/packing.</li><li><strong>Kirim:</strong> halaman konfirmasi pengiriman.</li><li><strong>Terima di Cabang:</strong> halaman penerimaan tujuan.</li></ul>
         </x-slot:parts>
         <x-slot:impacts>
             <p>Setiap aksi mengubah status transfer dan memengaruhi stok. Approve melakukan reserve, Ship mengeluarkan stok sumber, Receive menambah stok tujuan. Cancel memerlukan alasan.</p>
@@ -59,19 +59,206 @@
         $nextStep = match($transfer->status->value) {
             'draft' => ['title' => 'Ajukan untuk Persetujuan', 'description' => 'Periksa kembali item transfer, lalu ajukan dokumen agar Kepala Gudang dapat melakukan persetujuan.', 'action' => 'submit'],
             'pending_approval' => ['title' => 'Periksa dan Setujui Transfer', 'description' => 'Kepala Gudang sumber perlu memeriksa jumlah yang diminta serta kecukupan stok sebelum melakukan alokasi.', 'action' => 'approval'],
-            'approved' => ['title' => 'Mulai Picking dan Packing', 'description' => 'Stok sumber sudah dialokasikan. Petugas gudang harus mengambil barang dari rak dan mencatat hasil pengemasan.', 'action' => 'packing'],
-            'packing' => ['title' => 'Konfirmasi Pengiriman', 'description' => 'Barang sudah masuk proses packing. Lengkapi hasil picking bila perlu, kemudian catat kendaraan atau kurir dan kirim barang.', 'action' => 'shipping'],
+            'approved' => ['title' => 'Mulai Pengepakan (Packing)', 'description' => 'Stok sumber sudah dialokasikan. Petugas gudang harus mengambil barang dari rak dan mencatat hasil pengemasan.', 'action' => 'packing'],
+            'packing' => ['title' => 'Kirim Barang (Dispatch/Ship)', 'description' => 'Barang sudah masuk proses packing. Lengkapi hasil picking bila perlu, kemudian catat kendaraan atau kurir dan kirim barang.', 'action' => 'shipping'],
             'shipped' => ['title' => 'Terima Barang di Lokasi Tujuan', 'description' => 'Barang sedang dalam perjalanan. Petugas tujuan harus memeriksa jumlah diterima, rusak, dan selisih saat barang tiba.', 'action' => 'receiving'],
             'partially_received' => $hasDiscrepancy
                 ? ['title' => 'Selesaikan Selisih Penerimaan', 'description' => 'Ada selisih yang belum dipertanggungjawabkan. Tentukan penyelesaian dan unggah bukti sebelum transfer dapat dilanjutkan.', 'action' => 'discrepancy']
                 : ['title' => 'Lanjutkan Penerimaan Barang', 'description' => 'Sebagian barang telah diterima, tetapi masih ada barang dalam perjalanan yang harus dicatat saat tiba.', 'action' => 'receiving'],
-            'fully_received' => ['title' => 'Tutup Transfer', 'description' => 'Seluruh barang telah dipertanggungjawabkan. Penanggung jawab tujuan dapat menyelesaikan dokumen transfer.', 'action' => 'complete'],
+            'fully_received' => ['title' => 'Selesaikan Transfer', 'description' => 'Seluruh barang telah dipertanggungjawabkan. Penanggung jawab tujuan dapat menyelesaikan dokumen transfer.', 'action' => 'complete'],
             'completed' => ['title' => 'Transfer Selesai', 'description' => 'Tidak ada tindakan operasional berikutnya. Dokumen dapat dicetak atau ditinjau melalui daftar transfer.', 'action' => 'finished'],
             'cancelled' => ['title' => 'Transfer Dibatalkan', 'description' => 'Tidak ada tindakan lanjutan pada dokumen ini. Buat transfer baru jika pengiriman tetap diperlukan.', 'action' => 'cancelled'],
             default => ['title' => 'Periksa Status Transfer', 'description' => 'Status dokumen belum memiliki arahan proses berikutnya.', 'action' => 'none'],
         };
+        $approvalBlocked = $approvalStocks->contains(fn($row) => !$row['enough']);
+        $heroCardBorder = match($transfer->status->value) {
+            'pending_approval' => $approvalBlocked ? 'border-warning bg-light-warning' : 'border-success bg-light-success',
+            'shipped' => 'border-primary bg-light-primary',
+            'completed' => 'border-success bg-light-success',
+            'cancelled' => 'border-danger bg-light-danger',
+            default => 'border-primary bg-light-primary',
+        };
+        $heroIcon = match($transfer->status->value) {
+            'draft' => 'ki-send',
+            'pending_approval' => 'ki-check-circle',
+            'approved' => 'ki-package',
+            'packing' => 'ki-delivery',
+            'shipped' => 'ki-delivery-3',
+            'partially_received' => 'ki-information-2',
+            'fully_received' => 'ki-check',
+            'completed' => 'ki-verify',
+            'cancelled' => 'ki-cross-circle',
+            default => 'ki-route',
+        };
+        $heroIconColor = match($transfer->status->value) {
+            'pending_approval' => $approvalBlocked ? 'text-warning' : 'text-success',
+            'completed' => 'text-success',
+            'cancelled' => 'text-danger',
+            default => 'text-primary',
+        };
     @endphp
 
+    {{-- 1. KARTU 'AKSI UTAMA SEKARANG' (HERO ACTION CARD) DI PALING ATAS --}}
+    <div class="card mb-6 border border-2 border-dashed {{ $heroCardBorder }} shadow-sm">
+        <div class="card-body p-6 p-lg-8">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-5">
+                <div class="d-flex align-items-start gap-4">
+                    <div class="symbol symbol-60px flex-shrink-0">
+                        <span class="symbol-label bg-white shadow-sm">
+                            <i class="ki-outline {{ $heroIcon }} fs-2tx {{ $heroIconColor }}"></i>
+                        </span>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <span class="badge badge-primary text-uppercase fw-bolder px-3 py-1 fs-8">Aksi Utama Sekarang</span>
+                            <x-metronic.status-badge :status="$transfer->status" />
+                        </div>
+                        <h2 class="fs-2 fw-bolder text-gray-900 mb-1">{{ $nextStep['title'] }}</h2>
+                        <p class="fs-6 text-gray-700 mb-3">{{ $nextStep['description'] }}</p>
+
+                        <div class="rounded border border-gray-300 bg-white p-3 d-inline-flex flex-wrap align-items-center gap-2 shadow-xs">
+                            <span class="text-muted text-uppercase fs-8 fw-bold">Penanggung Jawab Berikutnya:</span>
+                            <span class="badge badge-light-primary fw-bold fs-7">{{ $nextResponsibility['role'] }}</span>
+                            @if($nextResponsibility['location'])
+                                <span class="text-muted fs-7"><i class="ki-outline ki-geolocation me-1"></i>{{ $nextResponsibility['location'] }}</span>
+                            @endif
+                            @if(!empty($nextResponsibility['users']))
+                                <div class="d-flex flex-wrap gap-1 align-items-center ms-lg-2">
+                                    @foreach($nextResponsibility['users'] as $responsibleUser)
+                                        <span class="badge badge-light-dark"><i class="ki-outline ki-user me-1"></i>{{ $responsibleUser }}</span>
+                                    @endforeach
+                                </div>
+                            @elseif(!in_array($transfer->status->value, ['completed', 'cancelled'], true))
+                                <span class="text-warning fs-8 ms-lg-2">(Belum ada user aktif yang ditugaskan)</span>
+                            @endif
+                        </div>
+
+                        @if($transfer->status->value === 'pending_approval' && $approvalBlocked)
+                            <div class="alert alert-danger d-flex align-items-center p-3 mt-3 mb-0">
+                                <i class="ki-outline ki-information-5 fs-2 text-danger me-2"></i>
+                                <div class="fs-7 text-danger fw-semibold">
+                                    <strong>Peringatan Stok Kurang:</strong> Beberapa produk di gudang asal tidak mencukupi untuk dialokasikan. Persetujuan ditangguhkan hingga stok mencukupi.
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="flex-shrink-0 d-flex flex-column align-items-lg-end justify-content-center">
+                    @if($transfer->status->value === 'draft')
+                        @can('update', $transfer)
+                            <form method="POST" action="{{ route('warehouse.stock-transfers.submit', $transfer) }}" onsubmit="return confirm('Ajukan transfer ini untuk persetujuan Kepala Gudang?');">
+                                @csrf
+                                <button type="submit" class="btn btn-primary btn-lg fs-5 fw-bolder px-8 py-4 shadow-sm">
+                                    <i class="ki-outline ki-send fs-2 me-2"></i>Ajukan untuk Persetujuan
+                                </button>
+                            </form>
+                        @else
+                            <span class="btn btn-light disabled fs-7 py-3">Menunggu Pembuat Transfer</span>
+                        @endcan
+
+                    @elseif($transfer->status->value === 'pending_approval')
+                        @can('approve', $transfer)
+                            <form method="POST" action="{{ route('warehouse.stock-transfers.approve', $transfer) }}">
+                                @csrf
+                                @foreach($transfer->items as $item)
+                                    <input type="hidden" name="items[{{ $item->id }}][quantity_approved]" value="{{ qty_input($item->quantity_approved) }}">
+                                @endforeach
+                                <button type="submit" class="btn btn-success btn-lg fs-5 fw-bolder px-8 py-4 shadow-sm" @disabled($approvalBlocked)>
+                                    <i class="ki-outline ki-check-circle fs-2 me-2"></i>Setujui Transfer
+                                </button>
+                            </form>
+                        @else
+                            <span class="btn btn-light disabled fs-7 py-3">Menunggu Kepala Gudang</span>
+                        @endcan
+
+                    @elseif($transfer->status->value === 'approved')
+                        @can('pack', $transfer)
+                            <a href="{{ route('warehouse.stock-transfers.packing', $transfer) }}" class="btn btn-primary btn-lg fs-5 fw-bolder px-8 py-4 shadow-sm">
+                                <i class="ki-outline ki-package fs-2 me-2"></i>Buka Halaman Packing
+                            </a>
+                        @else
+                            <span class="btn btn-light disabled fs-7 py-3">Menunggu Petugas Gudang</span>
+                        @endcan
+
+                    @elseif($transfer->status->value === 'packing')
+                        @can('ship', $transfer)
+                            <div class="d-flex flex-column flex-sm-row gap-2">
+                                <a href="{{ route('warehouse.stock-transfers.ship-form', $transfer) }}" class="btn btn-primary btn-lg fs-5 fw-bolder px-6 py-4 shadow-sm">
+                                    <i class="ki-outline ki-delivery fs-2 me-2"></i>Buka Halaman Pengiriman
+                                </a>
+                                @can('pack', $transfer)
+                                    <a href="{{ route('warehouse.stock-transfers.packing', $transfer) }}" class="btn btn-light-primary fs-6 px-4 py-3 align-self-center">
+                                        Perbarui Packing
+                                    </a>
+                                @endcan
+                            </div>
+                        @else
+                            <span class="btn btn-light disabled fs-7 py-3">Menunggu Petugas Pengiriman</span>
+                        @endcan
+
+                    @elseif($transfer->status->value === 'shipped')
+                        @can('receive', $transfer)
+                            <a href="{{ route('retail.stock-transfers.receive-form', $transfer) }}" class="btn btn-primary btn-lg fs-5 fw-bolder px-8 py-4 shadow-sm">
+                                <i class="ki-outline ki-delivery-3 fs-2 me-2"></i>Proses Terima Barang
+                            </a>
+                        @else
+                            <span class="btn btn-light disabled fs-7 py-3">Menunggu Petugas Cabang Tujuan</span>
+                        @endcan
+
+                    @elseif($transfer->status->value === 'partially_received')
+                        @if($hasDiscrepancy)
+                            @can('resolveDiscrepancy', $transfer)
+                                <a href="#penyelesaian-selisih" class="btn btn-warning btn-lg fs-5 fw-bolder px-8 py-4 shadow-sm">
+                                    <i class="ki-outline ki-information-2 fs-2 me-2"></i>Selesaikan Selisih
+                                </a>
+                            @else
+                                <span class="btn btn-light disabled fs-7 py-3">Menunggu Penanggung Jawab Selisih</span>
+                            @endcan
+                        @else
+                            @can('receive', $transfer)
+                                <a href="{{ route('retail.stock-transfers.receive-form', $transfer) }}" class="btn btn-primary btn-lg fs-5 fw-bolder px-8 py-4 shadow-sm">
+                                    <i class="ki-outline ki-delivery-3 fs-2 me-2"></i>Lanjutkan Penerimaan Barang
+                                </a>
+                            @else
+                                <span class="btn btn-light disabled fs-7 py-3">Menunggu Petugas Cabang Tujuan</span>
+                            @endcan
+                        @endif
+
+                    @elseif($transfer->status->value === 'fully_received')
+                        @can('complete', $transfer)
+                            <form method="POST" action="{{ route('warehouse.stock-transfers.complete', $transfer) }}">
+                                @csrf
+                                <button type="submit" class="btn btn-primary btn-lg fs-5 fw-bolder px-8 py-4 shadow-sm">
+                                    <i class="ki-outline ki-check fs-2 me-2"></i>Selesaikan Transfer
+                                </button>
+                            </form>
+                        @else
+                            <span class="btn btn-light disabled fs-7 py-3">Menunggu Penanggung Jawab Tujuan</span>
+                        @endcan
+
+                    @elseif($transfer->status->value === 'completed')
+                        <div class="d-flex flex-column align-items-lg-end gap-2">
+                            <span class="badge badge-light-success fs-6 py-2 px-3 fw-bold"><i class="ki-outline ki-verify fs-4 me-1 text-success"></i>Transfer Selesai</span>
+                            <a href="{{ route('warehouse.stock-transfers.print', $transfer) }}" class="btn btn-light-success btn-lg fs-6 fw-bold px-6 py-3">
+                                <i class="ki-outline ki-printer fs-3 me-2"></i>Cetak Surat Jalan
+                            </a>
+                        </div>
+
+                    @elseif($transfer->status->value === 'cancelled')
+                        <div class="d-flex flex-column align-items-lg-end gap-2">
+                            <span class="badge badge-light-danger fs-6 py-2 px-3 fw-bold"><i class="ki-outline ki-cross fs-4 me-1 text-danger"></i>Dokumen Dibatalkan</span>
+                            <a href="{{ route('warehouse.stock-transfers.create') }}" class="btn btn-primary btn-lg fs-6 fw-bold px-6 py-3">
+                                <i class="ki-outline ki-plus fs-3 me-2"></i>Buat Transfer Baru
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- 2. PERJALANAN TRANSFER (STAGE PROGRESS) --}}
     <x-metronic.card title="Perjalanan Transfer" class="mb-5">
         <div class="d-flex flex-column flex-lg-row align-items-stretch gap-2">
             @foreach($stages as $index => $stage)
@@ -92,123 +279,138 @@
         @if($transfer->status->value === 'cancelled')<div class="alert alert-danger mt-4 mb-0">Dokumen ini telah dibatalkan.</div>@endif
     </x-metronic.card>
 
-    <div class="row g-5 mb-5">
-        <div class="col-lg-7">
-            <x-metronic.card title="Langkah Berikutnya" class="h-100">
-                <div class="d-flex align-items-start gap-4 mb-5">
-                    <div class="symbol symbol-50px flex-shrink-0">
-                        <span class="symbol-label bg-light-primary"><i class="ki-outline ki-route fs-2x text-primary"></i></span>
-                    </div>
-                    <div>
-                        <div class="fs-4 fw-bold text-gray-900 mb-1">{{ $nextStep['title'] }}</div>
-                        <div class="text-gray-700">{{ $nextStep['description'] }}</div>
-                    </div>
-                </div>
-
-                <div class="rounded border border-dashed border-gray-300 bg-light-primary p-4 mb-5">
-                    <div class="text-muted text-uppercase fs-8 fw-bold mb-2">Penanggung Jawab Berikutnya</div>
-                    <div class="fw-bold text-gray-900">{{ $nextResponsibility['role'] }}</div>
-                    @if($nextResponsibility['location'])
-                        <div class="text-muted fs-7"><i class="ki-outline ki-geolocation me-1"></i>{{ $nextResponsibility['location'] }}</div>
-                    @endif
-                    @if($nextResponsibility['users'])
-                        <div class="d-flex flex-wrap gap-2 mt-3">
-                            @foreach($nextResponsibility['users'] as $responsibleUser)
-                                <span class="badge badge-light-primary"><i class="ki-outline ki-user me-1"></i>{{ $responsibleUser }}</span>
-                            @endforeach
-                        </div>
-                    @elseif(!in_array($transfer->status->value, ['completed', 'cancelled'], true))
-                        <div class="text-warning fs-8 mt-2">Belum ada user aktif dengan role dan penempatan lokasi yang sesuai.</div>
-                    @endif
-                </div>
-
-                <div class="d-flex flex-wrap gap-2">
-                    @if($nextStep['action'] === 'packing')
-                        @can('pack', $transfer)
-                            <a href="{{ route('warehouse.stock-transfers.packing', $transfer) }}" class="btn btn-primary"><i class="ki-outline ki-package"></i>Buka Halaman Packing</a>
-                        @else
-                            <span class="btn btn-light disabled">Menunggu Petugas Gudang</span>
-                        @endcan
-                    @elseif($nextStep['action'] === 'shipping')
-                        @can('ship', $transfer)
-                            <a href="{{ route('warehouse.stock-transfers.ship-form', $transfer) }}" class="btn btn-primary"><i class="ki-outline ki-delivery"></i>Buka Halaman Pengiriman</a>
-                            @can('pack', $transfer)<a href="{{ route('warehouse.stock-transfers.packing', $transfer) }}" class="btn btn-light-primary">Perbarui Packing</a>@endcan
-                        @else
-                            <span class="btn btn-light disabled">Menunggu Petugas Pengiriman</span>
-                        @endcan
-                    @elseif($nextStep['action'] === 'receiving')
-                        @can('receive', $transfer)
-                            <a href="{{ route('retail.stock-transfers.receive-form', $transfer) }}" class="btn btn-primary"><i class="ki-outline ki-delivery-3"></i>Buka Halaman Penerimaan</a>
-                        @else
-                            <span class="btn btn-light disabled">Menunggu Petugas Lokasi Tujuan</span>
-                        @endcan
-                    @elseif($nextStep['action'] === 'discrepancy')
-                        @can('resolveDiscrepancy', $transfer)
-                            <a href="#penyelesaian-selisih" class="btn btn-warning"><i class="ki-outline ki-information-2"></i>Buka Penyelesaian Selisih</a>
-                        @else
-                            <span class="btn btn-light disabled">Menunggu Penanggung Jawab Selisih</span>
-                        @endcan
-                    @elseif($nextStep['action'] === 'submit')
-                        @can('update', $transfer)
-                            <a href="#aksi-dokumen" class="btn btn-primary"><i class="ki-outline ki-down"></i>Buka Aksi Pengajuan</a>
-                        @else
-                            <span class="btn btn-light disabled">Menunggu Pembuat Transfer</span>
-                        @endcan
-                    @elseif($nextStep['action'] === 'approval')
-                        @can('approve', $transfer)
-                            <a href="#aksi-dokumen" class="btn btn-primary"><i class="ki-outline ki-down"></i>Buka Aksi Persetujuan</a>
-                        @else
-                            <span class="btn btn-light disabled">Menunggu Kepala Gudang</span>
-                        @endcan
-                    @elseif($nextStep['action'] === 'complete')
-                        @can('complete', $transfer)
-                            <a href="#aksi-dokumen" class="btn btn-primary"><i class="ki-outline ki-down"></i>Buka Aksi Penyelesaian</a>
-                        @else
-                            <span class="btn btn-light disabled">Menunggu Penanggung Jawab Tujuan</span>
-                        @endcan
-                    @elseif($nextStep['action'] === 'finished')
-                        <a href="{{ route('warehouse.stock-transfers.print', $transfer) }}" class="btn btn-light-success"><i class="ki-outline ki-printer"></i>Cetak Surat Jalan</a>
-                        <a href="{{ route('warehouse.stock-transfers.index') }}" class="btn btn-light-primary">Kembali ke Daftar</a>
-                    @elseif($nextStep['action'] === 'cancelled')
-                        <a href="{{ route('warehouse.stock-transfers.create') }}" class="btn btn-primary"><i class="ki-outline ki-plus"></i>Buat Transfer Baru</a>
-                        <a href="{{ route('warehouse.stock-transfers.index') }}" class="btn btn-light-primary">Kembali ke Daftar</a>
-                    @endif
-                </div>
-            </x-metronic.card>
+    {{-- 3. PERHATIAN OPERASIONAL (JIKA ADA PERINGATAN) --}}
+    @if($hasDamaged || $hasDiscrepancy || $hasTransit || $hasShort)
+        <div class="alert alert-warning d-flex align-items-center p-4 mb-5">
+            <i class="ki-outline ki-information-2 fs-2x text-warning me-3"></i>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="fw-bold me-2">Perhatian Operasional:</span>
+                @if($hasDamaged)<span class="badge badge-light-danger fs-8">Ada barang rusak</span>@endif
+                @if($hasDiscrepancy)<span class="badge badge-light-danger fs-8">Ada selisih pengiriman</span>@endif
+                @if($hasTransit)<span class="badge badge-light-warning fs-8">Masih ada barang dalam perjalanan</span>@endif
+                @if($hasShort)<span class="badge badge-light-warning fs-8">Jumlah diambil kurang dari yang disetujui</span>@endif
+            </div>
         </div>
-        <div class="col-lg-5">
-            <x-metronic.card title="Perhatian Operasional" class="h-100">
-                @if(!$hasDamaged && !$hasDiscrepancy && !$hasTransit && !$hasShort)
-                    <div class="alert alert-success mb-0">Tidak ada kerusakan, selisih pengiriman, kekurangan pengambilan, atau barang dalam perjalanan yang perlu ditindaklanjuti.</div>
-                @else
-                    <div class="d-flex flex-wrap gap-2">
-                        @if($hasDamaged)<span class="badge badge-light-danger">Ada barang rusak</span>@endif
-                        @if($hasDiscrepancy)<span class="badge badge-light-danger">Ada selisih pengiriman</span>@endif
-                        @if($hasTransit)<span class="badge badge-light-warning">Masih ada barang dalam perjalanan</span>@endif
-                        @if($hasShort)<span class="badge badge-light-warning">Jumlah diambil kurang dari yang disetujui</span>@endif
-                    </div>
-                @endif
-            </x-metronic.card>
-        </div>
-    </div>
+    @endif
 
+    {{-- 4. KONTEN UTAMA & SIDEBAR --}}
     <div class="row g-5">
         <div class="col-lg-8">
             <x-metronic.card title="{{ $transfer->number }}">
                 <div class="row g-4 mb-5">
-                    <div class="col-md-3"><div class="text-muted">Sumber</div><div class="fw-bold">{{ $transfer->sourceWorkLocation?->name }}</div></div>
-                    <div class="col-md-3"><div class="text-muted">Tujuan</div><div class="fw-bold">{{ $transfer->destinationWorkLocation?->name }}</div></div>
-                    <div class="col-md-3"><div class="text-muted">Tanggal</div><div>{{ $transfer->transfer_date?->format('d/m/Y') }}</div></div>
-                    <div class="col-md-3"><div class="text-muted">Status</div><x-metronic.status-badge :status="$transfer->status" /></div>
-                    <div class="col-md-3"><div class="text-muted">Sumber Permintaan</div><div>@if($transfer->restockRequest)<a href="{{ route('retail.restock-requests.show', $transfer->restockRequest) }}" class="fw-bold">{{ $transfer->restockRequest->number }}</a>@else-@endif</div></div>
-                    <div class="col-md-3"><div class="text-muted">Pengirim</div><div>{{ $transfer->shipper?->name ?: '-' }}</div></div>
-                    <div class="col-md-3"><div class="text-muted">Penerima</div><div>{{ $transfer->receiver?->name ?: '-' }}</div></div>
-                    <div class="col-md-3"><div class="text-muted">Resi/Kendaraan</div><div>{{ $transfer->tracking_number ?: $transfer->vehicle_number ?: '-' }}</div></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Sumber</div><div class="fw-bold text-gray-900 fs-7">{{ $transfer->sourceWorkLocation?->name }}</div></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Tujuan</div><div class="fw-bold text-gray-900 fs-7">{{ $transfer->destinationWorkLocation?->name }}</div></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Tanggal</div><div class="fw-bold text-gray-900 fs-7">{{ $transfer->transfer_date?->format('d/m/Y') }}</div></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Status</div><x-metronic.status-badge :status="$transfer->status" /></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Sumber Permintaan</div><div class="fs-7">@if($transfer->restockRequest)<a href="{{ route('retail.restock-requests.show', $transfer->restockRequest) }}" class="fw-bold text-primary">{{ $transfer->restockRequest->number }}</a>@else-@endif</div></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Pengirim</div><div class="fs-7 text-gray-800">{{ $transfer->shipper?->name ?: '-' }}</div></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Penerima</div><div class="fs-7 text-gray-800">{{ $transfer->receiver?->name ?: '-' }}</div></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Resi/Kendaraan</div><div class="fs-7 text-gray-800">{{ $transfer->tracking_number ?: $transfer->vehicle_number ?: '-' }}</div></div>
                 </div>
+
+                {{-- TABEL ITEM DENGAN 4 KOLOM RINGKAS & INFORMATIF --}}
                 <div class="table-responsive">
-                    <table class="table table-row-dashed align-middle">
-                        <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Produk</th><th>Diminta</th><th>Disetujui</th><th>Diambil/Kurang</th><th>Dikirim</th><th>Diterima</th><th>Rusak</th><th>Selisih Pengiriman</th><th>Dalam Perjalanan</th></tr></thead>
-                        <tbody>@foreach($transfer->items as $item)<tr><td>{{ $item->product_sku_snapshot }}<div class="text-muted">{{ $item->product_name_snapshot }}</div></td><td>{{ qty($item->quantity_requested) }}</td><td>{{ qty($item->quantity_approved) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_short, '0') > 0 ? 'text-warning fw-bold' : '' }}">{{ qty($item->quantity_picked) }} / {{ qty($item->quantity_short) }}</td><td>{{ qty($item->quantity_shipped) }}</td><td>{{ qty($item->quantity_received) }}</td><td class="{{ \App\Support\Decimal::compare((string)$item->quantity_damaged, '0') > 0 ? 'text-danger fw-bold' : '' }}">{{ qty($item->quantity_damaged) }}</td><td class="{{ \App\Support\Decimal::compare($item->unresolvedDiscrepancyQuantity(), '0') > 0 ? 'text-danger fw-bold' : '' }}">{{ qty($item->unresolvedDiscrepancyQuantity()) }} belum selesai<div class="text-muted fs-8">Dicatat {{ qty($item->quantity_discrepancy) }}, diselesaikan {{ qty($item->resolvedDiscrepancyQuantity()) }}</div></td><td class="{{ \App\Support\Decimal::compare($item->inTransitQuantity(), '0') > 0 ? 'text-warning fw-bold' : 'fw-bold' }}">{{ qty($item->inTransitQuantity()) }}</td></tr>@endforeach</tbody>
+                    <table class="table table-row-dashed table-hover align-middle gs-4 gy-4">
+                        <thead class="bg-light">
+                            <tr class="text-muted fw-bold text-uppercase fs-7 border-bottom">
+                                <th class="min-w-200px">Produk & Satuan</th>
+                                <th class="min-w-125px">Rencana (Diminta / Disetujui)</th>
+                                <th class="min-w-150px">Pengiriman (Diambil / Dikirim)</th>
+                                <th class="min-w-200px">Penerimaan & Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="fw-semibold text-gray-600">
+                            @foreach($transfer->items as $item)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span class="text-gray-900 fw-bold fs-6">{{ $item->product_sku_snapshot }}</span>
+                                            <span class="text-gray-700 fs-7">{{ $item->product_name_snapshot }}</span>
+                                            <div class="d-flex align-items-center gap-2 mt-1">
+                                                <span class="badge badge-light-secondary fs-8">{{ $item->unit_name_snapshot ?? ($item->product?->baseUnit?->name ?? 'Unit') }}</span>
+                                                @if($item->sourceWarehouseLocation || $item->destinationWarehouseLocation)
+                                                    <span class="text-muted fs-8">
+                                                        <i class="ki-outline ki-geolocation fs-8 me-1"></i>{{ $item->sourceWarehouseLocation?->full_code ?? 'Auto' }} &rarr; {{ $item->destinationWarehouseLocation?->full_code ?? 'Auto' }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span class="fs-6 fw-bold text-gray-900">{{ qty($item->quantity_approved) }} <span class="fs-8 text-muted fw-normal">disetujui</span></span>
+                                            @if(\App\Support\Decimal::compare((string)$item->quantity_requested, (string)$item->quantity_approved) !== 0)
+                                                <span class="text-muted fs-8"><del>Diminta: {{ qty($item->quantity_requested) }}</del></span>
+                                            @else
+                                                <span class="text-muted fs-8">Diminta: {{ qty($item->quantity_requested) }}</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <div class="d-flex align-items-center gap-1">
+                                                <span class="text-muted fs-7">Dikirim:</span>
+                                                <span class="fw-bold fs-6 {{ \App\Support\Decimal::compare((string)$item->quantity_shipped, '0') > 0 ? 'text-primary' : 'text-gray-400' }}">{{ qty($item->quantity_shipped) }}</span>
+                                            </div>
+                                            <span class="text-muted fs-8">Diambil: {{ qty($item->quantity_picked) }}</span>
+                                            @if(\App\Support\Decimal::compare((string)$item->quantity_short, '0') > 0)
+                                                <span class="badge badge-light-warning fs-8 mt-1 align-self-start">
+                                                    <i class="ki-outline ki-information-2 me-1"></i>Kurang: {{ qty($item->quantity_short) }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @php
+                                            $shipped = (string)$item->quantity_shipped;
+                                            $received = (string)$item->quantity_received;
+                                            $damaged = (string)$item->quantity_damaged;
+                                            $unresolved = $item->unresolvedDiscrepancyQuantity();
+                                            $inTransit = $item->inTransitQuantity();
+                                            $isShipped = \App\Support\Decimal::compare($shipped, '0') > 0;
+                                            $isPerfect = $isShipped
+                                                && \App\Support\Decimal::compare($received, $shipped) === 0
+                                                && \App\Support\Decimal::compare($damaged, '0') === 0
+                                                && \App\Support\Decimal::compare($unresolved, '0') === 0;
+                                        @endphp
+
+                                        @if(!$isShipped)
+                                            <span class="text-muted fs-8 fst-italic">Belum ada pengiriman</span>
+                                        @else
+                                            <div class="d-flex flex-column gap-1">
+                                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                                    <span class="badge badge-light-primary fw-bold fs-8">Dikirim: {{ qty($shipped) }}</span>
+                                                    <i class="ki-outline ki-arrow-right fs-8 text-muted"></i>
+                                                    <span class="badge badge-light-success fw-bold fs-8">Diterima: {{ qty($received) }}</span>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                                    @if(\App\Support\Decimal::compare($damaged, '0') > 0)
+                                                        <span class="badge badge-light-danger fs-8">
+                                                            <i class="ki-outline ki-cross-circle me-1"></i>{{ qty($damaged) }} Rusak
+                                                        </span>
+                                                    @endif
+                                                    @if(\App\Support\Decimal::compare($unresolved, '0') > 0)
+                                                        <span class="badge badge-light-danger fs-8" title="Dicatat {{ qty($item->quantity_discrepancy) }}, diselesaikan {{ qty($item->resolvedDiscrepancyQuantity()) }}">
+                                                            <i class="ki-outline ki-information me-1"></i>{{ qty($unresolved) }} Selisih
+                                                        </span>
+                                                    @endif
+                                                    @if(\App\Support\Decimal::compare($inTransit, '0') > 0)
+                                                        <span class="badge badge-light-warning fs-8">
+                                                            <i class="ki-outline ki-delivery me-1"></i>{{ qty($inTransit) }} In-Transit
+                                                        </span>
+                                                    @endif
+                                                    @if($isPerfect)
+                                                        <span class="badge badge-success fs-8">
+                                                            <i class="ki-outline ki-check fs-8 me-1 text-white"></i>Sempurna
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
                     </table>
                 </div>
             </x-metronic.card>
@@ -227,6 +429,7 @@
                 <div class="table-responsive"><table class="table align-middle"><thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Waktu</th><th>Produk</th><th>Jenis</th><th>On Hand</th><th>Reserved</th><th>Lokasi</th></tr></thead><tbody>@forelse($transfer->stockMutations as $mutation)<tr><td>{{ $mutation->occurred_at?->format('d/m/Y H:i') }}</td><td>{{ $mutation->product?->sku }}</td><td>{{ $mutation->mutation_type->label() }}</td><td>{{ qty($mutation->quantity_on_hand_change) }}</td><td>{{ qty($mutation->quantity_reserved_change) }}</td><td>{{ $mutation->workLocation?->name }}</td></tr>@empty<tr><td colspan="6"><x-metronic.empty-state title="Belum ada mutasi" description="Reserve, ship, dan receive akan membuat mutasi stok." /></td></tr>@endforelse</tbody></table></div>
             </x-metronic.card>
         </div>
+
         <div class="col-lg-4">
             <x-metronic.card title="Aksi Dokumen" id="aksi-dokumen">
                 <div class="d-grid gap-3">
@@ -252,6 +455,7 @@
                     @can('cancel', $transfer)<form method="POST" action="{{ route('warehouse.stock-transfers.cancel', $transfer) }}">@csrf<input name="reason" class="form-control mb-2" placeholder="Alasan pembatalan" required><button class="btn btn-light-danger">Batalkan Transfer</button></form>@endcan
                 </div>
             </x-metronic.card>
+
             @if($hasDiscrepancy)
                 <x-metronic.card title="Penyelesaian Selisih" class="mt-5" id="penyelesaian-selisih">
                     @can('resolveDiscrepancy', $transfer)
@@ -282,9 +486,11 @@
                     @endcan
                 </x-metronic.card>
             @endif
+
             <x-metronic.card title="Timeline" class="mt-5">
                 @forelse($timeline as $history)@php($fromStatus = $history->from_status ? \App\Enums\StockTransferStatus::tryFrom($history->from_status)?->label() : 'Awal')@php($toStatus = \App\Enums\StockTransferStatus::tryFrom($history->to_status)?->label() ?? $history->to_status)<div class="border-start border-3 ps-4 mb-4"><div class="fw-bold">{{ $fromStatus }} → {{ $toStatus }}</div><div class="text-muted">{{ $history->created_at->format('d/m/Y H:i') }} oleh {{ $history->actor?->name ?: '-' }}</div><div>{{ $history->notes ?: '-' }}</div></div>@empty<x-metronic.empty-state title="Belum ada riwayat status" description="Perubahan status transfer akan tercatat di sini." />@endforelse
             </x-metronic.card>
+
             <x-metronic.card title="Paket dan Bukti" class="mt-5">
                 @forelse($transfer->packages as $package)<div class="mb-3"><div class="fw-bold">{{ $package->package_no }}</div><div class="text-muted">Checker {{ $package->checker?->name ?: '-' }}</div><div>{{ $package->notes ?: '-' }}</div></div>@empty<div class="text-muted">Belum ada paket.</div>@endforelse
             </x-metronic.card>
