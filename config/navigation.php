@@ -363,28 +363,10 @@ return [
                 'permission' => 'retail.catalog.view',
             ],
             [
-                'label' => 'Lokasi Toko',
-                'route' => 'retail.locations.index',
-                'active' => ['retail.locations.*'],
-                'permission' => 'retail.catalog.view',
-            ],
-            [
                 'label' => 'Pembelian Darurat',
                 'route' => 'retail.emergency.index',
                 'active' => ['retail.emergency.*'],
                 'permission' => 'emergency_purchases.view',
-            ],
-            [
-                'label' => 'Transfer Antar Cabang',
-                'route' => 'warehouse.stock-transfers.index',
-                'active' => ['warehouse.stock-transfers.*', 'retail.stock-transfers.*', 'retail.restock-requests.*'],
-                'permission' => 'stock_transfers.view|stock_transfers.create|stock_transfers.receive',
-            ],
-            [
-                'label' => 'Pindah Rak Internal',
-                'route' => 'warehouse.location-transfers.index',
-                'active' => ['warehouse.location-transfers.*'],
-                'permission' => 'retail.catalog.view|stock.view',
             ],
         ],
     ],

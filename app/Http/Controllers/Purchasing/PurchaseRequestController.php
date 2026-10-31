@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Enums\PurchaseRequestStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchasing\StorePurchaseRequestRequest;
+use App\Models\Branch;
 use App\Models\DocumentStatusHistory;
 use App\Models\Product;
 use App\Models\PurchaseRequest;
@@ -27,24 +28,66 @@ class PurchaseRequestController extends Controller
         $locationIds = $request->user()?->permittedWorkLocationIds() ?? [];
         $status = $request->query('status');
 
-        $requests = PurchaseRequest::query()
+        $branchWarehouseIds = Branch::query()
+            ->whereIn('work_location_id', $locationIds)
+            ->whereNotNull('primary_warehouse_id')
+            ->pluck('primary_warehouse_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $baseRequestQuery = PurchaseRequest::query()
+            ->where(function ($query) use ($locationIds, $branchWarehouseIds, $request): void {
+                $query->whereHas('warehouse', fn ($q) => $q->whereIn('work_location_id', $locationIds));
+                if (! empty($branchWarehouseIds)) {
+                    $query->orWhereIn('warehouse_id', $branchWarehouseIds);
+                }
+                if ($request->user()) {
+                    $query->orWhere('requester_user_id', $request->user()->id);
+                }
+            });
+
+        $requests = (clone $baseRequestQuery)
             ->with(['warehouse', 'requester', 'items.product', 'convertedPurchaseOrder'])
-            ->whereHas('warehouse', fn ($query) => $query->whereIn('work_location_id', $locationIds))
             ->when($status, fn ($query) => $query->where('status', $status))
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
         $recommendations = Stock::query()
-            ->with(['product.baseUnit', 'product.category', 'product.supplierProducts.supplier', 'warehouseLocation', 'workLocation'])
-            ->whereIn('work_location_id', $locationIds)
-            ->whereHas('product', fn ($query) => $query->whereRaw('(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock'))
+            ->select([
+                'stocks.product_id',
+                'stocks.work_location_id',
+                DB::raw('SUM(stocks.quantity_on_hand) as quantity_on_hand'),
+                DB::raw('SUM(stocks.quantity_reserved) as quantity_reserved'),
+                DB::raw('SUM(stocks.quantity_damaged) as quantity_damaged'),
+                DB::raw('SUM(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) as available_quantity'),
+            ])
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->whereIn('stocks.work_location_id', $locationIds)
+            ->where('products.status', 'active')
+            ->groupBy('stocks.product_id', 'stocks.work_location_id', 'products.minimum_stock')
+            ->havingRaw('available_quantity <= products.minimum_stock')
+            ->with([
+                'product.baseUnit',
+                'product.category',
+                'product.supplierProducts.supplier',
+                'workLocation',
+            ])
             ->limit(50)
             ->get();
+
+        $stats = [
+            'total' => (clone $baseRequestQuery)->count(),
+            'pending' => (clone $baseRequestQuery)->where('status', PurchaseRequestStatus::SUBMITTED)->count(),
+            'approved' => (clone $baseRequestQuery)->where('status', PurchaseRequestStatus::APPROVED)->count(),
+            'converted' => (clone $baseRequestQuery)->where('status', PurchaseRequestStatus::CONVERTED)->count(),
+            'critical' => $recommendations->count(),
+        ];
 
         return view('purchasing.requests.index', [
             'requests' => $requests,
             'recommendations' => $recommendations,
+            'stats' => $stats,
             'warehouses' => $this->warehouses($request),
             'products' => Product::query()->with(['baseUnit', 'category', 'units.unit'])->where('status', 'active')->orderBy('name')->limit(300)->get(),
             'suppliers' => Supplier::query()->where('is_active', true)->orderBy('name')->get(),
@@ -182,9 +225,23 @@ class PurchaseRequestController extends Controller
 
     private function warehouses(Request $request): mixed
     {
+        $locationIds = $request->user()?->permittedWorkLocationIds() ?? [];
+
+        $branchWarehouseIds = Branch::query()
+            ->whereIn('work_location_id', $locationIds)
+            ->whereNotNull('primary_warehouse_id')
+            ->pluck('primary_warehouse_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
         return Warehouse::query()
             ->where('is_active', true)
-            ->whereIn('work_location_id', $request->user()?->permittedWorkLocationIds() ?? [])
+            ->where(function ($query) use ($locationIds, $branchWarehouseIds): void {
+                $query->whereIn('work_location_id', $locationIds);
+                if (! empty($branchWarehouseIds)) {
+                    $query->orWhereIn('id', $branchWarehouseIds);
+                }
+            })
             ->orderBy('name')
             ->get();
     }

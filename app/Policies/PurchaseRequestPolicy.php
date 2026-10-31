@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\PurchaseRequestStatus;
+use App\Models\Branch;
 use App\Models\PurchaseRequest;
 use App\Models\User;
 use App\Support\ApprovalAuthority;
@@ -16,7 +17,27 @@ class PurchaseRequestPolicy
 
     public function view(User $user, PurchaseRequest $purchaseRequest): bool
     {
-        return $this->viewAny($user) && $user->canAccessWorkLocation((int) $purchaseRequest->warehouse?->work_location_id);
+        if (! $this->viewAny($user)) {
+            return false;
+        }
+
+        if ($purchaseRequest->requester_user_id === $user->id) {
+            return true;
+        }
+
+        $warehouseLocationId = (int) $purchaseRequest->warehouse?->work_location_id;
+        if ($warehouseLocationId > 0 && $user->canAccessWorkLocation($warehouseLocationId)) {
+            return true;
+        }
+
+        $branchWarehouseIds = Branch::query()
+            ->whereIn('work_location_id', $user->permittedWorkLocationIds())
+            ->whereNotNull('primary_warehouse_id')
+            ->pluck('primary_warehouse_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        return in_array((int) $purchaseRequest->warehouse_id, $branchWarehouseIds, true);
     }
 
     public function create(User $user): bool

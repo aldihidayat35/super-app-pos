@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Purchasing;
 
+use App\Models\Branch;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,12 +18,24 @@ class StorePurchaseRequestRequest extends FormRequest
     {
         $workLocationIds = $this->user()?->permittedWorkLocationIds() ?? [];
 
+        $branchWarehouseIds = Branch::query()
+            ->whereIn('work_location_id', $workLocationIds)
+            ->whereNotNull('primary_warehouse_id')
+            ->pluck('primary_warehouse_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
         return [
             'warehouse_id' => [
                 'required',
                 Rule::exists('warehouses', 'id')->where(fn ($query) => $query
                     ->where('is_active', true)
-                    ->whereIn('work_location_id', $workLocationIds)),
+                    ->where(function ($q) use ($workLocationIds, $branchWarehouseIds): void {
+                        $q->whereIn('work_location_id', $workLocationIds);
+                        if (! empty($branchWarehouseIds)) {
+                            $q->orWhereIn('id', $branchWarehouseIds);
+                        }
+                    })),
             ],
             'priority' => ['required', Rule::in(['low', 'normal', 'high', 'urgent'])],
             'reason' => ['required', 'string', 'max:1000'],

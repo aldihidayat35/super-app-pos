@@ -4,9 +4,11 @@ namespace Tests\Feature\Purchasing;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
+use App\Models\Branch;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
+use App\Models\Stock;
 use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\User;
@@ -208,6 +210,102 @@ class PurchaseRequestWorkflowTest extends TestCase
         $this->actingAs($otherPurchasing)
             ->get(route('purchasing.requests.show', $purchaseRequest))
             ->assertForbidden();
+    }
+
+    public function test_branch_staff_can_view_and_request_to_primary_warehouse(): void
+    {
+        $branchLocation = WorkLocation::factory()->create(['type' => 'branch', 'name' => 'Toko Cabang Uji']);
+        Branch::factory()->create([
+            'work_location_id' => $branchLocation->id,
+            'primary_warehouse_id' => $this->warehouse->id,
+        ]);
+
+        $branchStaff = $this->userWithRole('kepala_toko');
+        $branchStaff->workLocations()->sync([$branchLocation->id => ['is_default' => true, 'is_active' => true]]);
+
+        $this->actingAs($branchStaff)
+            ->get(route('purchasing.requests.index'))
+            ->assertOk()
+            ->assertSee($this->warehouse->name);
+
+        $response = $this->actingAs($branchStaff)
+            ->post(route('purchasing.requests.store'), $this->payload([
+                'warehouse_id' => $this->warehouse->id,
+                'reason' => 'Pengajuan stok rutin toko cabang.',
+            ]));
+
+        $response->assertRedirect(route('purchasing.requests.index'));
+
+        $pr = PurchaseRequest::query()->where('requester_user_id', $branchStaff->id)->first();
+        $this->assertNotNull($pr);
+        $this->assertSame($this->warehouse->id, $pr->warehouse_id);
+
+        $this->actingAs($branchStaff)
+            ->get(route('purchasing.requests.show', $pr))
+            ->assertOk()
+            ->assertSee($pr->number);
+    }
+
+    public function test_stock_recommendation_aggregates_across_bins_and_avoids_false_positives(): void
+    {
+        // Produk 1: min_stock = 10. Memiliki 2 bin (0 pcs dan 25 pcs => total 25 pcs, aman)
+        $productSafe = Product::factory()->create([
+            'base_unit_id' => $this->unit->id,
+            'status' => 'active',
+            'minimum_stock' => 10,
+            'safety_stock' => 15,
+        ]);
+        Stock::create([
+            'work_location_id' => $this->warehouse->work_location_id,
+            'product_id' => $productSafe->id,
+            'warehouse_location_id' => null,
+            'location_scope_key' => 'work:'.$this->warehouse->work_location_id.'|bin:1',
+            'quantity_on_hand' => 0,
+            'quantity_reserved' => 0,
+            'quantity_damaged' => 0,
+        ]);
+        Stock::create([
+            'work_location_id' => $this->warehouse->work_location_id,
+            'product_id' => $productSafe->id,
+            'warehouse_location_id' => null,
+            'location_scope_key' => 'work:'.$this->warehouse->work_location_id.'|bin:2',
+            'quantity_on_hand' => 25,
+            'quantity_reserved' => 0,
+            'quantity_damaged' => 0,
+        ]);
+
+        // Produk 2: min_stock = 10, total stok = 4 pcs (kritis)
+        $productCritical = Product::factory()->create([
+            'base_unit_id' => $this->unit->id,
+            'status' => 'active',
+            'minimum_stock' => 10,
+            'safety_stock' => 15,
+        ]);
+        Stock::create([
+            'work_location_id' => $this->warehouse->work_location_id,
+            'product_id' => $productCritical->id,
+            'warehouse_location_id' => null,
+            'location_scope_key' => 'work:'.$this->warehouse->work_location_id.'|bin:3',
+            'quantity_on_hand' => 4,
+            'quantity_reserved' => 0,
+            'quantity_damaged' => 0,
+        ]);
+
+        $response = $this->actingAs($this->warehouseStaff)
+            ->get(route('purchasing.requests.index'))
+            ->assertOk();
+
+        $recommendations = $response->viewData('recommendations');
+
+        $this->assertFalse(
+            $recommendations->contains(fn ($r) => $r->product_id === $productSafe->id),
+            'Produk dengan total stok 25 pcs seharusnya tidak muncul di rekomendasi stok menipis.'
+        );
+
+        $this->assertTrue(
+            $recommendations->contains(fn ($r) => $r->product_id === $productCritical->id),
+            'Produk dengan total stok 4 pcs seharusnya muncul di rekomendasi stok menipis.'
+        );
     }
 
     private function userWithRole(string $role): User
