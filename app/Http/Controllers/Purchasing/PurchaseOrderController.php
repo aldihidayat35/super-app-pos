@@ -52,16 +52,19 @@ class PurchaseOrderController extends Controller
     {
         $purchaseOrder = $service->create($request->validated(), $request->user());
 
-        if ($request->input('submit_action') === 'approve') {
-            $service->submit($purchaseOrder, $request->user());
-            if ($request->user()?->can('approve', $purchaseOrder->fresh())) {
-                $service->approve($purchaseOrder->fresh(), $request->user(), 'Disetujui langsung oleh pembuat pesanan.');
+        if ($request->input('submit_action') === 'send') {
+            $service->markSent($purchaseOrder->fresh(), $request->user());
 
-                return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil dibuat dan langsung disetujui (Siap Kirim)."]);
-            }
+            return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil dibuat dan ditandai terkirim ke supplier."]);
         }
 
-        return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil dibuat."]);
+        if ($request->input('submit_action') === 'approve') {
+            $service->approve($purchaseOrder->fresh(), $request->user(), 'Diterbitkan langsung oleh pembuat pesanan.');
+
+            return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil dibuat (Siap Kirim)."]);
+        }
+
+        return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil dibuat sebagai draft."]);
     }
 
     public function show(PurchaseOrder $purchaseOrder): View
@@ -88,13 +91,16 @@ class PurchaseOrderController extends Controller
         $this->authorize('update', $purchaseOrder);
         $purchaseOrder = $service->update($purchaseOrder, $request->validated(), $request->user());
 
-        if ($request->input('submit_action') === 'approve') {
-            $service->submit($purchaseOrder, $request->user());
-            if ($request->user()?->can('approve', $purchaseOrder->fresh())) {
-                $service->approve($purchaseOrder->fresh(), $request->user(), 'Disetujui langsung oleh pembuat pesanan.');
+        if ($request->input('submit_action') === 'send') {
+            $service->markSent($purchaseOrder->fresh(), $request->user());
 
-                return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil diperbarui dan disetujui (Siap Kirim)."]);
-            }
+            return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil diperbarui dan ditandai terkirim ke supplier."]);
+        }
+
+        if ($request->input('submit_action') === 'approve') {
+            $service->approve($purchaseOrder->fresh(), $request->user(), 'Diterbitkan langsung oleh pembuat pesanan.');
+
+            return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil diperbarui (Siap Kirim)."]);
         }
 
         return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => 'PO berhasil diperbarui.']);

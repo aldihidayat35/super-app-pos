@@ -70,11 +70,29 @@ class PurchaseOrderWorkflowTest extends TestCase
     {
         [$warehouse, $supplier, $product, $unit] = $this->fixture();
         $purchaseOrder = $this->makePurchaseOrder($warehouse, $supplier, $product, $unit);
+        $this->service->cancel($purchaseOrder, $this->purchasing, 'Batal pesanan');
 
         $this->expectException(ServiceException::class);
         $this->expectExceptionMessage('tidak valid');
 
-        $this->service->approve($purchaseOrder, $this->approver);
+        $this->service->approve($purchaseOrder->fresh(), $this->approver);
+    }
+
+    public function test_draft_purchase_order_can_be_directly_approved_and_sent(): void
+    {
+        [$warehouse, $supplier, $product, $unit] = $this->fixture();
+        $purchaseOrder = $this->makePurchaseOrder($warehouse, $supplier, $product, $unit);
+
+        // Langsung approve dari draft tanpa lewat submit
+        $approved = $this->service->approve($purchaseOrder, $this->purchasing, 'Langsung disetujui pembuat');
+        $this->assertSame(PurchaseOrderStatus::APPROVED, $approved->status);
+
+        // PO draft baru bisa langsung ditandai dikirim ke supplier (1-klik)
+        $purchaseOrder2 = $this->makePurchaseOrder($warehouse, $supplier, $product, $unit);
+        $sent = $this->service->markSent($purchaseOrder2, $this->purchasing);
+        $this->assertSame(PurchaseOrderStatus::SENT_TO_SUPPLIER, $sent->status);
+        $this->assertNotNull($sent->sent_at);
+        $this->assertSame($this->purchasing->id, $sent->sent_by);
     }
 
     public function test_approved_po_cannot_be_edited_without_revision(): void
@@ -129,12 +147,19 @@ class PurchaseOrderWorkflowTest extends TestCase
         $purchaseOrder = $this->makePurchaseOrder($warehouse, $supplier, $product, $unit);
         $this->service->submit($purchaseOrder, $this->purchasing);
 
-        $this->actingAs($this->purchasing)
+        $unauthorized = User::factory()->create(['is_active' => true]);
+
+        $this->actingAs($unauthorized)
             ->post(route('purchasing.purchase-orders.approve', $purchaseOrder))
             ->assertForbidden();
 
         $this->actingAs($this->approver)
             ->post(route('purchasing.purchase-orders.approve', $purchaseOrder))
+            ->assertRedirect();
+
+        $purchaseOrder2 = $this->makePurchaseOrder($warehouse, $supplier, $product, $unit);
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.approve', $purchaseOrder2))
             ->assertRedirect();
     }
 

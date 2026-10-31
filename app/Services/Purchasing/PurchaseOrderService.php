@@ -268,7 +268,7 @@ class PurchaseOrderService
                 throw ServiceException::validation("Transisi PO dari {$from->label()} ke {$to->label()} tidak valid.");
             }
 
-            if (in_array($to, [PurchaseOrderStatus::SUBMITTED, PurchaseOrderStatus::APPROVED], true) && $purchaseOrder->items()->count() === 0) {
+            if (in_array($to, [PurchaseOrderStatus::SUBMITTED, PurchaseOrderStatus::APPROVED, PurchaseOrderStatus::SENT_TO_SUPPLIER], true) && $purchaseOrder->items()->count() === 0) {
                 throw ServiceException::validation('PO tanpa item tidak boleh diajukan atau disetujui.');
             }
 
@@ -283,7 +283,14 @@ class PurchaseOrderService
                     'submitted_by' => $purchaseOrder->submitted_by ?? $actor->id,
                 ];
             } elseif ($to === PurchaseOrderStatus::SENT_TO_SUPPLIER) {
-                $payload += ['sent_at' => now(), 'sent_by' => $actor->id];
+                $payload += [
+                    'sent_at' => now(),
+                    'sent_by' => $actor->id,
+                    'approved_at' => $purchaseOrder->approved_at ?? now(),
+                    'approved_by' => $purchaseOrder->approved_by ?? $actor->id,
+                    'submitted_at' => $purchaseOrder->submitted_at ?? now(),
+                    'submitted_by' => $purchaseOrder->submitted_by ?? $actor->id,
+                ];
             } elseif ($to === PurchaseOrderStatus::CANCELLED) {
                 $payload += ['cancelled_at' => now(), 'cancelled_by' => $actor->id, 'cancel_reason' => $notes];
             }
@@ -299,10 +306,10 @@ class PurchaseOrderService
     private function canTransition(PurchaseOrderStatus $from, PurchaseOrderStatus $to): bool
     {
         return match ($from) {
-            PurchaseOrderStatus::DRAFT => in_array($to, [PurchaseOrderStatus::SUBMITTED, PurchaseOrderStatus::CANCELLED], true),
-            PurchaseOrderStatus::SUBMITTED => in_array($to, [PurchaseOrderStatus::APPROVED, PurchaseOrderStatus::CANCELLED], true),
+            PurchaseOrderStatus::DRAFT => in_array($to, [PurchaseOrderStatus::APPROVED, PurchaseOrderStatus::SENT_TO_SUPPLIER, PurchaseOrderStatus::SUBMITTED, PurchaseOrderStatus::CANCELLED], true),
+            PurchaseOrderStatus::SUBMITTED => in_array($to, [PurchaseOrderStatus::APPROVED, PurchaseOrderStatus::SENT_TO_SUPPLIER, PurchaseOrderStatus::CANCELLED], true),
             PurchaseOrderStatus::APPROVED => in_array($to, [PurchaseOrderStatus::SENT_TO_SUPPLIER, PurchaseOrderStatus::CANCELLED, PurchaseOrderStatus::PARTIALLY_RECEIVED, PurchaseOrderStatus::COMPLETED], true),
-            PurchaseOrderStatus::SENT_TO_SUPPLIER => in_array($to, [PurchaseOrderStatus::PARTIALLY_RECEIVED, PurchaseOrderStatus::COMPLETED], true),
+            PurchaseOrderStatus::SENT_TO_SUPPLIER => in_array($to, [PurchaseOrderStatus::CANCELLED, PurchaseOrderStatus::PARTIALLY_RECEIVED, PurchaseOrderStatus::COMPLETED], true),
             PurchaseOrderStatus::PARTIALLY_RECEIVED => $to === PurchaseOrderStatus::COMPLETED,
             PurchaseOrderStatus::COMPLETED, PurchaseOrderStatus::CANCELLED => false,
         };

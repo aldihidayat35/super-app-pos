@@ -37,7 +37,7 @@
     @endphp
 
     @if($waUrl)
-        <a href="{{ $waUrl }}" target="_blank" class="btn btn-success" id="btn-send-whatsapp" title="Kirim rincian PO via WhatsApp ke Supplier">
+        <a href="{{ $waUrl }}" target="_blank" class="btn btn-success" id="btn-send-whatsapp" title="Kirim rincian PO via WhatsApp ke Supplier" onclick="handleWaSend(event, '{{ $waUrl }}', {{ in_array($purchaseOrder->status, [\App\Enums\PurchaseOrderStatus::DRAFT, \App\Enums\PurchaseOrderStatus::APPROVED]) ? 'true' : 'false' }})">
             <i class="ki-outline ki-whatsapp fs-4 me-1"></i> Kirim WhatsApp
         </a>
     @else
@@ -45,6 +45,10 @@
             <i class="ki-outline ki-copy fs-4 me-1"></i> Salin Teks Pesanan
         </button>
     @endif
+
+    <form id="form-mark-sent" method="POST" action="{{ route('purchasing.purchase-orders.send', $purchaseOrder) }}" style="display: none;">
+        @csrf
+    </form>
 
     <a href="{{ route('purchasing.purchase-orders.print', $purchaseOrder) }}" class="btn btn-light-success" title="Cetak Pesanan ke Supplier">
         <i class="ki-outline ki-printer fs-5 me-1"></i>Cetak
@@ -72,31 +76,46 @@
         $totalReceived = (float) $purchaseOrder->receivedQuantity();
         $totalOutstanding = max($totalOrdered - $totalReceived, 0);
         $progressPercent = $totalOrdered > 0 ? min(100, ($totalReceived / $totalOrdered) * 100) : 0;
-        $historyStatuses = $purchaseOrder->statusHistories->pluck('to_status')->all();
+        
         $processSteps = [
-            ['status' => 'draft', 'label' => 'Draft', 'description' => 'PO disiapkan oleh staf.'],
-            ['status' => 'submitted', 'label' => 'Diajukan', 'description' => 'PO menunggu persetujuan.'],
-            ['status' => 'approved', 'label' => 'Disetujui', 'description' => 'PO siap dikirim ke supplier.'],
-            ['status' => 'sent_to_supplier', 'label' => 'Dikirim', 'description' => 'Pesanan telah dikirim ke supplier.'],
-            ['status' => 'partially_received', 'label' => 'Penerimaan', 'description' => 'Barang diterima sebagian oleh gudang.'],
-            ['status' => 'completed', 'label' => 'Selesai', 'description' => 'Seluruh barang telah diterima.'],
+            [
+                'step' => 1,
+                'label' => 'Pesanan Dibuat',
+                'description' => 'Disusun oleh ' . ($purchaseOrder->creator?->name ?: 'Penanggung Jawab') . '.',
+                'active' => true,
+                'completed' => !in_array($status, [\App\Enums\PurchaseOrderStatus::DRAFT]),
+            ],
+            [
+                'step' => 2,
+                'label' => 'Dikirim ke Supplier',
+                'description' => $purchaseOrder->sent_at ? 'Dikirim pada ' . $purchaseOrder->sent_at->format('d/m/Y H:i') : 'Kirim via WhatsApp atau berkas PO.',
+                'active' => in_array($status, [\App\Enums\PurchaseOrderStatus::APPROVED, \App\Enums\PurchaseOrderStatus::SENT_TO_SUPPLIER]),
+                'completed' => in_array($status, [\App\Enums\PurchaseOrderStatus::SENT_TO_SUPPLIER, \App\Enums\PurchaseOrderStatus::PARTIALLY_RECEIVED, \App\Enums\PurchaseOrderStatus::COMPLETED]),
+            ],
+            [
+                'step' => 3,
+                'label' => 'Penerimaan Fisik',
+                'description' => $totalReceived > 0 ? qty($totalReceived) . ' / ' . qty($totalOrdered) . ' diterima' : 'Verifikasi fisik di gudang/toko saat tiba.',
+                'active' => in_array($status, [\App\Enums\PurchaseOrderStatus::SENT_TO_SUPPLIER, \App\Enums\PurchaseOrderStatus::PARTIALLY_RECEIVED]),
+                'completed' => $status === \App\Enums\PurchaseOrderStatus::COMPLETED,
+            ],
         ];
+
         [$processHolder, $processNext] = match ($status) {
-            \App\Enums\PurchaseOrderStatus::DRAFT => ['Staf Purchasing / Pembuat Pesanan', 'Lengkapi data dan ajukan atau setujui langsung.'],
-            \App\Enums\PurchaseOrderStatus::SUBMITTED => ['Pengguna dengan izin purchase_orders.approve', 'Tinjau nilai dan item, lalu setujui PO.'],
-            \App\Enums\PurchaseOrderStatus::APPROVED => ['Purchasing', 'Kirim PO ke supplier via WhatsApp / cetak, lalu tandai terkirim.'],
-            \App\Enums\PurchaseOrderStatus::SENT_TO_SUPPLIER => ['Petugas Gudang / Penerima Barang', 'Catat barang yang tiba melalui menu Penerimaan Barang.'],
-            \App\Enums\PurchaseOrderStatus::PARTIALLY_RECEIVED => ['Petugas Gudang / Penerima Barang', 'Lanjutkan penerimaan untuk sisa barang yang belum tiba.'],
-            \App\Enums\PurchaseOrderStatus::COMPLETED => ['Selesai', 'Seluruh barang telah diterima dan stok bertambah.'],
-            \App\Enums\PurchaseOrderStatus::CANCELLED => ['Dibatalkan', 'Pesanan telah dibatalkan.'],
+            \App\Enums\PurchaseOrderStatus::DRAFT => [$purchaseOrder->creator?->name ?: 'Penanggung Jawab Pesanan', 'Lengkapi pesanan dan klik "Kirim Pesanan ke Supplier" atau langsung kirim via WhatsApp.'],
+            \App\Enums\PurchaseOrderStatus::SUBMITTED, \App\Enums\PurchaseOrderStatus::APPROVED, \App\Enums\PurchaseOrderStatus::SENT_TO_SUPPLIER => [$purchaseOrder->supplier?->name ?: 'Supplier Rekanan', 'Menunggu pengiriman barang. Catat penerimaan fisik saat truk tiba di lokasi.'],
+            \App\Enums\PurchaseOrderStatus::PARTIALLY_RECEIVED => ['Petugas Gudang / Toko Penerima', 'Barang tiba sebagian. Lanjutkan penerimaan untuk sisa barang yang belum tiba.'],
+            \App\Enums\PurchaseOrderStatus::COMPLETED => ['Selesai', 'Seluruh barang telah diterima fisik, stok gudang/toko bertambah, dan tercatat di utang dagang.'],
+            \App\Enums\PurchaseOrderStatus::CANCELLED => ['Dibatalkan', 'Pesanan ke supplier telah dibatalkan.'],
+            default => [$purchaseOrder->creator?->name ?: 'Penanggung Jawab', 'Proses pesanan.'],
         };
-        $canEdit = auth()->user()?->can('update', $purchaseOrder) ?? false;
-        $canApprove = auth()->user()?->can('approve', $purchaseOrder) ?? false;
+
+        $canEdit = (auth()->user()?->can('update', $purchaseOrder) ?? false) && $totalReceived == 0;
         $canSend = auth()->user()?->can('send', $purchaseOrder) ?? false;
-        $canCancel = auth()->user()?->can('cancel', $purchaseOrder) ?? false;
+        $canCancel = (auth()->user()?->can('cancel', $purchaseOrder) ?? false) && $totalReceived == 0;
         $canReceive = (auth()->user()?->can('goods_receipts.create') ?? false)
             && in_array($status, [\App\Enums\PurchaseOrderStatus::APPROVED, \App\Enums\PurchaseOrderStatus::SENT_TO_SUPPLIER, \App\Enums\PurchaseOrderStatus::PARTIALLY_RECEIVED], true);
-        $hasAction = $canEdit || $canApprove || $canSend || $canCancel || $canReceive;
+        $hasAction = $canEdit || $canSend || $canCancel || $canReceive;
     @endphp
 
     @if ($status === \App\Enums\PurchaseOrderStatus::CANCELLED)
@@ -112,7 +131,7 @@
                 <h2 class="fs-3 fw-bold mb-0">{{ $purchaseOrder->number }}</h2>
                 <x-metronic.status-badge :status="$status" />
             </div>
-            <div class="text-muted fs-7">Diterbitkan oleh {{ $purchaseOrder->creator?->name ?: 'Sistem' }} pada {{ $purchaseOrder->created_at?->format('d/m/Y H:i') ?: '-' }}</div>
+            <div class="text-muted fs-7">Penanggung Jawab: <span class="fw-semibold text-gray-800">{{ $purchaseOrder->creator?->name ?: 'Sistem' }}</span> | Diterbitkan pada {{ $purchaseOrder->created_at?->format('d/m/Y H:i') ?: '-' }}</div>
         </div>
         <div class="text-end">
             <div class="text-muted fs-8 fw-bold text-uppercase">TOTAL NILAI PESANAN</div>
@@ -120,24 +139,44 @@
         </div>
     </div>
 
-    <x-metronic.card title="Status dan Alur Pesanan">
-        <div class="row g-3">
+    <x-metronic.card title="Status dan Alur Operasional Pesanan">
+        <div class="row g-4">
             @foreach ($processSteps as $step)
                 @php
-                    $stepState = $status->value === $step['status'] ? 'current' : (in_array($step['status'], $historyStatuses, true) ? 'done' : 'pending');
-                    $stepColor = $stepState === 'done' ? 'success' : ($stepState === 'current' ? 'primary' : 'secondary');
+                    $isDone = $step['completed'];
+                    $isCurrent = $step['active'] && !$isDone;
+                    $borderClass = $isDone ? 'border-success bg-light-success bg-opacity-25' : ($isCurrent ? 'border-primary bg-light-primary' : 'border-gray-200');
+                    $badgeClass = $isDone ? 'badge-success' : ($isCurrent ? 'badge-primary' : 'badge-light-secondary');
                 @endphp
-                <div class="col-12 col-sm-6 col-xl-2">
-                    <div class="border rounded p-3 h-100 {{ $stepState === 'current' ? 'border-primary bg-light-primary' : '' }}">
-                        <div class="d-flex align-items-center gap-2 mb-2"><span class="badge badge-light-{{ $stepColor }}">{{ $loop->iteration }}</span><span class="fw-bold fs-7">{{ $step['label'] }}</span></div>
-                        <div class="text-muted fs-8">{{ $step['description'] }}</div>
+                <div class="col-12 col-md-4">
+                    <div class="border rounded p-4 h-100 {{ $borderClass }}">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge {{ $badgeClass }} fs-7">{{ $step['step'] }}</span>
+                            <span class="fw-bolder fs-6 text-gray-800">{{ $step['label'] }}</span>
+                            @if($isDone)
+                                <i class="ki-outline ki-check-circle fs-5 text-success ms-auto"></i>
+                            @elseif($isCurrent)
+                                <span class="badge badge-light-primary ms-auto fs-8">Sedang Berjalan</span>
+                            @endif
+                        </div>
+                        <div class="text-muted fs-7">{{ $step['description'] }}</div>
                     </div>
                 </div>
             @endforeach
         </div>
-        <div class="row g-4 mt-2 pt-4 border-top">
-            <div class="col-md-6"><div class="text-muted fs-8 mb-1">PENANGGUNG JAWAB TAHAPAN</div><div class="fw-semibold">{{ $processHolder }}</div></div>
-            <div class="col-md-6"><div class="text-muted fs-8 mb-1">TINDAKAN SELANJUTNYA</div><div class="fw-semibold">{{ $processNext }}</div></div>
+        <div class="row g-4 mt-1 pt-3 border-top">
+            <div class="col-md-6">
+                <div class="text-muted fs-8 mb-1 text-uppercase fw-semibold">Penanggung Jawab Pesanan</div>
+                <div class="fw-bold text-gray-800 fs-6">
+                    <i class="ki-outline ki-user fs-5 text-primary me-1"></i>
+                    {{ $purchaseOrder->creator?->name ?: 'Penanggung Jawab' }}
+                    <span class="badge badge-light-info ms-2 fs-8">{{ $purchaseOrder->destinationWorkLocation?->typeLabel() ?? 'Lokasi Penerima' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted fs-8 mb-1 text-uppercase fw-semibold">Langkah Selanjutnya</div>
+                <div class="fw-semibold text-gray-700 fs-7">{{ $processNext }}</div>
+            </div>
         </div>
     </x-metronic.card>
 
@@ -254,55 +293,63 @@
         </div>
 
         <div class="col-xl-4">
-            <x-metronic.card title="Aksi Dokumen">
-                <div class="alert alert-light-primary fs-7 mb-4">{{ $processNext }}</div>
+            <x-metronic.card title="Aksi Cepat Pesanan">
+                <div class="alert alert-light-primary fs-7 mb-4 d-flex align-items-start">
+                    <i class="ki-outline ki-information-5 fs-4 text-primary me-2 mt-1"></i>
+                    <div>{{ $processNext }}</div>
+                </div>
 
-                {{-- Direct Approve from Draft if authorized --}}
-                @if ($status === \App\Enums\PurchaseOrderStatus::DRAFT && $canApprove)
+                {{-- Status Draft: Opsi Kirim Langsung atau Terbitkan --}}
+                @if ($status === \App\Enums\PurchaseOrderStatus::DRAFT && $canSend)
+                    <form method="POST" action="{{ route('purchasing.purchase-orders.send', $purchaseOrder) }}" class="mb-3">
+                        @csrf
+                        <button class="btn btn-primary w-100 fs-6 py-3">
+                            <i class="ki-outline ki-send fs-4 me-2"></i>Kirim Pesanan ke Supplier
+                        </button>
+                    </form>
                     <form method="POST" action="{{ route('purchasing.purchase-orders.approve', $purchaseOrder) }}" class="mb-3">
                         @csrf
-                        <button class="btn btn-success w-100">
-                            <i class="ki-outline ki-check-circle fs-5 me-2"></i>Setujui Langsung (Siap Kirim)
+                        <button class="btn btn-light-success w-100">
+                            <i class="ki-outline ki-check-circle fs-5 me-2"></i>Terbitkan & Siap Kirim
                         </button>
                     </form>
                 @endif
 
+                {{-- Status Submitted: Langsung bisa dikirim / disetujui --}}
+                @if ($status === \App\Enums\PurchaseOrderStatus::SUBMITTED && $canSend)
+                    <form method="POST" action="{{ route('purchasing.purchase-orders.send', $purchaseOrder) }}" class="mb-3">
+                        @csrf
+                        <button class="btn btn-primary w-100 fs-6 py-3">
+                            <i class="ki-outline ki-send fs-4 me-2"></i>Kirim Pesanan ke Supplier
+                        </button>
+                    </form>
+                @endif
+
+                {{-- Status Approved (Siap Kirim): Tombol Tandai Sudah Dikirim --}}
+                @if ($status === \App\Enums\PurchaseOrderStatus::APPROVED && $canSend)
+                    <form method="POST" action="{{ route('purchasing.purchase-orders.send', $purchaseOrder) }}" class="mb-3">
+                        @csrf
+                        <button class="btn btn-info w-100 fs-6 py-3 mb-3">
+                            <i class="ki-outline ki-send fs-4 me-2"></i>Tandai Sudah Dikirim ke Supplier
+                        </button>
+                    </form>
+                @endif
+
+                {{-- Penerimaan Barang --}}
+                @if ($canReceive)
+                    <a href="{{ route('warehouse.goods-receipts.create', ['purchase_order_id' => $purchaseOrder->id]) }}" class="btn btn-success w-100 fs-6 py-3 mb-3">
+                        <i class="ki-outline ki-package fs-4 me-2"></i>Catat Penerimaan Barang
+                    </a>
+                @endif
+
+                {{-- Edit Rincian jika belum ada penerimaan barang --}}
                 @if ($canEdit)
                     <a href="{{ route('purchasing.purchase-orders.edit', $purchaseOrder) }}" class="btn btn-light-primary w-100 mb-3">
                         <i class="ki-outline ki-pencil fs-5 me-2"></i>Edit Rincian Pesanan
                     </a>
-                    @if ($status === \App\Enums\PurchaseOrderStatus::DRAFT && ! $canApprove)
-                        <form method="POST" action="{{ route('purchasing.purchase-orders.submit', $purchaseOrder) }}" class="mb-3">
-                            @csrf
-                            <button class="btn btn-primary w-100"><i class="ki-outline ki-send fs-5 me-2"></i>Ajukan Persetujuan</button>
-                        </form>
-                    @endif
                 @endif
 
-                @if ($canApprove && $status === \App\Enums\PurchaseOrderStatus::SUBMITTED)
-                    <form method="POST" action="{{ route('purchasing.purchase-orders.approve', $purchaseOrder) }}" class="mb-3">
-                        @csrf
-                        <x-metronic.form-group name="notes" label="Catatan Persetujuan" help="Catatan akan disimpan pada histori approval PO.">
-                            <textarea name="notes" rows="2" class="form-control form-control-solid">{{ old('notes') }}</textarea>
-                        </x-metronic.form-group>
-                        <button class="btn btn-success w-100"><i class="ki-outline ki-check fs-5 me-2"></i>Setujui Pesanan</button>
-                    </form>
-                @endif
-
-                @if ($canSend)
-                    <form method="POST" action="{{ route('purchasing.purchase-orders.send', $purchaseOrder) }}" class="mb-3">
-                        @csrf
-                        <div class="text-muted fs-8 mb-2">Tandai setelah dokumen resmi/chat WA dikirimkan ke supplier.</div>
-                        <button class="btn btn-info w-100"><i class="ki-outline ki-send fs-5 me-2"></i>Tandai Dikirim ke Supplier</button>
-                    </form>
-                @endif
-
-                @if ($canReceive)
-                    <a href="{{ route('warehouse.goods-receipts.create', ['purchase_order_id' => $purchaseOrder->id]) }}" class="btn btn-success w-100 mb-3">
-                        <i class="ki-outline ki-package fs-5 me-2"></i>Catat Penerimaan Barang
-                    </a>
-                @endif
-
+                {{-- Pembatalan jika belum ada penerimaan barang --}}
                 @if ($canCancel)
                     <div class="border-top pt-4 mt-2">
                         <form method="POST" action="{{ route('purchasing.purchase-orders.cancel', $purchaseOrder) }}" onsubmit="return confirm('Yakin ingin membatalkan Pesanan ke Supplier ini?')">
@@ -356,6 +403,17 @@
 
 @push('scripts')
 <script>
+    function handleWaSend(event, waUrl, shouldMarkSent) {
+        event.preventDefault();
+        window.open(waUrl, '_blank');
+        if (shouldMarkSent) {
+            setTimeout(function() {
+                const form = document.getElementById('form-mark-sent');
+                if (form) form.submit();
+            }, 500);
+        }
+    }
+
     function copyWaText(text) {
         navigator.clipboard.writeText(text).then(function() {
             toastr && toastr.success('Teks pesanan berhasil disalin ke clipboard! Silakan tempel di WhatsApp.');

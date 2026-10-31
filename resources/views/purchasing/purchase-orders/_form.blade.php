@@ -309,11 +309,9 @@
         <button type="submit" name="submit_action" value="draft" class="btn btn-light-primary">
             <i class="ki-outline ki-file fs-5 me-1"></i> Simpan Sebagai Draft
         </button>
-        @can('purchase_orders.approve')
-            <button type="submit" name="submit_action" value="approve" class="btn btn-success">
-                <i class="ki-outline ki-check-circle fs-5 me-1"></i> Simpan & Setujui Langsung (Siap Kirim)
-            </button>
-        @endcan
+        <button type="submit" name="submit_action" value="approve" class="btn btn-success">
+            <i class="ki-outline ki-check-circle fs-5 me-1"></i> Simpan & Terbitkan Pesanan (Siap Kirim)
+        </button>
     </div>
 </div>
 

@@ -51,21 +51,27 @@ class PurchaseOrderPolicy
     {
         $location = $purchaseOrder->destinationWorkLocation ?: $purchaseOrder->warehouse?->workLocation;
 
+        if ($user->can('purchase_orders.create') && in_array($purchaseOrder->status, [PurchaseOrderStatus::DRAFT, PurchaseOrderStatus::SUBMITTED], true) && $this->view($user, $purchaseOrder)) {
+            return true;
+        }
+
         return $user->can('purchase_orders.approve')
-            && $purchaseOrder->status === PurchaseOrderStatus::SUBMITTED
+            && in_array($purchaseOrder->status, [PurchaseOrderStatus::DRAFT, PurchaseOrderStatus::SUBMITTED], true)
             && $location !== null
             && ApprovalAuthority::canApproveAt($user, (int) $location->id, ApprovalAuthority::roleForLocation($location));
     }
 
     public function send(User $user, PurchaseOrder $purchaseOrder): bool
     {
-        return $user->can('purchase_orders.create') && $purchaseOrder->status === PurchaseOrderStatus::APPROVED && $this->view($user, $purchaseOrder);
+        return $user->can('purchase_orders.create')
+            && in_array($purchaseOrder->status, [PurchaseOrderStatus::DRAFT, PurchaseOrderStatus::SUBMITTED, PurchaseOrderStatus::APPROVED], true)
+            && $this->view($user, $purchaseOrder);
     }
 
     public function cancel(User $user, PurchaseOrder $purchaseOrder): bool
     {
         return $user->can('purchase_orders.create')
-            && in_array($purchaseOrder->status, [PurchaseOrderStatus::DRAFT, PurchaseOrderStatus::SUBMITTED, PurchaseOrderStatus::APPROVED], true)
+            && in_array($purchaseOrder->status, [PurchaseOrderStatus::DRAFT, PurchaseOrderStatus::SUBMITTED, PurchaseOrderStatus::APPROVED, PurchaseOrderStatus::SENT_TO_SUPPLIER], true)
             && ! $purchaseOrder->items()->where('quantity_received', '>', 0)->exists()
             && $this->view($user, $purchaseOrder);
     }

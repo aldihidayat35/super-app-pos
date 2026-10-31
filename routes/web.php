@@ -1111,7 +1111,7 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:purchase_orders.create')
             ->name('purchase-orders.submit');
         Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])
-            ->middleware('permission:purchase_orders.approve')
+            ->middleware('permission:purchase_orders.approve|purchase_orders.create')
             ->name('purchase-orders.approve');
         Route::post('/purchase-orders/{purchaseOrder}/send', [PurchaseOrderController::class, 'send'])
             ->middleware('permission:purchase_orders.create')
