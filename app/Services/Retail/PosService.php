@@ -33,6 +33,7 @@ use App\Services\Organization\DocumentNumberService;
 use App\Services\Pricing\PriceResolverService;
 use App\Services\Receivables\ReceivableService;
 use App\Services\Tax\TaxComplianceService;
+use App\Support\CurrencyFormatter;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 
@@ -98,6 +99,15 @@ class PosService
                 $messages = $approvalItems->map(fn (array $item): string => $item['product']->name.' ('.implode(', ', $item['price']['approval_reasons']).')');
                 throw ServiceException::validation('Harga/diskon membutuhkan approval dan belum dapat di-checkout: '.$messages->implode('; ').'.');
             }
+
+            if ($customer !== null && Decimal::compare((string) $customer->minimum_order, '0', 2) > 0) {
+                if (Decimal::compare($calculated['grand_total'], (string) $customer->minimum_order, 2) < 0) {
+                    $minRupiah = CurrencyFormatter::rupiah((string) $customer->minimum_order);
+                    $grandRupiah = CurrencyFormatter::rupiah($calculated['grand_total']);
+                    throw ServiceException::validation("Total transaksi ({$grandRupiah}) belum mencapai batas minimum order pelanggan sebesar {$minRupiah}.");
+                }
+            }
+
             $payments = $this->validatePayments($data['payments'] ?? [], $calculated['grand_total'], $customer);
             if (Decimal::compare($payments['credit_amount'], '0', 2) > 0) {
                 $this->receivables->assertCanUseCredit($this->requireCustomer($customer), $payments['credit_amount']);

@@ -300,4 +300,87 @@ class PosCreditAndPaymentUiTest extends TestCase
         $resCust->assertSee('SAL/2026/001');
         $resCust->assertSee('21 Hari');
     }
+
+    public function test_pos_checkout_blocked_when_minimum_order_not_met(): void
+    {
+        $customer = Customer::factory()->create([
+            'business_name' => 'Kedai Awal',
+            'minimum_order' => '100000.00',
+            'credit_limit' => '5000000.00',
+            'receivable_balance' => '0.00',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->cashier);
+
+        $payload = [
+            'branch_id' => $this->branch->id,
+            'customer_id' => $customer->id,
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'unit_id' => $this->unit->id,
+                    'quantity' => 1,
+                    'selected_price' => '20000.00',
+                ],
+            ],
+            'payments' => [
+                [
+                    'method' => PaymentMethod::CASH->value,
+                    'amount' => '20000.00',
+                ],
+            ],
+        ];
+
+        $res = $this->postJson(route('retail.pos.store'), $payload);
+
+        $res->assertUnprocessable();
+        $this->assertStringContainsString('belum mencapai batas minimum order', $res->json('message'));
+    }
+
+    public function test_pos_checkout_blocked_when_credit_limit_exceeded(): void
+    {
+        $customer = Customer::factory()->create([
+            'business_name' => 'Pelanggan Melebihi Limit',
+            'minimum_order' => '0.00',
+            'credit_limit' => '50000.00',
+            'receivable_balance' => '40000.00',
+            'is_active' => true,
+        ]);
+        CreditLimit::create([
+            'customer_id' => $customer->id,
+            'credit_limit' => '50000.00',
+            'payment_term_days' => 14,
+            'current_balance' => '40000.00',
+            'effective_from' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($this->cashier);
+
+        $payload = [
+            'branch_id' => $this->branch->id,
+            'customer_id' => $customer->id,
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'unit_id' => $this->unit->id,
+                    'quantity' => 2,
+                    'selected_price' => '20000.00',
+                ],
+            ],
+            'payments' => [
+                [
+                    'method' => PaymentMethod::CREDIT->value,
+                    'amount' => '40000.00',
+                ],
+            ],
+        ];
+
+        $res = $this->postJson(route('retail.pos.store'), $payload);
+
+        $res->assertUnprocessable();
+        $this->assertStringContainsString('limit kredit', $res->json('message'));
+    }
 }

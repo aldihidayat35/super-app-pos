@@ -96,24 +96,46 @@
 
                 <section class="pos-section-cart" aria-labelledby="cart-title">
                     <div class="pos-panel bg-body border rounded h-100 d-flex flex-column">
-                        <div class="p-4 border-bottom d-flex align-items-center justify-content-between gap-3">
-                            <div>
-                                <h2 id="cart-title" class="fs-4 fw-bold mb-0">Keranjang</h2><span id="cart-item-label"
-                                    class="text-muted fs-7">0 item</span>
+                        <div class="p-4 border-bottom">
+                            <div class="d-flex align-items-center justify-content-between gap-3">
+                                <div>
+                                    <h2 id="cart-title" class="fs-4 fw-bold mb-0">Keranjang</h2><span id="cart-item-label"
+                                        class="text-muted fs-7">0 item</span>
+                                </div>
+                                <div class="pos-customer-wrap">
+                                    <label for="customer_id" class="text-muted fs-8 d-block">PELANGGAN <kbd>F4</kbd></label>
+                                    <select id="customer_id" class="form-select form-select-sm"
+                                        data-placeholder="Pelanggan Umum" data-allow-clear="true">
+                                        <option value="">Pelanggan Umum</option>
+                                        @foreach ($customers as $customer)
+                                            @php
+                                                $creditLimit = (float) ($customer->credit_limit ?? 0);
+                                                $receivableBalance = (float) ($customer->receivable_balance ?? 0);
+                                                $availableCredit = max(0, $creditLimit - $receivableBalance);
+                                                $minOrder = (float) ($customer->minimum_order ?? 0);
+                                            @endphp
+                                            <option value="{{ $customer->id }}"
+                                                data-payment-terms="{{ (int) ($customer->payment_term_days ?? 0) }}"
+                                                data-credit-limit="{{ $creditLimit }}"
+                                                data-receivable-balance="{{ $receivableBalance }}"
+                                                data-available-credit="{{ $availableCredit }}"
+                                                data-minimum-order="{{ $minOrder }}"
+                                            >{{ $customer->business_name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
-                            <div class="pos-customer-wrap">
-                                <label for="customer_id" class="text-muted fs-8 d-block">PELANGGAN <kbd>F4</kbd></label>
-                                <select id="customer_id" class="form-select form-select-sm"
-                                    data-placeholder="Pelanggan Umum" data-allow-clear="true">
-                                    <option value="">Pelanggan Umum</option>
-                                    @foreach ($customers as $customer)
-                                        <option value="{{ $customer->id }}"
-                                            data-payment-terms="{{ (int) ($customer->payment_term_days ?? 0) }}"
-                                            data-credit-limit="{{ (float) ($customer->credit_limit ?? 0) }}"
-                                            data-receivable-balance="{{ (float) ($customer->receivable_balance ?? 0) }}"
-                                        >{{ $customer->business_name }}</option>
-                                    @endforeach
-                                </select>
+                            <div id="customer-info-strip" class="d-none bg-light-primary border border-primary border-dashed rounded p-2 mt-3">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 fs-8">
+                                    <div id="customer-min-order-chip" class="d-flex align-items-center gap-1">
+                                        <span class="text-muted fw-semibold">Min. Order:</span>
+                                        <span id="customer-min-order-val" class="fw-bold">Rp 0</span>
+                                    </div>
+                                    <div id="customer-credit-limit-chip" class="d-flex align-items-center gap-1">
+                                        <span class="text-muted fw-semibold">Sisa Limit:</span>
+                                        <span id="customer-credit-limit-val" class="fw-bold">Rp 0</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -852,10 +874,15 @@
         }
 
         .pos-payment-row {
-            display: grid;
-            grid-template-columns: minmax(150px, .8fr) minmax(190px, 1.2fr) minmax(130px, 1fr) 42px;
-            gap: 10px;
-            align-items: end;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .pos-payment-due-date {
+            background-color: #fff8dd;
+            border-radius: 0.475rem;
+            padding: 0.75rem 1rem;
+            border: 1px dashed #f1bc00;
         }
 
         .payment-amount {
@@ -925,14 +952,6 @@
             .pos-product-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
-
-            .pos-payment-row {
-                grid-template-columns: 1fr 1.2fr 42px;
-            }
-
-            .pos-payment-reference {
-                grid-column: 1 / -1;
-            }
         }
 
         @media (max-width: 767.98px) {
@@ -974,21 +993,6 @@
 
             .pos-cart-guidance {
                 grid-column: 1 / -1;
-            }
-
-            .pos-payment-row {
-                grid-template-columns: 1fr 42px;
-            }
-
-            .pos-payment-method,
-            .pos-payment-amount-wrap,
-            .pos-payment-reference {
-                grid-column: 1 / -1;
-            }
-
-            .pos-payment-remove {
-                grid-column: 2;
-                grid-row: 1;
             }
 
             .pos-payment-total {
@@ -1082,6 +1086,32 @@
                     return node.innerHTML;
                 };
                 const customerName = () => customerSelect.options[customerSelect.selectedIndex]?.text || 'Pelanggan Umum';
+                const formatDateIso = date => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+                const todayIsoDate = () => formatDateIso(new Date());
+                const addDaysToDate = days => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + (parseInt(days, 10) || 0));
+                    return formatDateIso(d);
+                };
+                const getSelectedCustomerData = () => {
+                    if (!customerSelect || customerSelect.selectedIndex < 0) return null;
+                    const option = customerSelect.options[customerSelect.selectedIndex];
+                    if (!option || !option.value) return null;
+                    return {
+                        id: option.value,
+                        name: option.text.trim(),
+                        paymentTerms: parseInt(option.dataset.paymentTerms || '0', 10),
+                        creditLimit: parseFloat(option.dataset.creditLimit || '0'),
+                        receivableBalance: parseFloat(option.dataset.receivableBalance || '0'),
+                        availableCredit: parseFloat(option.dataset.availableCredit || '0'),
+                        minimumOrder: parseFloat(option.dataset.minimumOrder || '0'),
+                    };
+                };
                 const focusScanner = (force = false) => window.setTimeout(() => {
                     const active = document.activeElement;
                     const isEditing = active?.matches?.('input, select, textarea, [contenteditable="true"]');
@@ -1535,7 +1565,59 @@
                         if (sample && required > Number(sample.sellable_stock_base)) issues.push(
                             `${sample.name}: total qty melampaui stok cabang`);
                     });
+
+                    // Validasi Minimum Order Pelanggan
+                    const customer = getSelectedCustomerData();
+                    if (customer && customer.minimumOrder > 0) {
+                        const grand = totals().grand;
+                        if (cart.length > 0 && grand < customer.minimumOrder) {
+                            const shortage = customer.minimumOrder - grand;
+                            issues.push(`Belum mencapai minimum order pelanggan (${money(customer.minimumOrder)}, kurang ${money(shortage)})`);
+                        }
+                    }
+
                     return [...new Set(issues)];
+                }
+
+                function updateCustomerInfoStrip() {
+                    const customer = getSelectedCustomerData();
+                    const strip = document.getElementById('customer-info-strip');
+                    if (!strip) return;
+
+                    if (!customer) {
+                        strip.classList.add('d-none');
+                        return;
+                    }
+
+                    strip.classList.remove('d-none');
+                    const grand = totals().grand;
+
+                    // Minimum Order Badge
+                    const minOrderVal = document.getElementById('customer-min-order-val');
+                    if (minOrderVal) {
+                        if (customer.minimumOrder > 0) {
+                            if (cart.length > 0 && grand >= customer.minimumOrder) {
+                                minOrderVal.innerHTML = `<span class="badge badge-light-success fs-8 fw-bold">${money(customer.minimumOrder)} <i class="ki-outline ki-check fs-8 ms-1"></i></span>`;
+                            } else {
+                                const diff = cart.length > 0 ? (customer.minimumOrder - grand) : customer.minimumOrder;
+                                minOrderVal.innerHTML = `<span class="badge badge-light-danger fs-8 fw-bold">${money(customer.minimumOrder)} <span class="fs-9">(Kurang ${money(diff)})</span></span>`;
+                            }
+                        } else {
+                            minOrderVal.innerHTML = `<span class="badge badge-light-secondary text-muted fs-8">Bebas</span>`;
+                        }
+                    }
+
+                    // Sisa Limit Kredit Badge
+                    const creditLimitVal = document.getElementById('customer-credit-limit-val');
+                    if (creditLimitVal) {
+                        if (customer.creditLimit > 0) {
+                            const avail = Math.max(0, customer.creditLimit - customer.receivableBalance);
+                            const badgeClass = avail > 0 ? 'badge-light-primary' : 'badge-light-danger';
+                            creditLimitVal.innerHTML = `<span class="badge ${badgeClass} fs-8 fw-bold">${money(avail)} <span class="text-muted fw-normal fs-9">/ ${money(customer.creditLimit)}</span></span>`;
+                        } else {
+                            creditLimitVal.innerHTML = `<span class="badge badge-light-secondary text-muted fs-8">Rp 0 (Non-Kredit)</span>`;
+                        }
+                    }
                 }
 
                 function updateTotals() {
@@ -1545,12 +1627,15 @@
                     document.getElementById('cart-subtotal').textContent = money(value.subtotal);
                     document.getElementById('cart-discount').textContent = money(value.discount);
                     document.getElementById('cart-grand-total').textContent = money(value.grand);
+
+                    updateCustomerInfoStrip();
+
                     const issues = blockingIssues();
                     const alert = document.getElementById('cart-alert');
                     alert.classList.toggle('d-none', !issues.length);
                     alert.textContent = issues.join(' | ');
                     document.getElementById('hold-cart').disabled = cart.length === 0;
-                    document.getElementById('open-payment').disabled = cart.length === 0;
+                    document.getElementById('open-payment').disabled = cart.length === 0 || issues.length > 0;
                 }
 
                 async function requoteAll(forceResetManualPrice = false) {
@@ -1566,9 +1651,9 @@
                 function renderPaymentRows() {
                     const container = document.getElementById('payment-rows');
                     container.innerHTML = '';
-                    const hasCustomer = Boolean(customerSelect && customerSelect.value);
-                    const selectedOption = customerSelect && customerSelect.selectedIndex >= 0 ? customerSelect.options[customerSelect.selectedIndex] : null;
-                    const terms = selectedOption ? parseInt(selectedOption.dataset.paymentTerms || '0', 10) : 0;
+                    const customer = getSelectedCustomerData();
+                    const hasCustomer = Boolean(customer && customer.id);
+                    const terms = customer ? customer.paymentTerms : 0;
 
                     // Filter metode pembayaran: 'credit' (Tempo / Piutang) hanya untuk pelanggan terdaftar
                     const availableMethods = Object.entries(paymentMethods).filter(([value]) => hasCustomer || value !== 'credit');
@@ -1582,35 +1667,55 @@
                         const isCredit = payment.method === 'credit';
                         if (isCredit && !payment.due_date) {
                             const daysToAdd = terms > 0 ? terms : 30;
-                            payment.due_date = moment().add(daysToAdd, 'days').format('YYYY-MM-DD');
+                            payment.due_date = addDaysToDate(daysToAdd);
                         }
 
                         const row = document.createElement('div');
-                        row.className = 'pos-payment-row border rounded p-3 mb-2';
+                        row.className = 'pos-payment-row border rounded-3 p-3 mb-3 bg-white shadow-none';
                         const options = availableMethods.map(([value, label]) =>
                             `<option value="${value}" ${payment.method === value ? 'selected' : ''}>${escapeHtml(label)}</option>`
                             ).join('');
 
                         row.innerHTML = `
-                            <div class="d-flex flex-wrap align-items-center gap-2">
-                                <div class="pos-payment-method"><label class="pos-cart-label">Metode</label><select class="form-select payment-method" data-searchable="false">${options}</select></div>
-                                <div class="pos-payment-amount-wrap"><label class="pos-cart-label">Jumlah Dibayarkan</label><input type="text" inputmode="numeric" class="form-control payment-amount" value="${money(payment.amount)}" placeholder="Rp 0" autocomplete="off"></div>
-                                <div class="pos-payment-reference"><label class="pos-cart-label">Referensi</label><input class="form-control payment-reference" value="${escapeHtml(payment.reference_no || '')}" placeholder="Opsional"></div>
-                                <div class="pos-payment-remove"><button type="button" class="btn btn-icon btn-light-danger remove-payment" aria-label="Hapus"><i class="ki-outline ki-trash"></i></button></div>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-4 col-12">
+                                    <label class="form-label fs-8 fw-semibold text-uppercase text-muted mb-1">Metode</label>
+                                    <select class="form-select form-select-solid payment-method" data-searchable="false">${options}</select>
+                                </div>
+                                <div class="col-md-4 col-sm-6 col-12">
+                                    <label class="form-label fs-8 fw-semibold text-uppercase text-muted mb-1">Jumlah Dibayarkan</label>
+                                    <input type="text" inputmode="numeric" class="form-control form-control-solid fw-bold fs-6 payment-amount" value="${money(payment.amount)}" placeholder="Rp 0" autocomplete="off">
+                                </div>
+                                <div class="col-md-3 col-sm-4 col-9">
+                                    <label class="form-label fs-8 fw-semibold text-uppercase text-muted mb-1">Referensi</label>
+                                    <input type="text" class="form-control form-control-solid payment-reference" value="${escapeHtml(payment.reference_no || '')}" placeholder="Opsional">
+                                </div>
+                                <div class="col-md-1 col-sm-2 col-3 text-end">
+                                    <button type="button" class="btn btn-icon btn-light-danger remove-payment w-100" aria-label="Hapus" title="Hapus metode pembayaran">
+                                        <i class="ki-outline ki-trash fs-5"></i>
+                                    </button>
+                                </div>
                             </div>
                             ${isCredit ? `
-                            <div class="pos-payment-due-date mt-3 pt-2 border-top">
-                                <div class="d-flex align-items-center justify-content-between mb-1">
-                                    <label class="pos-cart-label text-warning-emphasis fw-bold mb-0">
-                                        <i class="ki-outline ki-calendar text-warning fs-6 me-1"></i>Jatuh Tempo Piutang (Custom)
+                            <div class="pos-payment-due-date mt-3 pt-3 border-top">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <label class="form-label fs-7 fw-bold text-warning-emphasis mb-0 d-flex align-items-center gap-1">
+                                        <i class="ki-outline ki-calendar text-warning fs-5"></i>
+                                        Jatuh Tempo Piutang (Tempo)
                                     </label>
-                                    <span class="text-muted fs-8">
-                                        Termin Pelanggan: <strong class="text-dark">${terms > 0 ? terms + ' hari' : 'Default (30 hari)'}</strong>
+                                    <span class="badge badge-light-warning fs-8">
+                                        Termin Standar: <strong>${terms > 0 ? terms + ' hari' : 'Default (30 hari)'}</strong>
                                     </span>
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <input type="date" class="form-control form-control-sm form-control-solid payment-due-date w-auto" value="${payment.due_date || ''}" min="${moment().format('YYYY-MM-DD')}">
-                                    <span class="text-muted fs-8">Bisa diubah jika ada kesepakatan jatuh tempo khusus</span>
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-sm-5">
+                                        <input type="date" class="form-control form-control-sm bg-white payment-due-date" value="${payment.due_date || ''}" min="${todayIsoDate()}">
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <div class="text-muted fs-8">
+                                            Bisa diubah jika ada kesepakatan jatuh tempo khusus dengan pelanggan.
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             ` : ''}
@@ -1620,7 +1725,7 @@
                             payment.method = event.target.value;
                             if (payment.method === 'credit' && !payment.due_date) {
                                 const daysToAdd = terms > 0 ? terms : 30;
-                                payment.due_date = moment().add(daysToAdd, 'days').format('YYYY-MM-DD');
+                                payment.due_date = addDaysToDate(daysToAdd);
                             }
                             renderPaymentRows();
                             renderQuickCash();
@@ -1656,12 +1761,16 @@
                 }
 
                 function renderQuickCash() {
-                    const grand = totals().grand;
                     const container = document.getElementById('cash-quick-buttons');
-                    if (!payments.some(payment => payment.method === 'cash')) {
+                    if (!container) return;
+                    const hasCash = payments.some(payment => payment.method === 'cash');
+                    if (!hasCash) {
                         container.innerHTML = '';
+                        container.classList.add('d-none');
                         return;
                     }
+                    container.classList.remove('d-none');
+                    const grand = totals().grand;
                     const values = [{
                             amount: grand,
                             label: 'Uang Pas'
@@ -1675,7 +1784,7 @@
                     container.innerHTML = values.map((entry, index) =>
                         `<button type="button" class="btn btn-light-primary quick-cash" data-amount="${entry.amount}" ${index > 0 && entry.amount < grand ? 'disabled' : ''}>${entry.label}</button>`
                         ).join('');
-                    document.querySelectorAll('.quick-cash').forEach(button => button.addEventListener('click', () => {
+                    container.querySelectorAll('.quick-cash').forEach(button => button.addEventListener('click', () => {
                         let cash = payments.find(row => row.method === 'cash');
                         if (!cash) {
                             cash = {
@@ -1700,7 +1809,26 @@
                     document.getElementById('payment-summary-total').textContent = money(grand);
                     document.getElementById('payment-shortage').textContent = money(shortage);
                     document.getElementById('payment-change').textContent = money(change);
-                    const issues = blockingIssues();
+
+                    const issues = [...blockingIssues()];
+                    const customer = getSelectedCustomerData();
+
+                    // Validasi Pembayaran Tempo vs Sisa Limit Kredit
+                    const creditPayments = payments.filter(p => p.method === 'credit');
+                    const totalCreditAmount = creditPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                    if (totalCreditAmount > 0) {
+                        if (!customer) {
+                            issues.push('Metode pembayaran tempo hanya dapat digunakan untuk pelanggan terdaftar.');
+                        } else {
+                            const availCredit = Math.max(0, customer.creditLimit - customer.receivableBalance);
+                            if (customer.creditLimit <= 0) {
+                                issues.push('Pelanggan ini tidak memiliki fasilitas plafon kredit tempo.');
+                            } else if (totalCreditAmount > availCredit) {
+                                issues.push(`Pembayaran tempo (${money(totalCreditAmount)}) melebihi sisa limit kredit pelanggan (${money(availCredit)}).`);
+                            }
+                        }
+                    }
+
                     const warning = document.getElementById('payment-price-warning');
                     warning.classList.toggle('d-none', !issues.length);
                     warning.textContent = issues.join(' | ');
@@ -1710,6 +1838,15 @@
 
                 function openPayment() {
                     if (!cart.length) return;
+                    const issues = blockingIssues();
+                    if (issues.length) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Transaksi Belum Memenuhi Syarat',
+                            text: issues.join(' | '),
+                        });
+                        return;
+                    }
                     const value = totals();
                     payments = [{
                         method: 'cash',
@@ -1925,6 +2062,7 @@
                             }
                         });
                     }
+                    updateCustomerInfoStrip();
                     renderPaymentRows();
                     requoteAll(true);
                     loadProducts(true);
