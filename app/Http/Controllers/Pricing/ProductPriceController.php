@@ -49,13 +49,6 @@ class ProductPriceController extends Controller
             'channel' => 'pos',
             'aliases' => ['Ring POS', 'pos', 'ring_pos', 'Ring Kasir', 'ring_3'],
         ],
-        'ring_4' => [
-            'key' => 'ring_4',
-            'label' => 'Ring 4',
-            'price_ring' => 'Ring 4',
-            'channel' => 'retail',
-            'aliases' => ['Ring 4', 'ring_4'],
-        ],
     ];
 
     public function index(Request $request, PriceResolverService $resolver): View
@@ -94,8 +87,33 @@ class ProductPriceController extends Controller
         $currentLocation = $selectedLocationId ? WorkLocation::find($selectedLocationId) : null;
         $canSensitive = $user->can('margins.view_sensitive') || $user->can('prices.update');
 
-        // Query active products
+        $today = now()->toDateString();
+        $buildRingExistsSql = function (array $aliases, string $channel) use ($selectedLocationId, $today): string {
+            $aliasList = implode(',', array_map(fn ($a) => "'".addslashes($a)."'", $aliases));
+            $locCondition = $selectedLocationId !== null
+                ? "(pp.work_location_id = {$selectedLocationId} OR pp.work_location_id IS NULL)"
+                : 'pp.work_location_id IS NULL';
+
+            return "EXISTS (
+                SELECT 1 FROM product_prices pp 
+                WHERE pp.product_id = products.id 
+                  AND pp.status = 'active'
+                  AND (pp.starts_at IS NULL OR pp.starts_at <= '{$today}')
+                  AND (pp.ends_at IS NULL OR pp.ends_at >= '{$today}')
+                  AND pp.recommended_price > 0
+                  AND {$locCondition}
+                  AND (pp.price_ring IN ({$aliasList}) OR pp.channel = '{$channel}')
+            )";
+        };
+
+        $sqlRetail = $buildRingExistsSql(['Ring Retail', 'retail', 'ring_retail', 'ring_1'], 'retail');
+        $sqlB2B = $buildRingExistsSql(['Ring B2B', 'b2b', 'ring_b2b', 'ring_grosir', 'ring_2'], 'b2b');
+        $sqlPOS = $buildRingExistsSql(['Ring POS', 'pos', 'ring_pos', 'Ring Kasir', 'ring_3'], 'pos');
+
+        // Query active products: urutkan dari 0 ring (paling atas) hingga 3 ring (bawah)
         $productsQuery = Product::query()
+            ->select('products.*')
+            ->selectRaw("(CASE WHEN {$sqlRetail} THEN 1 ELSE 0 END) + (CASE WHEN {$sqlB2B} THEN 1 ELSE 0 END) + (CASE WHEN {$sqlPOS} THEN 1 ELSE 0 END) AS filled_rings_count")
             ->with(['category', 'baseUnit'])
             ->where('status', 'active')
             ->when($request->filled('q'), function ($query) use ($request) {
@@ -103,7 +121,8 @@ class ProductPriceController extends Controller
                 $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"));
             })
             ->when($request->filled('category_id'), fn ($q) => $q->where('category_id', $request->integer('category_id')))
-            ->orderBy('name');
+            ->orderBy('filled_rings_count', 'asc')
+            ->orderBy('products.name', 'asc');
 
         $products = $productsQuery->paginate(20)->withQueryString();
         $productIds = $products->pluck('id')->all();
@@ -180,6 +199,7 @@ class ProductPriceController extends Controller
                 'starts_at' => $startsAt ?? now()->toDateString(),
                 'ends_at' => $endsAt,
                 'is_unlimited' => empty($endsAt),
+                'filled_rings_count' => (int) ($product->filled_rings_count ?? count(array_filter($rowPrices, fn ($p) => $p['recommended'] !== null))),
             ];
         }
 
@@ -218,7 +238,6 @@ class ProductPriceController extends Controller
             'prices.ring_retail' => ['nullable'],
             'prices.ring_b2b' => ['nullable'],
             'prices.ring_pos' => ['nullable'],
-            'prices.ring_4' => ['nullable'],
             'unlimited' => ['nullable'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],

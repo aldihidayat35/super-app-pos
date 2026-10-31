@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\WorkLocation;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -195,7 +196,7 @@ class ProductPriceUpdateTest extends TestCase
         $response->assertDontSee('HPP Bertingkat (', false);
     }
 
-    public function test_save_item_saves_all_four_rings_with_unlimited_validity_and_active_status_without_approval(): void
+    public function test_save_item_saves_all_three_rings_with_unlimited_validity_and_active_status_without_approval(): void
     {
         $product = $this->createProduct('10000.00');
 
@@ -208,7 +209,6 @@ class ProductPriceUpdateTest extends TestCase
                 'ring_retail' => '15000',
                 'ring_b2b' => '13500',
                 'ring_pos' => '15000',
-                'ring_4' => '12000',
             ],
             'unlimited' => true,
             'notes' => 'Setup harga awal',
@@ -220,7 +220,7 @@ class ProductPriceUpdateTest extends TestCase
             'product_id' => $product->id,
         ]);
 
-        // Check 4 active rings created
+        // Check 3 active rings created
         $retailPrice = ProductPrice::where('product_id', $product->id)->where('price_ring', 'Ring Retail')->first();
         $b2bPrice = ProductPrice::where('product_id', $product->id)->where('price_ring', 'Ring B2B')->first();
         $posPrice = ProductPrice::where('product_id', $product->id)->where('price_ring', 'Ring POS')->first();
@@ -242,10 +242,8 @@ class ProductPriceUpdateTest extends TestCase
         $this->assertSame(ProductPriceStatus::ACTIVE, $posPrice->status);
         $this->assertNull($posPrice->ends_at);
 
-        $this->assertNotNull($ring4Price);
-        $this->assertSame('12000.00', $ring4Price->recommended_price);
-        $this->assertSame(ProductPriceStatus::ACTIVE, $ring4Price->status);
-        $this->assertNull($ring4Price->ends_at);
+        // Ring 4 was removed and must NOT be created
+        $this->assertNull($ring4Price);
 
         // Total elimination of approval: NO approval request must be generated
         $this->assertSame(0, PriceApprovalRequest::where('product_id', $product->id)->count());
@@ -596,6 +594,118 @@ class ProductPriceUpdateTest extends TestCase
         $this->assertSame('12000.00', $retail->min_price);
         $this->assertSame('18000.00', $retail->recommended_price);
         $this->assertSame('22000.00', $retail->max_price);
+    }
+
+    public function test_product_prices_ordered_by_ring_completeness_unfilled_first(): void
+    {
+        $this->actingAs($this->superAdmin);
+
+        // 1. Product A: 0 rings filled
+        $prodA = Product::factory()->create([
+            'name' => 'Produk A Tanpa Ring',
+            'base_unit_id' => Unit::factory()->create(['name' => 'Pcs'])->id,
+            'status' => 'active',
+        ]);
+
+        // 2. Product B: 1 ring filled (Ring Retail)
+        $prodB = Product::factory()->create([
+            'name' => 'Produk B Satu Ring',
+            'base_unit_id' => Unit::factory()->create(['name' => 'Pcs'])->id,
+            'status' => 'active',
+        ]);
+        ProductPrice::create([
+            'product_id' => $prodB->id,
+            'work_location_id' => $this->locationA->id,
+            'channel' => 'retail',
+            'price_ring' => 'Ring Retail',
+            'recommended_price' => '15000.00',
+            'status' => ProductPriceStatus::ACTIVE->value,
+        ]);
+
+        // 3. Product C: 2 rings filled (Ring Retail & Ring B2B)
+        $prodC = Product::factory()->create([
+            'name' => 'Produk C Dua Ring',
+            'base_unit_id' => Unit::factory()->create(['name' => 'Pcs'])->id,
+            'status' => 'active',
+        ]);
+        ProductPrice::create([
+            'product_id' => $prodC->id,
+            'work_location_id' => $this->locationA->id,
+            'channel' => 'retail',
+            'price_ring' => 'Ring Retail',
+            'recommended_price' => '15000.00',
+            'status' => ProductPriceStatus::ACTIVE->value,
+        ]);
+        ProductPrice::create([
+            'product_id' => $prodC->id,
+            'work_location_id' => $this->locationA->id,
+            'channel' => 'b2b',
+            'price_ring' => 'Ring B2B',
+            'recommended_price' => '14000.00',
+            'status' => ProductPriceStatus::ACTIVE->value,
+        ]);
+
+        // 4. Product D: 3 rings filled (Retail, B2B, POS)
+        $prodD = Product::factory()->create([
+            'name' => 'Produk D Tiga Ring Lengkap',
+            'base_unit_id' => Unit::factory()->create(['name' => 'Pcs'])->id,
+            'status' => 'active',
+        ]);
+        ProductPrice::create([
+            'product_id' => $prodD->id,
+            'work_location_id' => $this->locationA->id,
+            'channel' => 'retail',
+            'price_ring' => 'Ring Retail',
+            'recommended_price' => '15000.00',
+            'status' => ProductPriceStatus::ACTIVE->value,
+        ]);
+        ProductPrice::create([
+            'product_id' => $prodD->id,
+            'work_location_id' => $this->locationA->id,
+            'channel' => 'b2b',
+            'price_ring' => 'Ring B2B',
+            'recommended_price' => '14000.00',
+            'status' => ProductPriceStatus::ACTIVE->value,
+        ]);
+        ProductPrice::create([
+            'product_id' => $prodD->id,
+            'work_location_id' => $this->locationA->id,
+            'channel' => 'pos',
+            'price_ring' => 'Ring POS',
+            'recommended_price' => '15000.00',
+            'status' => ProductPriceStatus::ACTIVE->value,
+        ]);
+
+        $res = $this->get(route('pricing.product-prices.index', ['work_location_id' => $this->locationA->id]));
+        $res->assertOk();
+
+        // Must display products in order: Prod A (0), Prod B (1), Prod C (2), Prod D (3)
+        /** @var LengthAwarePaginator<int, Product> $paginatedProducts */
+        $paginatedProducts = $res->viewData('products');
+        $productNames = $paginatedProducts->pluck('name')->all();
+
+        $indexA = array_search($prodA->name, $productNames, true);
+        $indexB = array_search($prodB->name, $productNames, true);
+        $indexC = array_search($prodC->name, $productNames, true);
+        $indexD = array_search($prodD->name, $productNames, true);
+
+        $this->assertNotFalse($indexA, 'Produk A harus ditemukan di halaman harga.');
+        $this->assertNotFalse($indexB, 'Produk B harus ditemukan di halaman harga.');
+        $this->assertNotFalse($indexC, 'Produk C harus ditemukan di halaman harga.');
+        $this->assertNotFalse($indexD, 'Produk D harus ditemukan di halaman harga.');
+
+        $this->assertTrue($indexA < $indexB, 'Produk A (0 ring) harus berada sebelum Produk B (1 ring).');
+        $this->assertTrue($indexB < $indexC, 'Produk B (1 ring) harus berada sebelum Produk C (2 ring).');
+        $this->assertTrue($indexC < $indexD, 'Produk C (2 ring) harus berada sebelum Produk D (3 ring).');
+
+        // Check badges and table contents
+        $res->assertSee('0/3 Ring');
+        $res->assertSee('1/3 Ring');
+        $res->assertSee('2/3 Ring');
+        $res->assertSee('3/3 Ring Lengkap');
+
+        // Ring 4 table header must not appear
+        $res->assertDontSee('<th class="text-center min-w-160px"><span class="text-dark fw-bolder">Ring 4</span>', false);
     }
 
     private function createProduct(string $costPrice = '10000.00'): Product

@@ -7,21 +7,21 @@
     <x-metronic.page-guide
         id="product-prices"
         title="Panduan Modul Setting Harga Produk"
-        description="Atur harga jual produk per lokasi untuk 4 ring harga (Retail, B2B, POS, Ring 4) dengan rincian HPP bertingkat tanpa proses approval.">
+        description="Atur harga jual produk per lokasi untuk 3 ring harga (Retail, B2B, POS) dengan rincian HPP bertingkat tanpa proses approval.">
         <x-slot:function>
             Mengatur dan memperbarui harga produk aktif langsung per lokasi penugasan atau global untuk berbagai channel penjualan secara independen per produk.
         </x-slot:function>
         <x-slot:workflow>
             1. Pilih lokasi kerja (Super Admin bebas memilih; role lain terkunci ke lokasi penugasan).<br>
             2. Periksa informasi produk dan rincian HPP (termasuk tingkatan HPP bertingkat bila ada).<br>
-            3. Masukkan nominal harga pada 4 Ring Harga (Retail, B2B, POS, Ring 4).<br>
+            3. Masukkan nominal harga pada 3 Ring Harga (Retail, B2B, POS).<br>
             4. Atur masa berlaku (default Unlimited tanpa batas waktu).<br>
             5. Klik tombol "Simpan" pada baris produk bersangkutan untuk menyimpan langsung.
         </x-slot:workflow>
         <x-slot:parts>
             - <strong>Pilihan Lokasi</strong>: Membatasi harga hanya berlaku pada lokasi kerja aktif.<br>
             - <strong>Rincian HPP</strong>: Menampilkan lapisan biaya stok per produk agar penetapan harga tetap menghasilkan laba.<br>
-            - <strong>4 Ring Harga</strong>: Ring Retail, Ring B2B, Ring POS, dan Ring 4.<br>
+            - <strong>3 Ring Harga</strong>: Ring Retail, Ring B2B, dan Ring POS.<br>
             - <strong>Masa Berlaku</strong>: Periode aktif harga (default tanpa batas waktu).<br>
             - <strong>Audit Log</strong>: Setiap perubahan harga otomatis dicatat lengkap bersama akun pengubah dan waktu transaksi.
         </x-slot:parts>
@@ -256,7 +256,6 @@
                             <option value="Ring Retail">Ring Retail</option>
                             <option value="Ring B2B">Ring B2B</option>
                             <option value="Ring POS">Ring POS</option>
-                            <option value="Ring 4">Ring 4</option>
                             <option value="ring_1">Ring 1</option>
                         </select>
                     </x-metronic.form-group>
@@ -417,10 +416,6 @@
                             <span class="text-success fw-bolder">Ring POS</span>
                             <div class="text-muted fs-9 fw-normal">Min · Acuan · Max</div>
                         </th>
-                        <th class="text-center min-w-160px">
-                            <span class="text-dark fw-bolder">Ring 4</span>
-                            <div class="text-muted fs-9 fw-normal">Min · Acuan · Max</div>
-                        </th>
                         <th class="text-center min-w-130px">
                             <span class="fw-bolder">Masa Berlaku</span>
                             <div class="text-muted fs-9 fw-normal">Default: Unlimited</div>
@@ -449,6 +444,16 @@
                                         @endif
                                         @if($product->baseUnit)
                                             <span class="text-gray-500 fs-9">Satuan: {{ $product->baseUnit->symbol }}</span>
+                                        @endif
+                                        @php($filledCount = (int) ($row['filled_rings_count'] ?? 0))
+                                        @if($filledCount === 0)
+                                            <span class="badge badge-light-danger py-0 px-2 fs-9 fw-semibold" title="Belum memiliki harga ring aktif"><i class="ki-outline ki-cross-circle fs-9 me-1"></i>0/3 Ring</span>
+                                        @elseif($filledCount === 1)
+                                            <span class="badge badge-light-warning py-0 px-2 fs-9 fw-semibold" title="Baru 1 dari 3 ring terisi"><i class="ki-outline ki-information fs-9 me-1"></i>1/3 Ring</span>
+                                        @elseif($filledCount === 2)
+                                            <span class="badge badge-light-info py-0 px-2 fs-9 fw-semibold" title="2 dari 3 ring terisi"><i class="ki-outline ki-information fs-9 me-1"></i>2/3 Ring</span>
+                                        @else
+                                            <span class="badge badge-light-success py-0 px-2 fs-9 fw-bold" title="Ketiga ring harga sudah terisi lengkap"><i class="ki-outline ki-check-circle fs-9 me-1"></i>3/3 Ring Lengkap</span>
                                         @endif
                                     </div>
 
@@ -609,45 +614,6 @@
                             </div>
                         </td>
 
-                        <!-- Ring 4: Ring 4 -->
-                        <td class="text-center">
-                            <div class="ring-price-cell mx-auto" data-ring="ring_4">
-                                <div class="ring-input-wrap" title="Batas Minimum Ring 4">
-                                    <span class="ring-lbl text-muted">Min</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box price-input-min"
-                                            name="prices[ring_4][min]"
-                                            value="{{ $row['prices']['ring_4']['min'] ?? '' }}"
-                                            placeholder="{{ $row['prices']['ring_4']['recommended'] ?? '0' }}"
-                                            aria-label="Ring 4 Min">
-                                    </div>
-                                </div>
-                                <div class="ring-input-wrap bg-light-primary rounded p-1" title="Harga Acuan/Rekomendasi Ring 4">
-                                    <span class="ring-lbl text-primary">Acuan</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-8 text-primary fw-bold">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box is-recommended price-input-rec"
-                                            name="prices[ring_4][recommended]"
-                                            value="{{ $row['prices']['ring_4']['recommended'] ?? '' }}"
-                                            placeholder="0"
-                                            aria-label="Ring 4 Rekomendasi">
-                                    </div>
-                                </div>
-                                <div class="ring-input-wrap" title="Batas Maksimum Ring 4">
-                                    <span class="ring-lbl text-muted">Max</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box price-input-max"
-                                            name="prices[ring_4][max]"
-                                            value="{{ $row['prices']['ring_4']['max'] ?? '' }}"
-                                            placeholder="{{ $row['prices']['ring_4']['recommended'] ?? '0' }}"
-                                            aria-label="Ring 4 Max">
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-
                         <!-- Masa Berlaku: Default Unlimited -->
                         <td class="text-center">
                             <div class="d-flex flex-column align-items-center gap-1">
@@ -750,7 +716,7 @@
                 const row = document.getElementById('product-row-' + productId);
                 if (!row) return;
 
-                const ringKeys = ['ring_retail', 'ring_b2b', 'ring_pos', 'ring_4'];
+                const ringKeys = ['ring_retail', 'ring_b2b', 'ring_pos'];
                 const pricesPayload = {};
 
                 ringKeys.forEach(function (rKey) {
