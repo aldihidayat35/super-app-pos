@@ -1,7 +1,7 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Permintaan ' . $purchaseRequest->number . ' - ' . config('app.name'))
-@section('page_title', 'Detail Permintaan Pembelian')
+@section('title', 'Pengajuan Belanja ' . $purchaseRequest->number . ' - ' . config('app.name'))
+@section('page_title', 'Detail Pengajuan Belanja (Internal)')
 
 @section('toolbar_actions')
     <a href="{{ route('purchasing.requests.index') }}" class="btn btn-light">
@@ -10,10 +10,10 @@
 @endsection
 
 @section('page_guide')
-    <x-metronic.page-guide id="purchasing-request-show" title="Panduan Proses Permintaan">
-        <x-slot:function><p>Halaman ini memisahkan proses review internal, pemilihan supplier, dan pembuatan Purchase Order sesuai status serta izin pengguna.</p></x-slot:function>
-        <x-slot:workflow><ol><li>Tinjau kebutuhan barang.</li><li>Setujui atau tolak permintaan.</li><li>Setelah disetujui, Purchasing memilih supplier dan membuat PO draft.</li></ol></x-slot:workflow>
-        <x-slot:warnings><p>Supplier baru tersimpan ketika proses konversi berhasil karena Purchase Request existing tidak memiliki field supplier terpisah.</p></x-slot:warnings>
+    <x-metronic.page-guide id="purchasing-request-show" title="Panduan Pengajuan Belanja">
+        <x-slot:function><p>Halaman ini memisahkan proses review kebutuhan internal gudang/toko, pemilihan supplier, dan penerbitan Pesanan ke Supplier (PO).</p></x-slot:function>
+        <x-slot:workflow><ol><li>Tinjau daftar kebutuhan barang yang diajukan.</li><li>Setujui atau tolak pengajuan belanja.</li><li>Setelah disetujui, Purchasing memilih supplier dan membuat draft Pesanan ke Supplier (PO).</li></ol></x-slot:workflow>
+        <x-slot:warnings><p>Supplier baru tersimpan ketika pengajuan berhasil dikonversi menjadi PO resmi.</p></x-slot:warnings>
     </x-metronic.page-guide>
 @endsection
 
@@ -146,12 +146,12 @@
                         <div class="text-muted fs-7">Anda dapat melihat proses, tetapi tidak memiliki izin untuk menyetujui atau menolak permintaan ini.</div>
                     @endcan
                 @elseif ($status === \App\Enums\PurchaseRequestStatus::APPROVED)
-                    <div class="alert alert-light-success fs-7">Permintaan sudah disetujui. Purchasing dapat memilih supplier dan membuat Purchase Order draft.</div>
+                    <div class="alert alert-light-success fs-7">Pengajuan belanja sudah disetujui. Purchasing dapat memilih supplier rekanan dan membuat draft Pesanan ke Supplier (PO).</div>
                     @can('convert', $purchaseRequest)
                         <form method="POST" action="{{ route('purchasing.requests.convert', $purchaseRequest) }}">
                             @csrf
-                            <div class="fw-bold mb-1">Tahap 2 - Supplier untuk Purchase Order</div>
-                            <x-metronic.form-group name="supplier_id" label="Pilih Supplier" required help="Pilih supplier aktif yang akan menerima Purchase Order ini. Sistem tidak memilih otomatis karena satu produk dapat memiliki beberapa supplier.">
+                            <div class="fw-bold mb-1">Tahap 2 - Pilih Supplier Rekanan</div>
+                            <x-metronic.form-group name="supplier_id" label="Pilih Supplier" required help="Pilih supplier aktif yang akan menerima Pesanan Pembelian ini.">
                                 <select name="supplier_id" class="form-select form-select-solid" required>
                                     <option value="">Pilih supplier tujuan</option>
                                     @foreach ($suppliers as $supplier)
@@ -160,13 +160,13 @@
                                 </select>
                             </x-metronic.form-group>
                             <div class="border-top pt-5 mt-2">
-                                <div class="fw-bold mb-1">Tahap 3 - Buat Purchase Order</div>
-                                <div class="text-muted fs-8 mb-3">PO draft akan dibuat dari gudang dan item pada permintaan ini. Harga dapat dilengkapi pada PO sebelum diajukan.</div>
-                                <button class="btn btn-primary w-100"><i class="ki-outline ki-document fs-5 me-2"></i>Buat Purchase Order</button>
+                                <div class="fw-bold mb-1">Tahap 3 - Buat Pesanan ke Supplier</div>
+                                <div class="text-muted fs-8 mb-3">Item pengajuan akan disalin menjadi PO draft. Harga dan termin pembayaran dapat disesuaikan pada PO.</div>
+                                <button class="btn btn-primary w-100"><i class="ki-outline ki-document fs-5 me-2"></i>Buat Pesanan ke Supplier (PO)</button>
                             </div>
                         </form>
                     @else
-                        <div class="text-muted fs-7">Anda tidak memiliki izin untuk membuat Purchase Order. Proses berikutnya ditangani oleh Purchasing.</div>
+                        <div class="text-muted fs-7">Anda tidak memiliki izin untuk membuat Pesanan Pembelian. Proses berikutnya ditangani oleh tim Purchasing.</div>
                     @endcan
                 @elseif ($status === \App\Enums\PurchaseRequestStatus::CONVERTED)
                     <div class="alert alert-light-success fs-7">Permintaan telah dikonversi. Seluruh proses berikutnya dilakukan pada Purchase Order terkait.</div>

@@ -19,6 +19,7 @@ use App\Services\Purchasing\PurchaseOrderService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -51,6 +52,15 @@ class PurchaseOrderController extends Controller
     {
         $purchaseOrder = $service->create($request->validated(), $request->user());
 
+        if ($request->input('submit_action') === 'approve') {
+            $service->submit($purchaseOrder, $request->user());
+            if ($request->user()?->can('approve', $purchaseOrder->fresh())) {
+                $service->approve($purchaseOrder->fresh(), $request->user(), 'Disetujui langsung oleh pembuat pesanan.');
+
+                return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil dibuat dan langsung disetujui (Siap Kirim)."]);
+            }
+        }
+
         return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil dibuat."]);
     }
 
@@ -77,6 +87,15 @@ class PurchaseOrderController extends Controller
     {
         $this->authorize('update', $purchaseOrder);
         $purchaseOrder = $service->update($purchaseOrder, $request->validated(), $request->user());
+
+        if ($request->input('submit_action') === 'approve') {
+            $service->submit($purchaseOrder, $request->user());
+            if ($request->user()?->can('approve', $purchaseOrder->fresh())) {
+                $service->approve($purchaseOrder->fresh(), $request->user(), 'Disetujui langsung oleh pembuat pesanan.');
+
+                return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => "PO {$purchaseOrder->number} berhasil diperbarui dan disetujui (Siap Kirim)."]);
+            }
+        }
 
         return redirect()->route('purchasing.purchase-orders.show', $purchaseOrder)->with('notification', ['type' => 'success', 'message' => 'PO berhasil diperbarui.']);
     }
@@ -111,6 +130,70 @@ class PurchaseOrderController extends Controller
         $service->cancel($purchaseOrder, $request->user(), $request->validated('reason'));
 
         return back()->with('notification', ['type' => 'success', 'message' => 'PO berhasil dibatalkan.']);
+    }
+
+    public function autoGenerate(Request $request, PurchaseOrderService $service): RedirectResponse
+    {
+        $this->authorize('create', PurchaseOrder::class);
+
+        $data = $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.selected' => ['nullable'],
+            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0'],
+            'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'items.*.destination_work_location_id' => ['required', 'integer', 'exists:work_locations,id'],
+        ]);
+
+        $selectedItems = array_filter($data['items'], fn (array $item): bool => ! empty($item['selected']));
+
+        if (empty($selectedItems)) {
+            return back()->with('notification', ['type' => 'warning', 'message' => 'Pilih minimal satu produk untuk dibuatkan order ke supplier.']);
+        }
+
+        $createdOrders = DB::transaction(function () use ($selectedItems, $request, $service): array {
+            $orders = [];
+            $grouped = collect($selectedItems)->groupBy(fn ($item) => $item['supplier_id'].'_'.$item['destination_work_location_id']);
+
+            foreach ($grouped as $itemsGroup) {
+                $first = $itemsGroup->first();
+                $supplierId = (int) $first['supplier_id'];
+                $destinationId = (int) $first['destination_work_location_id'];
+
+                $orderItems = [];
+                foreach ($itemsGroup as $item) {
+                    $product = Product::query()->with('baseUnit')->findOrFail($item['product_id']);
+                    $unitPrice = ! empty($item['unit_price']) ? $item['unit_price'] : ($product->cost_price ?: 0);
+
+                    $orderItems[] = [
+                        'product_id' => $product->id,
+                        'unit_id' => $product->base_unit_id,
+                        'quantity_ordered' => $item['quantity'],
+                        'unit_price' => $unitPrice,
+                        'discount_amount' => 0,
+                        'tax_amount' => 0,
+                    ];
+                }
+
+                $order = $service->create([
+                    'destination_work_location_id' => $destinationId,
+                    'supplier_id' => $supplierId,
+                    'order_date' => now()->toDateString(),
+                    'notes' => 'Auto-generate dari rekomendasi stok kritis',
+                    'items' => $orderItems,
+                ], $request->user());
+
+                $orders[] = $order;
+            }
+
+            return $orders;
+        });
+
+        $count = count($createdOrders);
+
+        return redirect()->route('purchasing.purchase-orders.index')
+            ->with('notification', ['type' => 'success', 'message' => "{$count} Pesanan ke Supplier (PO) draft berhasil dibuat dari stok kritis."]);
     }
 
     public function export(Request $request): BinaryFileResponse
@@ -153,8 +236,8 @@ class PurchaseOrderController extends Controller
                 ->whereIn('type', ['warehouse', 'branch'])
                 ->whereIn('id', $request->user()?->permittedWorkLocationIds() ?? [])
                 ->orderBy('type')->orderBy('name')->get(),
-            'suppliers' => Supplier::query()->where('is_active', true)->orderBy('name')->get(),
-            'products' => Product::query()->with(['baseUnit', 'category', 'units.unit'])->where('status', 'active')->orderBy('name')->limit(200)->get(),
+            'suppliers' => Supplier::query()->with('productsSupplied')->where('is_active', true)->orderBy('name')->get(),
+            'products' => Product::query()->with(['baseUnit', 'category', 'units.unit', 'supplierProducts'])->where('status', 'active')->orderBy('name')->limit(300)->get(),
             'units' => Unit::query()->where('is_active', true)->orderBy('name')->get(),
         ];
     }

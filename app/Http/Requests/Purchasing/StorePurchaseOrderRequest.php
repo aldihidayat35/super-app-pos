@@ -45,6 +45,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'header_discount' => ['nullable', 'numeric', 'min:0'],
             'freight_cost' => ['nullable', 'numeric', 'min:0'],
             'additional_cost' => ['nullable', 'numeric', 'min:0'],
+            'submit_action' => ['nullable', 'string', 'in:draft,approve'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', Rule::exists('products', 'id')->where('status', 'active')],
             'items.*.unit_id' => ['required', Rule::exists('units', 'id')->where('is_active', true)],

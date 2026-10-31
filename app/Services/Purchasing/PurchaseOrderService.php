@@ -268,15 +268,20 @@ class PurchaseOrderService
                 throw ServiceException::validation("Transisi PO dari {$from->label()} ke {$to->label()} tidak valid.");
             }
 
-            if ($to === PurchaseOrderStatus::SUBMITTED && $purchaseOrder->items()->count() === 0) {
-                throw ServiceException::validation('PO tanpa item tidak boleh diajukan.');
+            if (in_array($to, [PurchaseOrderStatus::SUBMITTED, PurchaseOrderStatus::APPROVED], true) && $purchaseOrder->items()->count() === 0) {
+                throw ServiceException::validation('PO tanpa item tidak boleh diajukan atau disetujui.');
             }
 
             $payload = ['status' => $to];
             if ($to === PurchaseOrderStatus::SUBMITTED) {
                 $payload += ['submitted_at' => now(), 'submitted_by' => $actor->id];
             } elseif ($to === PurchaseOrderStatus::APPROVED) {
-                $payload += ['approved_at' => now(), 'approved_by' => $actor->id];
+                $payload += [
+                    'approved_at' => now(),
+                    'approved_by' => $actor->id,
+                    'submitted_at' => $purchaseOrder->submitted_at ?? now(),
+                    'submitted_by' => $purchaseOrder->submitted_by ?? $actor->id,
+                ];
             } elseif ($to === PurchaseOrderStatus::SENT_TO_SUPPLIER) {
                 $payload += ['sent_at' => now(), 'sent_by' => $actor->id];
             } elseif ($to === PurchaseOrderStatus::CANCELLED) {

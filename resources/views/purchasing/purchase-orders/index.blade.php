@@ -1,11 +1,11 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Purchase Order - ' . config('app.name'))
-@section('page_title', 'Daftar Purchase Order')
+@section('title', 'Pesanan ke Supplier (PO) - ' . config('app.name'))
+@section('page_title', 'Pesanan ke Supplier (PO)')
 
 @section('toolbar_actions')
     <a href="{{ route('purchasing.purchase-orders.export', request()->query()) }}" class="btn btn-light-primary"><i class="ki-outline ki-file-down"></i> Export Excel</a>
-    <x-metronic.permission-button permission="purchase_orders.create" :href="route('purchasing.purchase-orders.create')" icon="ki-outline ki-plus">Tambah PO</x-metronic.permission-button>
+    <x-metronic.permission-button permission="purchase_orders.create" :href="route('purchasing.purchase-orders.create')" icon="ki-outline ki-plus">Buat Pesanan ke Supplier</x-metronic.permission-button>
 @endsection
 
 @section('content')

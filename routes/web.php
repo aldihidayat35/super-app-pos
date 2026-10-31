@@ -1094,6 +1094,10 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:purchase_orders.view|purchase_orders.create|stock.create')
             ->name('requests.show');
 
+        Route::post('/purchase-orders/auto-generate', [PurchaseOrderController::class, 'autoGenerate'])
+            ->middleware('permission:purchase_orders.create')
+            ->name('purchase-orders.auto-generate');
+
         Route::get('/purchase-orders/export', [PurchaseOrderController::class, 'export'])
             ->middleware('permission:reports.export|purchase_orders.view')
             ->name('purchase-orders.export');

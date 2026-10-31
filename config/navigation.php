@@ -266,13 +266,13 @@ return [
         'icon' => 'ki-outline ki-purchase',
         'children' => [
             [
-                'label' => 'Permintaan Pembelian',
+                'label' => 'Pengajuan Belanja (Internal)',
                 'route' => 'purchasing.requests.index',
                 'active' => ['purchasing.requests.*'],
                 'permission' => 'purchase_orders.view',
             ],
             [
-                'label' => 'Purchase Order',
+                'label' => 'Pesanan ke Supplier (PO)',
                 'route' => 'purchasing.purchase-orders.index',
                 'active' => ['purchasing.purchase-orders.*'],
                 'permission' => 'purchase_orders.view',

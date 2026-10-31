@@ -36,17 +36,17 @@ class PurchaseRequestController extends Controller
             ->withQueryString();
 
         $recommendations = Stock::query()
-            ->with(['product.baseUnit', 'product.category', 'warehouseLocation', 'workLocation'])
+            ->with(['product.baseUnit', 'product.category', 'product.supplierProducts.supplier', 'warehouseLocation', 'workLocation'])
             ->whereIn('work_location_id', $locationIds)
             ->whereHas('product', fn ($query) => $query->whereRaw('(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock'))
-            ->limit(10)
+            ->limit(50)
             ->get();
 
         return view('purchasing.requests.index', [
             'requests' => $requests,
             'recommendations' => $recommendations,
             'warehouses' => $this->warehouses($request),
-            'products' => Product::query()->with(['baseUnit', 'category'])->where('status', 'active')->orderBy('name')->limit(200)->get(),
+            'products' => Product::query()->with(['baseUnit', 'category', 'units.unit'])->where('status', 'active')->orderBy('name')->limit(300)->get(),
             'suppliers' => Supplier::query()->where('is_active', true)->orderBy('name')->get(),
             'statuses' => PurchaseRequestStatus::options(),
             'status' => $status,

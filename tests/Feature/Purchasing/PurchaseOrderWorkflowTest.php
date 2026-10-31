@@ -138,6 +138,52 @@ class PurchaseOrderWorkflowTest extends TestCase
             ->assertRedirect();
     }
 
+    public function test_authorized_user_can_create_and_auto_approve_po(): void
+    {
+        [$warehouse, $supplier, $product, $unit] = $this->fixture();
+        $this->approver->givePermissionTo('purchase_orders.create');
+        $this->approver->workLocations()->syncWithoutDetaching([$warehouse->work_location_id => ['is_default' => true, 'is_active' => true]]);
+
+        $payload = $this->payload($warehouse, $supplier, $product, $unit) + [
+            'submit_action' => 'approve',
+        ];
+
+        $this->actingAs($this->approver)
+            ->post(route('purchasing.purchase-orders.store'), $payload)
+            ->assertRedirect();
+
+        $po = PurchaseOrder::query()->latest('id')->firstOrFail();
+        $this->assertSame(PurchaseOrderStatus::APPROVED, $po->status);
+    }
+
+    public function test_auto_generate_purchase_orders_from_critical_stock(): void
+    {
+        [$warehouse, $supplier, $product, $unit] = $this->fixture();
+        $this->purchasing->workLocations()->syncWithoutDetaching([$warehouse->work_location_id => ['is_default' => true, 'is_active' => true]]);
+
+        $payload = [
+            'items' => [
+                [
+                    'selected' => '1',
+                    'product_id' => $product->id,
+                    'supplier_id' => $supplier->id,
+                    'destination_work_location_id' => $warehouse->work_location_id,
+                    'quantity' => 10,
+                    'unit_price' => 15000,
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.purchase-orders.auto-generate'), $payload)
+            ->assertRedirect(route('purchasing.purchase-orders.index'));
+
+        $po = PurchaseOrder::query()->where('supplier_id', $supplier->id)->latest('id')->firstOrFail();
+        $this->assertSame(PurchaseOrderStatus::DRAFT, $po->status);
+        $this->assertCount(1, $po->items);
+        $this->assertSame('10.0000', (string) $po->items->first()->quantity_ordered);
+    }
+
     public function test_approved_purchase_order_can_be_marked_sent_through_route(): void
     {
         [$warehouse, $supplier, $product, $unit] = $this->fixture();
