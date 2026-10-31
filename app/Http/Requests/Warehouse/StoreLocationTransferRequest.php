@@ -14,17 +14,32 @@ class StoreLocationTransferRequest extends FormRequest
         return $this->user()?->can('stock.create') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('destination_work_location_id') && $this->filled('source_work_location_id')) {
+            $this->merge(['destination_work_location_id' => $this->input('source_work_location_id')]);
+        }
+
+        if (! $this->filled('reason')) {
+            $this->merge(['reason' => 'Pindah rak internal']);
+        }
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
         return [
-            'product_id' => ['required', Rule::exists('products', 'id')->where('status', 'active')],
+            'product_id' => ['required_without:items', 'nullable', Rule::exists('products', 'id')->where('status', 'active')],
+            'quantity' => ['required_without:items', 'nullable', 'numeric', 'gt:0'],
+            'items' => ['required_without:product_id', 'nullable', 'array', 'min:1'],
+            'items.*.product_id' => ['required_with:items', Rule::exists('products', 'id')->where('status', 'active')],
+            'items.*.quantity' => ['required_with:items', 'numeric', 'gt:0'],
+            'items.*.unit_id' => ['nullable', 'integer', Rule::exists('units', 'id')->where('is_active', true)],
             'source_work_location_id' => ['required', Rule::exists('work_locations', 'id')->where('is_active', true)],
             'source_warehouse_location_id' => ['required', Rule::exists('warehouse_locations', 'id')->where('is_active', true)],
             'destination_work_location_id' => ['required', Rule::exists('work_locations', 'id')->where('is_active', true)],
-            'destination_warehouse_location_id' => ['nullable', 'different:source_warehouse_location_id', Rule::exists('warehouse_locations', 'id')->where('is_active', true)],
-            'quantity' => ['required', 'numeric', 'gt:0'],
-            'reason' => ['required', 'string', 'max:500'],
+            'destination_warehouse_location_id' => ['required', 'different:source_warehouse_location_id', Rule::exists('warehouse_locations', 'id')->where('is_active', true)],
+            'reason' => ['nullable', 'string', 'max:500'],
             'idempotency_key' => ['nullable', 'string', 'max:120'],
         ];
     }

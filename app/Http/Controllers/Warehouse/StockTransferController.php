@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Warehouse;
 
+use App\Enums\RestockRequestStatus;
 use App\Enums\StockTransferStatus;
 use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
@@ -34,12 +35,45 @@ class StockTransferController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('viewAny', StockTransfer::class);
+        $activeTab = (string) $request->query('tab', 'outgoing');
+        $permittedIds = $request->user()?->permittedWorkLocationIds() ?? [];
+
+        // Hitung badge untuk setiap tab
+        $outgoingCount = StockTransfer::query()
+            ->whereIn('source_work_location_id', $permittedIds)
+            ->whereIn('status', [StockTransferStatus::DRAFT, StockTransferStatus::PENDING_APPROVAL, StockTransferStatus::APPROVED, StockTransferStatus::PACKING, StockTransferStatus::SHIPPED])
+            ->count();
+
+        $incomingCount = StockTransfer::query()
+            ->whereIn('destination_work_location_id', $permittedIds)
+            ->whereIn('status', [StockTransferStatus::SHIPPED, StockTransferStatus::PARTIALLY_RECEIVED])
+            ->count();
+
+        $restockCount = RestockRequest::query()
+            ->whereIn('status', [RestockRequestStatus::PENDING_APPROVAL, RestockRequestStatus::APPROVED])
+            ->count();
+
+        $transfers = $this->query($request, $activeTab)->paginate(15)->withQueryString();
+
+        $restockRequests = null;
+        if ($activeTab === 'restock') {
+            $restockRequests = RestockRequest::query()
+                ->with(['branch.workLocation', 'sourceWarehouse.workLocation', 'items.product', 'requester', 'approver'])
+                ->latest()
+                ->paginate(15)
+                ->withQueryString();
+        }
 
         return view('warehouse.stock-transfers.index', [
-            'transfers' => $this->query($request)->paginate(15)->withQueryString(),
+            'transfers' => $transfers,
+            'restockRequests' => $restockRequests,
+            'activeTab' => $activeTab,
+            'outgoingCount' => $outgoingCount,
+            'incomingCount' => $incomingCount,
+            'restockCount' => $restockCount,
             'statuses' => StockTransferStatus::options(),
-            'workLocations' => WorkLocation::query()->whereIn('id', $request->user()?->permittedWorkLocationIds() ?? [])->where('is_active', true)->orderBy('name')->get(),
-            'filters' => $request->only(['q', 'status', 'source_work_location_id', 'destination_work_location_id', 'date_from', 'date_to', 'source_reference']),
+            'workLocations' => WorkLocation::query()->whereIn('id', $permittedIds)->where('is_active', true)->orderBy('name')->get(),
+            'filters' => $request->only(['q', 'status', 'source_work_location_id', 'destination_work_location_id', 'date_from', 'date_to', 'source_reference', 'tab']),
         ]);
     }
 
@@ -62,7 +96,28 @@ class StockTransferController extends Controller
             return back()->withInput()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
         }
 
-        return redirect()->route('warehouse.stock-transfers.show', $transfer)->with('notification', ['type' => 'success', 'message' => "Transfer {$transfer->number} berhasil disimpan."]);
+        $message = $transfer->status === StockTransferStatus::SHIPPED
+            ? "Transfer {$transfer->number} berhasil dibuat dan langsung dikirim (Dalam Perjalanan). Penanggung Jawab Pengirim: {$request->user()?->name}."
+            : "Draft Transfer {$transfer->number} berhasil disimpan.";
+
+        return redirect()->route('warehouse.stock-transfers.show', $transfer)->with('notification', ['type' => 'success', 'message' => $message]);
+    }
+
+    public function directShip(Request $request, StockTransfer $stockTransfer, StockTransferService $service): RedirectResponse
+    {
+        $this->authorize('update', $stockTransfer);
+        $this->ensureLocationScope($request, (int) $stockTransfer->source_work_location_id);
+
+        try {
+            $transfer = $service->shipDirect($stockTransfer, $request->user());
+        } catch (ServiceException $exception) {
+            return back()->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
+        }
+
+        return redirect()->route('warehouse.stock-transfers.show', $transfer)->with('notification', [
+            'type' => 'success',
+            'message' => "Transfer {$transfer->number} berhasil dikirim (Dalam Perjalanan). Penanggung Jawab Pengirim: {$request->user()?->name}.",
+        ]);
     }
 
     public function locationOptions(Request $request): JsonResponse
@@ -426,13 +481,22 @@ class StockTransferController extends Controller
         return view('warehouse.stock-transfers.print', ['transfer' => $stockTransfer->load(['items.product', 'sourceWorkLocation', 'destinationWorkLocation', 'shipper'])]);
     }
 
-    private function query(Request $request): mixed
+    private function query(Request $request, string $tab = 'outgoing'): mixed
     {
+        $ids = $request->user()?->permittedWorkLocationIds() ?? [];
+
         return StockTransfer::query()
             ->with(['sourceWorkLocation', 'destinationWorkLocation', 'requester', 'shipper', 'receiver', 'items', 'restockRequest'])
-            ->where(function ($query) use ($request): void {
-                $ids = $request->user()?->permittedWorkLocationIds() ?? [];
-                $query->whereIn('source_work_location_id', $ids)->orWhereIn('destination_work_location_id', $ids);
+            ->when($tab === 'incoming', function ($query) use ($ids): void {
+                $query->whereIn('destination_work_location_id', $ids);
+            }, function ($query) use ($tab, $ids): void {
+                if ($tab === 'outgoing') {
+                    $query->whereIn('source_work_location_id', $ids);
+                } else {
+                    $query->where(function ($sub) use ($ids): void {
+                        $sub->whereIn('source_work_location_id', $ids)->orWhereIn('destination_work_location_id', $ids);
+                    });
+                }
             })
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->filled('q'), fn ($query) => $query->where('number', 'like', '%'.trim((string) $request->query('q')).'%'))

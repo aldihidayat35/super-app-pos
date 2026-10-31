@@ -1039,6 +1039,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/stock-transfers/{stockTransfer}/submit', [StockTransferController::class, 'submit'])
             ->middleware('permission:stock_transfers.create')
             ->name('stock-transfers.submit');
+        Route::post('/stock-transfers/{stockTransfer}/direct-ship', [StockTransferController::class, 'directShip'])
+            ->middleware('permission:stock_transfers.create')
+            ->name('stock-transfers.direct-ship');
         Route::post('/stock-transfers/{stockTransfer}/approve', [StockTransferController::class, 'approve'])
             ->middleware('permission:stock_transfers.approve')
             ->name('stock-transfers.approve');

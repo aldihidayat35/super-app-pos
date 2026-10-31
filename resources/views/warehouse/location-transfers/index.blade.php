@@ -1,151 +1,250 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Restok Cepat - ' . config('app.name'))
-@section('page_title', 'Restok Cepat (Direct Transfer)')
+@section('title', 'Pindah Rak / Bin Internal - ' . config('app.name'))
+@section('page_title', 'Pindah Rak / Bin Internal')
 
 @section('page_guide')
-    <x-metronic.page-guide id="warehouse-location-transfers" title="Panduan Halaman Restok Cepat">
+    <x-metronic.page-guide id="warehouse-location-transfers" title="Panduan Pindah Rak / Bin Internal">
         <x-slot:function>
-            <p>Halaman ini digunakan untuk melakukan pemindahan barang/stok instan antar lokasi (misalnya dari Gudang Belakang ke Etalase Toko). Proses ini langsung memotong stok di lokasi asal dan menambah stok di tujuan dalam satu klik (tanpa status In-Transit). Di sisi kanan terdapat histori mutasi restok cepat sebelumnya.</p>
+            <p>Halaman ini digunakan untuk memindahkan stok barang antar rak, etalase, atau bin dalam <strong>satu toko atau gudang yang sama</strong> (misalnya dari Gudang Belakang ke Etalase Depan, atau dari Rak A1 ke Rak B2). Pemindahan ini dieksekusi secara instan tanpa birokrasi persetujuan (approval) dan setiap akun bertanggung jawab penuh atas transaksi yang diproses.</p>
         </x-slot:function>
         <x-slot:workflow>
-            <ol><li>Pilih lokasi kerja sumber.</li><li>Pilih zona/rak/bin yang ditampilkan sesuai lokasi sumber.</li><li>Pilih produk yang memiliki stok tersedia pada bin tersebut.</li><li>Pilih lokasi tujuan dan qty yang akan dipindahkan.</li><li>Sistem mencatat mutasi keluar dan masuk secara atomik.</li></ol>
+            <ol>
+                <li>Pilih lokasi kerja (toko atau gudang yang sedang Anda kelola).</li>
+                <li>Pilih rak/bin asal dan rak/bin tujuan.</li>
+                <li>Pilih satu atau beberapa produk serta tentukan kuantitas yang dipindahkan.</li>
+                <li>Klik tombol <strong>Pindahkan Stok Sekarang</strong> untuk mengeksekusi mutasi seketika.</li>
+            </ol>
         </x-slot:workflow>
         <x-slot:parts>
-            <ul><li><strong>Lokasi Kerja Sumber:</strong> lokasi gudang/toko asal.</li><li><strong>Zona/Rak/Bin Sumber:</strong> rak/etalase asal yang disaring berdasarkan lokasi kerja.</li><li><strong>Produk:</strong> hanya produk dengan stok tersedia pada lokasi sumber.</li><li><strong>Lokasi Kerja Tujuan:</strong> gudang/toko tujuan.</li><li><strong>Zona/Rak/Bin Tujuan:</strong> rak/etalase tujuan (misal: Etalase Depan).</li><li><strong>Qty:</strong> jumlah yang dipindahkan.</li><li><strong>Alasan:</strong> keterangan restok (opsional).</li><li><strong>Histori Pemindahan:</strong> daftar riwayat pemindahan instan.</li></ul>
+            <ul>
+                <li><strong>Lokasi Kerja:</strong> Toko atau gudang tempat pemindahan berlangsung.</li>
+                <li><strong>Rak/Bin Asal:</strong> Lokasi fisik awal penyimpanan barang.</li>
+                <li><strong>Rak/Bin Tujuan:</strong> Lokasi fisik tujuan penempatan barang.</li>
+                <li><strong>Tabel Produk Multi-Item:</strong> Daftar barang dan kuantitas yang dipindahkan sekaligus.</li>
+                <li><strong>Penanggung Jawab:</strong> Akun pengguna yang mengeksekusi transaksi.</li>
+            </ul>
         </x-slot:parts>
         <x-slot:impacts>
-            <p>Restok Cepat mengurangi stok di lokasi sumber dan secara simultan menambah stok di lokasi tujuan saat itu juga. Mutasi tercatat otomatis.</p>
+            <p>Stok pada rak asal langsung berkurang dan stok pada rak tujuan langsung bertambah saat itu juga tanpa status in-transit.</p>
         </x-slot:impacts>
         <x-slot:operation>
-            <ol><li>Pilih lokasi kerja sumber.</li><li>Pilih zona/rak/bin sumber.</li><li>Cari dan pilih produk yang tersedia.</li><li>Pilih lokasi kerja dan bin tujuan.</li><li>Masukkan qty dan alasan transfer.</li><li>Klik <strong>Proses Transfer</strong>.</li><li>Verifikasi mutasi tampil pada histori transfer.</li></ol>
+            <ol>
+                <li>Pastikan rak asal dan rak tujuan berbeda.</li>
+                <li>Gunakan tombol <strong>+ Tambah Produk</strong> untuk memindahkan beberapa item sekaligus.</li>
+                <li>Periksa indikator stok tersedia agar tidak melebihi stok yang ada.</li>
+            </ol>
         </x-slot:operation>
         <x-slot:warnings>
-            <div class="alert alert-warning mb-0"><ul><li>Pastikan lokasi tujuan sesuai scope akun Anda.</li><li>Jangan memasukkan qty melebihi stok tersedia di sumber.</li><li>Seluruh mutasi tercatat otomatis tanpa bisa dibatalkan secara sepihak.</li></ul></div>
+            <div class="alert alert-warning mb-0">
+                <i class="ki-outline ki-information-5 fs-4 me-2"></i>Transaksi pemindahan ini bersifat final dan tercatat langsung di buku besar mutasi stok dengan nama akun Anda sebagai penanggung jawab.
+            </div>
         </x-slot:warnings>
         <x-slot:example>
-            <p>Memindahkan 10 unit Kopi Robusta dari Gudang Belakang ke Etalase Depan Toko. Sistem mencatat mutasi keluar -10 pada sumber dan masuk +10 pada tujuan.</p>
+            <p>Memindahkan 5 pcs Kaos Polos dan 3 pcs Celana Jeans dari Rak Belakang ke Etalase Depan Toko.</p>
         </x-slot:example>
     </x-metronic.page-guide>
 @endsection
 
 @section('content')
-    <div class="row g-5">
-        <div class="col-lg-4">
-            <x-metronic.card title="Form Restok Cepat">
-                <form method="POST" action="{{ route('warehouse.location-transfers.store') }}">
+    <div class="row g-5 mb-8">
+        <div class="col-12">
+            <x-metronic.card title="Form Pindah Rak / Bin Internal">
+                <x-slot:toolbar>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted fs-7">Penanggung Jawab:</span>
+                        <span class="badge badge-light-primary fw-bold fs-7">
+                            <i class="ki-outline ki-user me-1"></i>{{ auth()->user()->name }}
+                        </span>
+                    </div>
+                </x-slot:toolbar>
+
+                <form method="POST" action="{{ route('warehouse.location-transfers.store') }}" id="location-transfer-form">
                     @csrf
 
                     @error('transfer')
-                        <div class="alert alert-danger">{{ $message }}</div>
+                        <div class="alert alert-danger mb-5 d-flex align-items-center">
+                            <i class="ki-outline ki-cross-circle fs-3 me-2 text-danger"></i>
+                            <div>{{ $message }}</div>
+                        </div>
                     @enderror
 
-                    <x-metronic.form-group name="source_work_location_id" label="Lokasi Kerja Sumber" required>
-                        <select id="source_work_location_id"
-                                name="source_work_location_id"
-                                class="form-select form-select-solid"
-                                data-control="select2"
-                                data-placeholder="Cari dan pilih lokasi kerja sumber"
-                                required>
-                            <option value="">Pilih lokasi kerja</option>
-                            @foreach ($workLocations as $location)
-                                <option value="{{ $location->id }}" @selected(old('source_work_location_id') == $location->id)>{{ $location->code }} — {{ $location->name }}</option>
-                            @endforeach
-                        </select>
-                    </x-metronic.form-group>
+                    <!-- Header Lokasi & Rak -->
+                    <div class="row g-4 mb-6">
+                        <div class="col-md-4">
+                            <label class="form-label required fw-bold">Lokasi Kerja (Toko / Gudang)</label>
+                            <select id="source_work_location_id"
+                                    name="source_work_location_id"
+                                    class="form-select form-select-solid"
+                                    data-control="select2"
+                                    data-placeholder="Pilih lokasi kerja"
+                                    required>
+                                <option value="">Pilih lokasi kerja</option>
+                                @foreach ($workLocations as $location)
+                                    <option value="{{ $location->id }}" @selected(old('source_work_location_id', count($workLocations) === 1 ? $workLocations->first()->id : '') == $location->id)>
+                                        {{ $location->code }} — {{ $location->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <input type="hidden" name="destination_work_location_id" id="destination_work_location_id" value="{{ old('destination_work_location_id', old('source_work_location_id', count($workLocations) === 1 ? $workLocations->first()->id : '')) }}">
+                        </div>
 
-                    <x-metronic.form-group name="source_warehouse_location_id" label="Zona/Rak/Bin Sumber" required>
-                        <select id="source_warehouse_location_id"
-                                name="source_warehouse_location_id"
-                                class="form-select form-select-solid"
-                                data-control="select2"
-                                data-placeholder="Pilih lokasi kerja sumber terlebih dahulu"
-                                required
-                                @disabled(! old('source_work_location_id'))>
-                            <option value="">Pilih zona/rak/bin sumber</option>
-                            @if ($selectedSourceWarehouseLocation)
-                                <option value="{{ $selectedSourceWarehouseLocation->id }}" selected>{{ $selectedSourceWarehouseLocation->full_code }} — {{ $selectedSourceWarehouseLocation->name }}</option>
-                            @endif
-                        </select>
-                    </x-metronic.form-group>
+                        <div class="col-md-4">
+                            <label class="form-label required fw-bold">Rak / Bin Asal (Sumber)</label>
+                            <select id="source_warehouse_location_id"
+                                    name="source_warehouse_location_id"
+                                    class="form-select form-select-solid"
+                                    data-control="select2"
+                                    data-placeholder="Pilih lokasi kerja terlebih dahulu"
+                                    required
+                                    @disabled(! old('source_work_location_id', count($workLocations) === 1 ? $workLocations->first()->id : ''))>
+                                <option value="">Pilih rak asal</option>
+                                @if ($selectedSourceWarehouseLocation)
+                                    <option value="{{ $selectedSourceWarehouseLocation->id }}" selected>{{ $selectedSourceWarehouseLocation->full_code }} — {{ $selectedSourceWarehouseLocation->name }}</option>
+                                @endif
+                            </select>
+                        </div>
 
-                    <x-metronic.form-group name="product_id" label="Produk" required>
-                        <select id="product_id"
-                                name="product_id"
-                                class="form-select form-select-solid"
-                                data-control="select2"
-                                data-placeholder="Pilih zona/rak/bin sumber terlebih dahulu"
-                                required
-                                @disabled(! old('source_warehouse_location_id'))>
-                            <option value="">Pilih produk yang tersedia</option>
-                            @if ($selectedProduct)
-                                <option value="{{ $selectedProduct->id }}" selected>{{ $selectedProduct->sku }} — {{ $selectedProduct->name }}</option>
-                            @endif
-                        </select>
-                        <div class="form-text">Hanya produk dengan stok tersedia pada lokasi sumber yang dipilih yang akan ditampilkan.</div>
-                    </x-metronic.form-group>
+                        <div class="col-md-4">
+                            <label class="form-label required fw-bold">Rak / Bin Tujuan</label>
+                            <select id="destination_warehouse_location_id"
+                                    name="destination_warehouse_location_id"
+                                    class="form-select form-select-solid"
+                                    data-control="select2"
+                                    data-placeholder="Pilih lokasi kerja terlebih dahulu"
+                                    required
+                                    @disabled(! old('source_work_location_id', count($workLocations) === 1 ? $workLocations->first()->id : ''))>
+                                <option value="">Pilih rak tujuan</option>
+                                @if ($selectedDestinationWarehouseLocation)
+                                    <option value="{{ $selectedDestinationWarehouseLocation->id }}" selected>{{ $selectedDestinationWarehouseLocation->full_code }} — {{ $selectedDestinationWarehouseLocation->name }}</option>
+                                @endif
+                            </select>
+                        </div>
+                    </div>
 
-                    <x-metronic.form-group name="destination_work_location_id" label="Lokasi Kerja Tujuan" required>
-                        <select id="destination_work_location_id"
-                                name="destination_work_location_id"
-                                class="form-select form-select-solid"
-                                data-control="select2"
-                                data-placeholder="Cari dan pilih lokasi kerja tujuan"
-                                required>
-                            <option value="">Pilih lokasi kerja</option>
-                            @foreach ($workLocations as $location)
-                                <option value="{{ $location->id }}" @selected(old('destination_work_location_id') == $location->id)>{{ $location->code }} — {{ $location->name }}</option>
-                            @endforeach
-                        </select>
-                    </x-metronic.form-group>
+                    <!-- Tabel Item Multi-Produk -->
+                    <div class="separator separator-dashed my-5"></div>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="fw-bolder m-0 text-gray-800">
+                            <i class="ki-outline ki-parcel fs-4 text-primary me-2"></i>Daftar Produk yang Dipindahkan
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-light-primary fw-bold" id="btn-add-item">
+                            <i class="ki-outline ki-plus fs-5 me-1"></i>Tambah Produk
+                        </button>
+                    </div>
 
-                    <x-metronic.form-group name="destination_warehouse_location_id" label="Zona/Rak/Bin Tujuan">
-                        <select id="destination_warehouse_location_id"
-                                name="destination_warehouse_location_id"
-                                class="form-select form-select-solid"
-                                data-control="select2"
-                                data-placeholder="Pilih lokasi kerja tujuan terlebih dahulu"
-                                data-allow-clear="true"
-                                @disabled(! old('destination_work_location_id'))>
-                            <option value="">Tanpa zona/rak/bin khusus</option>
-                            @if ($selectedDestinationWarehouseLocation)
-                                <option value="{{ $selectedDestinationWarehouseLocation->id }}" selected>{{ $selectedDestinationWarehouseLocation->full_code }} — {{ $selectedDestinationWarehouseLocation->name }}</option>
-                            @endif
-                        </select>
-                    </x-metronic.form-group>
+                    <div class="table-responsive mb-6">
+                        <table class="table align-middle table-row-dashed table-striped" id="items-table">
+                            <thead class="bg-light">
+                                <tr class="text-muted fw-bold text-uppercase fs-7">
+                                    <th class="min-w-300px ps-4">Produk</th>
+                                    <th class="min-w-160px text-center">Stok Tersedia</th>
+                                    <th class="min-w-140px">Jumlah Pindah</th>
+                                    <th class="text-end min-w-80px pe-4">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transfer-items-body">
+                                <tr class="transfer-row" data-index="0">
+                                    <td class="ps-4">
+                                        <select name="items[0][product_id]" class="form-select form-select-sm product-select" data-placeholder="Pilih rak asal terlebih dahulu" required disabled>
+                                            <option value="">Pilih produk yang tersedia</option>
+                                            @if ($selectedProduct)
+                                                <option value="{{ $selectedProduct->id }}" selected>{{ $selectedProduct->sku }} — {{ $selectedProduct->name }}</option>
+                                            @endif
+                                        </select>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light fw-bolder stock-available-badge">-</span>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="1" min="1" name="items[0][quantity]" class="form-control form-control-sm quantity-input" placeholder="Qty" value="{{ old('items.0.quantity', old('quantity', 1)) }}" required>
+                                        <div class="text-danger fs-9 mt-1 d-none stock-warning">Melebihi stok tersedia</div>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <button type="button" class="btn btn-sm btn-icon btn-light-danger btn-remove-row" title="Hapus"><i class="ki-outline ki-trash fs-5"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                    <x-metronic.form-group name="quantity" label="Qty" required>
-                        <input name="quantity" type="number" step="1" min="1" value="{{ old('quantity') }}" class="form-control form-control-solid" required>
-                    </x-metronic.form-group>
-
-                    <x-metronic.form-group name="reason" label="Alasan" required>
-                        <textarea name="reason" class="form-control form-control-solid" rows="3" required>{{ old('reason') }}</textarea>
-                    </x-metronic.form-group>
-
-                    <input type="hidden" name="idempotency_key" value="{{ (string) str()->uuid() }}">
-                    <button class="btn btn-primary w-100" type="submit">Pindahkan Stok Sekarang</button>
+                    <!-- Keterangan & Submit -->
+                    <div class="row g-4 align-items-end">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Alasan / Catatan Pemindahan</label>
+                            <input type="text" name="reason" class="form-control form-control-solid" placeholder="Contoh: Display etalase depan, perapihan rak, dsb." value="{{ old('reason', 'Pindah rak internal') }}">
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <input type="hidden" name="idempotency_key" value="{{ (string) str()->uuid() }}">
+                            <button class="btn btn-primary w-100 fw-bold py-3" type="submit" id="btn-submit-transfer">
+                                <i class="ki-outline ki-arrow-right-left fs-4 me-1"></i>Pindahkan Stok Sekarang
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </x-metronic.card>
         </div>
-        <div class="col-lg-8">
-            <x-metronic.card title="Histori Restok Cepat">
+    </div>
+
+    <!-- Riwayat Pindah Rak Internal -->
+    <div class="row g-5">
+        <div class="col-12">
+            <x-metronic.card title="Riwayat Pindah Rak / Bin Internal">
                 <div class="table-responsive">
                     <table class="table table-row-dashed align-middle">
-                        <thead><tr class="text-muted fw-bold text-uppercase fs-7"><th>Waktu</th><th>Produk</th><th>Jenis</th><th>Lokasi</th><th>Qty</th><th>User</th><th></th></tr></thead>
-                        <tbody>
-                        @forelse ($transfers as $mutation)
-                            <tr>
-                                <td>{{ $mutation->occurred_at?->format('d/m/Y H:i') }}</td>
-                                <td>{{ $mutation->product?->sku }}<div class="text-muted">{{ $mutation->product?->name }}</div></td>
-                                <td>{{ $mutation->mutation_type->label() }}</td>
-                                <td>{{ $mutation->warehouseLocation?->full_code ?: $mutation->workLocation?->name }}</td>
-                                <td>{{ qty($mutation->quantity_on_hand_change) }}</td>
-                                <td>{{ $mutation->actor?->name ?: '-' }}</td>
-                                <td class="text-end"><a href="{{ route('warehouse.stock-mutations.show', $mutation) }}" class="btn btn-sm btn-light">Detail</a></td>
+                        <thead>
+                            <tr class="text-muted fw-bold text-uppercase fs-7">
+                                <th class="ps-4">Waktu</th>
+                                <th>Produk</th>
+                                <th>Jenis</th>
+                                <th>Lokasi / Rak</th>
+                                <th>Perubahan Qty</th>
+                                <th>Penanggung Jawab</th>
+                                <th class="text-end pe-4">Detail</th>
                             </tr>
-                        @empty
-                            <tr><td colspan="7"><x-metronic.empty-state title="Belum ada riwayat" description="Aktivitas restok cepat (direct transfer) yang Anda lakukan akan tampil di sini." /></td></tr>
-                        @endforelse
+                        </thead>
+                        <tbody>
+                            @forelse ($transfers as $mutation)
+                                <tr>
+                                    <td class="ps-4 text-gray-800 fw-bold">{{ $mutation->occurred_at?->format('d/m/Y H:i') }}</td>
+                                    <td>
+                                        <div class="fw-bolder text-gray-800">{{ $mutation->product?->name }}</div>
+                                        <div class="text-muted fs-8">{{ $mutation->product?->sku }}</div>
+                                    </td>
+                                    <td>
+                                        @if($mutation->mutation_type->value === 'transfer_out')
+                                            <span class="badge badge-light-danger fw-bold fs-8"><i class="ki-outline ki-arrow-up-right me-1"></i>Keluar Rak</span>
+                                        @else
+                                            <span class="badge badge-light-success fw-bold fs-8"><i class="ki-outline ki-arrow-down-left me-1"></i>Masuk Rak</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light-primary fw-bold">{{ $mutation->warehouseLocation?->full_code ?: $mutation->workLocation?->name }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bolder {{ (float)$mutation->quantity_on_hand_change > 0 ? 'text-success' : 'text-danger' }}">
+                                            {{ (float)$mutation->quantity_on_hand_change > 0 ? '+' : '' }}{{ qty($mutation->quantity_on_hand_change) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="ki-outline ki-user text-muted me-1 fs-6"></i>
+                                            <span class="text-gray-700 fw-bold">{{ $mutation->actor?->name ?: '-' }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="{{ route('warehouse.stock-mutations.show', $mutation) }}" class="btn btn-sm btn-icon btn-light" title="Lihat Mutasi">
+                                            <i class="ki-outline ki-eye fs-5"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7">
+                                        <x-metronic.empty-state title="Belum ada riwayat pindah rak" description="Aktivitas pemindahan rak atau bin internal yang Anda lakukan akan otomatis tercatat di sini." />
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -156,282 +255,215 @@
 @endsection
 
 @push('scripts')
-    <script>
-        (() => {
-            const initializeLocationTransferSelects = () => {
-                const $ = window.jQuery;
+<script>
+(() => {
+    const $ = window.jQuery;
+    if (typeof $?.fn?.select2 !== 'function') return;
 
-                if (typeof $?.fn?.select2 !== 'function') {
-                    return;
-                }
+    const optionsUrl = @json(route('warehouse.location-transfers.options'));
+    const sourceWorkLocation = $('#source_work_location_id');
+    const destinationWorkLocation = $('#destination_work_location_id');
+    const sourceWarehouseLocation = $('#source_warehouse_location_id');
+    const destinationWarehouseLocation = $('#destination_warehouse_location_id');
+    const itemsBody = $('#transfer-items-body');
+    const btnAddItem = $('#btn-add-item');
+    const btnSubmit = $('#btn-submit-transfer');
 
-                const optionsUrl = @json(route('warehouse.location-transfers.options'));
-                const sourceWorkLocation = $('#source_work_location_id');
-                const sourceWarehouseLocation = $('#source_warehouse_location_id');
-                const product = $('#product_id');
-                const destinationWorkLocation = $('#destination_work_location_id');
-                const destinationWarehouseLocation = $('#destination_warehouse_location_id');
-                const locationCache = new Map();
-                const pendingLocationRequests = new Map();
-                const productCache = new Map();
-                const pendingProductRequests = new Map();
+    let rowIndex = {{ max(1, count(old('items', []))) }};
+    let availableProductsCache = [];
 
-                const resetSelect = (select, placeholder, disabled = true) => {
-                    select.empty()
-                        .append(new Option(placeholder, '', true, true))
-                        .prop('disabled', disabled)
-                        .trigger('change');
-                };
+    const loadBins = (workLocationId) => {
+        if (!workLocationId) {
+            sourceWarehouseLocation.empty().append(new Option('Pilih lokasi kerja terlebih dahulu', '', true, true)).prop('disabled', true).trigger('change');
+            destinationWarehouseLocation.empty().append(new Option('Pilih lokasi kerja terlebih dahulu', '', true, true)).prop('disabled', true).trigger('change');
+            return;
+        }
 
-                const initializeLocalSelect = (select, placeholder) => {
-                    if (select.hasClass('select2-hidden-accessible')) {
-                        select.select2('destroy');
-                    }
+        $.ajax({
+            url: optionsUrl,
+            dataType: 'json',
+            data: { type: 'locations', work_location_id: workLocationId, per_page: 100 },
+            success: (response) => {
+                const results = response.results || [];
+                sourceWarehouseLocation.empty().append(new Option('Pilih rak asal', '', true, true)).prop('disabled', false);
+                destinationWarehouseLocation.empty().append(new Option('Pilih rak tujuan', '', true, true)).prop('disabled', false);
 
-                    select.select2({
-                        theme: 'bootstrap5',
-                        selectionCssClass: ':all:',
-                        width: '100%',
-                        placeholder,
-                        allowClear: select.data('allow-clear') === true,
-                        minimumResultsForSearch: 0,
-                    });
-
-                    select.attr('data-kt-initialized', '1');
-                };
-
-                const fetchAllLocations = (workLocationId) => {
-                    const key = String(workLocationId);
-
-                    if (locationCache.has(key)) {
-                        return Promise.resolve(locationCache.get(key));
-                    }
-
-                    if (pendingLocationRequests.has(key)) {
-                        return pendingLocationRequests.get(key);
-                    }
-
-                    const request = (async () => {
-                        const results = [];
-                        let page = 1;
-                        let hasMore = false;
-
-                        do {
-                            const response = await $.ajax({
-                                url: optionsUrl,
-                                dataType: 'json',
-                                data: {
-                                    type: 'locations',
-                                    q: '',
-                                    page,
-                                    per_page: 100,
-                                    work_location_id: workLocationId,
-                                },
-                            });
-
-                            results.push(...response.results);
-                            hasMore = response.pagination?.more === true;
-                            page += 1;
-                        } while (hasMore);
-
-                        locationCache.set(key, results);
-
-                        return results;
-                    })();
-
-                    pendingLocationRequests.set(key, request);
-                    request.then(
-                        () => pendingLocationRequests.delete(key),
-                        () => pendingLocationRequests.delete(key),
-                    );
-
-                    return request;
-                };
-
-                const fetchAllProducts = (workLocationId, warehouseLocationId) => {
-                    const key = `${workLocationId}:${warehouseLocationId}`;
-
-                    if (productCache.has(key)) {
-                        return Promise.resolve(productCache.get(key));
-                    }
-
-                    if (pendingProductRequests.has(key)) {
-                        return pendingProductRequests.get(key);
-                    }
-
-                    const request = (async () => {
-                        const results = [];
-                        let page = 1;
-                        let hasMore = false;
-
-                        do {
-                            const response = await $.ajax({
-                                url: optionsUrl,
-                                dataType: 'json',
-                                data: {
-                                    type: 'products',
-                                    q: '',
-                                    page,
-                                    per_page: 100,
-                                    work_location_id: workLocationId,
-                                    warehouse_location_id: warehouseLocationId,
-                                },
-                            });
-
-                            results.push(...response.results);
-                            hasMore = response.pagination?.more === true;
-                            page += 1;
-                        } while (hasMore);
-
-                        productCache.set(key, results);
-
-                        return results;
-                    })();
-
-                    pendingProductRequests.set(key, request);
-                    request.then(
-                        () => pendingProductRequests.delete(key),
-                        () => pendingProductRequests.delete(key),
-                    );
-
-                    return request;
-                };
-
-                const loadWarehouseLocations = async (select, workLocationId, options = {}) => {
-                    const {
-                        emptyLabel = 'Pilih zona/rak/bin',
-                        emptyAllowed = false,
-                        selectedId = null,
-                    } = options;
-
-                    const requestedWorkLocationId = workLocationId ? String(workLocationId) : '';
-                    select.data('requested-work-location-id', requestedWorkLocationId);
-
-                    select.empty()
-                        .append(new Option('Memuat data lokasi...', '', true, true))
-                        .prop('disabled', true)
-                        .trigger('change.select2');
-
-                    if (!workLocationId) {
-                        resetSelect(select, emptyLabel, true);
-                        return;
-                    }
-
-                    try {
-                        const locations = await fetchAllLocations(requestedWorkLocationId);
-
-                        if (select.data('requested-work-location-id') !== requestedWorkLocationId) {
-                            return;
-                        }
-
-                        select.empty().append(new Option(emptyLabel, '', !selectedId, !selectedId));
-
-                        locations.forEach((location) => {
-                            const selected = String(location.id) === String(selectedId || '');
-                            select.append(new Option(location.text, location.id, selected, selected));
-                        });
-
-                        select.prop('disabled', !emptyAllowed && locations.length === 0).trigger('change.select2');
-                    } catch (error) {
-                        if (select.data('requested-work-location-id') !== requestedWorkLocationId) {
-                            return;
-                        }
-
-                        resetSelect(select, 'Gagal memuat data lokasi', true);
-                        console.error('Data zona/rak/bin gagal dimuat.', error);
-                    }
-                };
-
-                const loadProducts = async (workLocationId, warehouseLocationId, selectedId = null) => {
-                    const requestKey = workLocationId && warehouseLocationId
-                        ? `${workLocationId}:${warehouseLocationId}`
-                        : '';
-                    product.data('requested-stock-scope', requestKey);
-                    product.empty()
-                        .append(new Option('Memuat data produk...', '', true, true))
-                        .prop('disabled', true)
-                        .trigger('change.select2');
-
-                    if (!requestKey) {
-                        resetSelect(product, 'Pilih zona/rak/bin sumber terlebih dahulu', true);
-                        return;
-                    }
-
-                    try {
-                        const products = await fetchAllProducts(workLocationId, warehouseLocationId);
-
-                        if (product.data('requested-stock-scope') !== requestKey) {
-                            return;
-                        }
-
-                        product.empty().append(new Option('Pilih produk yang tersedia', '', !selectedId, !selectedId));
-
-                        products.forEach((item) => {
-                            const selected = String(item.id) === String(selectedId || '');
-                            product.append(new Option(item.text, item.id, selected, selected));
-                        });
-
-                        product.prop('disabled', products.length === 0).trigger('change.select2');
-
-                        if (products.length === 0) {
-                            product.empty()
-                                .append(new Option('Tidak ada produk dengan stok tersedia', '', true, true))
-                                .prop('disabled', true)
-                                .trigger('change.select2');
-                        }
-                    } catch (error) {
-                        if (product.data('requested-stock-scope') !== requestKey) {
-                            return;
-                        }
-
-                        resetSelect(product, 'Gagal memuat data produk', true);
-                        console.error('Data produk sumber gagal dimuat.', error);
-                    }
-                };
-
-                const initialSourceWarehouseLocationId = sourceWarehouseLocation.val();
-                const initialDestinationWarehouseLocationId = destinationWarehouseLocation.val();
-                const initialProductId = product.val();
-
-                initializeLocalSelect(sourceWarehouseLocation, 'Cari zona/rak/bin sumber');
-                initializeLocalSelect(destinationWarehouseLocation, 'Cari zona/rak/bin tujuan');
-                initializeLocalSelect(product, 'Cari produk yang tersedia');
-
-                loadWarehouseLocations(sourceWarehouseLocation, sourceWorkLocation.val(), {
-                    emptyLabel: 'Pilih zona/rak/bin sumber',
-                    selectedId: initialSourceWarehouseLocationId,
+                results.forEach((bin) => {
+                    sourceWarehouseLocation.append(new Option(bin.text, bin.id));
+                    destinationWarehouseLocation.append(new Option(bin.text, bin.id));
                 });
-                loadWarehouseLocations(destinationWarehouseLocation, destinationWorkLocation.val(), {
-                    emptyLabel: 'Tanpa zona/rak/bin khusus',
-                    emptyAllowed: true,
-                    selectedId: initialDestinationWarehouseLocationId,
-                });
-                loadProducts(sourceWorkLocation.val(), initialSourceWarehouseLocationId, initialProductId);
-
-                sourceWorkLocation.on('change.location-transfer', () => {
-                    resetSelect(product, 'Pilih produk yang tersedia', true);
-                    loadWarehouseLocations(sourceWarehouseLocation, sourceWorkLocation.val(), {
-                        emptyLabel: 'Pilih zona/rak/bin sumber',
-                    });
-                });
-
-                sourceWarehouseLocation.on('change.location-transfer', () => {
-                    loadProducts(sourceWorkLocation.val(), sourceWarehouseLocation.val());
-                });
-
-                destinationWorkLocation.on('change.location-transfer', () => {
-                    loadWarehouseLocations(destinationWarehouseLocation, destinationWorkLocation.val(), {
-                        emptyLabel: 'Tanpa zona/rak/bin khusus',
-                        emptyAllowed: true,
-                    });
-                });
-            };
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeLocationTransferSelects, { once: true });
-            } else {
-                initializeLocationTransferSelects();
+                sourceWarehouseLocation.trigger('change');
+                destinationWarehouseLocation.trigger('change');
             }
-        })();
-    </script>
+        });
+    };
+
+    const loadProductsInSourceBin = (workLocationId, binId) => {
+        if (!workLocationId || !binId) {
+            availableProductsCache = [];
+            itemsBody.find('.product-select').empty().append(new Option('Pilih rak asal terlebih dahulu', '', true, true)).prop('disabled', true).trigger('change');
+            itemsBody.find('.stock-available-badge').text('-');
+            return;
+        }
+
+        $.ajax({
+            url: optionsUrl,
+            dataType: 'json',
+            data: { type: 'products', work_location_id: workLocationId, warehouse_location_id: binId, per_page: 100 },
+            success: (response) => {
+                availableProductsCache = response.results || [];
+                itemsBody.find('.product-select').each(function() {
+                    const select = $(this);
+                    const currentVal = select.val();
+                    populateProductSelect(select, currentVal);
+                });
+            }
+        });
+    };
+
+    const populateProductSelect = (select, selectedId) => {
+        select.empty().append(new Option('Pilih produk yang tersedia', '', true, true)).prop('disabled', false);
+        availableProductsCache.forEach((prod) => {
+            const isSelected = String(prod.id) === String(selectedId);
+            const opt = new Option(prod.text, prod.id, isSelected, isSelected);
+            opt.dataset.available = prod.available;
+            opt.dataset.unit = prod.unit;
+            select.append(opt);
+        });
+        select.trigger('change');
+    };
+
+    const initProductSelect2 = (select) => {
+        select.select2({
+            theme: 'bootstrap5',
+            width: '100%',
+            placeholder: 'Pilih produk yang tersedia'
+        }).on('select2:select', function(e) {
+            const row = $(this).closest('.transfer-row');
+            updateRowStockInfo(row);
+        });
+    };
+
+    const updateRowStockInfo = (row) => {
+        const select = row.find('.product-select');
+        const badge = row.find('.stock-available-badge');
+        const qtyInput = row.find('.quantity-input');
+        const warning = row.find('.stock-warning');
+
+        const selectedOption = select.find('option:selected')[0];
+        if (!selectedOption || !selectedOption.value) {
+            badge.text('-').removeClass('badge-light-success badge-light-danger').addClass('badge-light');
+            warning.addClass('d-none');
+            qtyInput.removeClass('is-invalid');
+            validateForm();
+            return;
+        }
+
+        const available = parseFloat(selectedOption.dataset.available || 0);
+        const unit = selectedOption.dataset.unit || 'Pcs';
+        badge.text(`${available} ${unit}`).removeClass('badge-light badge-light-danger').addClass('badge-light-success');
+
+        const qty = parseFloat(qtyInput.val() || 0);
+        if (qty > available) {
+            warning.removeClass('d-none').text(`Maksimal ${available} ${unit}`);
+            qtyInput.addClass('is-invalid border-danger');
+            badge.removeClass('badge-light-success').addClass('badge-light-danger');
+        } else {
+            warning.addClass('d-none');
+            qtyInput.removeClass('is-invalid border-danger');
+        }
+        validateForm();
+    };
+
+    const validateForm = () => {
+        let isValid = true;
+        const sourceBin = sourceWarehouseLocation.val();
+        const destBin = destinationWarehouseLocation.val();
+
+        if (!sourceBin || !destBin || String(sourceBin) === String(destBin)) {
+            isValid = false;
+        }
+
+        itemsBody.find('.transfer-row').each(function() {
+            const row = $(this);
+            const prod = row.find('.product-select').val();
+            const qtyInput = row.find('.quantity-input');
+            const qty = parseFloat(qtyInput.val() || 0);
+            if (!prod || qty <= 0 || qtyInput.hasClass('is-invalid')) {
+                isValid = false;
+            }
+        });
+
+        btnSubmit.prop('disabled', !isValid);
+    };
+
+    sourceWorkLocation.on('change', function() {
+        const locId = $(this).val();
+        destinationWorkLocation.val(locId);
+        loadBins(locId);
+    });
+
+    sourceWarehouseLocation.on('change', function() {
+        const binId = $(this).val();
+        loadProductsInSourceBin(sourceWorkLocation.val(), binId);
+        validateForm();
+    });
+
+    destinationWarehouseLocation.on('change', function() {
+        validateForm();
+    });
+
+    btnAddItem.on('click', function() {
+        const newRow = $(`
+            <tr class="transfer-row" data-index="${rowIndex}">
+                <td class="ps-4">
+                    <select name="items[${rowIndex}][product_id]" class="form-select form-select-sm product-select" required>
+                    </select>
+                </td>
+                <td class="text-center">
+                    <span class="badge badge-light fw-bolder stock-available-badge">-</span>
+                </td>
+                <td>
+                    <input type="number" step="1" min="1" name="items[${rowIndex}][quantity]" class="form-control form-control-sm quantity-input" placeholder="Qty" value="1" required>
+                    <div class="text-danger fs-9 mt-1 d-none stock-warning">Melebihi stok tersedia</div>
+                </td>
+                <td class="text-end pe-4">
+                    <button type="button" class="btn btn-sm btn-icon btn-light-danger btn-remove-row" title="Hapus"><i class="ki-outline ki-trash fs-5"></i></button>
+                </td>
+            </tr>
+        `);
+
+        itemsBody.append(newRow);
+        const newSelect = newRow.find('.product-select');
+        populateProductSelect(newSelect, '');
+        initProductSelect2(newSelect);
+        rowIndex++;
+        validateForm();
+    });
+
+    itemsBody.on('click', '.btn-remove-row', function() {
+        if (itemsBody.find('.transfer-row').length > 1) {
+            $(this).closest('.transfer-row').remove();
+            validateForm();
+        } else {
+            if (typeof toastr !== 'undefined') toastr.warning('Minimal harus ada 1 produk.');
+        }
+    });
+
+    itemsBody.on('input change', '.quantity-input', function() {
+        const row = $(this).closest('.transfer-row');
+        updateRowStockInfo(row);
+    });
+
+    // Inisialisasi awal
+    initProductSelect2(itemsBody.find('.product-select'));
+    if (sourceWorkLocation.val()) {
+        if (!sourceWarehouseLocation.find('option:not([value=""])').length) {
+            loadBins(sourceWorkLocation.val());
+        } else if (sourceWarehouseLocation.val()) {
+            loadProductsInSourceBin(sourceWorkLocation.val(), sourceWarehouseLocation.val());
+        }
+    }
+})();
+</script>
 @endpush

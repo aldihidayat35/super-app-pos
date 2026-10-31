@@ -1,32 +1,51 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Buat Transfer Stok - ' . config('app.name'))
+@section('title', 'Kirim Transfer Antar Cabang - ' . config('app.name'))
 @section('page_title', 'Form dan Persetujuan Transfer')
 
 @section('page_guide')
-    <x-metronic.page-guide id="warehouse-stock-transfer-create" title="Panduan Form Transfer Stok">
+    <x-metronic.page-guide id="warehouse-stock-transfer-create" title="Panduan Kirim Transfer Antar Cabang">
         <x-slot:function>
-            <p>Form ini digunakan untuk transfer formal ke gudang atau cabang lain melalui persetujuan, reservasi stok, pengambilan, pengemasan, pengiriman, dan penerimaan.</p>
+            <p>Form ini digunakan untuk membuat dan mengirim transfer stok antar cabang atau gudang secara langsung. Alur persetujuan telah ditiadakan; pembuat dokumen bertindak sebagai penanggung jawab pengirim dan barang langsung berstatus <em>Dalam Perjalanan (In-Transit)</em> untuk kemudian diverifikasi dan diterima di cabang tujuan.</p>
         </x-slot:function>
         <x-slot:workflow>
-            <ol><li>Pilih lokasi kerja sumber dan tujuan.</li><li>Sistem hanya menampilkan zona/rak/bin yang sesuai.</li><li>Tambahkan produk sebanyak yang diperlukan.</li><li>Simpan sebagai rancangan atau ajukan untuk persetujuan.</li></ol>
+            <ol>
+                <li>Pilih lokasi kerja asal (pengirim) dan cabang tujuan.</li>
+                <li>Tambahkan satu atau beberapa produk serta tentukan kuantitas transfer.</li>
+                <li>Pilih lokasi rak asal jika diperlukan (atau biarkan otomatis / FIFO).</li>
+                <li>Klik tombol <strong>Kirim Sekarang (Dalam Perjalanan)</strong> untuk langsung mengirim barang.</li>
+            </ol>
         </x-slot:workflow>
         <x-slot:parts>
-            <ul><li><strong>Jumlah Diminta:</strong> jumlah yang diajukan.</li><li><strong>Jumlah Disetujui:</strong> usulan jumlah yang akan diperiksa kembali oleh pemberi persetujuan.</li><li><strong>Lokasi Ambil:</strong> zona/rak/bin sumber.</li><li><strong>Lokasi Tujuan:</strong> zona/rak/bin tujuan.</li><li><strong>Tambah Produk:</strong> menambahkan baris tanpa batas tetap lima produk.</li></ul>
+            <ul>
+                <li><strong>Lokasi Asal & Tujuan:</strong> Cabang pengirim dan cabang penerima (harus berbeda).</li>
+                <li><strong>Tabel Produk:</strong> Produk, jumlah transfer, dan rak ambil opsional.</li>
+                <li><strong>Penanggung Jawab:</strong> Akun Anda yang bertanggung jawab atas pengiriman ini.</li>
+            </ul>
         </x-slot:parts>
         <x-slot:impacts>
-            <p>Rancangan dan pengajuan belum mengurangi stok. Setelah disetujui, stok sumber dialokasikan. Stok fisik sumber baru keluar saat transfer dikirim.</p>
+            <p>Pengiriman langsung memotong stok on-hand cabang asal dan mencatat stok dalam perjalanan hingga dikonfirmasi terima di cabang tujuan.</p>
         </x-slot:impacts>
         <x-slot:operation>
-            <ol><li>Pilih sumber dan tujuan.</li><li>Pilih lokasi default bila diperlukan.</li><li>Isi minimal satu produk dan jumlahnya.</li><li>Klik <strong>Simpan Rancangan</strong> atau <strong>Ajukan Persetujuan</strong>.</li></ol>
+            <ol>
+                <li>Pastikan stok di cabang asal mencukupi.</li>
+                <li>Klik <strong>Kirim Sekarang</strong> untuk langsung menerbitkan status In-Transit.</li>
+                <li>Gunakan <strong>Simpan Draft</strong> jika transfer masih ingin disiapkan terlebih dahulu.</li>
+            </ol>
         </x-slot:operation>
         <x-slot:warnings>
-            <div class="alert alert-warning mb-0">Sumber dan tujuan tidak boleh sama. Zona/rak/bin sumber dan tujuan harus sesuai dengan lokasi kerja yang dipilih.</div>
+            <div class="alert alert-warning mb-0">Lokasi asal dan tujuan tidak boleh sama. Setiap akun bertanggung jawab penuh atas data yang diinput.</div>
         </x-slot:warnings>
         <x-slot:example>
-            <p>Untuk perpindahan langsung antarbin tanpa persetujuan dan pengiriman, gunakan menu <strong>Transfer Antar Lokasi Internal</strong>.</p>
+            <p>Gudang Pusat mengirim 10 Box ke Toko Cabang Kedai Awal.</p>
         </x-slot:example>
     </x-metronic.page-guide>
+@endsection
+
+@section('toolbar_actions')
+    <a href="{{ route('warehouse.stock-transfers.index') }}" class="btn btn-light">
+        <i class="ki-outline ki-arrow-left fs-5 me-1"></i>Kembali ke Daftar
+    </a>
 @endsection
 
 @section('content')
@@ -43,15 +62,15 @@
         $destinationId = old('destination_work_location_id');
     @endphp
 
-    <div class="alert alert-light-primary border border-primary border-dashed d-flex align-items-start gap-3">
-        <i class="ki-outline ki-information-5 fs-2 text-primary"></i>
-        <div>
-            <div class="fw-bold text-gray-900 mb-1">Pilih jenis transfer yang tepat</div>
-            <div class="text-gray-700"><strong>Transfer Antar Lokasi Internal</strong> memindahkan stok langsung dan membuat perubahan keluar/masuk tanpa persetujuan, pengemasan, pengiriman, atau penerimaan. <strong>Transfer Stok</strong> adalah proses formal antar gudang/cabang dengan seluruh tahapan tersebut.</div>
-        </div>
-    </div>
-
-    <x-metronic.card title="Transfer Baru">
+    <x-metronic.card title="Form Pengiriman Transfer Antar Cabang">
+        <x-slot:toolbar>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted fs-7">Penanggung Jawab Pengirim:</span>
+                <span class="badge badge-light-primary fw-bold fs-7">
+                    <i class="ki-outline ki-user me-1"></i>{{ auth()->user()->name }}
+                </span>
+            </div>
+        </x-slot:toolbar>
         <form method="POST" action="{{ route('warehouse.stock-transfers.store') }}" id="stock-transfer-form" data-options-url="{{ route('warehouse.stock-transfers.location-options') }}">
             @csrf
             <div class="row g-4">
@@ -152,7 +171,14 @@
                 </table>
             </div>
             @if($errors->any())<div class="alert alert-danger">Periksa kembali form. Minimal satu produk harus diisi dan lokasi harus sesuai dengan sumber atau tujuan.</div>@endif
-            <div class="d-flex justify-content-end gap-3"><button name="action" value="draft" class="btn btn-light">Simpan Rancangan</button><button name="action" value="submit" class="btn btn-primary">Ajukan Persetujuan</button></div>
+            <div class="d-flex justify-content-end gap-3">
+                <button type="submit" name="action" value="draft" class="btn btn-light fw-bold">
+                    <i class="ki-outline ki-file me-1"></i>Simpan Draft
+                </button>
+                <button type="submit" name="action" value="ship" class="btn btn-primary fw-bold">
+                    <i class="ki-outline ki-send fs-4 me-1"></i>Kirim Sekarang (Dalam Perjalanan)
+                </button>
+            </div>
         </form>
     </x-metronic.card>
 

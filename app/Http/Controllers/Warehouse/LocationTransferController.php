@@ -15,6 +15,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -74,25 +75,52 @@ class LocationTransferController extends Controller
         $this->ensureScope($request, (int) $data['source_work_location_id'], 'source_work_location_id');
         $this->ensureScope($request, (int) $data['destination_work_location_id'], 'destination_work_location_id');
 
-        $product = Product::query()->findOrFail($data['product_id']);
         $sourceWorkLocation = WorkLocation::query()->findOrFail($data['source_work_location_id']);
         $destinationWorkLocation = WorkLocation::query()->findOrFail($data['destination_work_location_id']);
         $sourceWarehouseLocation = filled($data['source_warehouse_location_id'] ?? null) ? WarehouseLocation::query()->findOrFail($data['source_warehouse_location_id']) : null;
         $destinationWarehouseLocation = filled($data['destination_warehouse_location_id'] ?? null) ? WarehouseLocation::query()->findOrFail($data['destination_warehouse_location_id']) : null;
 
+        /** @var list<array{product_id: int, quantity: numeric-string|float|int}> $items */
+        $items = [];
+        if (isset($data['items']) && is_array($data['items']) && count($data['items']) > 0) {
+            foreach ($data['items'] as $item) {
+                if (is_array($item) && isset($item['product_id'], $item['quantity']) && (float) $item['quantity'] > 0) {
+                    $items[] = [
+                        'product_id' => (int) $item['product_id'],
+                        'quantity' => $item['quantity'],
+                    ];
+                }
+            }
+        } elseif (isset($data['product_id'], $data['quantity'])) {
+            $items[] = [
+                'product_id' => (int) $data['product_id'],
+                'quantity' => $data['quantity'],
+            ];
+        }
+
+        if ($items === []) {
+            return back()->withInput()->withErrors(['transfer' => 'Minimal satu produk dengan kuantitas valid harus diisi.']);
+        }
+
         try {
-            $inventory->transferInternal(
-                product: $product,
-                sourceWorkLocation: $sourceWorkLocation,
-                sourceWarehouseLocation: $sourceWarehouseLocation,
-                destinationWorkLocation: $destinationWorkLocation,
-                destinationWarehouseLocation: $destinationWarehouseLocation,
-                quantity: $data['quantity'],
-                actor: $request->user(),
-                reference: ['type' => 'location_transfer', 'no' => 'TRF-'.now()->format('YmdHis')],
-                reason: $data['reason'],
-                idempotencyKey: $data['idempotency_key'] ?? (string) str()->uuid(),
-            );
+            DB::transaction(function () use ($items, $sourceWorkLocation, $sourceWarehouseLocation, $destinationWorkLocation, $destinationWarehouseLocation, $request, $data, $inventory): void {
+                $baseKey = $data['idempotency_key'] ?? (string) str()->uuid();
+                foreach ($items as $index => $itemData) {
+                    $product = Product::query()->findOrFail($itemData['product_id']);
+                    $inventory->transferInternal(
+                        product: $product,
+                        sourceWorkLocation: $sourceWorkLocation,
+                        sourceWarehouseLocation: $sourceWarehouseLocation,
+                        destinationWorkLocation: $destinationWorkLocation,
+                        destinationWarehouseLocation: $destinationWarehouseLocation,
+                        quantity: $itemData['quantity'],
+                        actor: $request->user(),
+                        reference: ['type' => 'location_transfer', 'no' => 'TRF-'.now()->format('YmdHis').'-'.($index + 1)],
+                        reason: $data['reason'] ?? 'Pindah rak internal',
+                        idempotencyKey: "{$baseKey}-{$index}",
+                    );
+                }
+            });
         } catch (ServiceException $exception) {
             return back()
                 ->withInput()
@@ -100,7 +128,14 @@ class LocationTransferController extends Controller
                 ->with('notification', ['type' => 'danger', 'message' => $exception->getMessage()]);
         }
 
-        return redirect()->route('warehouse.location-transfers.index')->with('notification', ['type' => 'success', 'message' => 'Transfer lokasi berhasil diproses.']);
+        $sourceBinName = $sourceWarehouseLocation !== null ? $sourceWarehouseLocation->name : 'Default';
+        $destBinName = $destinationWarehouseLocation !== null ? $destinationWarehouseLocation->name : 'Default';
+        $count = count($items);
+
+        return redirect()->route('warehouse.location-transfers.index')->with('notification', [
+            'type' => 'success',
+            'message' => "Berhasil memindahkan {$count} produk dari {$sourceBinName} ke {$destBinName}. Penanggung Jawab: {$request->user()?->name}.",
+        ]);
     }
 
     private function ensureScope(Request $request, int $workLocationId, string $field): void
@@ -168,10 +203,18 @@ class LocationTransferController extends Controller
             ->paginate($perPage);
 
         return response()->json([
-            'results' => $stocks->getCollection()->map(fn (Stock $stock): array => [
-                'id' => $stock->product_id,
-                'text' => $stock->product->sku.' — '.$stock->product->name.' (Tersedia: '.qty($stock->available_quantity).' '.$stock->product->baseUnit?->symbol.')',
-            ])->values(),
+            'results' => $stocks->getCollection()->map(function (Stock $stock): array {
+                $unitSymbol = $stock->product->baseUnit->symbol;
+
+                return [
+                    'id' => $stock->product_id,
+                    'text' => $stock->product->sku.' — '.$stock->product->name.' (Tersedia: '.qty($stock->available_quantity).' '.$unitSymbol.')',
+                    'sku' => $stock->product->sku,
+                    'name' => $stock->product->name,
+                    'available' => (float) $stock->available_quantity,
+                    'unit' => $unitSymbol,
+                ];
+            })->values(),
             'pagination' => ['more' => $stocks->hasMorePages()],
         ]);
     }

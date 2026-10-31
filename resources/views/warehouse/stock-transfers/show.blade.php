@@ -57,17 +57,17 @@
         $hasTransit = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare($item->inTransitQuantity(), '0') > 0);
         $hasShort = $transfer->items->contains(fn($item) => \App\Support\Decimal::compare((string)$item->quantity_short, '0') > 0);
         $nextStep = match($transfer->status->value) {
-            'draft' => ['title' => 'Ajukan untuk Persetujuan', 'description' => 'Periksa kembali item transfer, lalu ajukan dokumen agar Kepala Gudang dapat melakukan persetujuan.', 'action' => 'submit'],
-            'pending_approval' => ['title' => 'Periksa dan Setujui Transfer', 'description' => 'Kepala Gudang sumber perlu memeriksa jumlah yang diminta serta kecukupan stok sebelum melakukan alokasi.', 'action' => 'approval'],
-            'approved' => ['title' => 'Mulai Pengepakan (Packing)', 'description' => 'Stok sumber sudah dialokasikan. Petugas gudang harus mengambil barang dari rak dan mencatat hasil pengemasan.', 'action' => 'packing'],
-            'packing' => ['title' => 'Kirim Barang (Dispatch/Ship)', 'description' => 'Barang sudah masuk proses packing. Lengkapi hasil picking bila perlu, kemudian catat kendaraan atau kurir dan kirim barang.', 'action' => 'shipping'],
-            'shipped' => ['title' => 'Terima Barang di Lokasi Tujuan', 'description' => 'Barang sedang dalam perjalanan. Petugas tujuan harus memeriksa jumlah diterima, rusak, dan selisih saat barang tiba.', 'action' => 'receiving'],
+            'draft' => ['title' => 'Kirim Sekarang (Dalam Perjalanan)', 'description' => 'Periksa kembali item transfer, lalu kirim langsung ke cabang tujuan tanpa birokrasi persetujuan.', 'action' => 'ship'],
+            'pending_approval' => ['title' => 'Periksa dan Setujui Transfer', 'description' => 'Kepala Gudang sumber dapat menyetujui transfer atau langsung mengirim barang.', 'action' => 'approval'],
+            'approved' => ['title' => 'Kirim Barang (Dispatch/Ship)', 'description' => 'Barang siap dikirim ke cabang tujuan.', 'action' => 'shipping'],
+            'packing' => ['title' => 'Kirim Barang (Dispatch/Ship)', 'description' => 'Barang sudah selesai di-packing dan siap diberangkatkan.', 'action' => 'shipping'],
+            'shipped' => ['title' => 'Terima Barang di Lokasi Tujuan', 'description' => 'Barang sedang dalam perjalanan. Petugas cabang tujuan dapat memeriksa dan menerima barang dengan 1-klik.', 'action' => 'receiving'],
             'partially_received' => $hasDiscrepancy
                 ? ['title' => 'Selesaikan Selisih Penerimaan', 'description' => 'Ada selisih yang belum dipertanggungjawabkan. Tentukan penyelesaian dan unggah bukti sebelum transfer dapat dilanjutkan.', 'action' => 'discrepancy']
-                : ['title' => 'Lanjutkan Penerimaan Barang', 'description' => 'Sebagian barang telah diterima, tetapi masih ada barang dalam perjalanan yang harus dicatat saat tiba.', 'action' => 'receiving'],
-            'fully_received' => ['title' => 'Selesaikan Transfer', 'description' => 'Seluruh barang telah dipertanggungjawabkan. Penanggung jawab tujuan dapat menyelesaikan dokumen transfer.', 'action' => 'complete'],
-            'completed' => ['title' => 'Transfer Selesai', 'description' => 'Tidak ada tindakan operasional berikutnya. Dokumen dapat dicetak atau ditinjau melalui daftar transfer.', 'action' => 'finished'],
-            'cancelled' => ['title' => 'Transfer Dibatalkan', 'description' => 'Tidak ada tindakan lanjutan pada dokumen ini. Buat transfer baru jika pengiriman tetap diperlukan.', 'action' => 'cancelled'],
+                : ['title' => 'Lanjutkan Penerimaan Barang', 'description' => 'Sebagian barang telah diterima, lanjutkan penerimaan untuk sisa barang.', 'action' => 'receiving'],
+            'fully_received' => ['title' => 'Selesaikan Transfer', 'description' => 'Seluruh barang telah diterima. Klik selesaikan transfer untuk mengarsipkan dokumen.', 'action' => 'complete'],
+            'completed' => ['title' => 'Transfer Selesai', 'description' => 'Dokumen telah selesai diterima penuh. Tidak ada tindakan lanjutan yang diperlukan.', 'action' => 'finished'],
+            'cancelled' => ['title' => 'Transfer Dibatalkan', 'description' => 'Dokumen transfer ini telah dibatalkan.', 'action' => 'cancelled'],
             default => ['title' => 'Periksa Status Transfer', 'description' => 'Status dokumen belum memiliki arahan proses berikutnya.', 'action' => 'none'],
         };
         $approvalBlocked = $approvalStocks->contains(fn($row) => !$row['enough']);
@@ -147,10 +147,10 @@
                 <div class="flex-shrink-0 d-flex flex-column align-items-lg-end justify-content-center">
                     @if($transfer->status->value === 'draft')
                         @can('update', $transfer)
-                            <form method="POST" action="{{ route('warehouse.stock-transfers.submit', $transfer) }}" onsubmit="return confirm('Ajukan transfer ini untuk persetujuan Kepala Gudang?');">
+                            <form method="POST" action="{{ route('warehouse.stock-transfers.direct-ship', $transfer) }}" onsubmit="return confirm('Kirim transfer ini sekarang? Stok di lokasi asal akan langsung dipotong dan berstatus Dalam Perjalanan.');">
                                 @csrf
                                 <button type="submit" class="btn btn-primary btn-lg fs-5 fw-bolder px-8 py-4 shadow-sm">
-                                    <i class="ki-outline ki-send fs-2 me-2"></i>Ajukan untuk Persetujuan
+                                    <i class="ki-outline ki-send fs-2 me-2"></i>Kirim Sekarang (Dalam Perjalanan)
                                 </button>
                             </form>
                         @else
@@ -303,8 +303,8 @@
                     <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Tanggal</div><div class="fw-bold text-gray-900 fs-7">{{ $transfer->transfer_date?->format('d/m/Y') }}</div></div>
                     <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Status</div><x-metronic.status-badge :status="$transfer->status" /></div>
                     <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Sumber Permintaan</div><div class="fs-7">@if($transfer->restockRequest)<a href="{{ route('retail.restock-requests.show', $transfer->restockRequest) }}" class="fw-bold text-primary">{{ $transfer->restockRequest->number }}</a>@else-@endif</div></div>
-                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Pengirim</div><div class="fs-7 text-gray-800">{{ $transfer->shipper?->name ?: '-' }}</div></div>
-                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Penerima</div><div class="fs-7 text-gray-800">{{ $transfer->receiver?->name ?: '-' }}</div></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Penanggung Jawab Pengirim</div><div class="fs-7 text-gray-800 fw-bold">{{ $transfer->shipper?->name ?: ($transfer->requester?->name ?: '-') }}</div></div>
+                    <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Penanggung Jawab Penerima</div><div class="fs-7 text-gray-800 fw-bold">{{ $transfer->receiver?->name ?: 'Menunggu Penerimaan' }}</div></div>
                     <div class="col-md-3"><div class="text-muted fs-8 text-uppercase fw-semibold">Resi/Kendaraan</div><div class="fs-7 text-gray-800">{{ $transfer->tracking_number ?: $transfer->vehicle_number ?: '-' }}</div></div>
                 </div>
 

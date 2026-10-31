@@ -58,7 +58,7 @@ class StoreStockTransferRequest extends FormRequest
             'destination_warehouse_location_id' => ['nullable', Rule::exists('warehouse_locations', 'id')->where('is_active', true)],
             'transfer_date' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'action' => ['nullable', 'in:draft,submit'],
+            'action' => ['nullable', 'in:draft,submit,ship'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', Rule::exists('products', 'id')->where('status', 'active')],
             'items.*.unit_id' => ['nullable', 'integer', Rule::exists('units', 'id')->where('is_active', true)],
