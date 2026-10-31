@@ -144,9 +144,8 @@ class PosWorkflowTest extends TestCase
         $this->actingAs($this->cashier)
             ->get(route('retail.pos.index'))
             ->assertOk()
-            ->assertSee('Batch Pengambilan', false)
-            ->assertSee('FIFO otomatis', false)
-            ->assertSee('Batch belum tersedia', false);
+            ->assertSee('cart-batch-select', false)
+            ->assertSee('Otomatis (FIFO)', false);
 
         $this->actingAs($this->cashier)
             ->getJson(route('retail.pos.products', ['q' => $product->sku]))

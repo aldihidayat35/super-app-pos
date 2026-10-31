@@ -9,6 +9,8 @@ use App\Services\Product\ProductBrandImportService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductBrandImportController extends Controller
@@ -59,21 +61,21 @@ class ProductBrandImportController extends Controller
         $this->authorize('export', ProductBrand::class);
 
         return response()->streamDownload(function (): void {
-            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $spreadsheet = new Spreadsheet;
             $sheet = $spreadsheet->getActiveSheet();
-            
+
             $sheet->fromArray([
                 ['code', 'name', 'description', 'is_active'],
                 ['BRD-TORABIKA', 'Torabika', 'Produk kopi Torabika Mayora', '1'],
                 ['BRD-INDOMIE', 'Indomie', 'Produk mie instan Indomie Indofood', '1'],
                 ['BRD-KAPALAPI', 'Kapal Api', 'Kopi bubuk Kapal Api Santos Jaya Abadi', '1'],
             ]);
-            
+
             foreach (range('A', 'D') as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
-            
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+            $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         }, 'template-import-merek.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

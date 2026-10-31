@@ -6,40 +6,488 @@ use App\Enums\ProductPriceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pricing\StoreProductPriceRequest;
 use App\Models\Branch;
+use App\Models\PriceHistory;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\ProductPrice;
+use App\Models\StockBatch;
+use App\Models\WorkLocation;
 use App\Services\Pricing\PriceManagementService;
 use App\Services\Pricing\PriceResolverService;
+use App\Support\CurrencyFormatter;
+use App\Support\Decimal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductPriceController extends Controller
 {
+    public const DEFAULT_RINGS = [
+        'ring_retail' => [
+            'key' => 'ring_retail',
+            'label' => 'Ring Retail',
+            'price_ring' => 'Ring Retail',
+            'channel' => 'retail',
+            'aliases' => ['Ring Retail', 'retail', 'ring_retail', 'ring_1'],
+        ],
+        'ring_b2b' => [
+            'key' => 'ring_b2b',
+            'label' => 'Ring B2B',
+            'price_ring' => 'Ring B2B',
+            'channel' => 'b2b',
+            'aliases' => ['Ring B2B', 'b2b', 'ring_b2b', 'ring_grosir', 'ring_2'],
+        ],
+        'ring_pos' => [
+            'key' => 'ring_pos',
+            'label' => 'Ring POS',
+            'price_ring' => 'Ring POS',
+            'channel' => 'pos',
+            'aliases' => ['Ring POS', 'pos', 'ring_pos', 'Ring Kasir', 'ring_3'],
+        ],
+        'ring_4' => [
+            'key' => 'ring_4',
+            'label' => 'Ring 4',
+            'price_ring' => 'Ring 4',
+            'channel' => 'retail',
+            'aliases' => ['Ring 4', 'ring_4'],
+        ],
+    ];
+
     public function index(Request $request, PriceResolverService $resolver): View
     {
         $this->authorize('viewAny', ProductPrice::class);
 
-        $prices = ProductPrice::query()
+        $user = $request->user();
+        $isSuperAdmin = $user->hasUnrestrictedLocationScope();
+
+        // 1. Hak Akses & Pilihan Lokasi
+        if ($isSuperAdmin) {
+            $locations = WorkLocation::query()->where('is_active', true)->orderBy('name')->get();
+            if ($request->has('work_location_id')) {
+                $selectedLocationId = $request->input('work_location_id') !== '' ? $request->integer('work_location_id') : null;
+            } elseif ($request->has('branch_id') && $request->input('branch_id') !== '') {
+                $branchWorkLoc = Branch::where('id', $request->input('branch_id'))->value('work_location_id');
+                $selectedLocationId = $branchWorkLoc ? (int) $branchWorkLoc : $request->integer('branch_id');
+            } else {
+                $selectedLocationId = null;
+            }
+        } else {
+            // Role lain: Pilihan lokasi otomatis terkunci sesuai lokasi penugasan akun tersebut
+            $permittedIds = $user->permittedWorkLocationIds();
+            abort_if(empty($permittedIds), 403, 'Akun Anda belum memiliki penugasan lokasi kerja.');
+
+            $requestedId = $request->filled('work_location_id') ? $request->integer('work_location_id') : null;
+            if ($requestedId && in_array($requestedId, $permittedIds, true)) {
+                $selectedLocationId = $requestedId;
+            } else {
+                $defaultLocation = $user->workLocations()->wherePivot('is_default', true)->first() ?? $user->workLocations()->first();
+                $selectedLocationId = $defaultLocation ? $defaultLocation->id : $permittedIds[0];
+            }
+            $locations = WorkLocation::query()->whereIn('id', $permittedIds)->where('is_active', true)->orderBy('name')->get();
+        }
+
+        $currentLocation = $selectedLocationId ? WorkLocation::find($selectedLocationId) : null;
+        $canSensitive = $user->can('margins.view_sensitive') || $user->can('prices.update');
+
+        // Query active products
+        $productsQuery = Product::query()
+            ->with(['category', 'baseUnit'])
+            ->where('status', 'active')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $search = trim($request->input('q'));
+                $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"));
+            })
+            ->when($request->filled('category_id'), fn ($q) => $q->where('category_id', $request->integer('category_id')))
+            ->orderBy('name');
+
+        $products = $productsQuery->paginate(20)->withQueryString();
+        $productIds = $products->pluck('id')->all();
+
+        // Query active stock batches at selected location
+        $stockBatches = StockBatch::query()
+            ->whereIn('product_id', $productIds)
+            ->when($selectedLocationId !== null, fn ($q) => $q->where('work_location_id', $selectedLocationId))
+            ->available()
+            ->orderBy('cost_price')
+            ->get()
+            ->groupBy('product_id');
+
+        // Query active prices at selected location (or fallback to global)
+        $productPrices = ProductPrice::query()
+            ->whereIn('product_id', $productIds)
+            ->where('status', ProductPriceStatus::ACTIVE->value)
+            ->where(function ($query) use ($selectedLocationId) {
+                if ($selectedLocationId !== null) {
+                    $query->where('work_location_id', $selectedLocationId)
+                        ->orWhereNull('work_location_id');
+                } else {
+                    $query->whereNull('work_location_id');
+                }
+            })
+            ->where(fn ($q) => $q->whereNull('starts_at')->orWhereDate('starts_at', '<=', now()->toDateString()))
+            ->where(fn ($q) => $q->whereNull('ends_at')->orWhereDate('ends_at', '>=', now()->toDateString()))
+            ->orderByDesc('work_location_id')
+            ->orderBy('priority')
+            ->get()
+            ->groupBy('product_id');
+
+        $itemsData = [];
+        foreach ($products as $product) {
+            $hppInfo = $this->buildHppInfo($product, $stockBatches->get($product->id, collect()), $canSensitive);
+
+            $pricesCollection = $productPrices->get($product->id, collect());
+            $rowPrices = [];
+            $firstPriceModel = $pricesCollection->first();
+            $startsAt = $firstPriceModel?->starts_at?->toDateString();
+            $endsAt = $firstPriceModel?->ends_at?->toDateString();
+
+            foreach (self::DEFAULT_RINGS as $rKey => $rConf) {
+                $matchedPrice = $pricesCollection->first(function (ProductPrice $p) use ($rConf) {
+                    return in_array($p->price_ring, $rConf['aliases'], true)
+                        || ($p->channel === $rConf['channel'] && in_array($p->price_ring, $rConf['aliases'], true));
+                });
+
+                if ($matchedPrice) {
+                    $rowPrices[$rKey] = [
+                        'min' => Decimal::normalize((string) $matchedPrice->min_price, 2),
+                        'recommended' => Decimal::normalize((string) $matchedPrice->recommended_price, 2),
+                        'max' => Decimal::normalize((string) $matchedPrice->max_price, 2),
+                    ];
+                    if (! $firstPriceModel) {
+                        $firstPriceModel = $matchedPrice;
+                        $startsAt = $matchedPrice->starts_at?->toDateString();
+                        $endsAt = $matchedPrice->ends_at?->toDateString();
+                    }
+                } else {
+                    $rowPrices[$rKey] = [
+                        'min' => null,
+                        'recommended' => null,
+                        'max' => null,
+                    ];
+                }
+            }
+
+            $itemsData[$product->id] = [
+                'product' => $product,
+                'hpp' => $hppInfo,
+                'prices' => $rowPrices,
+                'price_model' => $firstPriceModel,
+                'starts_at' => $startsAt ?? now()->toDateString(),
+                'ends_at' => $endsAt,
+                'is_unlimited' => empty($endsAt),
+            ];
+        }
+
+        // For backward compatibility with legacy bulk assignment and tests
+        $legacyPrices = ProductPrice::query()
             ->with(['product', 'branch'])
-            ->when($request->filled('product_id'), fn ($query) => $query->where('product_id', $request->integer('product_id')))
-            ->when($request->filled('channel'), fn ($query) => $query->where('channel', $request->query('channel')))
             ->latest('id')
-            ->paginate(15)
-            ->withQueryString();
+            ->paginate(15);
 
         return view('pricing.product-prices.index', [
-            'prices' => $prices,
-            'products' => Product::query()->with('category')->where('status', 'active')->orderBy('name')->limit(500)->get(),
+            'products' => $products,
+            'allProducts' => Product::query()->with('category')->where('status', 'active')->orderBy('name')->limit(500)->get(),
+            'categories' => ProductCategory::query()->where('is_active', true)->orderBy('name')->get(),
             'branches' => Branch::query()->where('is_active', true)->orderBy('name')->get(),
+            'locations' => $locations,
+            'selectedLocationId' => $selectedLocationId,
+            'currentLocation' => $currentLocation,
+            'isSuperAdmin' => $isSuperAdmin,
+            'canSensitive' => $canSensitive,
+            'itemsData' => $itemsData,
+            'ringsConfig' => self::DEFAULT_RINGS,
             'resolver' => $resolver,
-            'filters' => $request->only(['product_id', 'channel']),
+            'prices' => $legacyPrices,
+            'filters' => $request->only(['q', 'category_id', 'work_location_id', 'product_id', 'channel']),
         ]);
+    }
+
+    public function saveItem(Request $request): JsonResponse|RedirectResponse
+    {
+        $this->authorize('update', ProductPrice::class);
+
+        $validated = $request->validate([
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'work_location_id' => ['nullable', 'integer', 'exists:work_locations,id'],
+            'prices' => ['required', 'array'],
+            'prices.ring_retail' => ['nullable'],
+            'prices.ring_b2b' => ['nullable'],
+            'prices.ring_pos' => ['nullable'],
+            'prices.ring_4' => ['nullable'],
+            'unlimited' => ['nullable'],
+            'starts_at' => ['nullable', 'date'],
+            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $parsedPrices = [];
+        $hasAnyPrice = false;
+
+        foreach (self::DEFAULT_RINGS as $rKey => $rConf) {
+            $raw = $validated['prices'][$rKey] ?? null;
+            if ($raw === null || $raw === '') {
+                continue;
+            }
+
+            if (is_array($raw)) {
+                $rawRec = $raw['recommended'] ?? $raw['price'] ?? null;
+                $rawMin = $raw['min'] ?? null;
+                $rawMax = $raw['max'] ?? null;
+            } else {
+                $rawRec = $raw;
+                $rawMin = null;
+                $rawMax = null;
+            }
+
+            // If all 3 values are empty/null
+            if (($rawRec === null || $rawRec === '') && ($rawMin === null || $rawMin === '') && ($rawMax === null || $rawMax === '')) {
+                continue;
+            }
+
+            // Normalization & Smart Auto-Fill
+            if ($rawRec !== null && $rawRec !== '') {
+                $recVal = Decimal::normalize((string) $rawRec, 2);
+            } elseif ($rawMin !== null && $rawMin !== '') {
+                $recVal = Decimal::normalize((string) $rawMin, 2);
+            } else {
+                $recVal = Decimal::normalize((string) $rawMax, 2);
+            }
+
+            $minVal = ($rawMin !== null && $rawMin !== '') ? Decimal::normalize((string) $rawMin, 2) : $recVal;
+            $maxVal = ($rawMax !== null && $rawMax !== '') ? Decimal::normalize((string) $rawMax, 2) : $recVal;
+
+            // Validate min <= rec <= max
+            if (Decimal::compare($minVal, $recVal, 2) > 0) {
+                $msg = "Pada {$rConf['label']}, Harga Minimum (Rp ".CurrencyFormatter::rupiah($minVal).') tidak boleh lebih besar dari Harga Rekomendasi (Rp '.CurrencyFormatter::rupiah($recVal).').';
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+
+                return back()->withErrors(['prices' => $msg]);
+            }
+
+            if (Decimal::compare($recVal, $maxVal, 2) > 0) {
+                $msg = "Pada {$rConf['label']}, Harga Rekomendasi (Rp ".CurrencyFormatter::rupiah($recVal).') tidak boleh lebih besar dari Harga Maksimum (Rp '.CurrencyFormatter::rupiah($maxVal).').';
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+
+                return back()->withErrors(['prices' => $msg]);
+            }
+
+            $parsedPrices[$rKey] = [
+                'min' => $minVal,
+                'recommended' => $recVal,
+                'max' => $maxVal,
+            ];
+            $hasAnyPrice = true;
+        }
+
+        if (! $hasAnyPrice) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Masukkan minimal satu nominal ring harga untuk disimpan.',
+                ], 422);
+            }
+
+            return back()->withErrors(['prices' => 'Masukkan minimal satu nominal ring harga untuk disimpan.']);
+        }
+
+        $user = $request->user();
+
+        // 1. Hak Akses & Pilihan Lokasi
+        if ($user->hasUnrestrictedLocationScope()) {
+            $workLocationId = $validated['work_location_id'] ?? null;
+            if (! $workLocationId && ! empty($validated['branch_id'])) {
+                $branchWorkLoc = Branch::where('id', $validated['branch_id'])->value('work_location_id');
+                $workLocationId = $branchWorkLoc ? (int) $branchWorkLoc : (int) $validated['branch_id'];
+            }
+        } else {
+            // Role lain: Pilihan lokasi otomatis terkunci sesuai lokasi penugasan akun tersebut!
+            $permittedIds = $user->permittedWorkLocationIds();
+            abort_if(empty($permittedIds), 403, 'Akun Anda belum memiliki penugasan lokasi kerja.');
+
+            $requestedId = $request->filled('work_location_id') ? $request->integer('work_location_id') : null;
+            if ($requestedId && in_array($requestedId, $permittedIds, true)) {
+                $workLocationId = $requestedId;
+            } else {
+                $defaultLocation = $user->workLocations()->wherePivot('is_default', true)->first() ?? $user->workLocations()->first();
+                $workLocationId = $defaultLocation ? $defaultLocation->id : $permittedIds[0];
+            }
+        }
+
+        $workLocation = $workLocationId ? WorkLocation::find($workLocationId) : null;
+        $branchId = $workLocationId ? Branch::where('work_location_id', $workLocationId)->value('id') : null;
+
+        $isUnlimited = filter_var($request->input('unlimited', true), FILTER_VALIDATE_BOOLEAN) || empty($request->input('ends_at'));
+        $startsAt = $request->filled('starts_at') ? $request->input('starts_at') : now()->toDateString();
+        $endsAt = $isUnlimited ? null : ($request->filled('ends_at') ? $request->input('ends_at') : null);
+
+        $product = Product::findOrFail($validated['product_id']);
+        $savedCount = 0;
+        $warnings = [];
+
+        DB::transaction(function () use (
+            $product, $workLocationId, $branchId, $workLocation, $validated, $parsedPrices,
+            $startsAt, $endsAt, $user, &$savedCount, &$warnings
+        ): void {
+            // HPP snapshot dari batch aktif pada lokasi bersangkutan, atau fallback ke master cost_price
+            $batchHpp = StockBatch::where('product_id', $product->id)
+                ->when($workLocationId !== null, fn ($q) => $q->where('work_location_id', $workLocationId))
+                ->available()
+                ->latest('id')
+                ->value('cost_price');
+            $hppSnapshot = $batchHpp !== null
+                ? Decimal::normalize((string) $batchHpp, 2)
+                : Decimal::normalize((string) ($product->cost_price ?? '0.00'), 2);
+
+            foreach (self::DEFAULT_RINGS as $ringKey => $ringDef) {
+                if (! isset($parsedPrices[$ringKey])) {
+                    continue;
+                }
+
+                $pVals = $parsedPrices[$ringKey];
+                $minAmount = $pVals['min'];
+                $recAmount = $pVals['recommended'];
+                $maxAmount = $pVals['max'];
+
+                // Peringatan Lunak (Warning Badge): jika Min disetel di bawah HPP aktif
+                if (Decimal::compare((string) $hppSnapshot, '0.00', 2) > 0 && Decimal::compare($minAmount, $hppSnapshot, 2) < 0) {
+                    $warnings[] = "Harga Min {$ringDef['label']} (Rp ".CurrencyFormatter::rupiah($minAmount).') di bawah HPP (Rp '.CurrencyFormatter::rupiah($hppSnapshot).')';
+                }
+
+                // Find existing active price
+                $existing = ProductPrice::query()
+                    ->where('product_id', $product->id)
+                    ->where('work_location_id', $workLocationId)
+                    ->where(function ($q) use ($ringDef) {
+                        $q->whereIn('price_ring', $ringDef['aliases'])
+                            ->orWhere(function ($sub) use ($ringDef) {
+                                $sub->where('channel', $ringDef['channel'])
+                                    ->whereIn('price_ring', $ringDef['aliases']);
+                            });
+                    })
+                    ->where('status', ProductPriceStatus::ACTIVE->value)
+                    ->latest('id')
+                    ->first();
+
+                $oldPrice = $existing?->recommended_price;
+                $oldMin = $existing?->min_price;
+                $oldMax = $existing?->max_price;
+
+                if ($existing) {
+                    $existing->update([
+                        'price_ring' => $ringDef['price_ring'],
+                        'channel' => $ringDef['channel'],
+                        'branch_id' => $branchId,
+                        'min_price' => $minAmount,
+                        'recommended_price' => $recAmount,
+                        'max_price' => $maxAmount,
+                        'starts_at' => $startsAt,
+                        'ends_at' => $endsAt,
+                        'status' => ProductPriceStatus::ACTIVE,
+                        'notes' => $validated['notes'] ?? ('Diperbarui per item oleh '.$user->name),
+                    ]);
+                    $priceRecord = $existing;
+                } else {
+                    $priceRecord = ProductPrice::create([
+                        'product_id' => $product->id,
+                        'work_location_id' => $workLocationId,
+                        'branch_id' => $branchId,
+                        'channel' => $ringDef['channel'],
+                        'price_ring' => $ringDef['price_ring'],
+                        'customer_category' => null,
+                        'min_price' => $minAmount,
+                        'recommended_price' => $recAmount,
+                        'max_price' => $maxAmount,
+                        'minimum_qty' => 1,
+                        'priority' => 10,
+                        'starts_at' => $startsAt,
+                        'ends_at' => $endsAt,
+                        'status' => ProductPriceStatus::ACTIVE,
+                        'notes' => $validated['notes'] ?? ('Dibuat per item oleh '.$user->name),
+                    ]);
+                }
+
+                $savedCount++;
+
+                // Jika harga berubah atau baru disetel: Catat Audit Log lengkap
+                $isChanged = $oldPrice === null
+                    || Decimal::compare((string) $oldPrice, (string) $recAmount, 2) !== 0
+                    || Decimal::compare((string) $oldMin, (string) $minAmount, 2) !== 0
+                    || Decimal::compare((string) $oldMax, (string) $maxAmount, 2) !== 0;
+
+                if ($isChanged) {
+                    // 1. Riwayat harga
+                    PriceHistory::create([
+                        'priceable_type' => ProductPrice::class,
+                        'priceable_id' => $priceRecord->id,
+                        'product_id' => $product->id,
+                        'branch_id' => $branchId,
+                        'work_location_id' => $workLocationId,
+                        'channel' => $ringDef['channel'],
+                        'price_ring' => $ringDef['price_ring'],
+                        'old_price' => $oldPrice,
+                        'new_price' => $recAmount,
+                        'hpp_snapshot' => $hppSnapshot,
+                        'minimum_price_snapshot' => $minAmount,
+                        'changed_by' => $user->id,
+                        'source' => 'manual',
+                        'reason' => $validated['notes'] ?? 'Perubahan harga per barang (langsung aktif)',
+                        'effective_at' => $startsAt,
+                    ]);
+
+                    // 2. Audit Log sistem (Spatie Activitylog)
+                    activity()
+                        ->causedBy($user)
+                        ->performedOn($product)
+                        ->withProperties([
+                            'product_id' => $product->id,
+                            'product_name' => $product->name,
+                            'sku' => $product->sku,
+                            'work_location_id' => $workLocationId,
+                            'work_location_name' => $workLocation ? $workLocation->name : 'Semua Lokasi',
+                            'channel' => $ringDef['channel'],
+                            'price_ring' => $ringDef['price_ring'],
+                            'old_price' => $oldPrice,
+                            'new_price' => $recAmount,
+                            'min_price' => $minAmount,
+                            'recommended_price' => $recAmount,
+                            'max_price' => $maxAmount,
+                            'hpp_snapshot' => $hppSnapshot,
+                            'starts_at' => $startsAt,
+                            'ends_at' => $endsAt,
+                            'responsible_user' => $user->name,
+                            'action' => 'product_price.updated',
+                        ])
+                        ->log('product_price.updated');
+                }
+            }
+        });
+
+        $message = "Harga untuk {$product->name} berhasil disimpan.";
+        if (! empty($warnings)) {
+            $message .= ' Peringatan: '.implode('; ', $warnings).'.';
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'has_warning' => ! empty($warnings),
+                'warnings' => $warnings,
+                'product_id' => $product->id,
+                'saved_count' => $savedCount,
+            ]);
+        }
+
+        return back()->with('notification', ['type' => 'success', 'message' => $message]);
     }
 
     public function store(StoreProductPriceRequest $request, PriceManagementService $service): RedirectResponse
@@ -48,16 +496,26 @@ class ProductPriceController extends Controller
         $productIds = array_values(array_unique($data['product_ids'] ?? [$data['product_id']]));
         unset($data['product_ids']);
 
+        $user = $request->user();
+        if (! $user->hasUnrestrictedLocationScope()) {
+            $permittedIds = $user->permittedWorkLocationIds();
+            abort_if(empty($permittedIds), 403, 'Akun Anda belum memiliki penugasan lokasi kerja.');
+            $defaultLocation = $user->workLocations()->wherePivot('is_default', true)->first() ?? $user->workLocations()->first();
+            $locId = $defaultLocation ? $defaultLocation->id : $permittedIds[0];
+            $data['work_location_id'] = $locId;
+            $data['branch_id'] = Branch::where('work_location_id', $locId)->value('id');
+        } elseif (! empty($data['branch_id'])) {
+            $data['work_location_id'] = Branch::where('id', $data['branch_id'])->value('work_location_id');
+        }
+
         $price = null;
         foreach ($productIds as $productId) {
-            $price = $service->saveProductPrice([...$data, 'product_id' => $productId], $request->user());
+            $price = $service->saveProductPrice([...$data, 'product_id' => $productId], $user);
         }
 
         assert($price instanceof ProductPrice);
 
-        $message = $price->status === ProductPriceStatus::DRAFT
-            ? 'Harga disimpan sebagai draft dan masuk antrian approval.'
-            : count($productIds).' harga produk berhasil disimpan.';
+        $message = count($productIds).' harga produk berhasil disimpan.';
 
         return back()->with('notification', ['type' => 'success', 'message' => $message]);
     }
@@ -75,15 +533,12 @@ class ProductPriceController extends Controller
     public function update(StoreProductPriceRequest $request, ProductPrice $productPrice, PriceManagementService $service): RedirectResponse
     {
         $this->authorize('update', $productPrice);
-        if ($productPrice->status !== ProductPriceStatus::DRAFT) {
-            throw ValidationException::withMessages(['price' => 'Hanya harga berstatus draft yang dapat diedit. Gunakan Buat Revisi untuk harga yang sudah aktif.']);
-        }
 
         $data = $request->validated();
         $service->saveProductPrice([...$data, 'id' => $productPrice->id, 'product_id' => $productPrice->product_id], $request->user());
 
         return redirect()->route('pricing.product-prices.edit', $productPrice)
-            ->with('notification', ['type' => 'success', 'message' => 'Draft harga berhasil diperbarui.']);
+            ->with('notification', ['type' => 'success', 'message' => 'Harga berhasil diperbarui.']);
     }
 
     public function revise(StoreProductPriceRequest $request, ProductPrice $productPrice, PriceManagementService $service): RedirectResponse
@@ -93,9 +548,7 @@ class ProductPriceController extends Controller
         $revision = $service->saveProductPrice([...$data, 'product_id' => $productPrice->product_id], $request->user());
 
         return redirect()->route('pricing.product-prices.edit', $revision)
-            ->with('notification', ['type' => 'success', 'message' => $revision->status === ProductPriceStatus::DRAFT
-                ? 'Revisi dibuat sebagai draft dan menunggu approval. Harga lama tetap aktif.'
-                : 'Revisi harga berhasil dibuat. Akhiri harga lama agar tidak ada periode yang bertumpuk.']);
+            ->with('notification', ['type' => 'success', 'message' => 'Revisi harga berhasil dibuat dan langsung aktif.']);
     }
 
     public function end(Request $request, ProductPrice $productPrice, PriceManagementService $service): RedirectResponse
@@ -194,5 +647,64 @@ class ProductPriceController extends Controller
                 });
             fclose($handle);
         }, 'product-prices.csv');
+    }
+
+    /**
+     * @param  Collection<int, StockBatch>  $batches
+     * @return array{can_view: bool, has_layers: bool, is_master?: bool, tiers: list<array<string, mixed>>}
+     */
+    protected function buildHppInfo(Product $product, Collection $batches, bool $canViewSensitive): array
+    {
+        if (! $canViewSensitive) {
+            return [
+                'can_view' => false,
+                'has_layers' => false,
+                'tiers' => [],
+            ];
+        }
+
+        if ($batches->isEmpty()) {
+            return [
+                'can_view' => true,
+                'has_layers' => false,
+                'is_master' => true,
+                'tiers' => [
+                    [
+                        'cost_price' => $product->cost_price,
+                        'cost_formatted' => CurrencyFormatter::rupiah($product->cost_price ?? 0),
+                        'total_qty' => null,
+                        'unit' => $product->baseUnit ? $product->baseUnit->symbol : 'pcs',
+                    ],
+                ],
+            ];
+        }
+
+        $grouped = $batches->groupBy(fn (StockBatch $b) => (string) $b->cost_price);
+        $hasLayers = $grouped->count() > 1;
+        $tiers = [];
+
+        foreach ($grouped as $cost => $batchGroup) {
+            $totalQty = '0.0000';
+            foreach ($batchGroup as $b) {
+                $totalQty = Decimal::add($totalQty, $b->availableQuantity(), 4);
+            }
+            $unitName = $product->baseUnit ? $product->baseUnit->symbol : 'pcs';
+            $batchNos = $batchGroup->pluck('batch_no')->filter()->unique()->take(3)->implode(', ');
+
+            $tiers[] = [
+                'cost_price' => $cost,
+                'cost_formatted' => CurrencyFormatter::rupiah($cost),
+                'total_qty' => $totalQty,
+                'unit' => $unitName,
+                'batch_nos' => $batchNos,
+            ];
+        }
+
+        return [
+            'can_view' => true,
+            'has_layers' => $hasLayers,
+            'is_master' => false,
+            'tiers' => $tiers,
+        ];
     }
 }

@@ -77,6 +77,8 @@ Test existing per modul tetap menjadi guard utama:
 - `tests/Feature/Warehouse/GoodsReceiptWorkflowTest.php`
 - `tests/Feature/Warehouse/StockTransferWorkflowTest.php`
 - `tests/Feature/Warehouse/StockOpnameWorkflowTest.php`
+- `tests/Feature/Inventory/StockLayerWorkflowTest.php`
+- `tests/Feature/Admin/ProductStockLayerDetailTest.php`
 - `tests/Feature/Retail/PosWorkflowTest.php`
 - `tests/Feature/Retail/CashShiftClosingTest.php`
 - `tests/Feature/B2B/B2bOrderReservationTest.php`
@@ -89,7 +91,7 @@ Test existing per modul tetap menjadi guard utama:
 ### End-to-end business journey
 
 - `tests/Feature/EndToEnd/CriticalBusinessJourneyTest.php`
-  - PO approved → receipt posted → HPP moving average → stock warehouse.
+  - PO approved → receipt posted → lapisan HPP aktual baru → stock warehouse.
   - Transfer warehouse → branch dengan reserve/release/ship/receive.
   - POS dari stok cabang → stock issue.
   - Closing shift → expected cash → approval.

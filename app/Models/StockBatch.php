@@ -97,7 +97,7 @@ class StockBatch extends Model
     /**
      * Batch aktif dengan ketersediaan stok > 0 (on_hand - reserved - damaged > 0).
      *
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeAvailable(Builder $query): Builder
@@ -107,7 +107,7 @@ class StockBatch extends Model
     }
 
     /**
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeActive(Builder $query): Builder
@@ -116,7 +116,7 @@ class StockBatch extends Model
     }
 
     /**
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeAtLocation(Builder $query, int $workLocationId, ?int $warehouseLocationId = null): Builder
@@ -131,7 +131,7 @@ class StockBatch extends Model
     }
 
     /**
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeForProduct(Builder $query, int $productId): Builder

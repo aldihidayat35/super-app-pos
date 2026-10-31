@@ -8,7 +8,6 @@ use App\Enums\AttendanceVerificationStatus;
 use App\Enums\PosSaleStatus;
 use App\Enums\StaffBonusPeriodStatus;
 use App\Enums\StaffBonusProgramStatus;
-
 use App\Exceptions\ServiceException;
 use App\Models\Attendance;
 use App\Models\AttendanceRequest;
@@ -25,7 +24,6 @@ use App\Models\StaffBonusResult;
 use App\Models\StockOpname;
 use App\Models\StockTransfer;
 use App\Models\User;
-
 use App\Services\Control\ApprovalWorkflowService;
 use App\Services\Control\AuditLogService;
 use App\Support\ApprovalAuthority;

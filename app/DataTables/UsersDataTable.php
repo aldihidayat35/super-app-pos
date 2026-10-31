@@ -148,7 +148,7 @@ class UsersDataTable
             .'<a href="'.$detailUrl.'">'
             .'<div class="symbol-label"><img src="'.$avatarUrl.'" alt="'.e($user->name).'" class="w-100" /></div>'
             .'</a></div>';
-            
+
         $nameHtml = '<div class="d-flex align-items-center">'
             .$avatarHtml
             .'<div class="d-flex flex-column">'

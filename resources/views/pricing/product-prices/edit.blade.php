@@ -24,7 +24,7 @@
                 <div class="d-flex justify-content-between py-3"><span>Status</span><x-metronic.status-badge :status="$price->status" /></div>
                 <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mt-4">
                     <i class="ki-outline ki-information-5 text-primary fs-2 me-3"></i>
-                    <div class="text-gray-700 fs-7">Harga aktif tidak diubah langsung. Buat revisi baru, selesaikan approval bila diminta, lalu akhiri harga lama.</div>
+                    <div class="text-gray-700 fs-7">Harga aktif langsung berlaku seketika tanpa approval. Pengguna yang melakukan update menjadi penanggung jawab penuh dan setiap perubahan otomatis tercatat di Audit Log.</div>
                 </div>
             </x-metronic.card>
 

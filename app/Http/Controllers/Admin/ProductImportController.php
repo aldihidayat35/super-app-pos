@@ -9,6 +9,8 @@ use App\Services\Product\ProductImportService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductImportController extends Controller
@@ -56,19 +58,19 @@ class ProductImportController extends Controller
         $this->authorize('export', Product::class);
 
         return response()->streamDownload(function (): void {
-            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $spreadsheet = new Spreadsheet;
             $sheet = $spreadsheet->getActiveSheet();
-            
+
             $sheet->fromArray([
                 ['sku', 'name', 'category_code', 'brand_code', 'base_unit_code', 'minimum_order', 'minimum_stock', 'safety_stock'],
                 ['PRD-CONTOH-001', 'Produk Contoh', 'UMUM', 'NO-BRAND', 'PCS', '1', '10', '5'],
             ]);
-            
+
             foreach (range('A', 'H') as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
-            
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+            $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         }, 'template-import-produk.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

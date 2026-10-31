@@ -2,6 +2,7 @@
 
 namespace App\Services\Pricing;
 
+use App\Enums\CustomerType;
 use App\Enums\PriceApprovalStatus;
 use App\Enums\ProductPriceStatus;
 use App\Models\Branch;
@@ -12,6 +13,7 @@ use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\ProductUnit;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Support\Decimal;
 use Illuminate\Support\Carbon;
 
@@ -52,12 +54,21 @@ class PriceResolverService
 
         usort($candidates, fn (array $a, array $b): int => [$a['priority'], $a['source']] <=> [$b['priority'], $b['source']]);
         $selected = $candidates[0];
-        $minimumBase = isset($selected['minimum_base']) && Decimal::compare((string) $selected['minimum_base'], '0', 2) > 0
-            ? $this->maximum($policyMinimumBase, (string) $selected['minimum_base'])
-            : $policyMinimumBase;
-        $maximumBase = isset($selected['maximum_base']) && Decimal::compare((string) $selected['maximum_base'], '0', 2) > 0
-            ? $this->minimum($policyMaximumBase, (string) $selected['maximum_base'])
-            : $policyMaximumBase;
+        if ($selected['source'] === 'product_price') {
+            $minimumBase = isset($selected['minimum_base']) && Decimal::compare((string) $selected['minimum_base'], '0', 2) > 0
+                ? (string) $selected['minimum_base']
+                : $policyMinimumBase;
+            $maximumBase = isset($selected['maximum_base']) && Decimal::compare((string) $selected['maximum_base'], '0', 2) > 0
+                ? (string) $selected['maximum_base']
+                : $policyMaximumBase;
+        } else {
+            $minimumBase = isset($selected['minimum_base']) && Decimal::compare((string) $selected['minimum_base'], '0', 2) > 0
+                ? $this->maximum($policyMinimumBase, (string) $selected['minimum_base'])
+                : $policyMinimumBase;
+            $maximumBase = isset($selected['maximum_base']) && Decimal::compare((string) $selected['maximum_base'], '0', 2) > 0
+                ? $this->minimum($policyMaximumBase, (string) $selected['maximum_base'])
+                : $policyMaximumBase;
+        }
         if (Decimal::compare($maximumBase, $minimumBase, 2) < 0) {
             $maximumBase = $minimumBase;
         }
@@ -130,13 +141,31 @@ class PriceResolverService
 
     private function activeRule(string $channel, ?Branch $branch, ?Customer $customer, Carbon $at): PriceRule
     {
+        $targetChannel = $channel;
+        if ($channel === 'pos' && $customer !== null) {
+            /** @var CustomerType|string|null $rawType */
+            $rawType = $customer->type;
+            $custType = $rawType instanceof CustomerType ? $rawType->value : (string) $rawType;
+            $custCat = strtolower(trim((string) ($customer->price_category ?? '')));
+            if ($custCat === 'retail' || $custType === CustomerType::RETAIL_CREDIT->value || str_contains($custCat, 'retail')) {
+                $targetChannel = 'retail';
+            } elseif ($custCat === 'b2b' || $custType === CustomerType::B2B->value || str_contains($custCat, 'b2b')) {
+                $targetChannel = 'b2b';
+            }
+        }
+
         $rule = PriceRule::query()
             ->where('is_active', true)
-            ->where(fn ($query) => $query->where('channel', $channel)->orWhere('channel', 'all'))
+            ->where(function ($query) use ($channel, $targetChannel): void {
+                $query->where('channel', $targetChannel)
+                    ->orWhere('channel', $channel)
+                    ->orWhere('channel', 'all');
+            })
             ->where(fn ($query) => $query->whereNull('branch_id')->when($branch !== null, fn ($branchQuery) => $branchQuery->orWhere('branch_id', $branch->id)))
             ->where(fn ($query) => $query->whereNull('customer_category')->when($customer !== null, fn ($customerQuery) => $customerQuery->orWhere('customer_category', $customer->price_category)))
             ->where(fn ($query) => $query->whereNull('starts_at')->orWhereDate('starts_at', '<=', $at->toDateString()))
             ->where(fn ($query) => $query->whereNull('ends_at')->orWhereDate('ends_at', '>=', $at->toDateString()))
+            ->orderByRaw('CASE WHEN channel = ? THEN 1 WHEN channel = ? THEN 2 ELSE 3 END', [$targetChannel, $channel])
             ->orderBy('priority')
             ->orderByDesc('branch_id')
             ->orderByDesc('customer_category')
@@ -208,14 +237,43 @@ class PriceResolverService
                 });
         }
 
+        $primaryWarehouseWorkLocationId = null;
+        if ($branch?->primary_warehouse_id) {
+            $primaryWarehouseWorkLocationId = Warehouse::where('id', $branch->primary_warehouse_id)->value('work_location_id');
+        }
+
+        $targetRingChannel = $channel;
+        if ($channel === 'pos' && $customer !== null) {
+            /** @var CustomerType|string|null $rawType */
+            $rawType = $customer->type;
+            $custType = $rawType instanceof CustomerType ? $rawType->value : (string) $rawType;
+            $custCat = strtolower(trim((string) ($customer->price_category ?? '')));
+            if ($custCat === 'retail' || $custType === CustomerType::RETAIL_CREDIT->value || str_contains($custCat, 'retail')) {
+                $targetRingChannel = 'retail';
+            } elseif ($custCat === 'b2b' || $custType === CustomerType::B2B->value || str_contains($custCat, 'b2b')) {
+                $targetRingChannel = 'b2b';
+            }
+        }
+
         ProductPrice::query()
             ->where('product_id', $product->id)
             ->where('status', ProductPriceStatus::ACTIVE->value)
-            ->where(fn ($query) => $query->where('channel', $channel)->orWhere('channel', 'all'))
-            ->where(function ($query) use ($branch): void {
+            ->where(function ($query) use ($channel, $targetRingChannel): void {
+                $query->where('channel', $channel)->orWhere('channel', 'all');
+                if ($channel === 'pos') {
+                    $query->orWhere('channel', 'retail');
+                    if ($targetRingChannel === 'b2b') {
+                        $query->orWhere('channel', 'b2b');
+                    }
+                }
+            })
+            ->where(function ($query) use ($branch, $primaryWarehouseWorkLocationId): void {
                 $query->whereNull('work_location_id');
                 if ($branch?->work_location_id !== null) {
                     $query->orWhere('work_location_id', $branch->work_location_id);
+                }
+                if ($primaryWarehouseWorkLocationId !== null) {
+                    $query->orWhere('work_location_id', $primaryWarehouseWorkLocationId);
                 }
             })
             ->where(fn ($query) => $query->whereNull('branch_id')->when($branch !== null, fn ($branchQuery) => $branchQuery->orWhere('branch_id', $branch->id)))
@@ -228,10 +286,26 @@ class PriceResolverService
             ->orderByDesc('customer_category')
             ->orderByDesc('branch_id')
             ->get()
-            ->each(function (ProductPrice $price) use (&$candidates): void {
+            ->each(function (ProductPrice $price) use (&$candidates, $branch, $primaryWarehouseWorkLocationId, $channel, $targetRingChannel): void {
+                $isTargetRing = false;
+                if ($targetRingChannel === 'retail') {
+                    $isTargetRing = ($price->channel === 'retail' || str_contains(strtolower($price->price_ring), 'retail'));
+                } elseif ($targetRingChannel === 'b2b') {
+                    $isTargetRing = ($price->channel === 'b2b' || str_contains(strtolower($price->price_ring), 'b2b'));
+                } elseif ($targetRingChannel === 'pos') {
+                    $isTargetRing = ($price->channel === 'pos' || str_contains(strtolower($price->price_ring), 'pos'));
+                }
+
+                $customerTargetBonus = $isTargetRing ? 25 : 0;
+                $channelMatchBonus = ($price->channel === $channel) ? 10 : 0;
+                $isDirectBranch = $branch && ($price->branch_id === $branch->id || $price->work_location_id === $branch->work_location_id);
+                $isPrimaryWarehouse = $primaryWarehouseWorkLocationId && $price->work_location_id === $primaryWarehouseWorkLocationId;
+
                 $specificity = ($price->customer_category !== null ? 20 : 0)
-                    + ($price->work_location_id !== null ? 15 : 0)
-                    + ($price->branch_id !== null ? 10 : 0);
+                    + ($isDirectBranch ? 15 : ($isPrimaryWarehouse ? 8 : 0))
+                    + $customerTargetBonus
+                    + $channelMatchBonus;
+
                 $candidates[] = [
                     'source' => 'product_price',
                     'priority' => 100 + (int) $price->priority - $specificity,

@@ -316,27 +316,9 @@ return [
                 'permission' => 'prices.view',
             ],
             [
-                'label' => 'Harga Khusus',
-                'route' => 'pricing.special-prices.index',
-                'active' => ['pricing.special-prices.*'],
-                'permission' => 'prices.view',
-            ],
-            [
                 'label' => 'Histori Harga',
                 'route' => 'pricing.history.index',
                 'active' => ['pricing.history.*'],
-                'permission' => 'prices.view',
-            ],
-            [
-                'label' => 'Approval Harga',
-                'route' => 'pricing.approvals.index',
-                'active' => ['pricing.approvals.*'],
-                'permission' => 'prices.approve',
-            ],
-            [
-                'label' => 'Simulasi Margin',
-                'route' => 'pricing.simulator.index',
-                'active' => ['pricing.simulator.*'],
                 'permission' => 'prices.view',
             ],
         ],

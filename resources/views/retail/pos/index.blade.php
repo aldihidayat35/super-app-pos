@@ -357,14 +357,14 @@
 
         .pos-product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+            gap: 8px;
         }
 
         .pos-product-card {
             border: 1px solid var(--bs-gray-200);
             border-radius: 8px;
-            padding: 10px;
+            padding: 7px;
             min-width: 0;
             background: var(--bs-body-bg);
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -372,18 +372,32 @@
             user-select: none;
             display: flex;
             flex-direction: column;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
         }
 
         .pos-product-card:hover {
             border-color: var(--bs-primary);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+            box-shadow: 0 4px 14px rgba(62, 151, 255, 0.12), 0 1px 3px rgba(0, 0, 0, 0.04);
             transform: translateY(-2px);
+        }
+
+        .pos-product-card.is-out-of-stock {
+            opacity: 0.7;
+            background: rgba(var(--bs-light-rgb), 0.5);
+            cursor: not-allowed;
+        }
+
+        .pos-product-card.is-out-of-stock:hover {
+            border-color: var(--bs-gray-300);
+            box-shadow: none;
+            transform: none;
         }
 
         .pos-product-thumb {
             width: 100%;
-            height: 110px;
-            background: #fff;
+            height: 85px;
+            background: #f8fafc;
             border: 1px solid var(--bs-gray-200);
             border-radius: 6px;
             display: flex;
@@ -391,7 +405,12 @@
             justify-content: center;
             position: relative;
             overflow: hidden;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
+        }
+
+        [data-bs-theme="dark"] .pos-product-thumb {
+            background: #1e1e2d;
+            border-color: #2b2b40;
         }
 
         .pos-product-thumb img.pos-product-image {
@@ -400,7 +419,12 @@
             object-fit: contain;
             border: none;
             background: transparent;
-            padding: 6px;
+            padding: 4px;
+            transition: transform 0.25s ease;
+        }
+
+        .pos-product-card:hover:not(.is-out-of-stock) .pos-product-thumb img.pos-product-image {
+            transform: scale(1.05);
         }
 
         .pos-product-thumb .pos-image-placeholder {
@@ -409,8 +433,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--bs-light);
+            background: linear-gradient(135deg, #f1f3f8 0%, #e8ecf4 100%);
             color: var(--bs-gray-400);
+        }
+
+        [data-bs-theme="dark"] .pos-product-thumb .pos-image-placeholder {
+            background: linear-gradient(135deg, #212529 0%, #1a1e21 100%);
+            color: #495057;
         }
 
         .pos-product-name {
@@ -418,16 +447,76 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            line-height: 1.35;
-            min-height: 2.7em;
+            line-height: 1.25;
+            min-height: 2.5em;
             overflow-wrap: anywhere;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--bs-gray-900);
+            transition: color 0.15s ease;
+            margin-bottom: 2px;
+        }
+
+        .pos-product-card:hover .pos-product-name {
+            color: var(--bs-primary);
         }
 
         .pos-product-meta {
             min-width: 0;
             overflow: hidden;
+        }
+
+        .pos-ring-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2px;
+        }
+
+        .pos-ring-card {
+            background: var(--bs-light);
+            border: 1px solid var(--bs-gray-200);
+            border-radius: 4px;
+            padding: 1px 4px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+            line-height: 1.1;
+            transition: all 0.15s ease;
+        }
+
+        .pos-ring-card.is-active {
+            background: rgba(var(--bs-primary-rgb), 0.08);
+            border-color: rgba(var(--bs-primary-rgb), 0.35);
+        }
+
+        .pos-ring-label {
+            font-size: 8px;
+            color: var(--bs-gray-600);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+
+        .pos-ring-card.is-active .pos-ring-label {
+            color: var(--bs-primary);
+            font-weight: 700;
+        }
+
+        .pos-ring-val {
+            font-size: 9.5px;
+            font-weight: 700;
+            color: var(--bs-gray-800);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pos-ring-card.is-active .pos-ring-val {
+            color: var(--bs-primary);
         }
 
         .pos-ring-list {
@@ -574,123 +663,21 @@
             padding: 6px 10px;
         }
 
-        .pos-cart-batch-panel {
-            margin-top: 12px;
-            padding: 12px;
-            border: 1px solid rgba(var(--bs-primary-rgb), .2);
-            border-radius: 10px;
-            background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), .055), rgba(var(--bs-primary-rgb), .015));
-        }
-
-        .pos-cart-batch-panel.is-empty {
-            border-color: rgba(var(--bs-warning-rgb), .35);
-            background: rgba(var(--bs-warning-rgb), .06);
-        }
-
-        .pos-cart-batch-heading {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 9px;
-        }
-
-        .pos-cart-batch-title {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            color: var(--bs-gray-900);
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .pos-cart-batch-title>span:first-child {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
+        .pos-cart-product .cart-batch-select {
+            width: auto;
+            max-width: 190px;
             height: 28px;
-            border-radius: 8px;
-            color: var(--bs-primary);
-            background: rgba(var(--bs-primary-rgb), .12);
-        }
-
-        .pos-batch-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-            gap: 7px;
-        }
-
-        .pos-batch-option {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            min-width: 0;
-            padding: 9px 10px;
-            border: 1px solid var(--bs-gray-300);
-            border-radius: 8px;
-            background: var(--bs-body-bg);
-            cursor: pointer;
-            transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
-        }
-
-        .pos-batch-option:hover {
-            border-color: var(--bs-primary);
-            transform: translateY(-1px);
-        }
-
-        .pos-batch-option.is-selected {
-            border-color: var(--bs-primary);
-            box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), .1);
-        }
-
-        .pos-batch-option input {
-            width: 17px;
-            height: 17px;
-            margin: 0;
-            accent-color: var(--bs-primary);
-            flex: 0 0 auto;
-        }
-
-        .pos-batch-option-main {
-            min-width: 0;
-            flex: 1;
-        }
-
-        .pos-batch-option-code {
-            display: block;
-            color: var(--bs-gray-900);
+            padding: 2px 22px 2px 8px;
             font-size: 11px;
-            font-weight: 700;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-weight: 600;
+            background-color: var(--bs-light);
+            border-color: var(--bs-gray-300);
+            border-radius: 6px;
         }
 
-        .pos-batch-option-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 3px 8px;
-            margin-top: 2px;
-            color: var(--bs-gray-600);
-            font-size: 9px;
-        }
-
-        .pos-batch-fifo-mark {
-            color: var(--bs-primary);
-            font-size: 9px;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .pos-cart-batch-help {
-            display: flex;
-            align-items: flex-start;
-            gap: 5px;
-            margin-top: 8px;
-            color: var(--bs-gray-600);
-            font-size: 9px;
-            line-height: 1.4;
+        .pos-cart-product .cart-batch-select:focus {
+            border-color: var(--bs-primary);
+            box-shadow: 0 0 0 0.15rem rgba(var(--bs-primary-rgb), 0.15);
         }
 
         .pos-cart-label {
@@ -1221,37 +1208,44 @@
                                 selected: true
                             }]);
                         const selectedRing = rings.find(r => r.selected) || rings[0] || { label: 'Harga POS', price: product.pricing.recommended_price };
-                        const extraRings = rings.length > 1 ? `
-                            <div class="pos-ring-list mb-2">
-                                ${rings.map(r => `<span class="pos-ring ${r.selected ? 'is-selected' : ''}" title="${escapeHtml(r.label)}">${escapeHtml(r.label)}: <strong>${money(r.price)}</strong></span>`).join('')}
+                        const validRings = rings.filter(r => Number(r.price) > 0);
+                        const ringsGrid = validRings.length > 0 ? `
+                            <div class="pos-ring-grid mb-2">
+                                ${validRings.map(r => `
+                                    <div class="pos-ring-card ${r.selected ? 'is-active' : ''}" title="${escapeHtml(r.label)}: ${money(r.price)}">
+                                        <span class="pos-ring-label">${escapeHtml(r.label)}</span>
+                                        <span class="pos-ring-val">${money(r.price)}</span>
+                                    </div>
+                                `).join('')}
                             </div>` : '';
                         const isOutOfStock = Number(product.stock) <= 0;
                         const card = document.createElement('article');
-                        card.className = 'pos-product-card';
+                        card.className = `pos-product-card ${isOutOfStock ? 'is-out-of-stock' : ''}`;
                         card.innerHTML = `
                             <div class="pos-product-thumb">
                                 ${image}
                                 <div class="position-absolute top-0 end-0 m-1">
-                                    <span class="badge badge-light-${stockClass} fw-bold fs-9 shadow-xs">
+                                    <span class="badge badge-light-${stockClass} text-${stockClass} fw-bold fs-9 shadow-2xs px-1.5 py-0.5 rounded-pill border border-${stockClass}-subtle">
                                         ${isOutOfStock ? 'Habis' : 'Stok ' + qty(product.stock)}
                                     </span>
                                 </div>
-                                ${product.unit ? `<div class="position-absolute bottom-0 start-0 m-1"><span class="badge badge-secondary fs-9 fw-semibold opacity-90">${escapeHtml(product.unit)}</span></div>` : ''}
+                                ${product.unit ? `<div class="position-absolute bottom-0 start-0 m-1"><span class="badge badge-light-dark text-gray-700 fs-9 fw-semibold px-1.5 py-0.5 rounded-pill opacity-90 shadow-2xs">${escapeHtml(product.unit)}</span></div>` : ''}
+                                ${Number(product.emergency_stock_base) > 0 ? `<div class="position-absolute top-0 start-0 m-1"><span class="badge badge-light-warning text-warning fs-9 fw-bold px-1.5 py-0.5 rounded-pill shadow-2xs" title="Stok Darurat">Drt ${qty(product.emergency_stock_base)}</span></div>` : ''}
                             </div>
                             <div class="d-flex flex-column flex-grow-1">
-                                <div class="pos-product-name text-gray-900 text-hover-primary" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</div>
-                                <div class="d-flex align-items-center justify-content-between text-muted fs-9 mt-1 mb-2">
-                                    <span class="font-monospace text-truncate pe-1" title="${escapeHtml(product.sku)}">${escapeHtml(product.sku)}</span>
-                                    ${Number(product.emergency_stock_base) > 0 ? `<span class="badge badge-light-warning fs-9" title="Stok Darurat">Drt: ${qty(product.emergency_stock_base)}</span>` : ''}
+                                <div class="pos-product-name" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</div>
+                                <div class="d-flex align-items-center justify-content-between text-muted fs-9 mb-1">
+                                    <span class="font-monospace text-truncate pe-1 text-gray-500" title="${escapeHtml(product.sku)}">${escapeHtml(product.sku)}</span>
+                                    ${product.category ? `<span class="badge badge-secondary fs-9 text-truncate max-w-80px py-0 px-1">${escapeHtml(product.category)}</span>` : ''}
                                 </div>
-                                <div class="mt-auto pt-2 border-top border-light-subtle">
-                                    <div class="d-flex align-items-baseline justify-content-between gap-1 mb-2">
-                                        <span class="text-muted fs-9 text-truncate" title="${escapeHtml(selectedRing.label)}">${escapeHtml(selectedRing.label)}</span>
+                                <div class="mt-auto pt-1.5 border-top border-gray-200">
+                                    <div class="d-flex align-items-baseline justify-content-between mb-1">
                                         <span class="fs-6 fw-bolder text-primary text-nowrap">${money(selectedRing.price)}</span>
+                                        <span class="badge badge-light-primary fw-semibold fs-9 px-1.5 py-0.5 rounded">${escapeHtml(selectedRing.label || 'POS')}</span>
                                     </div>
-                                    ${extraRings}
-                                    <button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold add-product" ${isOutOfStock ? 'disabled' : ''}>
-                                        <i class="ki-outline ki-plus fs-4 me-1"></i> Tambah
+                                    ${ringsGrid}
+                                    <button type="button" class="btn btn-sm ${isOutOfStock ? 'btn-light-secondary text-muted' : 'btn-light-primary text-primary'} w-100 fw-bold py-1 px-2 fs-8 mt-1 add-product" ${isOutOfStock ? 'disabled' : ''}>
+                                        <i class="ki-outline ${isOutOfStock ? 'ki-cross-circle' : 'ki-plus'} fs-7 me-1"></i> ${isOutOfStock ? 'Habis' : 'Tambah'}
                                     </button>
                                 </div>
                             </div>`;
@@ -1365,33 +1359,24 @@
                             `<option value="${unit.id}" ${Number(unit.id) === Number(item.unit_id) ? 'selected' : ''}>${escapeHtml(unit.text)}</option>`
                             ).join('');
                         const selectedBatchIds = (item.selected_stock_batch_ids || []).map(Number);
-                        const batchCards = (item.stock_batches || []).map((batch, batchIndex) => {
-                            const selected = selectedBatchIds.includes(Number(batch.id));
-                            return `<label class="pos-batch-option ${selected ? 'is-selected' : ''}">
-                                <input type="checkbox" class="cart-batch-check" value="${batch.id}" ${selected ? 'checked' : ''}>
-                                <span class="pos-batch-option-main">
-                                    <span class="pos-batch-option-code">${escapeHtml(batch.batch_no)}</span>
-                                    <span class="pos-batch-option-meta"><span>Masuk ${escapeHtml(batch.received_at || '-')}</span><span>Stok ${qty(batch.available_quantity)}</span>${batch.expires_at ? `<span>Exp ${escapeHtml(batch.expires_at)}</span>` : ''}</span>
-                                </span>
-                                ${batchIndex === 0 ? '<span class="pos-batch-fifo-mark">TERLAMA</span>' : ''}
-                            </label>`;
-                        }).join('');
-                        const batchPicker = (item.stock_batches || []).length > 0
-                            ? `<div class="pos-cart-batch-panel">
-                                <div class="pos-cart-batch-heading">
-                                    <div class="pos-cart-batch-title"><span><i class="ki-outline ki-package fs-5"></i></span><span>Batch Pengambilan</span></div>
-                                    <div class="d-flex align-items-center gap-2"><span class="badge badge-light-success fs-9">FIFO otomatis</span><span class="text-muted fs-9">${selectedBatchIds.length} dipilih</span></div>
-                                </div>
-                                <div class="pos-batch-options">${batchCards}</div>
-                                <div class="pos-cart-batch-help"><i class="ki-outline ki-information-5 fs-7"></i><span>Sistem memilih batch paling lama lebih dahulu. Centang batch lain hanya bila barang fisik yang diambil berbeda.</span></div>
-                            </div>`
-                            : `<div class="pos-cart-batch-panel is-empty">
-                                <div class="pos-cart-batch-heading mb-0">
-                                    <div class="pos-cart-batch-title"><span class="text-warning bg-light-warning"><i class="ki-outline ki-information-5 fs-5"></i></span><span>Batch belum tersedia</span></div>
-                                    <span class="badge badge-light-warning fs-9">Perlu sinkronisasi stok</span>
-                                </div>
-                                <div class="pos-cart-batch-help mt-2"><span>Saldo produk ada, tetapi belum memiliki lapisan batch. Muat ulang halaman setelah sinkronisasi data stok selesai.</span></div>
-                            </div>`;
+                        const hasMultiBatch = (item.stock_batches || []).length > 1;
+                        let batchSelectMarkup = '';
+                        if (hasMultiBatch) {
+                            const isAuto = !item.batch_selection_mode || item.batch_selection_mode === 'auto' || selectedBatchIds.length === 0;
+                            const batchOptions = (item.stock_batches || []).map(batch => {
+                                const isSelected = !isAuto && selectedBatchIds.includes(Number(batch.id));
+                                return `<option value="${batch.id}" ${isSelected ? 'selected' : ''}>Batch: ${escapeHtml(batch.batch_no)} · Stok ${qty(batch.available_quantity)}</option>`;
+                            }).join('');
+                            batchSelectMarkup = `
+                                <select class="form-select form-select-sm cart-batch-select py-0 px-2 fs-9" data-searchable="false" title="Pilih Batch Fisik">
+                                    <option value="auto" ${isAuto ? 'selected' : ''}>Otomatis (FIFO)</option>
+                                    ${batchOptions}
+                                </select>
+                            `;
+                        } else if ((item.stock_batches || []).length === 1) {
+                            const singleBatch = item.stock_batches[0];
+                            batchSelectMarkup = `<span class="badge badge-light-primary fs-9 font-monospace" title="Batch Fisik: ${escapeHtml(singleBatch.batch_no)}">Batch: ${escapeHtml(singleBatch.batch_no)}</span>`;
+                        }
                         const row = document.createElement('article');
                         row.className = `pos-cart-item pos-price-${statusClass}`;
                         row.innerHTML = `
@@ -1403,6 +1388,7 @@
                             <div class="d-flex flex-wrap align-items-center gap-2">
                                 <span class="text-muted fs-9 font-monospace">SKU ${escapeHtml(item.sku)}</span>
                                 <select class="form-select form-select-sm cart-unit py-0 px-2 fs-9" data-searchable="false">${units}</select>
+                                ${batchSelectMarkup}
                                 <span class="badge badge-light fs-9 ${item.stock_sufficient ? 'text-muted' : 'text-danger fw-bold'}">Stok ${qty(item.stock)}</span>
                             </div>
                         </div>
@@ -1452,8 +1438,7 @@
                         ${pricing.status_message ? `<div class="fs-9 ${pricing.approval_required ? 'text-danger fw-semibold' : 'text-muted'} mt-1 px-1 d-flex align-items-center gap-1"><i class="ki-outline ki-information-2 fs-7"></i><span>${escapeHtml(pricing.status_message)}</span></div>` : ''}
                         ${item.error ? `<div class="alert alert-danger py-1 px-2 fs-9 mt-1 mb-0">${escapeHtml(item.error)}</div>` : ''}
                     </div>
-                </div>
-                ${batchPicker}`;
+                </div>`;
                         bindImageFallback(row, 'pos-cart-image', 'fs-2');
                         row.querySelector('.cart-minus').addEventListener('click', () => updateQuantity(item, Math
                             .max(Number(item.quantity) - 1, 0)));
@@ -1478,16 +1463,20 @@
                             item.manual_price = false;
                             requote(item);
                         });
-                        row.querySelectorAll('.cart-batch-check').forEach(input => input.addEventListener('change', () => {
-                            item.selected_stock_batch_ids = Array.from(row.querySelectorAll('.cart-batch-check:checked'))
-                                .map(checkbox => Number(checkbox.value));
-                            item.batch_selection_mode = item.selected_stock_batch_ids.length ? 'manual' : 'auto';
-                            if (item.batch_selection_mode === 'auto') {
+                        const batchSelect = row.querySelector('.cart-batch-select');
+                        if (batchSelect) {
+                            batchSelect.addEventListener('change', event => {
+                                const val = event.target.value;
+                                if (val === 'auto' || !val) {
+                                    item.batch_selection_mode = 'auto';
+                                    item.selected_stock_batch_ids = [];
+                                } else {
+                                    item.batch_selection_mode = 'manual';
+                                    item.selected_stock_batch_ids = [Number(val)];
+                                }
                                 requote(item);
-                            } else {
-                                renderCart();
-                            }
-                        }));
+                            });
+                        }
                         row.querySelector('.cart-remove').addEventListener('click', () => {
                             cart.splice(index, 1);
                             renderCart();
@@ -1560,9 +1549,11 @@
                     document.getElementById('open-payment').disabled = cart.length === 0;
                 }
 
-                async function requoteAll() {
+                async function requoteAll(forceResetManualPrice = false) {
                     await Promise.all(cart.map(item => {
-                        item.manual_price = item.manual_price === true;
+                        if (forceResetManualPrice) {
+                            item.manual_price = false;
+                        }
                         return requote(item);
                     }));
                     renderCart();
@@ -1862,10 +1853,14 @@
                     selectedCategory = button.dataset.category;
                     loadProducts(true);
                 }));
-                customerSelect.addEventListener('change', () => {
-                    requoteAll();
+                const onCustomerChange = () => {
+                    requoteAll(true);
                     loadProducts(true);
-                });
+                };
+                customerSelect.addEventListener('change', onCustomerChange);
+                if (window.jQuery) {
+                    window.jQuery(customerSelect).on('change select2:select select2:clear', onCustomerChange);
+                }
                 document.getElementById('load-more-products').addEventListener('click', () => {
                     if (hasMoreProducts) {
                         productPage++;

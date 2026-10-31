@@ -30,7 +30,7 @@
 | Available stock | Kuantitas yang dapat dijanjikan: on hand dikurangi reserved dan blocked/damaged sesuai kebijakan. |
 | Reserved stock | Kuantitas yang dialokasikan sementara ke dokumen aktif tetapi belum menjadi barang keluar; wajib dapat dilepas atau dikonsumsi tepat sekali. |
 | Mutation | Ledger append-only setiap perubahan stok, lengkap dengan before/after, delta, referensi, lokasi, actor, waktu, dan alasan. |
-| HPP | Biaya per base unit menurut metode valuasi yang disepakati, termasuk komponen landed cost yang disetujui. Disnapshot saat transaksi. |
+| HPP | Biaya per base unit yang melekat pada lapisan/batch stok aktual. Penerimaan baru membuat lapisan baru dan tidak mengubah HPP lapisan lama. HPP disnapshot saat transaksi; `products.cost_price` hanya fallback kompatibilitas data lama. |
 | Minimum price | Harga jual terendah yang diizinkan untuk konteks produk/lokasi/channel pada waktu tertentu. |
 | Price ring | Tier/rentang harga jual untuk segmen pelanggan/channel, misalnya Ring 1-3; bukan pengganti minimum price. |
 | Purchase Order (PO) | Komitmen pembelian ke supplier; tidak menambah stok sampai receipt diposting. |

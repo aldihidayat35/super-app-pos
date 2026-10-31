@@ -2,18 +2,20 @@
 
 namespace App\Http\Controllers\Retail;
 
+use App\Enums\PaymentMethod;
+use App\Enums\PosSaleStatus;
 use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Retail\StorePosReturnRequest;
 use App\Http\Requests\Retail\VoidPosSaleRequest;
 use App\Models\PosSale;
+use App\Models\PosSaleItem;
+use App\Models\User;
 use App\Services\Retail\PosService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-
-use App\Models\User;
 
 class PosSaleController extends Controller
 {
@@ -22,19 +24,24 @@ class PosSaleController extends Controller
         $this->authorize('viewAny', PosSale::class);
 
         $user = $request->user();
-        
-        $query = PosSale::with(['cashier', 'customer', 'items'])
+
+        // Default rentang tanggal ke hari ini jika tidak ditentukan di request
+        $hasExplicitDate = $request->has('start_date') || $request->has('end_date');
+        $startDate = $hasExplicitDate ? $request->input('start_date') : now()->toDateString();
+        $endDate = $hasExplicitDate ? $request->input('end_date') : now()->toDateString();
+
+        $query = PosSale::query()
             ->whereIn('work_location_id', $user->permittedWorkLocationIds());
 
         // Batasi hanya bisa lihat transaksi sendiri jika bukan kepala toko/supervisor (tidak punya akses void atau manage)
-        if (!$user->can('pos.void') && !$user->hasRole('super_admin')) {
+        if (! $user->can('pos.void') && ! $user->hasRole('super_admin')) {
             $query->where('cashier_user_id', $user->id);
         }
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
+        if ($startDate && $endDate) {
             $query->whereBetween('created_at', [
-                $request->start_date . ' 00:00:00', 
-                $request->end_date . ' 23:59:59'
+                $startDate.' 00:00:00',
+                $endDate.' 23:59:59',
             ]);
         }
 
@@ -46,25 +53,67 @@ class PosSaleController extends Controller
             $query->where('cashier_user_id', $request->cashier_id);
         }
 
+        if ($request->filled('payment_method')) {
+            $method = $request->payment_method;
+            $query->whereHas('payments', fn ($q) => $q->where('method', $method));
+        }
+
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search): void {
                 $q->where('number', 'like', "%{$search}%")
-                  ->orWhereHas('customer', fn($q2) => $q2->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('customer', fn ($q2) => $q2->where('business_name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('owner_name', 'like', "%{$search}%")
+                        ->orWhere('pic_name', 'like', "%{$search}%")
+                        ->orWhere('whatsapp_number', 'like', "%{$search}%"));
             });
         }
 
-        $sales = $query->latest()->paginate(25)->withQueryString();
+        // Ringkasan KPI dinamis sesuai filter yang sedang aktif
+        $completedQuery = (clone $query)->where('status', PosSaleStatus::COMPLETED->value);
+        $totalRevenue = (string) $completedQuery->sum('grand_total_amount');
+        $totalCompletedTransactions = $completedQuery->count();
 
-        $cashiers = User::whereHas('posSales', function($q) use ($user) {
+        $saleIdsSubquery = (clone $query)->select('id');
+        $totalItemsSold = (string) PosSaleItem::whereIn('pos_sale_id', $saleIdsSubquery)
+            ->whereHas('sale', fn ($q) => $q->where('status', PosSaleStatus::COMPLETED->value))
+            ->sum('quantity');
+
+        $voidReturQuery = (clone $query)->whereIn('status', [PosSaleStatus::VOID_APPROVED->value, PosSaleStatus::RETURNED->value]);
+        $totalVoidReturCount = $voidReturQuery->count();
+        $totalVoidReturAmount = (string) $voidReturQuery->sum('grand_total_amount');
+
+        $kpi = [
+            'revenue' => $totalRevenue,
+            'transactions' => $totalCompletedTransactions,
+            'items_sold' => $totalItemsSold,
+            'void_retur_count' => $totalVoidReturCount,
+            'void_retur_amount' => $totalVoidReturAmount,
+        ];
+
+        $sales = (clone $query)
+            ->with(['cashier', 'customer', 'items', 'payments', 'branch'])
+            ->latest('created_at')
+            ->paginate(25)
+            ->withQueryString();
+
+        $cashiers = User::whereHas('posSales', function ($q) use ($user): void {
             $q->whereIn('work_location_id', $user->permittedWorkLocationIds());
         })->get();
+
+        $paymentMethods = PaymentMethod::options();
 
         return view('retail.sales.index', [
             'sales' => $sales,
             'cashiers' => $cashiers,
+            'paymentMethods' => $paymentMethods,
+            'kpi' => $kpi,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
         ]);
     }
+
     public function show(PosSale $sale): View
     {
         $this->authorize('view', $sale);

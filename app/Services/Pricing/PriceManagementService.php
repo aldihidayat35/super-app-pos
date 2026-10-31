@@ -13,6 +13,7 @@ use App\Models\PriceRule;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\User;
+use App\Models\WorkLocation;
 use App\Services\Control\AnomalyDetectionService;
 use App\Services\Control\ApprovalWorkflowService;
 use App\Support\ApprovalAuthority;
@@ -46,7 +47,7 @@ class PriceManagementService
                     : 0,
                 'overpricing_tolerance_percent' => $data['overpricing_tolerance_percent'] ?? 100,
                 'max_discount_percent' => $data['max_discount_percent'] ?? 20,
-                'approval_threshold_amount' => $data['approval_threshold_amount'] ?? 1000000,
+                'approval_threshold_amount' => $data['approval_threshold_amount'] ?? 0,
                 'priority' => $data['priority'] ?? 100,
                 'starts_at' => $data['starts_at'] ?? null,
                 'ends_at' => $data['ends_at'] ?? null,
@@ -69,7 +70,7 @@ class PriceManagementService
             }
 
             $resolved = $this->resolver->resolve($product, branch: null, channel: $data['channel'] ?? 'retail', user: $actor, requestedPrice: $data['recommended_price']);
-            $status = ($resolved['approval_required'] ?? false) ? ProductPriceStatus::DRAFT : ProductPriceStatus::ACTIVE;
+            $status = ProductPriceStatus::ACTIVE;
 
             $price = ProductPrice::query()->updateOrCreate(
                 ['id' => $data['id'] ?? null],
@@ -94,9 +95,25 @@ class PriceManagementService
 
             $this->writeHistory($price, $product, $oldPrice === null ? null : (string) $oldPrice, (string) $price->recommended_price, $actor, $data['notes'] ?? 'Perubahan harga produk');
 
-            if ($status === ProductPriceStatus::DRAFT) {
-                $this->requestApproval('product_price', $price->id, $product, null, $price->branch_id, $actor, (string) $price->recommended_price, $resolved, $data['notes'] ?? null);
-            }
+            $location = $price->work_location_id ? WorkLocation::find($price->work_location_id) : null;
+            activity()
+                ->causedBy($actor)
+                ->performedOn($product)
+                ->withProperties([
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'sku' => $product->sku,
+                    'work_location_id' => $price->work_location_id,
+                    'work_location_name' => $location ? $location->name : 'Semua Lokasi',
+                    'channel' => $price->channel,
+                    'price_ring' => $price->price_ring,
+                    'old_price' => $oldPrice,
+                    'new_price' => $price->recommended_price,
+                    'starts_at' => $price->starts_at ? (string) $price->starts_at : null,
+                    'ends_at' => $price->ends_at ? (string) $price->ends_at : null,
+                    'responsible_user' => $actor->name,
+                ])
+                ->log('product_price.updated');
 
             return $price->fresh(['product', 'branch', 'workLocation']);
         });

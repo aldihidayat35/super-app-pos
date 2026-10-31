@@ -139,6 +139,12 @@ class Product extends Model
         return $this->hasMany(ProductPrice::class);
     }
 
+    /** @return HasMany<StockBatch, $this> */
+    public function stockBatches(): HasMany
+    {
+        return $this->hasMany(StockBatch::class);
+    }
+
     /** @return HasMany<StockMutation, $this> */
     public function stockMutations(): HasMany
     {

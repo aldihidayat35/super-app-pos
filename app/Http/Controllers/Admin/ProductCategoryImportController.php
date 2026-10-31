@@ -9,6 +9,8 @@ use App\Services\Product\ProductCategoryImportService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductCategoryImportController extends Controller
@@ -59,21 +61,21 @@ class ProductCategoryImportController extends Controller
         $this->authorize('export', ProductCategory::class);
 
         return response()->streamDownload(function (): void {
-            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $spreadsheet = new Spreadsheet;
             $sheet = $spreadsheet->getActiveSheet();
-            
+
             $sheet->fromArray([
                 ['code', 'name', 'parent_code', 'sort_order', 'icon', 'is_active'],
                 ['KAT-MINUMAN', 'Minuman', '', '1', 'ki-cup', '1'],
                 ['KAT-KOPI', 'Kopi & Espresso', 'KAT-MINUMAN', '2', 'ki-coffee', '1'],
                 ['KAT-MAKANAN', 'Makanan Ringan', '', '3', 'ki-burger', '1'],
             ]);
-            
+
             foreach (range('A', 'F') as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
-            
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+            $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         }, 'template-import-kategori.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

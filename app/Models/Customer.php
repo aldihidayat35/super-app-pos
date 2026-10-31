@@ -35,6 +35,11 @@ class Customer extends Model
         ];
     }
 
+    public function getNameAttribute(): string
+    {
+        return (string) ($this->business_name ?: ($this->owner_name ?: ($this->pic_name ?: 'Pelanggan')));
+    }
+
     /** @return HasMany<CustomerAddress, $this> */
     public function addresses(): HasMany
     {

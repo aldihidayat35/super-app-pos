@@ -1125,6 +1125,12 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/rules', [PriceRuleController::class, 'store'])
             ->middleware('permission:prices.update')
             ->name('rules.store');
+        Route::post('/rules/{priceRule}/toggle', [PriceRuleController::class, 'toggle'])
+            ->middleware('permission:prices.update')
+            ->name('rules.toggle');
+        Route::delete('/rules/{priceRule}', [PriceRuleController::class, 'destroy'])
+            ->middleware('permission:prices.update')
+            ->name('rules.destroy');
         Route::get('/product-prices', [ProductPriceController::class, 'index'])
             ->middleware('permission:prices.view')
             ->name('product-prices.index');
@@ -1137,6 +1143,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/product-prices', [ProductPriceController::class, 'store'])
             ->middleware('permission:prices.update')
             ->name('product-prices.store');
+        Route::post('/product-prices/save-item', [ProductPriceController::class, 'saveItem'])
+            ->middleware('permission:prices.update')
+            ->name('product-prices.save-item');
         Route::get('/product-prices/{productPrice}/edit', [ProductPriceController::class, 'edit'])
             ->middleware('permission:prices.update')
             ->name('product-prices.edit');
