@@ -150,7 +150,7 @@ class StockTransferController extends Controller
                     $inner->where('sku', 'like', "%{$search}%")->orWhere('name', 'like', "%{$search}%");
                 }))
                 ->orderBy('name');
-            $products = $query->paginate($perPage, ['id', 'sku', 'name', 'category_id', 'photo_path', 'base_unit_id'], 'page', $page);
+            $products = $query->paginate($perPage, ['id', 'sku', 'name', 'category_id', 'main_image_path', 'base_unit_id'], 'page', $page);
 
             return response()->json([
                 'results' => $products->map(function (Product $product): array {
