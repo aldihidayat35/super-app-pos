@@ -228,13 +228,15 @@ class ReceivableController extends Controller
     {
         $this->authorize('pay', Receivable::class);
         $customerId = $request->integer('customer_id') ?: null;
+        $selectedCustomer = $customerId ? Customer::query()->with('creditLimit')->find($customerId) : null;
 
         return view('receivables.payments.create', [
             'methods' => PaymentMethod::options(),
-            'customers' => Customer::query()->where('is_active', true)->orderBy('business_name')->limit(100)->get(),
+            'customers' => Customer::query()->where('is_active', true)->orderBy('business_name')->get(),
             'selectedCustomerId' => $customerId,
+            'selectedCustomer' => $selectedCustomer,
             'receivables' => Receivable::query()
-                ->with('customer')
+                ->with(['customer', 'posSale'])
                 ->where('outstanding_amount', '>', 0)
                 ->when($customerId, fn ($query) => $query->where('customer_id', $customerId))
                 ->orderBy('due_date')

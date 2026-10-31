@@ -88,9 +88,9 @@ class ReceivableService
         });
     }
 
-    public function createFromPosSale(PosSale $sale, User $actor): ?Receivable
+    public function createFromPosSale(PosSale $sale, User $actor, ?string $customDueDate = null): ?Receivable
     {
-        return DB::transaction(function () use ($sale, $actor): ?Receivable {
+        return DB::transaction(function () use ($sale, $actor, $customDueDate): ?Receivable {
             $sale = PosSale::query()->with(['payments', 'customer'])->lockForUpdate()->findOrFail($sale->id);
             $creditAmount = Decimal::normalize($sale->payments()->where('method', PaymentMethod::CREDIT->value)->sum('amount'), 2);
             if (Decimal::compare($creditAmount, '0', 2) <= 0) {
@@ -104,7 +104,9 @@ class ReceivableService
                 return $existing;
             }
 
-            $dueDate = now()->addDays((int) $customer->payment_term_days);
+            $dueDate = filled($customDueDate)
+                ? Carbon::parse($customDueDate)
+                : now()->addDays((int) $customer->payment_term_days);
             $receivable = Receivable::query()->create([
                 'number' => $this->numbers->next('receivable', $sale->workLocation),
                 'customer_id' => $customer->id,

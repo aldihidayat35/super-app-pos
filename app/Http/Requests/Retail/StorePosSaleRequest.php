@@ -5,6 +5,7 @@ namespace App\Http\Requests\Retail;
 use App\Enums\PaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StorePosSaleRequest extends FormRequest
 {
@@ -37,6 +38,19 @@ class StorePosSaleRequest extends FormRequest
             'payments.*.amount' => ['required', 'numeric', 'gt:0'],
             'payments.*.reference_no' => ['nullable', 'string', 'max:120'],
             'payments.*.notes' => ['nullable', 'string', 'max:1000'],
+            'payments.*.due_date' => ['nullable', 'date'],
+            'custom_due_date' => ['nullable', 'date'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function ($validator): void {
+            $payments = (array) $this->input('payments', []);
+            $hasCredit = collect($payments)->contains(fn ($p) => is_array($p) && ($p['method'] ?? '') === PaymentMethod::CREDIT->value);
+            if ($hasCredit && empty($this->input('customer_id'))) {
+                $validator->errors()->add('customer_id', 'Metode pembayaran Tempo / Piutang hanya dapat digunakan untuk pelanggan terdaftar.');
+            }
+        });
     }
 }

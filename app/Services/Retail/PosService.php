@@ -222,7 +222,19 @@ class PosService
             }
 
             if (Decimal::compare($payments['credit_amount'], '0', 2) > 0) {
-                $this->receivables->createFromPosSale($sale, $cashier);
+                if ($customer === null) {
+                    throw new ServiceException('Pembayaran kredit/tempo membutuhkan pelanggan terdaftar.', [], 422);
+                }
+                $customDueDate = filled($data['custom_due_date'] ?? null) ? (string) $data['custom_due_date'] : null;
+                if ($customDueDate === null && is_array($data['payments'] ?? null)) {
+                    foreach ($data['payments'] as $paymentRow) {
+                        if (is_array($paymentRow) && ($paymentRow['method'] ?? '') === PaymentMethod::CREDIT->value && filled($paymentRow['due_date'] ?? null)) {
+                            $customDueDate = (string) $paymentRow['due_date'];
+                            break;
+                        }
+                    }
+                }
+                $this->receivables->createFromPosSale($sale, $cashier, $customDueDate);
             }
 
             return $sale->load(['items.product', 'payments', 'branch', 'cashShift', 'customer']);

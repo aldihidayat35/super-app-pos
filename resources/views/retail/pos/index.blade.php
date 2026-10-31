@@ -107,7 +107,11 @@
                                     data-placeholder="Pelanggan Umum" data-allow-clear="true">
                                     <option value="">Pelanggan Umum</option>
                                     @foreach ($customers as $customer)
-                                        <option value="{{ $customer->id }}">{{ $customer->business_name }}</option>
+                                        <option value="{{ $customer->id }}"
+                                            data-payment-terms="{{ (int) ($customer->payment_term_days ?? 0) }}"
+                                            data-credit-limit="{{ (float) ($customer->credit_limit ?? 0) }}"
+                                            data-receivable-balance="{{ (float) ($customer->receivable_balance ?? 0) }}"
+                                        >{{ $customer->business_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -1562,28 +1566,85 @@
                 function renderPaymentRows() {
                     const container = document.getElementById('payment-rows');
                     container.innerHTML = '';
+                    const hasCustomer = Boolean(customerSelect && customerSelect.value);
+                    const selectedOption = customerSelect && customerSelect.selectedIndex >= 0 ? customerSelect.options[customerSelect.selectedIndex] : null;
+                    const terms = selectedOption ? parseInt(selectedOption.dataset.paymentTerms || '0', 10) : 0;
+
+                    // Filter metode pembayaran: 'credit' (Tempo / Piutang) hanya untuk pelanggan terdaftar
+                    const availableMethods = Object.entries(paymentMethods).filter(([value]) => hasCustomer || value !== 'credit');
+
                     payments.forEach((payment, index) => {
+                        // Jika pelanggan umum tapi metode credit terpilih, paksa ubah ke cash
+                        if (!hasCustomer && payment.method === 'credit') {
+                            payment.method = 'cash';
+                        }
+
+                        const isCredit = payment.method === 'credit';
+                        if (isCredit && !payment.due_date) {
+                            const daysToAdd = terms > 0 ? terms : 30;
+                            payment.due_date = moment().add(daysToAdd, 'days').format('YYYY-MM-DD');
+                        }
+
                         const row = document.createElement('div');
-                        row.className = 'pos-payment-row border rounded p-3';
-                        const options = Object.entries(paymentMethods).map(([value, label]) =>
+                        row.className = 'pos-payment-row border rounded p-3 mb-2';
+                        const options = availableMethods.map(([value, label]) =>
                             `<option value="${value}" ${payment.method === value ? 'selected' : ''}>${escapeHtml(label)}</option>`
                             ).join('');
-                        row.innerHTML =
-                            `<div class="pos-payment-method"><label class="pos-cart-label">Metode</label><select class="form-select payment-method" data-searchable="false">${options}</select></div><div class="pos-payment-amount-wrap"><label class="pos-cart-label">Jumlah Dibayarkan</label><input type="text" inputmode="numeric" class="form-control payment-amount" value="${money(payment.amount)}" placeholder="Rp 0" autocomplete="off"></div><div class="pos-payment-reference"><label class="pos-cart-label">Referensi</label><input class="form-control payment-reference" value="${escapeHtml(payment.reference_no || '')}" placeholder="Opsional"></div><div class="pos-payment-remove"><button type="button" class="btn btn-icon btn-light-danger remove-payment" aria-label="Hapus"><i class="ki-outline ki-trash"></i></button></div>`;
+
+                        row.innerHTML = `
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <div class="pos-payment-method"><label class="pos-cart-label">Metode</label><select class="form-select payment-method" data-searchable="false">${options}</select></div>
+                                <div class="pos-payment-amount-wrap"><label class="pos-cart-label">Jumlah Dibayarkan</label><input type="text" inputmode="numeric" class="form-control payment-amount" value="${money(payment.amount)}" placeholder="Rp 0" autocomplete="off"></div>
+                                <div class="pos-payment-reference"><label class="pos-cart-label">Referensi</label><input class="form-control payment-reference" value="${escapeHtml(payment.reference_no || '')}" placeholder="Opsional"></div>
+                                <div class="pos-payment-remove"><button type="button" class="btn btn-icon btn-light-danger remove-payment" aria-label="Hapus"><i class="ki-outline ki-trash"></i></button></div>
+                            </div>
+                            ${isCredit ? `
+                            <div class="pos-payment-due-date mt-3 pt-2 border-top">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <label class="pos-cart-label text-warning-emphasis fw-bold mb-0">
+                                        <i class="ki-outline ki-calendar text-warning fs-6 me-1"></i>Jatuh Tempo Piutang (Custom)
+                                    </label>
+                                    <span class="text-muted fs-8">
+                                        Termin Pelanggan: <strong class="text-dark">${terms > 0 ? terms + ' hari' : 'Default (30 hari)'}</strong>
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="date" class="form-control form-control-sm form-control-solid payment-due-date w-auto" value="${payment.due_date || ''}" min="${moment().format('YYYY-MM-DD')}">
+                                    <span class="text-muted fs-8">Bisa diubah jika ada kesepakatan jatuh tempo khusus</span>
+                                </div>
+                            </div>
+                            ` : ''}
+                        `;
+
                         row.querySelector('.payment-method').addEventListener('change', event => {
                             payment.method = event.target.value;
+                            if (payment.method === 'credit' && !payment.due_date) {
+                                const daysToAdd = terms > 0 ? terms : 30;
+                                payment.due_date = moment().add(daysToAdd, 'days').format('YYYY-MM-DD');
+                            }
+                            renderPaymentRows();
                             renderQuickCash();
                             updatePaymentSummary();
                         });
-                        row.querySelector('.payment-amount').addEventListener('focus', event => event.target
-                        .select());
+                        row.querySelector('.payment-amount').addEventListener('focus', event => event.target.select());
                         row.querySelector('.payment-amount').addEventListener('input', event => {
                             payment.amount = rupiahValue(event.target.value);
                             event.target.value = money(payment.amount);
                             updatePaymentSummary();
                         });
-                        row.querySelector('.payment-reference').addEventListener('input', event => payment
-                            .reference_no = event.target.value);
+                        row.querySelector('.payment-reference').addEventListener('input', event => {
+                            payment.reference_no = event.target.value;
+                        });
+
+                        if (isCredit) {
+                            const dueInput = row.querySelector('.payment-due-date');
+                            if (dueInput) {
+                                dueInput.addEventListener('change', event => {
+                                    payment.due_date = event.target.value;
+                                });
+                            }
+                        }
+
                         row.querySelector('.remove-payment').addEventListener('click', () => {
                             if (payments.length > 1) payments.splice(index, 1);
                             renderPaymentRows();
@@ -1683,8 +1744,10 @@
                         payments: payments.map(payment => ({
                             method: payment.method,
                             amount: payment.amount,
-                            reference_no: payment.reference_no || null
+                            reference_no: payment.reference_no || null,
+                            due_date: payment.method === 'credit' ? (payment.due_date || null) : null
                         })),
+                        custom_due_date: payments.find(p => p.method === 'credit')?.due_date || null,
                     };
                 }
 
@@ -1854,6 +1917,15 @@
                     loadProducts(true);
                 }));
                 const onCustomerChange = () => {
+                    if (!customerSelect.value) {
+                        payments.forEach(p => {
+                            if (p.method === 'credit') {
+                                p.method = 'cash';
+                                delete p.due_date;
+                            }
+                        });
+                    }
+                    renderPaymentRows();
                     requoteAll(true);
                     loadProducts(true);
                 };
