@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f8fafc">
+  <title>Laporan Operasional Toko</title>
+  <style>
+    :root {
+      --green:#08be47;
+      --green-dark:#029d38;
+      --mint:#e9fbef;
+      --ink:#101d3b;
+      --muted:#65708b;
+      --line:#e9edf3;
+      --surface:#ffffff;
+      --bg:#f8fafd;
+      --shadow:0 4px 12px rgba(26,37,70,.048),0 1px 2px rgba(26,37,70,.05);
+      font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;color:var(--ink);background:var(--bg);font-size:12px;-webkit-font-smoothing:antialiased}
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #44c87b;outline-offset:3px}
+    .app{max-width:1440px;margin:0 auto;padding:0 11px 18px 23px}
+    .icon{width:17px;height:17px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+    .topbar{height:75px;display:flex;align-items:flex-start;justify-content:space-between;padding:7px 0 0 17px;gap:14px}
+    .heading{display:flex;gap:13px;align-items:flex-start;min-width:0}
+    .brand-icon{width:31px;height:35px;margin-top:1px;display:flex;align-items:center;justify-content:center;color:var(--green)}
+    .brand-icon .icon{width:31px;height:31px;stroke-width:3.9}
+    h1{font-size:25px;font-weight:770;letter-spacing:-.8px;line-height:1.24;margin:1px 0 0}
+    .subtitle{color:#596782;font-size:12px;line-height:1.5;margin-top:2px;white-space:normal}
+    .top-actions{display:flex;align-items:center;gap:17px;flex-shrink:0;padding:1px 1px 0 0}
+    .period-button,.icon-button{border:1px solid #e0e5ed;background:var(--surface);box-shadow:var(--shadow);border-radius:9px;color:var(--ink)}
+    .period-button{height:39px;min-width:290px;display:flex;align-items:center;padding:0 12px;gap:12px;font-size:12px;font-weight:510;justify-content:space-between}
+    .period-button span{flex:1;text-align:left}
+    .icon-button{height:39px;width:40px;display:inline-flex;align-items:center;justify-content:center}
+    .icon-button:hover,.period-button:hover{background:#f2fff6}
+    .period-button .icon,.icon-button .icon{width:17px;height:17px}
+    .filter-panel{height:74px;border-radius:12px;border:1px solid #e6eaf1;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;gap:15px;padding:8px 14px;margin-bottom:18px}
+    .filter-field{flex:0 0 auto;min-width:0}
+    .filter-field:nth-child(1){width:158px}
+    .filter-field:nth-child(2){width:158px}
+    .filter-field:nth-child(3){width:189px}
+    .filter-field:nth-child(4){width:155px}
+    .field-label{display:block;font-size:10.5px;font-weight:600;color:#34415b;margin-bottom:5px}
+    .control-wrap{position:relative;height:33px}
+    .control-wrap input,.control-wrap select{width:100%;height:33px;border:1px solid #e6ebf1;border-radius:7px;background:#f9fafc;color:#35415e;padding:0 35px 0 11px;font-size:12px;appearance:none;outline:none}
+    .control-wrap input:focus,.control-wrap select:focus{border-color:#81dba3;background:#fff}
+    .control-wrap .control-icon{position:absolute;right:11px;top:8px;width:15px;height:15px;color:#1c2537;pointer-events:none}
+    .date-control .control-icon{pointer-events:auto;cursor:pointer}
+    .native-date-picker{position:absolute;right:3px;bottom:1px;width:1px;height:1px;opacity:0;pointer-events:none}
+    .filter-button{height:38px;min-width:137px;background:linear-gradient(180deg,#08c44b,#09b842);color:#fff;border:0;border-radius:8px;font-weight:650;display:flex;justify-content:center;align-items:center;gap:10px;margin-left:0;margin-top:15px;box-shadow:0 2px 3px #b7f2c8}
+    .filter-button .icon{width:15px;height:15px}
+    .filter-reset{margin-top:15px;width:39px;height:38px;border:1px solid #e5eaf1;border-radius:8px;background:#fff;box-shadow:none}
+    .summary-banner{position:relative;height:130px;display:flex;align-items:center;overflow:hidden;padding:0 15px;border-radius:12px;background:linear-gradient(106deg,#edfdf4 0%,#f5fcfa 36%,#edfff5 65%,#a0edb5 100%);border:1px solid #d9f3e1;margin-bottom:18px}
+    .summary-banner::after{content:"";position:absolute;width:255px;height:185px;right:-105px;top:-92px;border-radius:50%;background:rgba(49,193,101,.08);pointer-events:none}
+    .summary-label{width:256px;flex:0 0 256px;position:relative;z-index:1}
+    .summary-label h2{font-size:19px;letter-spacing:-.5px;margin:0 0 7px;line-height:1.3}
+    .summary-label p{margin:0;color:#566781;font-size:11px}
+    .summary-kpis{height:106px;display:flex;align-items:stretch;border-radius:15px;background:rgba(255,255,255,.60);padding:14px 2px;flex:1;max-width:759px;z-index:1;min-width:0}
+    .summary-metric{min-width:0;flex:1;border-right:1px solid #dfebe6;padding:0 21px}
+    .summary-metric:last-child{border:0}
+    .metric-caption{display:flex;align-items:center;gap:9px;font-size:11px;white-space:nowrap;color:#1d2d3c;font-weight:520;margin-bottom:8px}
+    .metric-caption .icon{color:var(--green-dark);width:19px;height:19px;stroke-width:2.6}
+    .summary-metric strong{display:block;font-size:22px;line-height:1.1;letter-spacing:-.5px;margin:0 0 9px}
+    .summary-change{font-size:9px;color:#626d80;white-space:nowrap}
+    .delta{display:inline-block;vertical-align:middle;border-radius:6px;background:#d6f9de;color:#039a35;font-size:10px;font-weight:750;padding:3px 6px;margin-right:4px;white-space:nowrap}
+    /* GAMBAR TOKO: slot ini sengaja kosong. Ganti --store-image-url dengan URL gambar Anda. */
+    .store-art-slot{width:152px;align-self:stretch;flex-shrink:0;position:relative;z-index:1;background-image:var(--store-image-url,none);background-position:center right;background-size:contain;background-repeat:no-repeat}
+    .dashboard-grid{display:flex;flex-direction:column;gap:16px}
+    .report-row{display:grid;gap:15px}
+    .top-row{grid-template-columns:475fr 341fr 360fr}
+    .second-row{grid-template-columns:396fr 373fr 407fr}
+    .panel{background:var(--surface);border:1px solid #e5e9ef;border-radius:13px;box-shadow:var(--shadow);min-width:0;padding:13px 15px;overflow:hidden}
+    .top-panel{height:290px}
+    .second-panel{height:282px}
+    .panel-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:20px;margin-bottom:16px}
+    .panel-heading-actions{display:flex;align-items:center;justify-content:flex-end;gap:13px;flex-shrink:0}
+    /* Tautan pada sisi kanan judul panel, seperti desain referensi. */
+    .detail-link{color:#1479eb;text-decoration:underline;text-underline-offset:2px;font-size:10.5px;font-weight:650;line-height:1.3;white-space:nowrap;border-radius:4px}
+    .detail-link:hover{color:#0754ad;text-decoration-thickness:2px}
+    .detail-link:focus-visible{outline:2px solid #1479eb;outline-offset:4px}
+    .panel h2{margin:0;font-size:16px;line-height:1.28;font-weight:745;letter-spacing:-.4px}
+    .live-scope{font-size:9px;line-height:1;padding:5px 7px;background:#e9f2ff;border-radius:5px;color:#1684fc;font-weight:750;white-space:nowrap}
+    .stat-row{display:grid;align-items:start;margin:0 0 12px}
+    .stat-row.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .stat-row.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .stat{min-width:0;padding:0 13px;border-right:1px solid #e5eaf0}
+    .stat:first-child{padding-left:3px}
+    .stat:last-child{border:0;padding-right:0}
+    .stat-label{font-size:10px;color:#38445e;font-weight:530;white-space:nowrap;margin-bottom:7px}
+    .stat-value{font-size:18px;font-weight:760;letter-spacing:-.45px;line-height:1.15;white-space:nowrap}
+    .stat .delta{margin-top:5px}
+    .delta.red{color:#b80e16;background:#ffe7e7}
+    .delta.green-check{font-size:10px}
+    .sales-panel .panel-heading{margin-bottom:19px}
+    .sales-panel .stat-row{margin-bottom:13px}
+    .sales-chart{width:100%;height:137px;display:block}
+    .chart-axis{font-size:9px;fill:#5c6880}
+    .chart-gridline{stroke:#e6ebf0;stroke-width:1}
+    .chart-legend{display:flex;align-items:center;justify-content:center;gap:22px;font-size:9px;color:#45516c;margin-top:0}
+    .chart-legend .legend-bar{width:12px;height:12px;border-radius:2px;background:#aeefb8;display:inline-block;margin-right:6px;vertical-align:-2px}
+    .legend-line{display:inline-block;height:9px;width:19px;border-top:2px solid #00ac36;margin-right:5px;vertical-align:-4px;position:relative}
+    .legend-line::after{content:"";position:absolute;border:2px solid #00ac36;width:5px;height:5px;border-radius:50%;background:#fff;top:-5px;left:7px}
+    .profit-panel .panel-heading{margin-bottom:18px}
+    .profit-panel .stat-row{margin-bottom:15px}
+    .profit-body{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .profit-ring{width:125px;height:125px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:conic-gradient(#08bd45 0 15%,#a1ec7d 15% 38%,#e2f9dd 38% 61%,#26c44d 61% 75%,#b2eb9a 75% 100%)}
+    .ring-hole{height:90px;width:90px;background:#fff;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .ring-hole strong{font-size:20px;letter-spacing:-.6px}
+    .ring-hole small{font-size:11px;margin-top:4px}
+    .profit-legend{min-width:0;flex:1;font-size:10px;color:#4d5670}
+    .profit-legend .legend-row{display:grid;grid-template-columns:9px minmax(0,1fr) auto auto;align-items:center;gap:5px;border-bottom:1px solid #eff1f5;padding:9px 0}
+    .profit-legend .legend-row:last-child{border-bottom:0}
+    .profit-legend .legend-row span{white-space:nowrap}
+    .profit-legend .legend-row b{font-weight:500}
+    .legend-dot{width:9px;height:9px;border-radius:2px;background:#00b93b}
+    .legend-dot.light{background:#89e05c}
+    .legend-dot.lighter{background:#a8f078}
+    .cash-panel .panel-heading{margin-bottom:19px}
+    .cash-panel .stat-row{margin-bottom:26px}
+    table{border-collapse:collapse;width:100%;font-size:10px;table-layout:auto}
+    th{font-weight:650;color:#56617a;background:#f3f5f9;text-align:left;white-space:nowrap}
+    th:first-child{border-radius:5px 0 0 5px}
+    th:last-child{border-radius:0 5px 5px 0}
+    th,td{padding:7px 8px}
+    td{border-bottom:1px solid #e9ecf1;color:#263456;white-space:nowrap}
+    tr:last-child td{border-bottom:0}
+    .cash-panel th,.cash-panel td{padding-left:10px;padding-right:9px}
+    .number{text-align:right}
+    .stock-panel .panel-heading,.returns-panel .panel-heading,.receivables-panel .panel-heading{margin-bottom:15px}
+    .stock-panel .stat-row,.returns-panel .stat-row,.receivables-panel .stat-row{margin-bottom:17px}
+    .stock-panel .stat-row{margin-bottom:5px}
+    .stock-panel .stat{padding-left:12px}
+    .stock-panel .stat:first-child{padding-left:2px}
+    .stock-panel .stat-value,.returns-panel .stat-value,.receivables-panel .stat-value{font-size:18px}
+    .stock-progress-wrap{display:grid;gap:3px;margin-bottom:7px}
+    .stock-progress{height:45px;border:1px solid #e8ecf2;border-radius:9px;padding:7px 10px;background:#fff;display:grid;grid-template-columns:75px 1fr 87px;column-gap:5px;align-items:center}
+    .stock-progress:first-child{height:45px}
+    .progress-label{font-size:10px;font-weight:650;align-self:start;line-height:1.3}
+    .progress-label strong{font-size:15px;display:block;margin-top:1px}
+    .progress-track{height:10px;border-radius:12px;background:#edf0f4;overflow:hidden}
+    .progress-fill{height:100%;width:45%;background:#ffb400;border-radius:12px}
+    .progress-fill.restocks{width:27%;background:#13c454}
+    .progress-meta{text-align:right;font-size:9px;color:#58647c;align-self:start;line-height:1.65}
+    .progress-meta strong{color:var(--ink);display:block;font-size:10px}
+    .stock-panel table{font-size:9.5px}
+    .stock-panel th,.stock-panel td{padding:5px 7px}
+    .stock-panel .name-col{max-width:175px;overflow:hidden;text-overflow:ellipsis}
+    .status-pill{display:inline-block;padding:3px 7px;color:#aa5904;background:#fff0dc;border-radius:6px;font-weight:640;white-space:nowrap}
+    .returns-panel .stat-row{margin-bottom:25px}
+    .returns-panel .stat-value{font-size:18px}
+    .returns-panel .stat-label{font-size:9.5px}
+    .returns-panel table th,.returns-panel table td{padding:7px 9px}
+    .receivables-panel .stat-row{margin-bottom:25px}
+    .receivables-panel h3{font-size:12px;line-height:1.4;margin:0 0 8px}
+    .receivables-panel table{font-size:9px}
+    .receivables-panel th,.receivables-panel td{padding:7px 6px}
+    .team-panel{grid-column:1/-1;height:171px;padding:12px 16px 10px}
+    .team-panel .panel-heading{margin-bottom:13px}
+    .team-body{display:grid;grid-template-columns:42% 58%;min-height:102px;align-items:center}
+    .team-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;padding-right:15px}
+    .team-stat{border:1px solid #e7ebf1;border-radius:9px;height:72px;padding:10px 8px;min-width:0}
+    .team-stat-label{font-size:9.5px;font-weight:560;white-space:nowrap;display:flex;align-items:center;gap:7px;margin-bottom:9px}
+    .team-stat-label .icon{color:#04ae40;width:17px;height:17px;stroke-width:2.3}
+    .team-stat:nth-child(3) .icon,.team-stat:nth-child(4) .icon,.team-stat:nth-child(5) .icon{color:#d32d37}
+    .team-stat-value{font-weight:760;font-size:16px;padding-left:21px;white-space:nowrap}
+    .team-stat-value small{font-weight:620;font-size:10px}
+    .team-table-wrap{padding-left:19px;border-left:1px solid #e0e5ed;height:101px;display:flex;align-items:center;min-width:0}
+    .team-table{font-size:9.5px}
+    .team-table th{background:transparent;border-bottom:1px solid #e5e9ef;padding:1px 6px 5px}
+    .team-table td{padding:2px 6px 2px;border-bottom:1px solid #e9edf1}
+    .avatar{background:#c9f3d2;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-size:10px;color:#12822c;font-weight:600;margin-right:7px;vertical-align:middle}
+    .team-table strong{font-size:9.5px;font-weight:710}
+    .presence{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
+    .presence::before{content:"";width:7px;height:7px;border-radius:50%;background:#04b63c}
+    .toast{position:fixed;bottom:18px;right:22px;z-index:30;background:#1b2841;color:#fff;font-size:12px;border-radius:9px;box-shadow:0 10px 30px #0002;padding:12px 18px;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .2s,transform .2s;max-width:min(400px,90vw)}
+    .toast.visible{opacity:1;transform:translateY(0)}
+    @media(max-width:1160px){
+      .app{padding:0 16px 18px}
+      .filter-panel{flex-wrap:wrap;height:auto;min-height:75px}
+      .summary-label{width:225px;flex-basis:225px}
+      .summary-metric{padding:0 10px}
+      .store-art-slot{width:50px}
+      .report-row{gap:14px}
+      .top-row{grid-template-columns:1.15fr 1fr}
+      .second-row{grid-template-columns:1fr 1fr}
+      .cash-panel{grid-column:1/-1;height:195px}
+      .second-panel{height:280px}
+      .receivables-panel{grid-column:1/-1;height:265px}
+      .team-panel{height:auto;min-height:155px}
+      .team-body{grid-template-columns:1fr}
+      .team-stats{padding:6px 0 12px}
+      .team-table-wrap{height:auto;border-left:0;border-top:1px solid #e6eaf0;padding:9px 0 0}
+    }
+    @media(max-width:740px){
+      .topbar{height:auto;min-height:118px;padding:14px 0;display:block}
+      h1{font-size:21px}
+      .subtitle{font-size:11px}
+      .top-actions{justify-content:space-between;margin-top:10px}
+      .period-button{min-width:0;flex:1}
+      .filter-panel{gap:8px;margin-bottom:12px;padding:12px}
+      .filter-field:nth-child(n){width:calc(50% - 4px);flex-basis:calc(50% - 4px)}
+      .filter-button{margin-top:0;flex:1;min-width:0}
+      .filter-reset{margin-top:0}
+      .summary-banner{height:auto;min-height:174px;display:block;padding:14px;margin-bottom:13px}
+      .summary-label{width:auto;margin-bottom:10px}
+      .summary-kpis{height:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}
+      .summary-metric{border-right:0;padding:10px}
+      .summary-metric:nth-child(odd){border-right:1px solid #e3ebe8}
+      .summary-metric strong{font-size:18px}
+      .store-art-slot{display:none}
+      .dashboard-grid{gap:12px}
+      .report-row{grid-template-columns:1fr;gap:12px}
+      .report-row .panel{grid-column:1/-1}
+      .top-panel,.second-panel{height:auto;min-height:255px}
+      .sales-panel{min-height:275px}
+      .cash-panel{min-height:200px}
+      .profit-panel{min-height:240px}
+      .profit-body{justify-content:flex-start;gap:20px}
+      .stock-panel{min-height:320px}
+      .returns-panel,.receivables-panel{min-height:230px}
+      .team-panel{min-height:230px}
+      .team-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .team-table-wrap{overflow-x:auto}
+      .team-table{min-width:560px}
+    }
+    @media print{
+      @page{size:A4 landscape;margin:8mm}
+      body{background:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+      .app{max-width:none;padding:0}
+      .top-actions,.filter-panel,.toast{display:none!important}
+      .topbar{height:56px}
+      .dashboard-grid{display:flex}
+      .top-row{grid-template-columns:475fr 341fr 360fr}
+      .second-row{grid-template-columns:396fr 373fr 407fr}
+      .sales-panel,.profit-panel,.cash-panel,.stock-panel,.returns-panel,.receivables-panel,.team-panel{grid-column:auto}
+      .top-panel{height:290px}.second-panel{height:282px}.team-panel{grid-column:1/-1;height:147px}
+      .team-body{grid-template-columns:42% 58%}
+      .team-table-wrap{border-top:0;border-left:1px solid #e0e5ed;padding-left:19px}
+      .panel,.summary-banner{break-inside:avoid}
+    }
+  </style>
+</head>
+<body>
+<!-- Semua data pada contoh ini adalah DATA DEMO statis, belum terhubung database/API. -->
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.8-4M4 4v5h5M4 13a8 8 0 0 0 14.8 4M20 20v-5h-5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 5h16l-6.5 7.5V19l-3 1.5v-8z"/></symbol>
+  <symbol id="i-coins" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 20v-6M11.5 20V9M18 20V4"/></symbol>
+  <symbol id="i-percent" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M19 5 5 19"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="14" rx="1.5"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3.5"/><path d="M2 20v-2a7 7 0 0 1 14 0v2M17 4a4 4 0 0 1 0 7.5M18 13c3.3.6 4.5 3.2 4.5 6.8"/></symbol>
+  <symbol id="i-user-check" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M2 20v-2a7 7 0 0 1 12-4.8M16 17l2.5 2.5L23 14"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m12 3 10 18H2zM12 9v5M12 18h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m7 12 3.2 3.2L17 8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-bed" viewBox="0 0 24 24"><path d="M3 20V4M21 20v-8H3v8M7 12V8h6a3 3 0 0 1 3 3v1M3 18h18"/></symbol>
+</svg>
+<div class="app">
+  <header class="topbar">
+    <div class="heading">
+      <span class="brand-icon" aria-hidden="true"><svg class="icon"><use href="#i-chart"/></svg></span>
+      <div>
+        <h1>Laporan Operasional Toko</h1>
+        <div class="subtitle">Ringkasan lengkap kinerja operasional, penjualan, profitabilitas, kas, stok, retur, piutang, dan tim toko.</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="period-button" id="periodShortcut" title="Lihat periode laporan" type="button"><svg class="icon"><use href="#i-calendar"/></svg><span id="topPeriod">Periode: 10 Jan 2026 – 11 Jan 2026</span><svg class="icon"><use href="#i-down"/></svg></button>
+      <button class="icon-button" type="button" id="exportBtn" title="Ekspor CSV" aria-label="Ekspor data contoh ke CSV"><svg class="icon"><use href="#i-download"/></svg></button>
+      <button class="icon-button" type="button" id="headerReset" title="Atur ulang filter" aria-label="Atur ulang filter"><svg class="icon"><use href="#i-refresh"/></svg></button>
+    </div>
+  </header>
+
+  <form id="filters" class="filter-panel">
+    <label class="filter-field"><span class="field-label">Tanggal mulai</span><span class="control-wrap date-control"><input type="text" id="startDate" inputmode="numeric" value="10/01/2026" placeholder="DD/MM/YYYY" aria-label="Tanggal mulai"><svg class="icon control-icon date-trigger" data-target="startNative" tabindex="0" role="button" aria-label="Pilih tanggal mulai"><use href="#i-calendar"/></svg><input class="native-date-picker" type="date" id="startNative" value="2026-01-10" tabindex="-1" aria-hidden="true"></span></label>
+    <label class="filter-field"><span class="field-label">Tanggal akhir</span><span class="control-wrap date-control"><input type="text" id="endDate" inputmode="numeric" value="11/01/2026" placeholder="DD/MM/YYYY" aria-label="Tanggal akhir"><svg class="icon control-icon date-trigger" data-target="endNative" tabindex="0" role="button" aria-label="Pilih tanggal akhir"><use href="#i-calendar"/></svg><input class="native-date-picker" type="date" id="endNative" value="2026-01-11" tabindex="-1" aria-hidden="true"></span></label>
+    <label class="filter-field"><span class="field-label">Lokasi kerja</span><span class="control-wrap"><select id="location"><option>Toko Demo Pusat</option><option>Toko Cabang 1</option><option>Toko Cabang 2</option><option>Semua Lokasi</option></select><svg class="icon control-icon"><use href="#i-down"/></svg></span></label>
+    <label class="filter-field"><span class="field-label">Rentang grafik</span><span class="control-wrap"><select id="range"><option>Bulanan</option><option>Harian</option><option>Mingguan</option><option>Tahunan</option></select><svg class="icon control-icon"><use href="#i-down"/></svg></span></label>
+    <button class="filter-button" type="submit"><svg class="icon"><use href="#i-filter"/></svg>Terapkan</button>
+    <button class="icon-button filter-reset" id="filterReset" type="button" title="Reset filter" aria-label="Reset filter"><svg class="icon"><use href="#i-refresh"/></svg></button>
+  </form>
+
+  <section class="summary-banner" aria-labelledby="summaryTitle">
+    <div class="summary-label"><h2 id="summaryTitle">Ringkasan Kinerja Toko</h2><p id="summaryPeriod">Periode 10 – 11 Jan 2026 · Toko Demo Pusat</p></div>
+    <div class="summary-kpis">
+      <div class="summary-metric"><div class="metric-caption"><svg class="icon"><use href="#i-coins"/></svg>Penjualan</div><strong>Rp307.886</strong><div class="summary-change"><span class="delta">▲ +10,8%</span>vs. 2 hari sebelumnya</div></div>
+      <div class="summary-metric"><div class="metric-caption"><svg class="icon"><use href="#i-chart"/></svg>Penghasilan (Margin)</div><strong>Rp47.886</strong><div class="summary-change"><span class="delta">▲ +12,4%</span>vs. 2 hari sebelumnya</div></div>
+      <div class="summary-metric"><div class="metric-caption"><svg class="icon"><use href="#i-percent"/></svg>Margin</div><strong>15,0%</strong><div class="summary-change"><span class="delta">▲ +0,2 pp</span>vs. 2 hari sebelumnya</div></div>
+      <div class="summary-metric"><div class="metric-caption"><svg class="icon"><use href="#i-bag"/></svg>Transaksi</div><strong>6</strong><div class="summary-change"><span class="delta">▲ +20,0%</span>vs. 2 hari sebelumnya</div></div>
+    </div>
+    <!-- SLOT GAMBAR TOKO SENGAJA KOSONG. Isi nanti di CSS selector .store-art-slot -->
+    <div class="store-art-slot" id="storeArtSlot" aria-label="Area kosong untuk gambar toko"></div>
+  </section>
+
+  <main class="dashboard-grid">
+  <div class="report-row top-row">
+    <section class="panel top-panel sales-panel" aria-labelledby="salesTitle">
+      <div class="panel-heading"><h2 id="salesTitle">Penjualan &amp; Penghasilan</h2><div class="panel-heading-actions"><span class="live-scope">LIVE SCOPE</span><a class="detail-link" href="#" data-section="Penjualan &amp; Penghasilan" title="Buka detail Penjualan &amp; Penghasilan">Lihat Detail</a></div></div>
+      <div class="stat-row three">
+        <div class="stat"><div class="stat-label">Penjualan</div><div class="stat-value">Rp307.886</div><span class="delta">▲ +10,8%</span></div>
+        <div class="stat"><div class="stat-label">Penghasilan (Margin)</div><div class="stat-value">Rp47.886</div><span class="delta">▲ +12,4%</span></div>
+        <div class="stat"><div class="stat-label">Rata-rata Tiket</div><div class="stat-value">Rp51.314</div><span class="delta">▲ +5,6%</span></div>
+      </div>
+      <svg class="sales-chart" viewBox="0 0 462 155" role="img" aria-label="Grafik contoh penjualan dan penghasilan 5 hingga 11 Januari">
+        <defs><linearGradient id="saleFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0ac748" stop-opacity=".30"/><stop offset="1" stop-color="#8cebb2" stop-opacity=".05"/></linearGradient><linearGradient id="barFill" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#8ae9a0"/><stop offset="1" stop-color="#d7f9df"/></linearGradient></defs>
+        <g class="chart-gridline"><line x1="37" y1="12" x2="459" y2="12"/><line x1="37" y1="36" x2="459" y2="36"/><line x1="37" y1="60" x2="459" y2="60"/><line x1="37" y1="84" x2="459" y2="84"/><line x1="37" y1="108" x2="459" y2="108"/><line x1="37" y1="132" x2="459" y2="132"/></g>
+        <g class="chart-axis" text-anchor="end"><text x="31" y="15">250K</text><text x="31" y="39">200K</text><text x="31" y="63">150K</text><text x="31" y="87">100K</text><text x="31" y="111">50K</text><text x="31" y="135">0</text></g>
+        <line x1="37" y1="12" x2="37" y2="132" stroke="#e5eaf0"/>
+        <g fill="url(#barFill)"><rect x="58" y="95" width="32" height="37" rx="2"/><rect x="117" y="75" width="32" height="57" rx="2"/><rect x="176" y="85" width="32" height="47" rx="2"/><rect x="235" y="68" width="32" height="64" rx="2"/><rect x="294" y="72" width="32" height="60" rx="2"/><rect x="353" y="48" width="32" height="84" rx="2"/></g>
+        <rect x="412" y="31" width="35" height="101" fill="#0bc747" rx="2"/>
+        <path d="M74 94 L133 75 L192 84 L251 70 L310 74 L369 50 L428 30 L428 132 L74 132Z" fill="url(#saleFill)" opacity=".40"/>
+        <path d="M74 94 L133 75 L192 84 L251 70 L310 74 L369 50 L428 30" fill="none" stroke="#02ab3b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <g fill="#fff" stroke="#02ae3a" stroke-width="2.5"><circle cx="74" cy="94" r="3.4"/><circle cx="133" cy="75" r="3.4"/><circle cx="192" cy="84" r="3.4"/><circle cx="251" cy="70" r="3.4"/><circle cx="310" cy="74" r="3.4"/><circle cx="369" cy="50" r="3.4"/><circle cx="428" cy="30" r="3.4"/></g>
+        <g class="chart-axis" text-anchor="middle"><text x="74" y="149">05 Jan</text><text x="133" y="149">06 Jan</text><text x="192" y="149">07 Jan</text><text x="251" y="149">08 Jan</text><text x="310" y="149">09 Jan</text><text x="369" y="149">10 Jan</text><text x="428" y="149">11 Jan</text></g>
+      </svg>
+      <div class="chart-legend"><span><span class="legend-bar"></span>Penjualan</span><span><span class="legend-line"></span>Penghasilan</span></div>
+    </section>
+
+    <section class="panel top-panel profit-panel" aria-labelledby="profitTitle">
+      <div class="panel-heading"><h2 id="profitTitle">Profitabilitas &amp; Margin</h2><div class="panel-heading-actions"><a class="detail-link" href="#" data-section="Profitabilitas &amp; Margin" title="Buka detail Profitabilitas &amp; Margin">Lihat Detail</a></div></div>
+      <div class="stat-row two">
+        <div class="stat"><div class="stat-label">Margin</div><div class="stat-value">Rp47.886</div><span class="delta">▲ +12,4%</span></div>
+        <div class="stat"><div class="stat-label">Margin (%)</div><div class="stat-value">15,0%</div><span class="delta">▲ +0,2 pp</span></div>
+      </div>
+      <div class="profit-body">
+        <div class="profit-ring" role="img" aria-label="Diagram lingkaran margin 15 persen"><div class="ring-hole"><strong>15,0%</strong><small>Margin</small></div></div>
+        <div class="profit-legend">
+          <div class="legend-row"><i class="legend-dot"></i><span>HPP</span><b>Rp190.000</b><span>61,7%</span></div>
+          <div class="legend-row"><i class="legend-dot light"></i><span>Margin</span><b>Rp47.886</b><span>15,0%</span></div>
+          <div class="legend-row"><i class="legend-dot lighter"></i><span>Biaya Lain</span><b>Rp70.000</b><span>22,7%</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel top-panel cash-panel" aria-labelledby="cashTitle">
+      <div class="panel-heading"><h2 id="cashTitle">Shift &amp; Selisih Kas</h2><div class="panel-heading-actions"><a class="detail-link" href="#" data-section="Shift &amp; Selisih Kas" title="Buka detail Shift &amp; Selisih Kas">Lihat Detail</a></div></div>
+      <div class="stat-row three">
+        <div class="stat"><div class="stat-label">Transaksi</div><div class="stat-value">6</div><span class="delta">▲ +50,0%</span></div>
+        <div class="stat"><div class="stat-label">Selisih Kas</div><div class="stat-value">Rp0</div><span class="delta green-check">✓ Sesuai</span></div>
+        <div class="stat"><div class="stat-label">Shift</div><div class="stat-value">2</div><span class="delta green-check">✓ Normal</span></div>
+      </div>
+      <table aria-label="Ringkasan kas per shift"><thead><tr><th>Tanggal</th><th>Kasir</th><th class="number">Transaksi</th><th class="number">Pendapatan</th></tr></thead><tbody><tr><td>10 Jan 2026</td><td>Kasir Toko</td><td class="number">1</td><td class="number">Rp48.000</td></tr><tr><td>11 Jan 2026</td><td>Kasir Toko</td><td class="number">3</td><td class="number">Rp177.887</td></tr></tbody></table>
+    </section>
+
+  </div>
+  <div class="report-row second-row">
+    <section class="panel second-panel stock-panel" aria-labelledby="stockTitle">
+      <div class="panel-heading"><h2 id="stockTitle">Stok &amp; Restock</h2><div class="panel-heading-actions"><a class="detail-link" href="#" data-section="Stok &amp; Restock" title="Buka detail Stok &amp; Restock">Lihat Detail</a></div></div>
+      <div class="stat-row three">
+        <div class="stat"><div class="stat-label">Total Produk</div><div class="stat-value">11</div></div>
+        <div class="stat"><div class="stat-label">Stok Tersedia</div><div class="stat-value">340</div></div>
+        <div class="stat"><div class="stat-label">Nilai Stok</div><div class="stat-value">Rp4.897.283</div></div>
+      </div>
+      <div class="stock-progress-wrap">
+        <div class="stock-progress"><div class="progress-label">Stok Kritis<strong>5</strong></div><div class="progress-track"><div class="progress-fill"></div></div><div class="progress-meta"><strong>45%</strong>dari total produk</div></div>
+        <div class="stock-progress"><div class="progress-label">Perlu Restock<strong>3</strong></div><div class="progress-track"><div class="progress-fill restocks"></div></div><div class="progress-meta"><strong>27%</strong>dari total produk</div></div>
+      </div>
+      <table aria-label="Contoh produk stok kritis"><thead><tr><th>SKU</th><th>Produk</th><th>Stok</th><th>Status</th></tr></thead><tbody><tr><td>PLS-BSK-008</td><td class="name-col">Baskom Plastik Cuci 40cm</td><td>3</td><td><span class="status-pill">Stok Kritis</span></td></tr><tr><td>PLS-EMB-009</td><td class="name-col">Ember Plastik Tutup 20 L</td><td>1</td><td><span class="status-pill">Stok Kritis</span></td></tr></tbody></table>
+    </section>
+
+    <section class="panel second-panel returns-panel" aria-labelledby="returnsTitle">
+      <div class="panel-heading"><h2 id="returnsTitle">Retur, Darurat &amp; Loss</h2><div class="panel-heading-actions"><a class="detail-link" href="#" data-section="Retur, Darurat &amp; Loss" title="Buka detail Retur, Darurat &amp; Loss">Lihat Detail</a></div></div>
+      <div class="stat-row three">
+        <div class="stat"><div class="stat-label">Total Retur</div><div class="stat-value">2</div><span class="delta">▲ +100,0%</span></div>
+        <div class="stat"><div class="stat-label">Nilai Retur</div><div class="stat-value">Rp54.000</div><span class="delta red">▲ +100,0%</span></div>
+        <div class="stat"><div class="stat-label">Loss / Darurat</div><div class="stat-value">Rp0</div><span class="delta green-check">✓ Tidak ada</span></div>
+      </div>
+      <table aria-label="Ringkasan retur"><thead><tr><th>Tanggal</th><th>Jenis</th><th class="number">Transaksi</th><th class="number">Nilai</th></tr></thead><tbody><tr><td>10 Jan 2026</td><td>Retur</td><td class="number">1</td><td class="number">Rp22.000</td></tr><tr><td>11 Jan 2026</td><td>Retur</td><td class="number">1</td><td class="number">Rp32.000</td></tr></tbody></table>
+    </section>
+
+    <section class="panel second-panel receivables-panel" aria-labelledby="receivablesTitle">
+      <div class="panel-heading"><h2 id="receivablesTitle">Piutang Retail</h2><div class="panel-heading-actions"><a class="detail-link" href="#" data-section="Piutang Retail" title="Buka detail Piutang Retail">Lihat Detail</a></div></div>
+      <div class="stat-row three">
+        <div class="stat"><div class="stat-label">Outstanding</div><div class="stat-value">Rp54.000</div></div>
+        <div class="stat"><div class="stat-label">Overdue</div><div class="stat-value">Rp54.000</div></div>
+        <div class="stat"><div class="stat-label">Akun Piutang</div><div class="stat-value">2</div></div>
+      </div>
+      <h3>Piutang per Customer</h3>
+      <table aria-label="Piutang pelanggan"><thead><tr><th>No. Piutang</th><th>Customer</th><th>Jatuh Tempo</th><th class="number">Sisa Piutang</th></tr></thead><tbody><tr><td>AR/TKO-DEMO/00002</td><td>Kedai awal</td><td>31 Jan 2026</td><td class="number">Rp22.000</td></tr><tr><td>AR/TKO-DEMO/00001</td><td>Kedai awal</td><td>31 Jan 2026</td><td class="number">Rp132.000</td></tr></tbody></table>
+    </section>
+
+  </div>
+    <section class="panel team-panel" aria-labelledby="teamTitle">
+      <div class="panel-heading"><h2 id="teamTitle">Tim Toko</h2><div class="panel-heading-actions"><a class="detail-link" href="#" data-section="Tim Toko" title="Buka detail Tim Toko">Lihat Detail</a></div></div>
+      <div class="team-body">
+        <div class="team-stats">
+          <div class="team-stat"><div class="team-stat-label"><svg class="icon"><use href="#i-users"/></svg>Total Tim</div><div class="team-stat-value">4</div></div>
+          <div class="team-stat"><div class="team-stat-label"><svg class="icon"><use href="#i-check"/></svg>Hadir</div><div class="team-stat-value">4 <small>(100%)</small></div></div>
+          <div class="team-stat"><div class="team-stat-label"><svg class="icon"><use href="#i-calendar"/></svg>Terlambat</div><div class="team-stat-value">0</div></div>
+          <div class="team-stat"><div class="team-stat-label"><svg class="icon"><use href="#i-close"/></svg>Izin</div><div class="team-stat-value">0</div></div>
+          <div class="team-stat"><div class="team-stat-label"><svg class="icon"><use href="#i-bed"/></svg>Sakit</div><div class="team-stat-value">0</div></div>
+        </div>
+        <div class="team-table-wrap">
+          <table class="team-table" aria-label="Daftar tim toko"><thead><tr><th>Nama Tim</th><th>Peran</th><th>Shift</th><th>Status</th><th class="number">Kinerja (Transaksi)</th></tr></thead><tbody>
+            <tr><td><span class="avatar">KT</span><strong>Kasir Toko</strong></td><td>Kasir</td><td>Pagi (08:00 – 16:00)</td><td><span class="presence">Hadir</span></td><td class="number">4</td></tr>
+            <tr><td><span class="avatar">KP</span><strong>Kepala Toko</strong></td><td>Supervisor</td><td>Pagi (08:00 – 16:00)</td><td><span class="presence">Hadir</span></td><td class="number">–</td></tr>
+            <tr><td><span class="avatar">SA</span><strong>Super Admin</strong></td><td>Admin</td><td>Pagi (08:00 – 16:00)</td><td><span class="presence">Hadir</span></td><td class="number">2</td></tr>
+            <tr><td><span class="avatar">ST</span><strong>Staf Toko</strong></td><td>Staf</td><td>Siang (13:00 – 21:00)</td><td><span class="presence">Hadir</span></td><td class="number">–</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
+  // Desain frontend mandiri. Data KPI/grafik/tabel adalah contoh statis yang dapat diganti hasil API.
+  const $ = (id) => document.getElementById(id);
+  const DEFAULTS={start:'10/01/2026',end:'11/01/2026',location:'Toko Demo Pusat',range:'Bulanan'};
+  const monthNames=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  let toastTimer;
+  function notify(message){
+    const toast=$('toast'); toast.textContent=message;toast.classList.add('visible');
+    clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('visible'),3900);
+  }
+  function parseIDDate(text){
+    const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text.trim());if(!m)return null;
+    const day=+m[1],month=+m[2],year=+m[3];
+    const d=new Date(year,month-1,day);
+    if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)return null;
+    return d;
+  }
+  function fullDate(d){return `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`}
+  function shortSpan(start,end){
+    if(start.getFullYear()===end.getFullYear()&&start.getMonth()===end.getMonth())
+      return `${start.getDate()} – ${end.getDate()} ${monthNames[end.getMonth()]} ${end.getFullYear()}`;
+    return `${fullDate(start)} – ${fullDate(end)}`;
+  }
+  function isoToID(iso){const a=iso.split('-');return `${a[2]}/${a[1]}/${a[0]}`}
+  document.querySelectorAll('.date-trigger').forEach(icon=>{
+    const open=()=>{const target=$(icon.dataset.target);if(target.showPicker){try{target.showPicker()}catch{target.focus()}}else target.focus()};
+    icon.addEventListener('click',open);
+    icon.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}});
+  });
+  [['startNative','startDate'],['endNative','endDate']].forEach(([native,text])=>{
+    $(native).addEventListener('change',()=>{if($(native).value)$(text).value=isoToID($(native).value)})
+  });
+  function applyFilters(){
+    const start=parseIDDate($('startDate').value),end=parseIDDate($('endDate').value);
+    if(!start||!end){notify('Format tanggal harus DD/MM/YYYY.');return false}
+    if(start>end){notify('Tanggal mulai tidak boleh melewati tanggal akhir.');return false}
+    $('topPeriod').textContent=`Periode: ${fullDate(start)} – ${fullDate(end)}`;
+    $('summaryPeriod').textContent=`Periode ${shortSpan(start,end)} · ${$('location').value}`;
+    // Jumlah/nilai tidak berubah karena belum ada backend yang memfilter dataset.
+    notify('Periode berhasil diubah. Nilai KPI masih memakai data demo statis.');
+    return true;
+  }
+  // Semua panel memiliki tautan Lihat Detail. Untuk mengaktifkan navigasi,
+  // ganti href="#" dengan URL asli (contoh Laravel: /laporan/penjualan).
+  document.querySelectorAll('.detail-link').forEach(link => {
+    link.addEventListener('click', event => {
+      if (link.getAttribute('href') !== '#') return; // tautan asli tetap bisa dinavigasi
+      event.preventDefault();
+      notify(`Halaman detail ${link.dataset.section} belum dihubungkan. Ubah href pada tombol Lihat Detail.`);
+    });
+  });
+  $('filters').addEventListener('submit',e=>{e.preventDefault();applyFilters()});
+  function resetFilters(){
+    $('startDate').value=DEFAULTS.start;$('endDate').value=DEFAULTS.end;
+    $('startNative').value='2026-01-10';$('endNative').value='2026-01-11';
+    $('location').value=DEFAULTS.location;$('range').value=DEFAULTS.range;
+    $('topPeriod').textContent='Periode: 10 Jan 2026 – 11 Jan 2026';
+    $('summaryPeriod').textContent='Periode 10 – 11 Jan 2026 · Toko Demo Pusat';
+    notify('Filter dikembalikan ke nilai awal.');
+  }
+  $('filterReset').addEventListener('click',resetFilters);
+  $('headerReset').addEventListener('click',resetFilters);
+  $('periodShortcut').addEventListener('click',()=>$('startDate').focus());
+  $('exportBtn').addEventListener('click',()=>{
+    const rows=[
+      ['Bagian','Indikator','Nilai'],
+      ['Penjualan','Penjualan','307886'],['Penjualan','Penghasilan (Margin)','47886'],['Penjualan','Rata-rata Tiket','51314'],
+      ['Penjualan','Transaksi','6'],['Profitabilitas','Margin (%)','15,0%'],['Kas','Selisih Kas','0'],
+      ['Stok','Total Produk','11'],['Stok','Stok Tersedia','340'],['Stok','Nilai Stok','4897283'],['Stok','Stok Kritis','5'],
+      ['Retur','Total Retur','2'],['Retur','Nilai Retur','54000'],['Piutang','Outstanding','54000'],
+      ['Piutang','Akun Piutang','2'],['Tim Toko','Total Tim','4'],['Tim Toko','Hadir','4']
+    ];
+    const csv='\ufeff'+rows.map(row=>row.map(cell=>'"'+String(cell).replaceAll('"','""')+'"').join(';')).join('\r\n');
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    const link=document.createElement('a');link.href=url;link.download='laporan_operasional_toko_demo.csv';link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    notify('Ringkasan DATA DEMO berhasil diekspor ke CSV.');
+  });
+</script>
+</body>
+</html>

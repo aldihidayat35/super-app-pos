@@ -17,7 +17,10 @@ class ReportExportController extends Controller
 {
     public function index(Request $request, ReportMetricService $reports): View
     {
-        abort_unless($request->user()->can('reports.export') || $request->user()->can('audit.export'), 403);
+        abort_unless($request->user()->canAny([
+            'reports.export', 'audit.export', 'reports.users.export', 'reports.warehouse.export',
+            'reports.retail.export', 'reports.owner.export', 'reports.system.export',
+        ]), 403);
 
         $query = ReportExport::query()
             ->with('requester')

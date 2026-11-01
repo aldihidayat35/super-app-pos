@@ -19,7 +19,9 @@
     $isVisible = fn (array $item): bool => !in_array($item['route'] ?? null, $hiddenRoutes, true)
         && $canOpen($item['permission'] ?? null)
         && $canAccess($item['access'] ?? null);
-    $menuItems = collect(config('navigation'))->filter(function (array $item) use ($isVisible): bool {
+    $navigationItems = collect(config('navigation'))
+        ->concat(app(\App\Services\Reports\ReportProfileService::class)->navigationFor($user));
+    $menuItems = $navigationItems->filter(function (array $item) use ($isVisible): bool {
         if (!$isVisible($item)) {
             return false;
         }
@@ -144,8 +146,12 @@
                             <div class="menu-sub menu-sub-accordion {{ $isOpen ? 'show' : '' }}">
                                 @foreach ($children as $child)
                                     <div class="menu-item">
-                                        <a class="menu-link {{ request()->routeIs(...$child['active']) ? 'active' : '' }}"
-                                            href="{{ route($child['route']) }}" title="{{ $child['label'] }}"
+                                        @php
+                                            $childActive = request()->routeIs(...$child['active'])
+                                                && (!isset($child['active_report']) || request()->route('report') === $child['active_report']);
+                                        @endphp
+                                        <a class="menu-link {{ $childActive ? 'active' : '' }}"
+                                            href="{{ route($child['route'], $child['route_params'] ?? []) }}" title="{{ $child['label'] }}"
                                             {{ $child['route'] === 'retail.pos.index' ? 'data-no-spa' : '' }}>
                                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                             <span class="menu-title">{{ $child['label'] }}</span>
@@ -156,7 +162,7 @@
                         </div>
                     @else
                         <div class="menu-item">
-                            <a class="menu-link {{ $isOpen ? 'active' : '' }}" href="{{ route($item['route']) }}" title="{{ $item['label'] }}">
+                            <a class="menu-link {{ $isOpen ? 'active' : '' }}" href="{{ route($item['route'], $item['route_params'] ?? []) }}" title="{{ $item['label'] }}">
                                 <span class="menu-icon">
                                     <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                                 </span>

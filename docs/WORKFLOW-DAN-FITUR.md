@@ -599,16 +599,14 @@ Berikut adalah daftar komprehensif seluruh modul dan fitur yang terdapat pada an
 
 | Menu / Halaman | Rute Web | Hak Akses (Permission) | Fungsi & Kegunaan |
 |---|---|---|---|
-| **Laporan Harian Owner** | `reports.daily.index` | `reports.view` | Laporan ringkasan harian komprehensif: penjualan, margin kotor, arus kas kasir, penerimaan barang, dan piutang baru dalam 1 halaman ringkas. |
-| **Laporan Gudang** | `reports.warehouse.index` | `stock.view` | Laporan mutasi barang, perputaran stok (*inventory turnover*), barang lambat laku (*slow moving / dead stock*), dan nilai aset persediaan. |
-| **Laporan Toko Internal** | `reports.retail.index` | `cash_shifts.view` | Laporan performa penjualan per kasir, jam sibuk transaksi (*peak hours*), dan histori selisih kas shift. |
-| **Laporan B2B** | `reports.b2b.index` | `b2b_orders.view` | Laporan penjualan wholesale B2B, tingkat pemenuhan pesanan (*order fulfillment rate*), dan pelanggan paling aktif. |
-| **Laporan Harga & Margin** | `reports.pricing.index` | `prices.view` | Analisis margin kotor per produk dan evaluasi efektivitas diskon promosi. |
-| **Laporan Supplier** | `reports.suppliers.index` | `suppliers.view` | Rekapitulasi pembelian per supplier dan skor evaluasi ketepatan pengiriman barang. |
-| **Laporan Kehadiran** | `reports.attendance.index` | `attendance.view` | Rekapitulasi presensi bulanan: total kehadiran, jumlah keterlambatan, cuti, sakit, dan lembur per karyawan. |
-| **Laporan Piutang** | `reports.receivables.index` | `receivables.view` | Laporan penagihan piutang dan analisa umur piutang (*aging report*). |
-| **Laporan Audit & Alert** | `reports.audit-notifications.index`| `audit.view` | Rekapitulasi log insiden keamanan dan notifikasi sistem yang terkirim. |
-| **Pusat Ekspor Dokumen** | `reports.exports.index` | `reports.export` | Mengunduh seluruh laporan data ke dalam format Excel (.xlsx), CSV, atau PDF untuk kebutuhan audit eksternal dan akuntansi. |
+| **Laporan Pengguna** | `reports.profiles.users.show` | `reports.users.view` + role `admin_user` | Aktivitas akun, login, distribusi role, permission, penempatan lokasi, dan audit perubahan pengguna. |
+| **Laporan Gudang {Lokasi}** | `reports.profiles.warehouse.show` | `reports.warehouse.view` + role `kepala_gudang` | Persediaan dan lapisan HPP, mutasi, penerimaan, supplier, transfer, opname, loss, dan tim pada gudang yang ditugaskan. |
+| **Laporan Toko {Lokasi}** | `reports.profiles.retail.show` | `reports.retail.view` + role `kepala_toko` | Penjualan, penghasilan, margin, shift kasir, stok, retur, pembelian darurat, piutang, dan tim pada toko yang ditugaskan. |
+| **Laporan Owner** | `reports.profiles.owner.show` | `reports.owner.view` + role owner | Ringkasan eksekutif, penghasilan, profitabilitas, persediaan, piutang, supplier, perbandingan lokasi, dan tenaga kerja. |
+| **Laporan Super Admin** | `reports.profiles.system.show` | `reports.system.view` + role `super_admin` | Audit, keamanan, kesehatan data, notifikasi, integrasi, anomali, approval, ekspor, serta gateway laporan bisnis. |
+| **Ekspor per laporan** | `reports.profiles.exports.store` | Permission export profil terkait | Membuat export antrean XLSX, PDF, atau CSV dengan snapshot profil, lokasi, periode, filter, dan requester. |
+
+Pusat laporan hanya tersedia bagi lima profil di atas. Permission modul seperti `stock.view`, `prices.view`, atau `cash_shifts.view` tidak dengan sendirinya memberikan akses ke pusat laporan. HPP dan margin tetap memerlukan `margins.view_sensitive`.
 
 ### Modul Portal Langganan B2B
 

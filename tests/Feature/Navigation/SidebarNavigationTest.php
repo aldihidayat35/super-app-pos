@@ -29,8 +29,8 @@ class SidebarNavigationTest extends TestCase
         $sidebar = $this->renderSidebar();
 
         $this->assertStringContainsString('Gudang &amp; Stok', $sidebar);
-        $this->assertStringContainsString('Permintaan Restok Cabang', $sidebar);
-        $this->assertStringContainsString('Penerimaan Transfer', $sidebar);
+        $this->assertStringContainsString('Transfer Antar Cabang', $sidebar);
+        $this->assertStringContainsString('Laporan Gudang', $sidebar);
         $this->assertStringNotContainsString('Toko Internal', $sidebar);
     }
 
@@ -42,10 +42,9 @@ class SidebarNavigationTest extends TestCase
         $sidebar = $this->renderSidebar();
 
         $this->assertStringContainsString('Toko Internal', $sidebar);
-        $this->assertStringContainsString('Permintaan Restok', $sidebar);
-        $this->assertStringContainsString('Terima Transfer', $sidebar);
-        $this->assertStringNotContainsString('Permintaan Restok Cabang', $sidebar);
-        $this->assertStringNotContainsString('Penerimaan Transfer', $sidebar);
+        $this->assertStringContainsString('Kasir POS', $sidebar);
+        $this->assertStringContainsString('Laporan Toko', $sidebar);
+        $this->assertStringNotContainsString('Laporan Gudang', $sidebar);
     }
 
     public function test_demo_head_store_and_cashier_accounts_see_internal_store_menu_after_location_seeding(): void

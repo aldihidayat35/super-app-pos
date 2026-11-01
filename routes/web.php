@@ -79,6 +79,8 @@ use App\Http\Controllers\Receivables\ReceivableController;
 use App\Http\Controllers\Reports\AttendanceReportController;
 use App\Http\Controllers\Reports\LossReportController;
 use App\Http\Controllers\Reports\OwnerDashboardController;
+use App\Http\Controllers\Reports\ProfileReportController;
+use App\Http\Controllers\Reports\ProfileReportExportController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Reports\ReportExportController;
 use App\Http\Controllers\Reports\RetailDashboardController;
@@ -1202,6 +1204,19 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     });
 
     Route::prefix('reports')->name('reports.')->group(function (): void {
+        Route::get('/users/{report?}', [ProfileReportController::class, 'show'])
+            ->defaults('report', 'overview')->defaults('profile', 'users')->name('profiles.users.show');
+        Route::get('/warehouse/{report}', [ProfileReportController::class, 'show'])
+            ->defaults('profile', 'warehouse')->name('profiles.warehouse.show');
+        Route::get('/retail/{report}', [ProfileReportController::class, 'show'])
+            ->defaults('profile', 'retail')->name('profiles.retail.show');
+        Route::get('/owner/{report?}', [ProfileReportController::class, 'show'])
+            ->defaults('report', 'overview')->defaults('profile', 'owner')->name('profiles.owner.show');
+        Route::get('/system/{report?}', [ProfileReportController::class, 'show'])
+            ->defaults('report', 'overview')->defaults('profile', 'system')->name('profiles.system.show');
+        Route::post('/{profile}/{report}/exports', [ProfileReportExportController::class, 'store'])
+            ->name('profiles.exports.store');
+
         Route::get('/daily', [ReportController::class, 'show'])
             ->defaults('type', 'daily')
             ->middleware('permission:reports.view')
@@ -1223,16 +1238,16 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:reports.view|prices.view')
             ->name('pricing.index');
         Route::get('/suppliers', SupplierPerformanceController::class)
-            ->middleware('permission:reports.view|suppliers.view')
+            ->middleware('permission:reports.warehouse.view|reports.owner.view|reports.system.view')
             ->name('suppliers.index');
         Route::get('/losses', LossReportController::class)
-            ->middleware('permission:reports.view|losses.view')
+            ->middleware('permission:reports.warehouse.view|reports.retail.view|reports.owner.view|reports.system.view')
             ->name('losses.index');
         Route::get('/attendance', [AttendanceReportController::class, 'attendance'])
-            ->middleware('permission:reports.view|attendance.view')
+            ->middleware('permission:reports.warehouse.view|reports.retail.view|reports.owner.view|reports.system.view')
             ->name('attendance.index');
         Route::get('/shift-productivity', [AttendanceReportController::class, 'productivity'])
-            ->middleware('permission:reports.view|attendance.view')
+            ->middleware('permission:reports.warehouse.view|reports.retail.view|reports.owner.view|reports.system.view')
             ->name('shift-productivity.index');
         Route::get('/receivables', [ReportController::class, 'show'])
             ->defaults('type', 'receivables')
@@ -1243,13 +1258,13 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:reports.view|audit.view')
             ->name('audit-notifications.index');
         Route::get('/exports', [ReportExportController::class, 'index'])
-            ->middleware('permission:reports.export|audit.export')
+            ->middleware('permission:reports.export|audit.export|reports.users.export|reports.warehouse.export|reports.retail.export|reports.owner.export|reports.system.export')
             ->name('exports.index');
         Route::post('/exports', [ReportExportController::class, 'store'])
-            ->middleware('permission:reports.export|audit.export')
+            ->middleware('permission:reports.export|audit.export|reports.owner.export|reports.system.export')
             ->name('exports.store');
         Route::get('/exports/{export}/download', [ReportExportController::class, 'download'])
-            ->middleware('permission:reports.export|audit.export')
+            ->middleware('permission:reports.export|audit.export|reports.users.export|reports.warehouse.export|reports.retail.export|reports.owner.export|reports.system.export')
             ->name('exports.download');
     });
 

@@ -12,7 +12,7 @@ class ReportController extends Controller
 {
     public function show(ReportFilterRequest $request, ReportMetricService $reports, string $type): View
     {
-        abort_unless($request->user()->can('reports.view') || $this->canViewSpecialReport($request->user(), $type), 403);
+        abort_unless($this->canViewSpecialReport($request->user(), $type), 403);
 
         $input = $request->validated();
         if ($type === 'daily') {
@@ -43,14 +43,16 @@ class ReportController extends Controller
 
     private function canViewSpecialReport(mixed $user, string $type): bool
     {
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
         return match ($type) {
-            'warehouse' => $user->can('stock.view'),
-            'retail' => $user->can('cash_shifts.view') || $user->can('pos.view'),
-            'pricing' => $user->can('prices.view'),
-            'suppliers' => $user->can('suppliers.view'),
-            'attendance' => $user->can('attendance.view'),
-            'receivables' => $user->can('receivables.view'),
-            'audit_notifications' => $user->can('audit.view'),
+            'daily', 'b2b' => $user->hasAnyRole(['owner_viewer', 'owner_approver']),
+            'warehouse', 'suppliers' => $user->hasAnyRole(['kepala_gudang', 'owner_viewer', 'owner_approver']),
+            'retail' => $user->hasAnyRole(['kepala_toko', 'owner_viewer', 'owner_approver']),
+            'pricing', 'attendance', 'receivables' => $user->hasAnyRole(['kepala_gudang', 'kepala_toko', 'owner_viewer', 'owner_approver']),
+            'audit_notifications' => false,
             default => false,
         };
     }

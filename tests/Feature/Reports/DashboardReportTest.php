@@ -88,7 +88,7 @@ class DashboardReportTest extends TestCase
         $this->actingAs($this->owner)->get(route('reports.b2b.index'))->assertOk()->assertSee('Laporan Langganan/B2B');
         $this->actingAs($this->owner)->get(route('reports.pricing.index'))->assertOk()->assertSee('Laporan Harga dan Margin');
         $this->actingAs($this->owner)->get(route('reports.receivables.index'))->assertOk()->assertSee('Laporan Piutang');
-        $this->actingAs($this->owner)->get(route('reports.audit-notifications.index'))->assertOk()->assertSee('Laporan Audit dan Notifikasi');
+        $this->actingAs($this->owner)->get(route('reports.audit-notifications.index'))->assertForbidden();
         $this->actingAs($this->owner)->get(route('reports.exports.index'))->assertOk()->assertSee('Pusat Export');
     }
 
@@ -145,8 +145,7 @@ class DashboardReportTest extends TestCase
             ->assertSee('Rp43.210');
 
         $this->actingAs($this->cashier)->get(route('reports.pricing.index'))
-            ->assertOk()
-            ->assertSee('Akses terbatas')
+            ->assertForbidden()
             ->assertDontSee('Rp43.210');
     }
 

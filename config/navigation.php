@@ -277,18 +277,6 @@ return [
                 'active' => ['purchasing.purchase-orders.*'],
                 'permission' => 'purchase_orders.view',
             ],
-            [
-                'label' => 'Performa Supplier',
-                'route' => 'reports.suppliers.index',
-                'active' => ['reports.suppliers.*'],
-                'permission' => 'reports.view',
-            ],
-            [
-                'label' => 'Laporan Loss',
-                'route' => 'reports.losses.index',
-                'active' => ['reports.losses.*'],
-                'permission' => 'losses.view',
-            ],
         ],
     ],
     [
@@ -538,72 +526,6 @@ return [
         'route' => 'tax.index',
         'active' => ['tax.*'],
         'permission' => 'finance_annual.view',
-    ],
-    [
-        'label' => 'Laporan',
-        'icon' => 'ki-outline ki-chart-pie-4',
-        'children' => [
-            [
-                'label' => 'Harian Owner',
-                'route' => 'reports.daily.index',
-                'active' => ['reports.daily.*'],
-                'permission' => 'reports.view',
-            ],
-            [
-                'label' => 'Gudang',
-                'route' => 'reports.warehouse.index',
-                'active' => ['reports.warehouse.*'],
-                'permission' => 'stock.view',
-            ],
-            [
-                'label' => 'Toko',
-                'route' => 'reports.retail.index',
-                'active' => ['reports.retail.*'],
-                'permission' => 'cash_shifts.view',
-            ],
-            [
-                'label' => 'Langganan/B2B',
-                'route' => 'reports.b2b.index',
-                'active' => ['reports.b2b.*'],
-                'permission' => 'b2b_orders.view',
-            ],
-            [
-                'label' => 'Harga & Margin',
-                'route' => 'reports.pricing.index',
-                'active' => ['reports.pricing.*'],
-                'permission' => 'prices.view',
-            ],
-            [
-                'label' => 'Supplier',
-                'route' => 'reports.suppliers.index',
-                'active' => ['reports.suppliers.*'],
-                'permission' => 'suppliers.view',
-            ],
-            [
-                'label' => 'Kehadiran',
-                'route' => 'reports.attendance.index',
-                'active' => ['reports.attendance.*'],
-                'permission' => 'attendance.view',
-            ],
-            [
-                'label' => 'Piutang',
-                'route' => 'reports.receivables.index',
-                'active' => ['reports.receivables.*'],
-                'permission' => 'receivables.view',
-            ],
-            [
-                'label' => 'Audit & Notifikasi',
-                'route' => 'reports.audit-notifications.index',
-                'active' => ['reports.audit-notifications.*'],
-                'permission' => 'audit.view',
-            ],
-            [
-                'label' => 'Pusat Export',
-                'route' => 'reports.exports.index',
-                'active' => ['reports.exports.*'],
-                'permission' => 'reports.export',
-            ],
-        ],
     ],
     [
         'label' => 'Portal Langganan',

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\WorkLocation;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -49,6 +50,7 @@ class NavigationTest extends TestCase
     public function deferred_features_are_hidden_from_navigation_but_core_modules_remain_visible(): void
     {
         $this->seed(RolePermissionSeeder::class);
+        WorkLocation::factory()->create(['type' => 'branch']);
         $user = User::factory()->create();
         $user->assignRole(Role::findOrCreate('super_admin'));
 

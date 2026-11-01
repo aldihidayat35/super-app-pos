@@ -660,18 +660,46 @@ class ReportMetricService
      */
     private function supplierReport(array $filters): array
     {
+        $poQuery = DB::table('purchase_orders')
+            ->whereBetween('order_date', [$filters['start'], $filters['end']])
+            ->whereNot('status', PurchaseOrderStatus::CANCELLED->value);
+
+        $grQuery = DB::table('goods_receipts')
+            ->where('status', GoodsReceiptStatus::POSTED->value)
+            ->whereBetween('posted_at', [$filters['start'], $filters['end']]);
+
+        if (! empty($filters['location_ids'])) {
+            $poQuery->where(function ($q) use ($filters) {
+                $q->whereIn('destination_work_location_id', $filters['location_ids'])
+                    ->orWhereNull('destination_work_location_id');
+            });
+            $grQuery->where(function ($q) use ($filters) {
+                $q->whereIn('destination_work_location_id', $filters['location_ids'])
+                    ->orWhereNull('destination_work_location_id');
+            });
+        }
+
+        $rowsQuery = DB::table('purchase_orders')
+            ->leftJoin('suppliers', 'suppliers.id', '=', 'purchase_orders.supplier_id')
+            ->whereBetween('purchase_orders.order_date', [$filters['start'], $filters['end']])
+            ->whereNot('purchase_orders.status', PurchaseOrderStatus::CANCELLED->value);
+
+        if (! empty($filters['location_ids'])) {
+            $rowsQuery->where(function ($q) use ($filters) {
+                $q->whereIn('purchase_orders.destination_work_location_id', $filters['location_ids'])
+                    ->orWhereNull('purchase_orders.destination_work_location_id');
+            });
+        }
+
         return [
             'summary' => [
-                'purchase_value' => $this->money(DB::table('purchase_orders')->whereBetween('order_date', [$filters['start_date'], $filters['end_date']])->whereNot('status', PurchaseOrderStatus::CANCELLED->value)->sum('grand_total')),
-                'posted_receipts' => DB::table('goods_receipts')->where('status', GoodsReceiptStatus::POSTED->value)->whereBetween('posted_at', [$filters['start'], $filters['end']])->count(),
+                'purchase_value' => $this->money($poQuery->sum('grand_total')),
+                'posted_receipts' => $grQuery->count(),
                 'avg_supplier_score' => Decimal::normalize((string) (DB::table('supplier_scores')->avg('total_score') ?? 0), 2),
             ],
-            'rows' => DB::table('purchase_orders')
-                ->leftJoin('suppliers', 'suppliers.id', '=', 'purchase_orders.supplier_id')
-                ->whereBetween('purchase_orders.order_date', [$filters['start_date'], $filters['end_date']])
-                ->whereNot('purchase_orders.status', PurchaseOrderStatus::CANCELLED->value)
-                ->selectRaw('suppliers.business_name as supplier, COUNT(*) as po_count, COALESCE(SUM(purchase_orders.grand_total),0) as purchase_value, MAX(purchase_orders.order_date) as last_order_date')
-                ->groupBy('suppliers.business_name')
+            'rows' => $rowsQuery
+                ->selectRaw("COALESCE(suppliers.name, 'Tanpa Supplier') as supplier, COUNT(*) as po_count, COALESCE(SUM(purchase_orders.grand_total),0) as purchase_value, MAX(purchase_orders.order_date) as last_order_date")
+                ->groupBy('suppliers.id', 'suppliers.name')
                 ->orderByDesc('purchase_value')
                 ->get()
                 ->map(fn ($row): array => (array) $row)

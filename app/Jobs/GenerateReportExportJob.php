@@ -6,6 +6,7 @@ use App\Enums\ReportExportStatus;
 use App\Exports\ArrayReportExport;
 use App\Models\ReportExport;
 use App\Services\Control\AuditLogService;
+use App\Services\Reports\ProfileReportDataService;
 use App\Services\Reports\ReportMetricService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -20,7 +21,7 @@ class GenerateReportExportJob implements ShouldQueue
 
     public function __construct(public readonly int $reportExportId) {}
 
-    public function handle(ReportMetricService $reports, AuditLogService $audit): void
+    public function handle(ReportMetricService $reports, ProfileReportDataService $profileReports, AuditLogService $audit): void
     {
         $export = ReportExport::query()->with('requester')->findOrFail($this->reportExportId);
 
@@ -36,8 +37,13 @@ class GenerateReportExportJob implements ShouldQueue
                 throw new \RuntimeException('Requester export tidak ditemukan.');
             }
 
-            $filters = $reports->filters($user, $export->filters ?? []);
-            $payload = $reports->report($export->report_type, $user, $filters);
+            if (str_starts_with($export->report_type, 'profile.')) {
+                [, $profile, $report] = array_pad(explode('.', $export->report_type, 3), 3, '');
+                $payload = $profileReports->build($user, $profile, $report, $export->filters ?? [])['payload'];
+            } else {
+                $filters = $reports->filters($user, $export->filters ?? []);
+                $payload = $reports->report($export->report_type, $user, $filters);
+            }
             $rows = $payload['rows'];
             $headings = $this->headings($rows);
             $directory = 'report-exports/'.now()->format('Y/m');

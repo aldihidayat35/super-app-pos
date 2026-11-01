@@ -26,6 +26,7 @@ class ReportExportService
                 'work_location_id' => $filters['work_location_id'] ?? null,
                 'channel' => $filters['channel'] ?? null,
                 'status' => $filters['status'] ?? null,
+                'range' => $filters['range'] ?? null,
                 'product_id' => $filters['product_id'] ?? null,
                 'category_id' => $filters['category_id'] ?? null,
                 'supplier_id' => $filters['supplier_id'] ?? null,

@@ -9,7 +9,7 @@ class StoreReportExportRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('reports.export') || $this->user()?->can('audit.export');
+        return $this->user()?->canAny(['reports.export', 'audit.export', 'reports.owner.export', 'reports.system.export']) ?? false;
     }
 
     /** @return array<string, mixed> */
