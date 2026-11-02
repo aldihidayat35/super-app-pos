@@ -12,6 +12,7 @@ class ProfileReportDataService
         private readonly UserReportService $users,
         private readonly RetailOperationalReportService $retailOperational,
         private readonly WarehouseOperationalReportService $warehouseOperational,
+        private readonly OwnerOperationalReportService $ownerOperational,
     ) {}
 
     /**
@@ -51,6 +52,10 @@ class ProfileReportDataService
 
         if ($profile === 'warehouse' && $report === 'overview') {
             $payload = $this->warehouseOperational->build($filters, $payload, $actor->can('margins.view_sensitive'));
+        }
+
+        if ($profile === 'owner' && $report === 'overview') {
+            $payload = $this->ownerOperational->build($filters, $payload, $actor->can('margins.view_sensitive'));
         }
 
         return [

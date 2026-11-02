@@ -19,9 +19,8 @@
     $isVisible = fn (array $item): bool => !in_array($item['route'] ?? null, $hiddenRoutes, true)
         && $canOpen($item['permission'] ?? null)
         && $canAccess($item['access'] ?? null);
-    $navigationItems = collect(config('navigation'))
-        ->concat(app(\App\Services\Reports\ReportProfileService::class)->navigationFor($user));
-    $menuItems = $navigationItems->filter(function (array $item) use ($isVisible): bool {
+
+    $regularMenuItems = collect(config('navigation'))->filter(function (array $item) use ($isVisible): bool {
         if (!$isVisible($item)) {
             return false;
         }
@@ -30,6 +29,9 @@
         }
         return collect($item['children'])->contains($isVisible);
     });
+
+    $reportMenuItems = collect(app(\App\Services\Reports\ReportProfileService::class)->navigationFor($user))
+        ->filter($isVisible);
 
     // Get work location and role info
     $displayName = $user?->name ?? 'Pengguna';
@@ -119,7 +121,7 @@
                     </div>
                 </div>
 
-                @forelse ($menuItems as $item)
+                @forelse ($regularMenuItems as $item)
                     @php
                         $children = collect($item['children'] ?? [])->filter($isVisible);
                         $isOpen =
@@ -171,10 +173,45 @@
                         </div>
                     @endif
                 @empty
-                    <div class="menu-item">
-                        <div class="menu-content text-muted fs-7">Tidak ada menu yang dapat diakses.</div>
-                    </div>
+                    @if ($reportMenuItems->isEmpty())
+                        <div class="menu-item">
+                            <div class="menu-content text-muted fs-7">Tidak ada menu yang dapat diakses.</div>
+                        </div>
+                    @endif
                 @endforelse
+
+                {{-- Bagian Paling Bawah: Pusat Laporan Berbasis Peran dengan Warna Kontras --}}
+                @if ($reportMenuItems->isNotEmpty())
+                    <div class="sidebar-report-section mt-4 pt-1">
+                        <div class="separator separator-dashed mb-2 opacity-75 sidebar-report-separator"></div>
+                        <div class="menu-item pt-1 pb-1 sidebar-menu-header sidebar-report-header">
+                            <div class="menu-content px-2">
+                                <span class="menu-heading fw-bold text-uppercase fs-8 text-primary">Pusat Laporan</span>
+                            </div>
+                        </div>
+
+                        @foreach ($reportMenuItems as $item)
+                            @php
+                                $isOpen = collect($item['active'] ?? [])->contains(
+                                    fn(string $pattern): bool => request()->routeIs($pattern),
+                                );
+                                $tone = $item['tone'] ?? 'default';
+                            @endphp
+
+                            <div class="menu-item sidebar-report-item sidebar-report-tone-{{ $tone }} mb-1">
+                                <a class="menu-link sidebar-report-link {{ $isOpen ? 'active' : '' }}"
+                                    href="{{ route($item['route'], $item['route_params'] ?? []) }}"
+                                    title="{{ $item['label'] }}">
+                                    <span class="menu-icon sidebar-report-icon">
+                                        <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="menu-title sidebar-report-title">{{ $item['label'] }}</span>
+                                    <span class="sidebar-report-pill">Laporan</span>
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
     </div>

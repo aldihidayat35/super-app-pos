@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\ProductCategoryController;
 use App\Http\Controllers\Admin\ProductCategoryImportController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImportController;
+use App\Http\Controllers\Admin\ProductQuickSetupController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\StockAdjustmentAccessController;
 use App\Http\Controllers\Admin\SupplierController;
@@ -669,6 +670,15 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/products/import/commit', [ProductImportController::class, 'commit'])
             ->middleware('permission:products.import')
             ->name('products.import.commit');
+        Route::get('/products/quick-setup', [ProductQuickSetupController::class, 'index'])
+            ->middleware('permission:products.view')
+            ->name('products.quick-setup.index');
+        Route::post('/products/quick-setup/row', [ProductQuickSetupController::class, 'saveRow'])
+            ->middleware('permission:products.update|products.create|retail.catalog.manage')
+            ->name('products.quick-setup.save-row');
+        Route::post('/products/quick-setup/batch', [ProductQuickSetupController::class, 'batchSave'])
+            ->middleware('permission:products.update|products.create|retail.catalog.manage')
+            ->name('products.quick-setup.batch-save');
         Route::resource('products', ProductController::class)
             ->except(['destroy'])
             ->middlewareFor(['index', 'show'], 'permission:products.view')

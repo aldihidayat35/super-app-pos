@@ -153,6 +153,12 @@ return [
                 'active' => ['admin.products.import.*'],
                 'permission' => 'products.import',
             ],
+            [
+                'label' => 'Setup Operasional Cepat',
+                'route' => 'admin.products.quick-setup.index',
+                'active' => ['admin.products.quick-setup.*'],
+                'permission' => 'products.view',
+            ],
         ],
     ],
     [

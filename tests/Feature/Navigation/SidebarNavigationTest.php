@@ -62,6 +62,26 @@ class SidebarNavigationTest extends TestCase
         }
     }
 
+    public function test_report_center_menu_is_positioned_at_the_bottom_with_distinct_contrast_styling(): void
+    {
+        $user = $this->userAtLocation('kepala_toko', 'branch');
+
+        $this->actingAs($user);
+        $sidebar = $this->renderSidebar();
+
+        $this->assertStringContainsString('sidebar-report-section', $sidebar);
+        $this->assertStringContainsString('sidebar-report-tone-retail', $sidebar);
+        $this->assertStringContainsString('sidebar-report-link', $sidebar);
+        $this->assertStringContainsString('sidebar-report-pill', $sidebar);
+
+        $reportPos = strpos($sidebar, 'sidebar-report-section');
+        $guidePos = strpos($sidebar, 'Dokumentasi Panduan');
+
+        $this->assertNotFalse($reportPos);
+        $this->assertNotFalse($guidePos);
+        $this->assertGreaterThan($guidePos, $reportPos, 'Menu Laporan harus berada di posisi paling bawah setelah menu lainnya');
+    }
+
     private function userAtLocation(string $role, string $locationType): User
     {
         $user = User::factory()->create();

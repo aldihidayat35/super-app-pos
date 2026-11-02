@@ -1,0 +1,323 @@
+<?php
+
+namespace Tests\Feature\Admin;
+
+use App\Models\Branch;
+use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\Stock;
+use App\Models\StockBatch;
+use App\Models\Unit;
+use App\Models\User;
+use App\Models\Warehouse;
+use App\Models\WorkLocation;
+use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
+class ProductQuickSetupTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private User $kepalaGudang;
+
+    private User $kepalaToko;
+
+    private User $unauthorizedUser;
+
+    private WorkLocation $gudang;
+
+    private WorkLocation $toko;
+
+    private Unit $pcs;
+
+    private Unit $lsn;
+
+    private ProductCategory $category;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolePermissionSeeder::class);
+
+        $this->gudang = WorkLocation::factory()->create([
+            'name' => 'Gudang Pusat',
+            'type' => 'warehouse',
+            'is_active' => true,
+        ]);
+        Warehouse::factory()->create([
+            'work_location_id' => $this->gudang->id,
+            'name' => 'Gudang Pusat Fisik',
+            'is_active' => true,
+        ]);
+
+        $this->toko = WorkLocation::factory()->create([
+            'name' => 'Toko Cabang 1',
+            'type' => 'branch',
+            'is_active' => true,
+        ]);
+        Branch::factory()->create([
+            'work_location_id' => $this->toko->id,
+            'name' => 'Toko Cabang 1 Fisik',
+            'is_active' => true,
+        ]);
+
+        $this->pcs = Unit::factory()->create(['code' => 'PCS', 'name' => 'Pieces', 'symbol' => 'pcs', 'is_active' => true]);
+        $this->lsn = Unit::factory()->create(['code' => 'LSN', 'name' => 'Lusin', 'symbol' => 'lsn', 'is_active' => true]);
+
+        $this->category = ProductCategory::factory()->create(['name' => 'Makanan Ringan', 'is_active' => true]);
+
+        // Kepala Gudang
+        $this->kepalaGudang = User::factory()->create(['is_active' => true]);
+        $this->kepalaGudang->assignRole(Role::findOrCreate('kepala_gudang'));
+        $this->kepalaGudang->workLocations()->attach($this->gudang->id, ['is_default' => true]);
+
+        // Kepala Toko
+        $this->kepalaToko = User::factory()->create(['is_active' => true]);
+        $this->kepalaToko->assignRole(Role::findOrCreate('kepala_toko'));
+        $this->kepalaToko->workLocations()->attach($this->toko->id, ['is_default' => true]);
+
+        // Unauthorized user
+        $this->unauthorizedUser = User::factory()->create(['is_active' => true]);
+    }
+
+    public function test_guest_is_redirected_to_login(): void
+    {
+        $this->get(route('admin.products.quick-setup.index'))->assertRedirect(route('login'));
+    }
+
+    public function test_unauthorized_user_is_forbidden(): void
+    {
+        $this->actingAs($this->unauthorizedUser)
+            ->get(route('admin.products.quick-setup.index'))
+            ->assertForbidden();
+    }
+
+    public function test_kepala_gudang_can_access_quick_setup_for_permitted_location(): void
+    {
+        Product::factory()->create([
+            'name' => 'Biskuit Cokelat',
+            'sku' => 'BSK-001',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'cost_price' => 0,
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->kepalaGudang)
+            ->get(route('admin.products.quick-setup.index', ['work_location_id' => $this->gudang->id]));
+
+        $response->assertOk()
+            ->assertSee('Setup Operasional Cepat Produk')
+            ->assertSee('Gudang Pusat')
+            ->assertSee('Biskuit Cokelat')
+            ->assertSee('BSK-001')
+            ->assertSee('Ring Retail')
+            ->assertSee('Ring B2B')
+            ->assertSee('Ring POS');
+    }
+
+    public function test_kepala_toko_cannot_access_unpermitted_location(): void
+    {
+        $this->actingAs($this->kepalaToko)
+            ->get(route('admin.products.quick-setup.index', ['work_location_id' => $this->gudang->id]))
+            ->assertForbidden();
+    }
+
+    public function test_save_single_row_calculates_retail_cost_and_allocates_opening_stock(): void
+    {
+        $product = Product::factory()->create([
+            'name' => 'Kopi Sachet Moka',
+            'sku' => 'KOP-001',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'cost_price' => 0,
+            'status' => 'active',
+        ]);
+
+        $payload = [
+            'work_location_id' => $this->gudang->id,
+            'product_id' => $product->id,
+            'hpp_unit_id' => $this->lsn->id,
+            'hpp_amount' => 120000,
+            'stock_unit_id' => $this->lsn->id,
+            'stock_qty' => 2,
+            'prices' => [
+                'ring_retail' => ['min' => 13000, 'recommended' => 15000, 'max' => 18000],
+                'ring_b2b' => ['min' => 135000, 'recommended' => 140000, 'max' => 150000],
+                'ring_pos' => ['min' => 13000, 'recommended' => 15000, 'max' => 18000],
+            ],
+            'unlimited' => 1,
+        ];
+
+        $response = $this->actingAs($this->kepalaGudang)
+            ->postJson(route('admin.products.quick-setup.save-row'), $payload);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'product_id' => $product->id,
+                    'retail_cost_price' => '10000.00',
+                    'initial_stock_base_qty' => '24.0000',
+                    'stock_initialized' => true,
+                ],
+            ]);
+
+        // Verifikasi Master Product
+        $product->refresh();
+        $this->assertEquals('10000.00', (string) $product->cost_price);
+        $this->assertEquals($this->pcs->id, (int) $product->base_unit_id);
+
+        // Verifikasi Batch Stok Awal FIFO (2 Lusin = 24 pcs @ Rp 10.000)
+        $this->assertDatabaseHas('stock_batches', [
+            'product_id' => $product->id,
+            'work_location_id' => $this->gudang->id,
+            'source_type' => 'opening_stock',
+            'unit_id' => $this->lsn->id,
+            'conversion_factor_snapshot' => '12.000000',
+            'cost_price' => '10000.00',
+            'quantity_on_hand' => '24.0000',
+        ]);
+
+        // Verifikasi Saldo Stocks
+        $stock = Stock::where('product_id', $product->id)
+            ->where('work_location_id', $this->gudang->id)
+            ->first();
+        $this->assertNotNull($stock);
+        $this->assertEquals('24.0000', (string) $stock->quantity_on_hand);
+        $this->assertEquals('240000.00', (string) $stock->cost_value);
+
+        // Verifikasi Ketiga Ring Harga di product_prices
+        $this->assertDatabaseHas('product_prices', [
+            'product_id' => $product->id,
+            'work_location_id' => $this->gudang->id,
+            'channel' => 'retail',
+            'price_ring' => 'Ring Retail',
+            'recommended_price' => '15000.00',
+        ]);
+        $this->assertDatabaseHas('product_prices', [
+            'product_id' => $product->id,
+            'work_location_id' => $this->gudang->id,
+            'channel' => 'b2b',
+            'price_ring' => 'Ring B2B',
+            'recommended_price' => '140000.00',
+        ]);
+        $this->assertDatabaseHas('product_prices', [
+            'product_id' => $product->id,
+            'work_location_id' => $this->gudang->id,
+            'channel' => 'pos',
+            'price_ring' => 'Ring POS',
+            'recommended_price' => '15000.00',
+        ]);
+    }
+
+    public function test_save_row_is_idempotent_for_opening_stock(): void
+    {
+        $product = Product::factory()->create([
+            'name' => 'Teh Melati',
+            'sku' => 'TEH-001',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'cost_price' => 0,
+            'status' => 'active',
+        ]);
+
+        $payload = [
+            'work_location_id' => $this->toko->id,
+            'product_id' => $product->id,
+            'hpp_unit_id' => $this->lsn->id,
+            'hpp_amount' => 60000,
+            'stock_unit_id' => $this->lsn->id,
+            'stock_qty' => 5,
+            'prices' => [
+                'ring_retail' => ['min' => 6000, 'recommended' => 7000, 'max' => 8000],
+                'ring_b2b' => ['min' => 65000, 'recommended' => 70000, 'max' => 75000],
+                'ring_pos' => ['min' => 6000, 'recommended' => 7000, 'max' => 8000],
+            ],
+            'unlimited' => 1,
+        ];
+
+        // First Save
+        $this->actingAs($this->kepalaToko)
+            ->postJson(route('admin.products.quick-setup.save-row'), $payload)
+            ->assertOk();
+
+        $batchesCount = StockBatch::where('product_id', $product->id)->where('work_location_id', $this->toko->id)->count();
+        $this->assertEquals(1, $batchesCount);
+
+        // Second Save (perubahan harga acuan)
+        $payload['prices']['ring_retail']['recommended'] = 7500;
+        $response = $this->actingAs($this->kepalaToko)
+            ->postJson(route('admin.products.quick-setup.save-row'), $payload);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'stock_initialized' => false,
+                ],
+            ]);
+
+        // Stock batch count must remain 1 (not duplicated!)
+        $this->assertEquals(1, StockBatch::where('product_id', $product->id)->where('work_location_id', $this->toko->id)->count());
+
+        // Price was updated to new value
+        $this->assertDatabaseHas('product_prices', [
+            'product_id' => $product->id,
+            'work_location_id' => $this->toko->id,
+            'channel' => 'retail',
+            'recommended_price' => '7500.00',
+        ]);
+    }
+
+    public function test_batch_save_processes_multiple_products(): void
+    {
+        $product1 = Product::factory()->create(['name' => 'Item 1', 'sku' => 'ITM-01', 'category_id' => $this->category->id, 'base_unit_id' => $this->pcs->id, 'status' => 'active']);
+        $product2 = Product::factory()->create(['name' => 'Item 2', 'sku' => 'ITM-02', 'category_id' => $this->category->id, 'base_unit_id' => $this->pcs->id, 'status' => 'active']);
+
+        $payload = [
+            'work_location_id' => $this->gudang->id,
+            'rows' => [
+                [
+                    'product_id' => $product1->id,
+                    'hpp_unit_id' => $this->lsn->id,
+                    'hpp_amount' => 24000,
+                    'stock_unit_id' => $this->lsn->id,
+                    'stock_qty' => 2,
+                    'prices' => [
+                        'ring_retail' => ['recommended' => 3000],
+                        'ring_b2b' => ['recommended' => 30000],
+                        'ring_pos' => ['recommended' => 3000],
+                    ],
+                ],
+                [
+                    'product_id' => $product2->id,
+                    'hpp_unit_id' => $this->pcs->id,
+                    'hpp_amount' => 5000,
+                    'stock_unit_id' => $this->pcs->id,
+                    'stock_qty' => 50,
+                    'prices' => [
+                        'ring_retail' => ['recommended' => 7000],
+                        'ring_b2b' => ['recommended' => 6500],
+                        'ring_pos' => ['recommended' => 7000],
+                    ],
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->kepalaGudang)
+            ->postJson(route('admin.products.quick-setup.batch-save'), $payload);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'saved_count' => 2,
+                'failed_count' => 0,
+            ]);
+
+        $this->assertEquals('2000.00', (string) $product1->fresh()->cost_price);
+        $this->assertEquals('5000.00', (string) $product2->fresh()->cost_price);
+    }
+}

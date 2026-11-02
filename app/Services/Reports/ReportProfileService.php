@@ -121,6 +121,9 @@ class ReportProfileService
                 'route' => "reports.profiles.{$profile}.show",
                 'route_params' => array_filter(['report' => 'overview', 'work_location_id' => $location?->id]),
                 'active' => ["reports.profiles.{$profile}.*"],
+                'is_report' => true,
+                'profile' => $profile,
+                'tone' => $definition['tone'] ?? 'default',
             ];
         }
 

@@ -266,8 +266,9 @@ class RoleProfileReportTest extends TestCase
         $this->actingAs($owner)->get(route('reports.profiles.owner.show', ['report' => 'overview']))
             ->assertOk()
             ->assertSee('EXECUTIVE BUSINESS REPORT')
-            ->assertSee('Pendapatan per Channel')
-            ->assertSee('Risiko &amp; Piutang', false)
+            ->assertSee('Skor Kesehatan Bisnis')
+            ->assertSee('Pendapatan &amp; Channel Mix', false)
+            ->assertSee('Anomali &amp; Keputusan', false)
             ->assertDontSee('id="kt_app_toolbar"', false);
         $ownerSidebar = $this->renderSidebar($owner);
         $this->assertStringContainsString('Laporan Owner', $ownerSidebar);
@@ -287,6 +288,38 @@ class RoleProfileReportTest extends TestCase
 
         $this->actingAs($admin)->get(route('reports.profiles.owner.show', ['report' => 'overview']))->assertOk();
         $this->actingAs($admin)->get(route('reports.profiles.warehouse.show', ['report' => 'overview']))->assertOk();
+    }
+
+    public function test_owner_overview_uses_layered_inventory_value_and_protects_sensitive_data(): void
+    {
+        $location = WorkLocation::factory()->create(['type' => 'branch']);
+        $owner = $this->userWithRole('owner_approver', $location);
+        $product = Product::factory()->create(['cost_price' => '999.00']);
+        $stock = Stock::query()->create([
+            'product_id' => $product->id,
+            'work_location_id' => $location->id,
+            'warehouse_location_id' => null,
+            'location_scope_key' => 'work-location:'.$location->id,
+            'quantity_on_hand' => '12.0000',
+            'quantity_reserved' => '0.0000',
+            'quantity_damaged' => '0.0000',
+            'cost_value' => '0.00',
+        ]);
+
+        foreach ([['OWN-10K', '5.0000', '10000.00'], ['OWN-20K', '7.0000', '20000.00']] as [$batchNo, $quantity, $cost]) {
+            StockBatch::query()->create([
+                'product_id' => $product->id, 'stock_id' => $stock->id, 'work_location_id' => $location->id,
+                'unit_id' => $product->base_unit_id, 'conversion_factor_snapshot' => '1.000000',
+                'batch_no' => $batchNo, 'cost_price' => $cost, 'quantity_on_hand' => $quantity,
+                'quantity_reserved' => '0.0000', 'quantity_damaged' => '0.0000', 'status' => 'active',
+            ]);
+        }
+
+        $route = route('reports.profiles.owner.show', ['report' => 'overview', 'work_location_id' => $location->id]);
+        $this->actingAs($owner)->get($route)->assertOk()->assertSee('Rp190.000');
+
+        Role::findByName('owner_approver')->revokePermissionTo('margins.view_sensitive');
+        $this->actingAs($owner)->get($route)->assertOk()->assertSee('Akses terbatas')->assertDontSee('Rp190.000');
     }
 
     public function test_non_head_roles_cannot_open_any_profile_report(): void
