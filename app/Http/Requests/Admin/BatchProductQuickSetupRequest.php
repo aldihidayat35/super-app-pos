@@ -39,6 +39,7 @@ class BatchProductQuickSetupRequest extends FormRequest
             'work_location_id' => ['required', 'integer', 'exists:work_locations,id'],
             'rows' => ['required', 'array', 'min:1'],
             'rows.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'rows.*.barcode' => ['nullable', 'string', 'max:120'],
             'rows.*.hpp_unit_id' => ['required', 'integer', 'exists:units,id'],
             'rows.*.hpp_amount' => ['required', 'numeric', 'min:0'],
             'rows.*.stock_unit_id' => ['required', 'integer', 'exists:units,id'],

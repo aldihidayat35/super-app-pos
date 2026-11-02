@@ -357,4 +357,33 @@ class ProductMasterTest extends TestCase
 
         $this->assertSame(1, Activity::query()->where('subject_id', $product->id)->count());
     }
+
+    public function test_import_with_only_product_name_auto_generates_sku_and_defaults_category_and_unit(): void
+    {
+        $file = UploadedFile::fake()->createWithContent(
+            'produk-name-only.csv',
+            "name,sku,barcode,category_code,brand_code,base_unit_code,minimum_order,minimum_stock,safety_stock\nPiring Keramik Putih Polos,,,,,,,,\n"
+        );
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.products.import.preview'), ['file' => $file])
+            ->assertRedirect(route('admin.products.import.index'))
+            ->assertSessionHas('product_import_preview');
+
+        $preview = session('product_import_preview');
+        $this->assertEmpty($preview['errors'] ?? []);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.products.import.commit'))
+            ->assertRedirect(route('admin.products.import.index'))
+            ->assertSessionHas('notification.type', 'success');
+
+        $product = Product::query()->where('name', 'Piring Keramik Putih Polos')->first();
+        $this->assertNotNull($product);
+        $this->assertNotEmpty($product->sku);
+        $this->assertStringStartsWith('PRD', $product->sku);
+        $this->assertSame('Umum', $product->category?->name);
+        $this->assertSame('PCS', $product->baseUnit?->code);
+        $this->assertSame('0.0000', $product->minimum_order);
+    }
 }

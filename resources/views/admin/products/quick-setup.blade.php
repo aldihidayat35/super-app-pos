@@ -418,13 +418,26 @@
                             data-product-name="{{ $product->name }}"
                             data-has-existing-stock="{{ $hasExistingOpeningStock ? '1' : '0' }}">
                             
-                            {{-- 1. Data Produk: Nama Besar, SKU, Status --}}
+                            {{-- 1. Data Produk: Nama Besar, SKU, Barcode, Status --}}
                             <td class="ps-3 align-top">
                                 <div class="d-flex flex-column">
                                     <span class="fw-bolder text-gray-900 fs-6 line-clamp-2 mb-1" title="{{ $product->name }}">{{ $product->name }}</span>
                                     <div class="d-flex align-items-center gap-2 mb-2">
                                         <span class="badge badge-light-dark font-monospace fs-8 px-2 py-1">{{ $product->sku }}</span>
                                         <span class="text-muted fs-8">{{ $product->category?->name ?: 'Umum' }}</span>
+                                    </div>
+                                    <div class="mb-2" style="max-width: 210px;">
+                                        <div class="input-group input-group-sm input-group-solid">
+                                            <span class="input-group-text px-2 text-gray-500 py-1" title="Barcode Produk (opsional)">
+                                                <i class="ki-outline ki-barcode fs-6"></i>
+                                            </span>
+                                            <input type="text" 
+                                                   class="form-control form-control-sm form-control-solid input-barcode font-monospace fs-8 py-1 px-2"
+                                                   value="{{ $product->barcodes->firstWhere('is_primary', true)?->code ?? $product->barcodes->first()?->code ?? '' }}"
+                                                   placeholder="Scan / ketik barcode"
+                                                   autocomplete="off"
+                                                   title="Barcode Produk (opsional & unik)">
+                                        </div>
                                     </div>
                                     <div>
                                         <span class="badge {{ $isComplete ? 'badge-light-success text-success' : 'badge-light-warning text-warning' }} fs-9 fw-bold row-status-badge">
@@ -911,7 +924,7 @@
                 if (target.matches('.input-hpp-amount, .input-hpp-unit, .input-stock-qty, .input-stock-unit')) {
                     calculateRowConversions(row);
                     markRowDirty(row);
-                } else if (target.matches('.price-input-min, .price-input-rec, .price-input-max, .input-starts-at, .input-ends-at')) {
+                } else if (target.matches('.price-input-min, .price-input-rec, .price-input-max, .input-starts-at, .input-ends-at, .input-barcode')) {
                     markRowDirty(row);
                 } else if (target.matches('.unlimited-toggle')) {
                     onUnlimitedToggle(target);
@@ -1002,6 +1015,7 @@
         return {
             product_id: parseInt(row.getAttribute('data-product-id')),
             work_location_id: WORK_LOCATION_ID,
+            barcode: row.querySelector('.input-barcode')?.value?.trim() || null,
             hpp_unit_id: parseInt(hppUnitSelect.value),
             hpp_amount: parseNumericValue(row.querySelector('.input-hpp-amount')?.value),
             stock_unit_id: parseInt(stockUnitSelect.value),

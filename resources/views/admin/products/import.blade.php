@@ -40,9 +40,9 @@
             <ul class="mb-0">
                 <li><strong>Produk baru:</strong> Produk baru otomatis ditambahkan ke daftar produk dan tersedia di Kasir/POS jika status=Aktif.</li>
                 <li><strong>Produk sudah ada (SKU duplikat):</strong> Sistem akan melakukan <strong>UPSERT</strong> — memperbarui data produk yang sudah ada (mengupdate nama, kategori, harga, dll) tapi tidak menghapus histori transaksi.</li>
-                <li><strong>Kategori:</strong> Jika kategori yang direferensikan tidak ada, baris tersebut akan gagal validasi.</li>
-                <li><strong>Merek:</strong> Jika merek tidak ada, baris tersebut akan gagal validasi.</li>
-                <li><strong>Satuan:</strong> Jika satuan dasar tidak ada, baris tersebut akan gagal validasi.</li>
+                <li><strong>Kategori:</strong> Jika kolom kategori kosong atau tidak ditemukan, sistem otomatis menetapkan ke kategori 'Umum' (UMUM).</li>
+                <li><strong>Merek:</strong> Opsional, boleh dikosongkan jika produk belum memiliki merek terdaftar.</li>
+                <li><strong>Satuan:</strong> Jika kolom satuan dasar kosong, sistem otomatis menetapkan ke satuan standar 'PCS'.</li>
                 <li>Setiap import dicatat di activity log.</li>
             </ul>
         </x-slot:impacts>
@@ -55,11 +55,12 @@
                 <li>Buka template di Excel atau aplikasi spreadsheet.</li>
                 <li>Isi kolom-kolom berikut:
                     <ul>
-                        <li><strong>SKU:</strong> Kode unik produk (wajib). Kosongkan jika ingin auto-generate.</li>
-                        <li><strong>Nama:</strong> Nama produk (wajib).</li>
-                        <li><strong>Category_Code:</strong> Kode kategori produk (misal: UMUM, MINUMAN, MAKANAN).</li>
-                        <li><strong>Brand_Code:</strong> Kode merek (misal: FRISO, SOPRINO, NO-BRAND).</li>
-                        <li><strong>Base_Unit_Code:</strong> Kode satuan dasar (misal: PCS, BOX, KG).</li>
+                        <li><strong>Nama:</strong> Nama produk (<strong>Wajib</strong>).</li>
+                        <li><strong>SKU:</strong> Kode unik produk (opsional, kosongkan untuk auto-generate).</li>
+                        <li><strong>Barcode:</strong> Kode barcode produk (opsional & unik).</li>
+                        <li><strong>Category_Code:</strong> Kode/nama kategori produk (opsional, default: UMUM).</li>
+                        <li><strong>Brand_Code:</strong> Kode/nama merek (opsional, boleh kosong).</li>
+                        <li><strong>Base_Unit_Code:</strong> Kode satuan dasar (opsional, default: PCS).</li>
                     </ul>
                 </li>
                 <li>Simpan file sebagai CSV (.csv) atau Excel (.xlsx).</li>
@@ -131,7 +132,7 @@
             <div class="alert alert-success">Semua baris valid. Klik commit untuk menyimpan dalam transaksi database.</div>
             <form method="POST" action="{{ route('admin.products.import.commit') }}">@csrf<button class="btn btn-success">Commit Import</button></form>
         @endif
-        <div class="table-responsive mt-5"><table class="table table-row-dashed"><thead><tr><th>SKU</th><th>Nama</th><th>Kategori</th><th>Merek</th><th>Satuan</th></tr></thead><tbody>@foreach(($preview['rows'] ?? []) as $row)<tr><td>{{ $row['sku'] ?? '-' }}</td><td>{{ $row['name'] ?? '-' }}</td><td>{{ $row['category_code'] ?? '-' }}</td><td>{{ $row['brand_code'] ?? '-' }}</td><td>{{ $row['base_unit_code'] ?? '-' }}</td></tr>@endforeach</tbody></table></div>
+        <div class="table-responsive mt-5"><table class="table table-row-dashed"><thead><tr><th>Nama</th><th>SKU</th><th>Barcode</th><th>Kategori</th><th>Merek</th><th>Satuan</th></tr></thead><tbody>@foreach(($preview['rows'] ?? []) as $row)<tr><td class="fw-bold">{{ $row['name'] ?? '-' }}</td><td><span class="badge badge-light-dark font-monospace">{{ filled($row['sku'] ?? null) ? $row['sku'] : '[Otomatis]' }}</span></td><td>{{ $row['barcode'] ?? '-' }}</td><td>{{ $row['category_code'] ?? 'UMUM' }}</td><td>{{ $row['brand_code'] ?? '-' }}</td><td>{{ $row['base_unit_code'] ?? 'PCS' }}</td></tr>@endforeach</tbody></table></div>
     </x-metronic.card>
 @endif
 @endsection

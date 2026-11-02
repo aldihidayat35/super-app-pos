@@ -62,11 +62,11 @@ class ProductImportController extends Controller
             $sheet = $spreadsheet->getActiveSheet();
 
             $sheet->fromArray([
-                ['sku', 'name', 'category_code', 'brand_code', 'base_unit_code', 'minimum_order', 'minimum_stock', 'safety_stock'],
-                ['PRD-CONTOH-001', 'Produk Contoh', 'UMUM', 'NO-BRAND', 'PCS', '1', '10', '5'],
+                ['name', 'sku', 'barcode', 'category_code', 'brand_code', 'base_unit_code', 'minimum_order', 'minimum_stock', 'safety_stock'],
+                ['Produk Contoh (Wajib Diisi)', '', '', '', '', '', '0', '0', '0'],
             ]);
 
-            foreach (range('A', 'H') as $col) {
+            foreach (range('A', 'I') as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
 

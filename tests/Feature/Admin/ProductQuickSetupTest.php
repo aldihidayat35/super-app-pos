@@ -365,4 +365,75 @@ class ProductQuickSetupTest extends TestCase
         $getIndex->assertOk();
         $getIndex->assertSee('Kopi Arabika Kemasan');
     }
+
+    public function test_quick_setup_saves_barcode_and_validates_uniqueness(): void
+    {
+        $product1 = Product::factory()->create([
+            'name' => 'Mangkok Ayam Jago',
+            'sku' => 'MKK-01',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'status' => 'active',
+            'cost_price' => 5000,
+        ]);
+
+        $product2 = Product::factory()->create([
+            'name' => 'Gelas Kaca Bening',
+            'sku' => 'GLS-01',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'status' => 'active',
+            'cost_price' => 3000,
+        ]);
+
+        // Simpan baris dengan barcode untuk product1
+        $payload1 = [
+            'product_id' => $product1->id,
+            'work_location_id' => $this->toko->id,
+            'barcode' => '8991234567890',
+            'hpp_unit_id' => $this->pcs->id,
+            'hpp_amount' => 5000,
+            'stock_unit_id' => $this->pcs->id,
+            'stock_qty' => 5,
+            'prices' => [
+                'ring_retail' => ['min' => 6000, 'recommended' => 7000, 'max' => 8000],
+                'ring_b2b' => ['min' => 5500, 'recommended' => 6000, 'max' => 6500],
+                'ring_pos' => ['min' => 6000, 'recommended' => 7000, 'max' => 8000],
+            ],
+            'unlimited' => true,
+        ];
+
+        $response1 = $this->actingAs($this->kepalaToko)
+            ->postJson(route('admin.products.quick-setup.save-row'), $payload1);
+
+        $response1->assertOk();
+        $this->assertDatabaseHas('product_barcodes', [
+            'product_id' => $product1->id,
+            'code' => '8991234567890',
+            'is_primary' => true,
+        ]);
+
+        // Coba simpan product2 dengan barcode yang sama persis -> harus gagal validasi (422)
+        $payload2 = [
+            'product_id' => $product2->id,
+            'work_location_id' => $this->toko->id,
+            'barcode' => '8991234567890',
+            'hpp_unit_id' => $this->pcs->id,
+            'hpp_amount' => 3000,
+            'stock_unit_id' => $this->pcs->id,
+            'stock_qty' => 5,
+            'prices' => [
+                'ring_retail' => ['min' => 4000, 'recommended' => 4500, 'max' => 5000],
+                'ring_b2b' => ['min' => 3500, 'recommended' => 4000, 'max' => 4500],
+                'ring_pos' => ['min' => 4000, 'recommended' => 4500, 'max' => 5000],
+            ],
+            'unlimited' => true,
+        ];
+
+        $response2 = $this->actingAs($this->kepalaToko)
+            ->postJson(route('admin.products.quick-setup.save-row'), $payload2);
+
+        $response2->assertStatus(422);
+        $response2->assertJsonValidationErrors(['barcode']);
+    }
 }

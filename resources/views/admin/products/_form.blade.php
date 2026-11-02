@@ -31,7 +31,16 @@
         <div class="tab-pane fade show active" id="tab_info">
             <x-metronic.card title="Informasi Produk">
                 <div class="row">
-                    <div class="col-md-4"><x-metronic.form-group name="sku" label="SKU/Kode"><input name="sku" value="{{ old('sku', $product->sku) }}" class="form-control @error('sku') is-invalid @enderror" placeholder="Kosongkan untuk otomatis" @readonly($product->has_transactions)></x-metronic.form-group></div>
+                    <div class="col-md-4">
+                        <x-metronic.form-group name="sku" label="SKU / Kode Produk">
+                            <input name="sku" 
+                                   value="{{ old('sku', $product->sku) }}" 
+                                   class="form-control bg-light text-muted font-monospace @error('sku') is-invalid @enderror" 
+                                   placeholder="[Otomatis Digenerate Sistem]" 
+                                   readonly>
+                            <div class="form-text fs-9 text-muted">SKU dibuat otomatis secara unik oleh sistem.</div>
+                        </x-metronic.form-group>
+                    </div>
                     <div class="col-md-8"><x-metronic.form-group name="name" label="Nama Produk" required><input name="name" value="{{ old('name', $product->name) }}" class="form-control @error('name') is-invalid @enderror" required></x-metronic.form-group></div>
                     <div class="col-md-4"><x-metronic.form-group name="category_id" label="Kategori" required><select name="category_id" class="form-select @error('category_id') is-invalid @enderror"><option value="">Pilih kategori</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected((int) old('category_id', $product->category_id) === $category->id)>{{ $category->name }}</option>@endforeach</select></x-metronic.form-group></div>
                     <div class="col-md-4"><x-metronic.form-group name="subcategory_id" label="Subkategori"><select name="subcategory_id" class="form-select"><option value="">Tidak ada</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected((int) old('subcategory_id', $product->subcategory_id) === $category->id)>{{ $category->name }}</option>@endforeach</select></x-metronic.form-group></div>

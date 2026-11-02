@@ -5,6 +5,7 @@ namespace App\Services\Product;
 use App\Enums\ProductPriceStatus;
 use App\Models\Branch;
 use App\Models\Product;
+use App\Models\ProductBarcode;
 use App\Models\ProductCostHistory;
 use App\Models\ProductPrice;
 use App\Models\Stock;
@@ -21,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 final class ProductQuickSetupService
 {
@@ -73,6 +75,7 @@ final class ProductQuickSetupService
                 'brand',
                 'baseUnit',
                 'units.unit',
+                'barcodes',
                 'prices' => function ($q) use ($workLocation, $today): void {
                     $q->where(function ($inner) use ($workLocation): void {
                         $inner->where('work_location_id', $workLocation->id)
@@ -91,7 +94,10 @@ final class ProductQuickSetupService
             ->when($categoryId !== null, fn (Builder $q) => $q->where('category_id', $categoryId))
             ->when($search !== '', function (Builder $q) use ($search): void {
                 $term = '%'.addcslashes($search, '%_').'%';
-                $q->where(fn (Builder $inner) => $inner->where('sku', 'like', $term)->orWhere('name', 'like', $term));
+                $q->where(fn (Builder $inner) => $inner->where('sku', 'like', $term)
+                    ->orWhere('name', 'like', $term)
+                    ->orWhereHas('barcodes', fn ($b) => $b->where('code', 'like', $term))
+                );
             });
 
         // Filter status kelengkapan
@@ -165,6 +171,7 @@ final class ProductQuickSetupService
      *
      * @param array{
      *     product_id: int,
+     *     barcode?: string|null,
      *     hpp_unit_id: int,
      *     hpp_amount: string|numeric,
      *     stock_unit_id: int,
@@ -432,6 +439,40 @@ final class ProductQuickSetupService
                 $stockMessage = "Stok awal {$stockQty} unit ({$initialStockBaseQty} pcs) berhasil dialokasikan dan diposting.";
             } elseif ($existingOpeningBatch && Decimal::compare($stockQty, '0', 4) > 0) {
                 $stockMessage = 'Stok awal sudah pernah dicatat sebelumnya di lokasi ini; saldo persediaan tidak diduplikasi.';
+            }
+
+            // 7. Simpan Barcode (opsional & unik)
+            if (array_key_exists('barcode', $data)) {
+                $barcode = trim((string) ($data['barcode'] ?? ''));
+                if ($barcode !== '') {
+                    $conflict = ProductBarcode::query()
+                        ->where('code', $barcode)
+                        ->where('product_id', '!=', $product->id)
+                        ->first();
+
+                    if ($conflict) {
+                        throw ValidationException::withMessages([
+                            'barcode' => "Barcode '{$barcode}' sudah digunakan oleh produk lain ({$conflict->product?->name}).",
+                        ]);
+                    }
+
+                    ProductBarcode::query()->updateOrCreate(
+                        [
+                            'product_id' => $product->id,
+                            'is_primary' => true,
+                        ],
+                        [
+                            'code' => $barcode,
+                            'type' => 'barcode',
+                            'is_active' => true,
+                        ]
+                    );
+                } else {
+                    ProductBarcode::query()
+                        ->where('product_id', $product->id)
+                        ->where('is_primary', true)
+                        ->delete();
+                }
             }
 
             // 8. Audit log penanggung jawab

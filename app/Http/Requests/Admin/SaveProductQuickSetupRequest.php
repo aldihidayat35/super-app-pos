@@ -38,6 +38,7 @@ class SaveProductQuickSetupRequest extends FormRequest
         return [
             'work_location_id' => ['required', 'integer', 'exists:work_locations,id'],
             'product_id' => ['required', 'integer', 'exists:products,id'],
+            'barcode' => ['nullable', 'string', 'max:120'],
             'hpp_unit_id' => ['required', 'integer', 'exists:units,id'],
             'hpp_amount' => ['required', 'numeric', 'min:0'],
             'stock_unit_id' => ['required', 'integer', 'exists:units,id'],
@@ -61,6 +62,7 @@ class SaveProductQuickSetupRequest extends FormRequest
         return [
             'work_location_id' => 'Lokasi Kerja',
             'product_id' => 'Produk',
+            'barcode' => 'Barcode',
             'hpp_unit_id' => 'Satuan HPP',
             'hpp_amount' => 'Nominal HPP',
             'stock_unit_id' => 'Satuan Stok',
