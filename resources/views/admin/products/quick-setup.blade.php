@@ -119,6 +119,33 @@
         padding: 0.25rem 0.5rem;
         transition: all 0.15s ease-in-out;
     }
+    .quick-setup-scroll-wrapper, .top-scrollbar-wrapper {
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: #94a3b8 #f1f5f9;
+    }
+    .quick-setup-scroll-wrapper::-webkit-scrollbar, .top-scrollbar-wrapper::-webkit-scrollbar {
+        height: 10px;
+    }
+    .quick-setup-scroll-wrapper::-webkit-scrollbar-track, .top-scrollbar-wrapper::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 6px;
+    }
+    .quick-setup-scroll-wrapper::-webkit-scrollbar-thumb, .top-scrollbar-wrapper::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 6px;
+        border: 2px solid #f1f5f9;
+    }
+    .quick-setup-scroll-wrapper::-webkit-scrollbar-thumb:hover, .top-scrollbar-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+    }
+    #table-quick-setup {
+        min-width: 1420px;
+        width: 100%;
+        margin-bottom: 0;
+    }
 </style>
 
 <div class="d-flex flex-column gap-5">
@@ -250,8 +277,27 @@
             </div>
         </div>
 
+        {{-- Horizontal Scroll Navigation & Top Scrollbar --}}
+        <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+            <div class="text-muted fs-8 d-flex align-items-center gap-1">
+                <i class="ki-outline ki-arrows-loop fs-6 text-primary"></i>
+                <span>Tabel dapat digeser horizontal:</span>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <button type="button" class="btn btn-sm btn-icon btn-light-primary w-30px h-30px" onclick="scrollTable('left')" title="Geser ke Kiri">
+                    <i class="ki-outline ki-left fs-5"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-icon btn-light-primary w-30px h-30px" onclick="scrollTable('right')" title="Geser ke Kanan">
+                    <i class="ki-outline ki-right fs-5"></i>
+                </button>
+            </div>
+        </div>
+        <div class="top-scrollbar-wrapper mb-2 border border-gray-200 rounded" id="top-scrollbar" style="height: 12px;">
+            <div id="top-scrollbar-dummy" style="height: 1px; width: 1420px;"></div>
+        </div>
+
         {{-- Spreadsheet Table Remake --}}
-        <div class="table-responsive">
+        <div class="table-responsive quick-setup-scroll-wrapper border border-gray-200 rounded" id="main-table-wrapper">
             <table class="table table-row-bordered table-row-gray-300 align-middle gs-3 gy-3" id="table-quick-setup">
                 <thead class="bg-light">
                     <tr class="fw-bolder text-gray-800 fs-8 text-uppercase">
@@ -873,7 +919,50 @@
                 }
             });
         });
+
+        // Sinkronisasi Scrollbar Horizontal Atas & Bawah
+        const topScroll = document.getElementById('top-scrollbar');
+        const mainScroll = document.getElementById('main-table-wrapper');
+        const dummy = document.getElementById('top-scrollbar-dummy');
+
+        function updateDummyWidth() {
+            if (dummy && table) {
+                dummy.style.width = Math.max(table.scrollWidth, 1420) + 'px';
+            }
+        }
+
+        updateDummyWidth();
+        window.addEventListener('resize', updateDummyWidth);
+
+        if (topScroll && mainScroll) {
+            let isSyncingTop = false;
+            let isSyncingMain = false;
+
+            topScroll.addEventListener('scroll', function() {
+                if (!isSyncingTop) {
+                    isSyncingMain = true;
+                    mainScroll.scrollLeft = topScroll.scrollLeft;
+                }
+                isSyncingTop = false;
+            });
+
+            mainScroll.addEventListener('scroll', function() {
+                if (!isSyncingMain) {
+                    isSyncingTop = true;
+                    topScroll.scrollLeft = mainScroll.scrollLeft;
+                }
+                isSyncingMain = false;
+            });
+        }
     });
+
+    function scrollTable(direction) {
+        const main = document.getElementById('main-table-wrapper');
+        if (main) {
+            const step = 380;
+            main.scrollBy({ left: direction === 'left' ? -step : step, behavior: 'smooth' });
+        }
+    }
 
     function onUnlimitedToggle(checkbox) {
         const row = checkbox.closest('tr.product-row');
