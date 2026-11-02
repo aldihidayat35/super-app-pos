@@ -320,4 +320,49 @@ class ProductQuickSetupTest extends TestCase
         $this->assertEquals('2000.00', (string) $product1->fresh()->cost_price);
         $this->assertEquals('5000.00', (string) $product2->fresh()->cost_price);
     }
+
+    public function test_saved_units_and_amounts_are_persisted_in_product_attributes_and_retained_on_refresh(): void
+    {
+        $product = Product::factory()->create([
+            'name' => 'Kopi Arabika Kemasan',
+            'sku' => 'KOP-ARB-01',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'status' => 'active',
+            'cost_price' => 15000,
+        ]);
+
+        $payload = [
+            'product_id' => $product->id,
+            'work_location_id' => $this->toko->id,
+            'hpp_unit_id' => $this->pcs->id,
+            'hpp_amount' => 15000,
+            'stock_unit_id' => $this->pcs->id,
+            'stock_qty' => 10,
+            'prices' => [
+                'ring_retail' => ['min' => 16000, 'recommended' => 18000, 'max' => 20000],
+                'ring_b2b' => ['min' => 14000, 'recommended' => 16000, 'max' => 18000],
+                'ring_pos' => ['min' => 16000, 'recommended' => 18000, 'max' => 20000],
+            ],
+            'unlimited' => true,
+        ];
+
+        $response = $this->actingAs($this->kepalaToko)
+            ->postJson(route('admin.products.quick-setup.save-row'), $payload);
+
+        $response->assertOk();
+
+        // Cek bahwa attributes['quick_setup'] menyimpan unit PCS yang dipilih
+        $freshProduct = $product->fresh();
+        $this->assertNotNull($freshProduct->attributes);
+        $this->assertEquals($this->pcs->id, $freshProduct->attributes['quick_setup']['hpp_unit_id']);
+        $this->assertEquals($this->pcs->id, $freshProduct->attributes['quick_setup']['stock_unit_id']);
+
+        // Akses halaman index lagi untuk simulasi refresh
+        $getIndex = $this->actingAs($this->kepalaToko)
+            ->get(route('admin.products.quick-setup.index', ['work_location_id' => $this->toko->id, 'completeness' => 'all']));
+
+        $getIndex->assertOk();
+        $getIndex->assertSee('Kopi Arabika Kemasan');
+    }
 }

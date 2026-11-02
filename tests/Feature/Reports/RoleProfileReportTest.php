@@ -68,6 +68,9 @@ class RoleProfileReportTest extends TestCase
             ->assertSee('Laporan Operasional Gudang')
             ->assertSee('Gudang Kedaung')
             ->assertSee('Tren Mutasi Persediaan')
+            ->assertSee('data-warehouse-line-chart', false)
+            ->assertSee('data-warehouse-pie-chart', false)
+            ->assertSee('data-warehouse-bar-chart', false)
             ->assertSee('Opname, Koreksi &amp; Loss', false)
             ->assertDontSee('id="kt_app_toolbar"', false);
 

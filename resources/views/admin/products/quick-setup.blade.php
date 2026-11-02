@@ -17,13 +17,13 @@
 @section('page_guide')
     <x-metronic.page-guide id="admin-product-quick-setup" title="Panduan Setup Operasional Cepat Produk">
         <x-slot:function>
-            <p>Halaman ini memudahkan pengisian parameter operasional produk pasca import Excel. Terdiri dari data produk, input HPP dengan pilihan satuan kulakan (misal Lusin) yang otomatis dikonversi ke HPP per pieces, input stok awal dengan pilihan satuan yang otomatis dikonversi ke total pieces, serta 3 Ring Harga Jual (Retail, B2B, POS) yang 100% sinkron dengan halaman Penetapan Harga.</p>
+            <p>Halaman ini memudahkan pengisian parameter operasional produk pasca import Excel. Terdiri dari data produk, input HPP dengan pilihan satuan kulakan (misal Lusin atau PCS) yang otomatis dikonversi ke HPP per pieces, input stok awal dengan pilihan satuan yang otomatis dikonversi ke total pieces, serta 3 Ring Harga Jual (Retail, B2B, POS) yang 100% sinkron dengan halaman Penetapan Harga.</p>
         </x-slot:function>
         <x-slot:workflow>
             <ol>
                 <li>Pilih lokasi kerja gudang atau toko di bagian atas.</li>
-                <li>Pada kolom <strong>HPP Produk</strong>: pilih satuan kulakan (misal <em>Lsn</em>) dan input nominal HPP (misal <em>120.000</em>). Sistem otomatis menghitung konversi HPP per pcs secara real-time saat mengetik.</li>
-                <li>Pada kolom <strong>Stok Produk</strong>: pilih satuan (misal <em>Lsn</em>) dan input stok fisik (misal <em>2</em>). Sistem otomatis menghitung total stok dalam pieces (<em>24 pcs</em>) secara real-time saat mengetik.</li>
+                <li>Pada kolom <strong>HPP Produk</strong>: pilih satuan kulakan (default: PCS, bisa diubah ke LSN/Gros/Box) dan ketik nominal HPP. Format titik ribuan otomatis muncul (misal <em>120.000</em>) dan konversi per pcs terhitung real-time.</li>
+                <li>Pada kolom <strong>Stok Produk</strong>: pilih satuan dan ketik jumlah stok fisik awal. Format titik ribuan otomatis muncul dan total pieces terhitung real-time.</li>
                 <li>Pada kolom <strong>Ring Harga</strong>: isi batas Min, Acuan (Rekomendasi), dan Max untuk <strong>Ring Retail</strong>, <strong>Ring B2B</strong>, dan <strong>Ring POS</strong> sesuai kebijakan penjualan.</li>
                 <li>Atur masa berlaku (default <em>Unlimited</em>).</li>
                 <li>Klik tombol <strong>Simpan</strong> pada baris bersangkutan atau klik <strong>Simpan Semua Perubahan</strong> di toolbar atas.</li>
@@ -32,9 +32,9 @@
         <x-slot:parts>
             <ul>
                 <li><strong>Kolom Produk:</strong> Nama produk besar, SKU, dan badge status lengkap/belum lengkap.</li>
-                <li><strong>Kolom HPP Produk:</strong> Pilihan satuan + input HPP + keterangan konversi per pcs.</li>
-                <li><strong>Kolom Stok Produk:</strong> Pilihan satuan + input stok + keterangan konversi total pcs.</li>
-                <li><strong>Ring Retail / B2B / POS:</strong> Tiga ring harga acuan penjualan yang langsung sinkron ke kasir, portal B2B, dan modul pricing.</li>
+                <li><strong>Kolom HPP Produk:</strong> Pilihan satuan + input HPP + keterangan konversi per pcs. Pilihan satuan tersimpan permanen saat refresh.</li>
+                <li><strong>Kolom Stok Produk:</strong> Pilihan satuan + input stok + keterangan konversi total pcs. Pilihan satuan tersimpan permanen saat refresh.</li>
+                <li><strong>Ring Retail / B2B / POS:</strong> Tiga ring harga acuan penjualan yang langsung sinkron ke kasir, portal B2B, dan modul pricing dengan input titik ribuan otomatis.</li>
                 <li><strong>Masa Berlaku:</strong> Menentukan periode aktif harga (default unlimited).</li>
             </ul>
         </x-slot:parts>
@@ -44,14 +44,14 @@
         <x-slot:operation>
             <ol>
                 <li>Gunakan tab "Belum Lengkap" untuk memprioritaskan produk baru.</li>
-                <li>Ketik HPP dan Stok untuk melihat hasil konversi secara real-time bahkan saat masih mengetik.</li>
-                <li>Simpan baris demi baris atau sekaligus semua baris.</li>
+                <li>Ketik HPP, Stok, atau Ring Harga dengan pemisah ribuan otomatis (misal ketik <code>12000</code> otomatis tampil <code>12.000</code>).</li>
+                <li>Simpan baris demi baris atau sekaligus semua baris. Pilihan satuan Anda tetap tersimpan dan tidak akan kembali ke default saat refresh.</li>
             </ol>
         </x-slot:operation>
         <x-slot:warnings>
             <div class="alert alert-warning mb-0">
                 <ul class="mb-0">
-                    <li>Stok awal dicatat satu kali sebagai saldo awal pembukuan fisik.</li>
+                    <li>Stok awal dicatat satu kali sebagai saldo awal pembukuan fisik pada lokasi kerja terkait.</li>
                     <li>Rasio konversi satuan mengikuti aturan baku master satuan (contoh: 1 Lusin = 12 pcs, 1 Gros = 144 pcs).</li>
                 </ul>
             </div>
@@ -118,9 +118,6 @@
         border-radius: 0.375rem;
         padding: 0.25rem 0.5rem;
         transition: all 0.15s ease-in-out;
-    }
-    .conversion-pill.active-calc {
-        transform: scale(1.02);
     }
 </style>
 
@@ -300,9 +297,9 @@
                 <tbody class="fs-7">
                     @forelse($products as $product)
                         @php
-                            // Satuan Dasar & Standar
-                            $pcsUnit = $units->firstWhere('code', 'PCS') ?? $units->first();
-                            $lsnUnit = $units->firstWhere('code', 'LSN') ?? $pcsUnit;
+                            // Satuan Dasar & Standar Produk
+                            $baseUnit = $product->baseUnit ?? $units->firstWhere('code', 'PCS') ?? $units->first();
+                            $pcsUnit = $units->firstWhere('code', 'PCS') ?? $baseUnit;
                             
                             // Ambil data harga aktif pada lokasi terpilih
                             $pricesCollection = $product->prices;
@@ -310,20 +307,55 @@
                             $b2bPriceModel = $pricesCollection->first(fn($p) => $p->price_ring === 'Ring B2B' || $p->channel === 'b2b');
                             $posPriceModel = $pricesCollection->first(fn($p) => $p->price_ring === 'Ring POS' || $p->channel === 'pos');
 
-                            // HPP Awal
+                            // HPP Eceran saat ini (per pcs)
                             $retailCostPrice = (float) $product->cost_price;
-                            // Default pilihan satuan HPP: jika cost price ada, pakai Lsn (12x) atau Pcs
-                            $defaultHppUnit = $lsnUnit;
-                            $defaultHppFactor = 12;
-                            $defaultHppAmount = $retailCostPrice > 0 ? ($retailCostPrice * $defaultHppFactor) : 0;
 
                             // Stok Awal Existing
                             $openingBatch = $product->stockBatches->first();
                             $hasExistingOpeningStock = (bool) $openingBatch;
                             $existingStockOnHand = $openingBatch ? (float) $openingBatch->quantity_on_hand : 0;
-                            $defaultStockUnit = $lsnUnit;
-                            $defaultStockFactor = 12;
-                            $defaultStockQty = $hasExistingOpeningStock ? ($existingStockOnHand / $defaultStockFactor) : 0;
+
+                            // Konfigurasi tersimpan dari quick_setup (jika sudah pernah disimpan sebelumnya)
+                            $productAttrs = (array) ($product->attributes ?? []);
+                            $quickSetupAttrs = (array) ($productAttrs['quick_setup'] ?? []);
+                            $locationsAttrs = (array) ($quickSetupAttrs['locations'] ?? []);
+                            $qsData = $locationsAttrs[$currentLocation->id] ?? ($quickSetupAttrs['hpp_unit_id'] ?? null ? $quickSetupAttrs : null);
+
+                            // 1. Tentukan Satuan HPP & Nominal HPP (Mempertahankan pilihan user secara permanen)
+                            if ($qsData && !empty($qsData['hpp_unit_id']) && $units->contains('id', (int) $qsData['hpp_unit_id'])) {
+                                $defaultHppUnit = $units->firstWhere('id', (int) $qsData['hpp_unit_id']);
+                                $defaultHppFactor = match(strtoupper((string) $defaultHppUnit->code)) {
+                                    'PCS' => 1,
+                                    'LSN' => 12,
+                                    'GROS' => 144,
+                                    default => (float) ($product->units->firstWhere('unit_id', $defaultHppUnit->id)?->conversion_factor ?? 1),
+                                };
+                                $defaultHppAmount = isset($qsData['hpp_amount']) ? (float) $qsData['hpp_amount'] : ($retailCostPrice * $defaultHppFactor);
+                            } else {
+                                // Default produk baru: PCS (Satuan Dasar Produk)
+                                $defaultHppUnit = $baseUnit;
+                                $defaultHppFactor = 1;
+                                $defaultHppAmount = $retailCostPrice;
+                            }
+
+                            // 2. Tentukan Satuan Stok & Jumlah Stok (Mempertahankan pilihan user secara permanen)
+                            if ($qsData && !empty($qsData['stock_unit_id']) && $units->contains('id', (int) $qsData['stock_unit_id'])) {
+                                $defaultStockUnit = $units->firstWhere('id', (int) $qsData['stock_unit_id']);
+                                $defaultStockFactor = match(strtoupper((string) $defaultStockUnit->code)) {
+                                    'PCS' => 1,
+                                    'LSN' => 12,
+                                    'GROS' => 144,
+                                    default => (float) ($product->units->firstWhere('unit_id', $defaultStockUnit->id)?->conversion_factor ?? 1),
+                                };
+                                $defaultStockQty = $hasExistingOpeningStock 
+                                    ? ($existingStockOnHand / ($defaultStockFactor ?: 1)) 
+                                    : (float) ($qsData['stock_qty'] ?? 0);
+                            } else {
+                                // Default produk baru: PCS (Satuan Dasar Produk)
+                                $defaultStockUnit = $baseUnit;
+                                $defaultStockFactor = 1;
+                                $defaultStockQty = $existingStockOnHand;
+                            }
 
                             // Status Kelengkapan
                             $hasPrices = $retailPriceModel && (float) $retailPriceModel->recommended_price > 0;
@@ -357,7 +389,7 @@
                                 </div>
                             </td>
 
-                            {{-- 2. HPP Produk: Mini-Card Rapi (Satuan + Input HPP + Real-Time Conversion) --}}
+                            {{-- 2. HPP Produk: Mini-Card Rapi (Satuan + Input HPP Otomatis Titik + Real-Time Conversion) --}}
                             <td class="align-top" style="background-color: rgba(var(--bs-primary-rgb), 0.02);">
                                 <div class="setup-mini-card d-flex flex-column gap-2">
                                     <div class="d-flex align-items-center gap-2">
@@ -366,12 +398,16 @@
                                             <select class="form-select form-select-sm form-select-solid input-hpp-unit px-2 py-1 fs-8 fw-semibold" style="height: 32px;">
                                                 @foreach($units as $unit)
                                                     @php
-                                                        $factor = match(strtoupper($unit->code)) {
+                                                        $factor = match(strtoupper((string) $unit->code)) {
                                                             'PCS' => 1,
                                                             'LSN' => 12,
                                                             'GROS' => 144,
                                                             default => 1,
                                                         };
+                                                        $customUnit = $product->units->firstWhere('unit_id', $unit->id);
+                                                        if ($customUnit && (float) $customUnit->conversion_factor > 0) {
+                                                            $factor = (float) $customUnit->conversion_factor;
+                                                        }
                                                     @endphp
                                                     <option value="{{ $unit->id }}" 
                                                             data-code="{{ strtolower($unit->code) }}" 
@@ -388,8 +424,8 @@
                                                 <span class="input-group-text px-2 fs-9 text-gray-600 fw-bold">Rp</span>
                                                 <input type="text" 
                                                        inputmode="numeric" 
-                                                       class="form-control form-control-sm form-control-solid input-hpp-amount text-end fw-bold fs-7 py-1" 
-                                                       value="{{ $defaultHppAmount > 0 ? (float) $defaultHppAmount : '' }}"
+                                                       class="form-control form-control-sm form-control-solid input-hpp-amount format-thousand text-end fw-bold fs-7 py-1" 
+                                                       value="{{ $defaultHppAmount > 0 ? number_format($defaultHppAmount, 0, ',', '.') : '' }}"
                                                        placeholder="0">
                                             </div>
                                         </div>
@@ -406,7 +442,7 @@
                                 </div>
                             </td>
 
-                            {{-- 3. Stok Produk: Mini-Card Rapi (Satuan + Input Stok + Real-Time Conversion) --}}
+                            {{-- 3. Stok Produk: Mini-Card Rapi (Satuan + Input Stok Otomatis Titik + Real-Time Conversion) --}}
                             <td class="align-top">
                                 <div class="setup-mini-card d-flex flex-column gap-2">
                                     <div class="d-flex align-items-center gap-2">
@@ -417,12 +453,16 @@
                                                     {{ $hasExistingOpeningStock ? 'disabled' : '' }}>
                                                 @foreach($units as $unit)
                                                     @php
-                                                        $factor = match(strtoupper($unit->code)) {
+                                                        $factor = match(strtoupper((string) $unit->code)) {
                                                             'PCS' => 1,
                                                             'LSN' => 12,
                                                             'GROS' => 144,
                                                             default => 1,
                                                         };
+                                                        $customUnit = $product->units->firstWhere('unit_id', $unit->id);
+                                                        if ($customUnit && (float) $customUnit->conversion_factor > 0) {
+                                                            $factor = (float) $customUnit->conversion_factor;
+                                                        }
                                                     @endphp
                                                     <option value="{{ $unit->id }}" 
                                                             data-code="{{ strtolower($unit->code) }}" 
@@ -437,9 +477,9 @@
                                             <label class="text-gray-600 fs-9 fw-bolder text-uppercase mb-1">Input Stok:</label>
                                             <input type="text" 
                                                    inputmode="numeric" 
-                                                   class="form-control form-control-sm form-control-solid input-stock-qty text-end fw-bold fs-7 py-1 {{ $hasExistingOpeningStock ? 'bg-light text-muted border-dashed' : '' }}" 
+                                                   class="form-control form-control-sm form-control-solid input-stock-qty format-thousand text-end fw-bold fs-7 py-1 {{ $hasExistingOpeningStock ? 'bg-light text-muted border-dashed' : '' }}" 
                                                    style="height: 32px;"
-                                                   value="{{ $defaultStockQty > 0 ? (float) $defaultStockQty : '' }}"
+                                                   value="{{ $defaultStockQty > 0 ? number_format($defaultStockQty, 0, ',', '.') : '' }}"
                                                    placeholder="0"
                                                    {{ $hasExistingOpeningStock ? 'readonly' : '' }}>
                                         </div>
@@ -477,9 +517,9 @@
                                         <div class="input-group input-group-sm flex-grow-1">
                                             <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
                                             <input type="text" inputmode="numeric" 
-                                                class="form-control form-control-sm text-end ring-input-box price-input-min"
-                                                value="{{ $retailPriceModel?->min_price ? (float) $retailPriceModel->min_price : '' }}"
-                                                placeholder="{{ $retailPriceModel?->recommended_price ? (float) $retailPriceModel->recommended_price : '0' }}">
+                                                class="form-control form-control-sm text-end ring-input-box format-thousand price-input-min"
+                                                value="{{ $retailPriceModel?->min_price ? number_format((float) $retailPriceModel->min_price, 0, ',', '.') : '' }}"
+                                                placeholder="{{ $retailPriceModel?->recommended_price ? number_format((float) $retailPriceModel->recommended_price, 0, ',', '.') : '0' }}">
                                         </div>
                                     </div>
                                     <div class="ring-input-wrap bg-light-primary rounded p-1 border border-primary border-opacity-25" title="Harga Acuan/Rekomendasi Ring Retail (Muncul Otomatis di Kasir/Order)">
@@ -487,8 +527,8 @@
                                         <div class="input-group input-group-sm flex-grow-1">
                                             <span class="input-group-text py-0 px-1 fs-8 text-primary fw-bold">Rp</span>
                                             <input type="text" inputmode="numeric" 
-                                                class="form-control form-control-sm text-end ring-input-box is-recommended border-primary price-input-rec"
-                                                value="{{ $retailPriceModel?->recommended_price ? (float) $retailPriceModel->recommended_price : '' }}"
+                                                class="form-control form-control-sm text-end ring-input-box is-recommended border-primary format-thousand price-input-rec"
+                                                value="{{ $retailPriceModel?->recommended_price ? number_format((float) $retailPriceModel->recommended_price, 0, ',', '.') : '' }}"
                                                 placeholder="0">
                                         </div>
                                     </div>
@@ -497,9 +537,9 @@
                                         <div class="input-group input-group-sm flex-grow-1">
                                             <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
                                             <input type="text" inputmode="numeric" 
-                                                class="form-control form-control-sm text-end ring-input-box price-input-max"
-                                                value="{{ $retailPriceModel?->max_price ? (float) $retailPriceModel->max_price : '' }}"
-                                                placeholder="{{ $retailPriceModel?->recommended_price ? (float) $retailPriceModel->recommended_price : '0' }}">
+                                                class="form-control form-control-sm text-end ring-input-box format-thousand price-input-max"
+                                                value="{{ $retailPriceModel?->max_price ? number_format((float) $retailPriceModel->max_price, 0, ',', '.') : '' }}"
+                                                placeholder="{{ $retailPriceModel?->recommended_price ? number_format((float) $retailPriceModel->recommended_price, 0, ',', '.') : '0' }}">
                                         </div>
                                     </div>
                                 </div>
@@ -513,9 +553,9 @@
                                         <div class="input-group input-group-sm flex-grow-1">
                                             <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
                                             <input type="text" inputmode="numeric" 
-                                                class="form-control form-control-sm text-end ring-input-box price-input-min"
-                                                value="{{ $b2bPriceModel?->min_price ? (float) $b2bPriceModel->min_price : '' }}"
-                                                placeholder="{{ $b2bPriceModel?->recommended_price ? (float) $b2bPriceModel->recommended_price : '0' }}">
+                                                class="form-control form-control-sm text-end ring-input-box format-thousand price-input-min"
+                                                value="{{ $b2bPriceModel?->min_price ? number_format((float) $b2bPriceModel->min_price, 0, ',', '.') : '' }}"
+                                                placeholder="{{ $b2bPriceModel?->recommended_price ? number_format((float) $b2bPriceModel->recommended_price, 0, ',', '.') : '0' }}">
                                         </div>
                                     </div>
                                     <div class="ring-input-wrap bg-light-dark rounded p-1 border border-dark border-opacity-25" title="Harga Acuan/Rekomendasi Ring B2B">
@@ -523,8 +563,8 @@
                                         <div class="input-group input-group-sm flex-grow-1">
                                             <span class="input-group-text py-0 px-1 fs-8 text-gray-800 fw-bold">Rp</span>
                                             <input type="text" inputmode="numeric" 
-                                                class="form-control form-control-sm text-end ring-input-box is-recommended border-gray-600 price-input-rec"
-                                                value="{{ $b2bPriceModel?->recommended_price ? (float) $b2bPriceModel->recommended_price : '' }}"
+                                                class="form-control form-control-sm text-end ring-input-box is-recommended border-gray-600 format-thousand price-input-rec"
+                                                value="{{ $b2bPriceModel?->recommended_price ? number_format((float) $b2bPriceModel->recommended_price, 0, ',', '.') : '' }}"
                                                 placeholder="0">
                                         </div>
                                     </div>
@@ -533,9 +573,9 @@
                                         <div class="input-group input-group-sm flex-grow-1">
                                             <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
                                             <input type="text" inputmode="numeric" 
-                                                class="form-control form-control-sm text-end ring-input-box price-input-max"
-                                                value="{{ $b2bPriceModel?->max_price ? (float) $b2bPriceModel->max_price : '' }}"
-                                                placeholder="{{ $b2bPriceModel?->recommended_price ? (float) $b2bPriceModel->recommended_price : '0' }}">
+                                                class="form-control form-control-sm text-end ring-input-box format-thousand price-input-max"
+                                                value="{{ $b2bPriceModel?->max_price ? number_format((float) $b2bPriceModel->max_price, 0, ',', '.') : '' }}"
+                                                placeholder="{{ $b2bPriceModel?->recommended_price ? number_format((float) $b2bPriceModel->recommended_price, 0, ',', '.') : '0' }}">
                                         </div>
                                     </div>
                                 </div>
@@ -549,9 +589,9 @@
                                         <div class="input-group input-group-sm flex-grow-1">
                                             <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
                                             <input type="text" inputmode="numeric" 
-                                                class="form-control form-control-sm text-end ring-input-box price-input-min"
-                                                value="{{ $posPriceModel?->min_price ? (float) $posPriceModel->min_price : '' }}"
-                                                placeholder="{{ $posPriceModel?->recommended_price ? (float) $posPriceModel->recommended_price : '0' }}">
+                                                class="form-control form-control-sm text-end ring-input-box format-thousand price-input-min"
+                                                value="{{ $posPriceModel?->min_price ? number_format((float) $posPriceModel->min_price, 0, ',', '.') : '' }}"
+                                                placeholder="{{ $posPriceModel?->recommended_price ? number_format((float) $posPriceModel->recommended_price, 0, ',', '.') : '0' }}">
                                         </div>
                                     </div>
                                     <div class="ring-input-wrap bg-light-success rounded p-1 border border-success border-opacity-25" title="Harga Acuan/Rekomendasi Ring POS (Otomatis Masuk Keranjang Kasir)">
@@ -559,8 +599,8 @@
                                         <div class="input-group input-group-sm flex-grow-1">
                                             <span class="input-group-text py-0 px-1 fs-8 text-success fw-bold">Rp</span>
                                             <input type="text" inputmode="numeric" 
-                                                class="form-control form-control-sm text-end ring-input-box is-recommended border-success price-input-rec"
-                                                value="{{ $posPriceModel?->recommended_price ? (float) $posPriceModel->recommended_price : '' }}"
+                                                class="form-control form-control-sm text-end ring-input-box is-recommended border-success format-thousand price-input-rec"
+                                                value="{{ $posPriceModel?->recommended_price ? number_format((float) $posPriceModel->recommended_price, 0, ',', '.') : '' }}"
                                                 placeholder="0">
                                         </div>
                                     </div>
@@ -569,9 +609,9 @@
                                         <div class="input-group input-group-sm flex-grow-1">
                                             <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
                                             <input type="text" inputmode="numeric" 
-                                                class="form-control form-control-sm text-end ring-input-box price-input-max"
-                                                value="{{ $posPriceModel?->max_price ? (float) $posPriceModel->max_price : '' }}"
-                                                placeholder="{{ $posPriceModel?->recommended_price ? (float) $posPriceModel->recommended_price : '0' }}">
+                                                class="form-control form-control-sm text-end ring-input-box format-thousand price-input-max"
+                                                value="{{ $posPriceModel?->max_price ? number_format((float) $posPriceModel->max_price, 0, ',', '.') : '' }}"
+                                                placeholder="{{ $posPriceModel?->recommended_price ? number_format((float) $posPriceModel->recommended_price, 0, ',', '.') : '0' }}">
                                         </div>
                                     </div>
                                 </div>
@@ -644,32 +684,29 @@
     const SAVE_ROW_URL = '{{ route("admin.products.quick-setup.save-row") }}';
     const BATCH_SAVE_URL = '{{ route("admin.products.quick-setup.batch-save") }}';
 
-    // Formatter angka standar Indonesia
+    // Formatter angka standar Indonesia (tampilan)
     function formatNumber(num) {
         if (num === null || num === undefined || isNaN(num)) return '0';
         return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(num);
     }
 
-    // Parser input angka tangguh: membersihkan titik ribuan / format lokal Indonesia secara real-time
+    // Parser input angka tangguh: membersihkan titik ribuan dan format teks menjadi angka murni
     function parseNumericValue(val) {
         if (val === null || val === undefined) return 0;
         let str = String(val).trim();
         if (str === '') return 0;
 
-        // Hilangkan spasi dan prefix Rp jika ada
+        // Hilangkan spasi dan prefix Rp
         str = str.replace(/rp/gi, '').trim();
 
-        // Tangani pemisah ribuan dan desimal
+        // Tangani pemisah ribuan titik
         if (str.includes('.') && str.includes(',')) {
-            // Misal "120.000,50" -> buang titik ribuan, ganti koma dengan titik desimal
             str = str.replace(/\./g, '').replace(',', '.');
         } else if (str.includes('.') && !str.includes(',')) {
             const parts = str.split('.');
             if (parts.length > 2) {
-                // Multi-dot misal "1.000.000" -> titik adalah ribuan
                 str = str.replace(/\./g, '');
             } else if (parts.length === 2 && parts[1].length === 3 && parseFloat(parts[0]) >= 1) {
-                // Satu dot diikuti 3 digit misal "120.000" atau "52.000" -> ribuan
                 str = str.replace(/\./g, '');
             }
         } else if (str.includes(',') && !str.includes('.')) {
@@ -683,10 +720,51 @@
             }
         }
 
-        // Hapus karakter selain angka, minus, dan titik desimal
+        // Ambil hanya angka, minus, dan titik
         str = str.replace(/[^0-9.-]/g, '');
         const num = parseFloat(str);
         return isNaN(num) ? 0 : num;
+    }
+
+    // Auto-formatting titik ribuan secara real-time dengan mempertahankan posisi kursor
+    function handleThousandFormat(input) {
+        const originalVal = input.value;
+        const cursorPos = input.selectionStart || 0;
+        
+        // Hitung berapa banyak digit sebelum kursor
+        const digitsBeforeCursor = originalVal.slice(0, cursorPos).replace(/\D/g, '').length;
+        
+        // Ambil hanya digit angka
+        const rawDigits = originalVal.replace(/\D/g, '');
+        if (rawDigits === '') {
+            input.value = '';
+            return;
+        }
+
+        // Format dengan titik setiap 3 digit
+        const formatted = rawDigits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        input.value = formatted;
+
+        // Hitung kembali posisi kursor agar tetap di belakang digit yang diketik
+        let newCursorPos = 0;
+        let countedDigits = 0;
+        for (let i = 0; i < formatted.length; i++) {
+            if (/\d/.test(formatted[i])) {
+                countedDigits++;
+            }
+            if (countedDigits === digitsBeforeCursor) {
+                newCursorPos = i + 1;
+                break;
+            }
+        }
+
+        if (countedDigits < digitsBeforeCursor || formatted === '') {
+            newCursorPos = formatted.length;
+        }
+
+        try {
+            input.setSelectionRange(newCursorPos, newCursorPos);
+        } catch (e) {}
     }
 
     // Kalkulasi Konversi HPP & Stok per baris secara real-time
@@ -749,20 +827,40 @@
         }
     }
 
-    // Event Delegation untuk SEMUA interaksi (input, keyup, change, paste)
-    // Memastikan update terjadi seketika (realtime) bahkan saat masih mengetik tiap huruf/angka!
+    // Event Delegation untuk interaksi keyboard dan input
     document.addEventListener('DOMContentLoaded', function() {
         const table = document.getElementById('table-quick-setup');
         if (!table) return;
 
-        const events = ['input', 'keyup', 'change', 'paste'];
-        events.forEach(function(eventType) {
+        // Tangani Backspace jika kursor berada tepat setelah titik pemisah ribuan
+        table.addEventListener('keydown', function(e) {
+            const target = e.target;
+            if (target && target.matches('.format-thousand') && e.key === 'Backspace') {
+                const pos = target.selectionStart;
+                if (pos > 0 && target.value[pos - 1] === '.') {
+                    e.preventDefault();
+                    const val = target.value;
+                    const newVal = val.slice(0, pos - 2) + val.slice(pos - 1);
+                    target.value = newVal;
+                    target.setSelectionRange(pos - 1, pos - 1);
+                    target.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        });
+
+        // Tangani input event: auto-format ribuan dan update konversi secara real-time
+        ['input', 'keyup', 'change', 'paste'].forEach(function(eventType) {
             table.addEventListener(eventType, function(e) {
                 const target = e.target;
                 if (!target) return;
 
                 const row = target.closest('tr.product-row');
                 if (!row) return;
+
+                // Format ribuan jika elemen bertipe format-thousand pada event input atau paste
+                if (target.matches('.format-thousand') && (eventType === 'input' || eventType === 'paste')) {
+                    handleThousandFormat(target);
+                }
 
                 if (target.matches('.input-hpp-amount, .input-hpp-unit, .input-stock-qty, .input-stock-unit')) {
                     calculateRowConversions(row);

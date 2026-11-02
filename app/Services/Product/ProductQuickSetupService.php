@@ -216,9 +216,29 @@ final class ProductQuickSetupService
             $pcsUnit = Unit::query()->where('code', 'PCS')->first() ?? Unit::query()->first();
             $baseUnitId = $pcsUnit ? $pcsUnit->id : $product->base_unit_id;
 
+            $attributes = $product->attributes ?? [];
+            $quickSetupAttrs = (array) ($attributes['quick_setup'] ?? []);
+            $locationsAttrs = (array) ($quickSetupAttrs['locations'] ?? []);
+
+            $locationsAttrs[$workLocation->id] = [
+                'hpp_unit_id' => $hppUnitId,
+                'hpp_amount' => $hppAmount,
+                'stock_unit_id' => $stockUnitId,
+                'stock_qty' => $stockQty,
+            ];
+
+            $quickSetupAttrs['hpp_unit_id'] = $hppUnitId;
+            $quickSetupAttrs['hpp_amount'] = $hppAmount;
+            $quickSetupAttrs['stock_unit_id'] = $stockUnitId;
+            $quickSetupAttrs['stock_qty'] = $stockQty;
+            $quickSetupAttrs['locations'] = $locationsAttrs;
+
+            $attributes['quick_setup'] = $quickSetupAttrs;
+
             $product->forceFill([
                 'base_unit_id' => $baseUnitId,
                 'cost_price' => $retailCostPrice,
+                'attributes' => $attributes,
             ])->save();
 
             // 4. Sinkronisasi tabel product_units
