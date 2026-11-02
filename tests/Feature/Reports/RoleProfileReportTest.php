@@ -263,13 +263,16 @@ class RoleProfileReportTest extends TestCase
         $owner = $this->userWithRole('owner_viewer');
         $admin = $this->userWithRole('super_admin');
 
-        $this->actingAs($owner)->get(route('reports.profiles.owner.show', ['report' => 'overview']))
+        $ownerOverview = $this->actingAs($owner)->get(route('reports.profiles.owner.show', ['report' => 'overview']))
             ->assertOk()
             ->assertSee('EXECUTIVE BUSINESS REPORT')
             ->assertSee('Skor Kesehatan Bisnis')
             ->assertSee('Pendapatan &amp; Channel Mix', false)
             ->assertSee('Anomali &amp; Keputusan', false)
+            ->assertSee('data-owner-kpi-chart', false)
+            ->assertDontSee('or-spark', false)
             ->assertDontSee('id="kt_app_toolbar"', false);
+        $this->assertSame(6, substr_count($ownerOverview->getContent(), 'data-owner-kpi-chart'));
         $ownerSidebar = $this->renderSidebar($owner);
         $this->assertStringContainsString('Laporan Owner', $ownerSidebar);
         $this->assertStringNotContainsString('Laporan Super Admin', $ownerSidebar);

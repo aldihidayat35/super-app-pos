@@ -18,6 +18,14 @@
     $reserved = (float) data_get($inventory, 'reserved', 0);
     $stockTotal = max(1, $onHand + $reserved);
     $scoreLabel = ((int) data_get($health, 'overall', 0)) >= 80 ? 'Sehat' : (((int) data_get($health, 'overall', 0)) >= 60 ? 'Perlu perhatian' : 'Berisiko');
+    $kpis = [
+        ['label' => 'Revenue', 'value' => $money($summary['revenue'] ?? 0), 'icon' => 'or-chart', 'tone' => 'green', 'note' => 'Pendapatan periode aktif', 'series' => data_get($report, 'sparklines.revenue', []), 'money' => true],
+        ['label' => 'Gross Margin', 'value' => $money($summary['gross_margin'] ?? null), 'icon' => 'or-layers', 'tone' => 'green', 'note' => $marginLabel, 'series' => data_get($report, 'sparklines.gross_margin', []), 'money' => true],
+        ['label' => 'Stock Value', 'value' => $money($summary['stock_value'] ?? null), 'icon' => 'or-box', 'tone' => 'green', 'note' => 'HPP lapisan aktif', 'series' => data_get($report, 'sparklines.stock_value', []), 'money' => true],
+        ['label' => 'Receivable Outstanding', 'value' => $money($summary['receivable_outstanding'] ?? 0), 'icon' => 'or-coins', 'tone' => 'green', 'note' => 'Piutang per lokasi', 'series' => data_get($report, 'sparklines.receivable', []), 'money' => true],
+        ['label' => 'Critical Stock', 'value' => $summary['critical_stock_count'] ?? 0, 'icon' => 'or-alert', 'tone' => 'red', 'note' => 'Perlu perhatian segera', 'series' => data_get($report, 'sparklines.critical_stock', []), 'money' => false],
+        ['label' => 'Open Accounts', 'value' => $summary['open_accounts'] ?? 0, 'icon' => 'or-users', 'tone' => 'green', 'note' => 'Akun terbuka per lokasi', 'series' => data_get($report, 'sparklines.open_accounts', []), 'money' => false],
+    ];
 @endphp
 
 @include('reports.profiles.owner._executive-overview-styles')
@@ -32,8 +40,36 @@
     @if($canExport)<form id="ownerExport" method="POST" action="{{ route('reports.profiles.exports.store', ['profile' => 'owner', 'report' => 'overview']) }}" hidden>@csrf<input type="hidden" name="format" value="csv"><input type="hidden" name="start_date" value="{{ $filters['start_date'] }}"><input type="hidden" name="end_date" value="{{ $filters['end_date'] }}"><input type="hidden" name="work_location_id" value="{{ $selectedLocation?->id }}"><input type="hidden" name="range" value="{{ $filters['range'] ?? 'monthly' }}"></form>@endif
 
     <section class="or-kpis">
-        @foreach([['Revenue',$money($summary['revenue'] ?? 0),'or-chart','green'],['Gross Margin',$money($summary['gross_margin'] ?? null),'or-layers','green'],['Stock Value',$money($summary['stock_value'] ?? null),'or-box','green'],['Receivable Outstanding',$money($summary['receivable_outstanding'] ?? 0),'or-coins','green'],['Critical Stock',$summary['critical_stock_count'] ?? 0,'or-alert','red'],['Open Accounts',$summary['open_accounts'] ?? 0,'or-users','green']] as [$label,$value,$icon,$tone])
-            <article class="or-kpi"><div><svg><use href="#{{ $icon }}"/></svg><span>{{ $label }}</span></div><strong title="{{ $value }}">{{ $value }}</strong><i class="or-spark {{ $tone }}"></i><small>{{ $label === 'Gross Margin' ? $marginLabel : 'Periode aktif' }}</small></article>
+        @foreach($kpis as $index => $kpi)
+            @php
+                $series = is_array($kpi['series']) ? array_values($kpi['series']) : [];
+                if ($series === []) {
+                    $series = ['0', '0'];
+                } elseif (count($series) === 1) {
+                    $series = [$series[0], $series[0]];
+                }
+                $seriesNumbers = array_map('floatval', $series);
+                $seriesMin = min($seriesNumbers);
+                $seriesMax = max($seriesNumbers);
+                $seriesRange = max(1, $seriesMax - $seriesMin);
+                $seriesCount = max(1, count($seriesNumbers) - 1);
+                $sparkPoints = collect($seriesNumbers)->map(fn (float $point, int $pointIndex): string => (8 + (($pointIndex / $seriesCount) * 104)).','.(38 - ((($point - $seriesMin) / $seriesRange) * 26)))->all();
+                $sparkArea = 'M '.implode(' L ', $sparkPoints).' L 112 44 L 8 44 Z';
+            @endphp
+            <article class="or-kpi" data-owner-kpi-card>
+                <div class="or-kpi-label"><svg><use href="#{{ $kpi['icon'] }}"/></svg><span>{{ $kpi['label'] }}</span></div>
+                <strong title="{{ $kpi['value'] }}">{{ $kpi['value'] }}</strong>
+                <small>{{ $kpi['note'] }}</small>
+                <svg class="or-kpi-chart {{ $kpi['tone'] }}" viewBox="0 0 120 48" role="img" aria-label="Grafik {{ $kpi['label'] }}" data-owner-kpi-chart>
+                    <defs><linearGradient id="orSpark{{ $index }}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".30"/><stop offset="1" stop-color="currentColor" stop-opacity=".02"/></linearGradient></defs>
+                    <path class="area" d="{{ $sparkArea }}" fill="url(#orSpark{{ $index }})"/>
+                    <polyline points="{{ implode(' ', $sparkPoints) }}"/>
+                    @foreach($sparkPoints as $pointIndex => $point)
+                        @php [$pointX, $pointY] = explode(',', $point); @endphp
+                        <circle cx="{{ $pointX }}" cy="{{ $pointY }}" r="2.8"><title>{{ $kpi['label'] }} · {{ $kpi['money'] ? $money($series[$pointIndex]) : qty((string) $series[$pointIndex]) }}</title></circle>
+                    @endforeach
+                </svg>
+            </article>
         @endforeach
     </section>
 
@@ -43,7 +79,7 @@
     </section>
 
     <section class="or-panels">
-        <article class="or-panel"><x-owner-panel-head title="Pendapatan & Channel Mix" :url="$detail('income')"/><p>Komposisi pendapatan dan tren periode aktif.</p><div class="or-two-metrics"><div><span>Retur</span><b>{{ $money($summary['returns_value'] ?? 0) }}</b></div><div><span>Selisih Kas</span><b>{{ $money($summary['cash_difference'] ?? 0) }}</b></div></div><h4>Komposisi Channel</h4><div class="or-channel-bars">@foreach($channelMix as $channel)<div><span>{{ data_get($channel,'label','-') }}</span><b>{{ $money(data_get($channel,'value',0)) }}</b><i><em style="width:{{ ((float)data_get($channel,'value',0)/$channelTotal)*100 }}%"></em></i></div>@endforeach</div><h4>Tren Pendapatan</h4><svg class="or-revenue-chart" viewBox="0 0 230 100">@php $rc=max(1,$revenueChart->count()-1);$points=[];foreach($revenueChart as $i=>$row){$x=10+($i/$rc)*210;$v=(float)data_get($row,'value',data_get($row,'revenue',data_get($row,'total',0)));$y=86-(($v/$revenueMax)*68);$points[]="$x,$y";} @endphp<polyline points="{{ implode(' ',$points) }}"/>@foreach($revenueChart as $i=>$row)@php $x=10+($i/$rc)*210;$v=(float)data_get($row,'value',data_get($row,'revenue',data_get($row,'total',0)));$y=86-(($v/$revenueMax)*68); @endphp<circle cx="{{ $x }}" cy="{{ $y }}" r="4"><title>{{ data_get($row,'date',data_get($row,'label','-')) }} · {{ $money($v) }}</title></circle>@endforeach</svg></article>
+        <article class="or-panel"><x-owner-panel-head title="Pendapatan & Channel Mix" :url="$detail('income')"/><p>Komposisi pendapatan dan tren periode aktif.</p><div class="or-two-metrics"><div><span>Retur</span><b>{{ $money($summary['returns_value'] ?? 0) }}</b></div><div><span>Selisih Kas</span><b>{{ $money($summary['cash_difference'] ?? 0) }}</b></div></div><h4>Komposisi Channel</h4><div class="or-channel-bars">@foreach($channelMix as $channel)<div><span>{{ data_get($channel,'label','-') }}</span><b>{{ $money(data_get($channel,'value',0)) }}</b><i><em style="width:{{ ((float)data_get($channel,'value',0)/$channelTotal)*100 }}%"></em></i></div>@endforeach</div><h4>Tren Pendapatan</h4>@if($revenueChart->isEmpty())<div class="or-empty-chart">Belum ada transaksi pada periode ini.</div>@else<svg class="or-revenue-chart" viewBox="0 0 230 100">@php $rc=max(1,$revenueChart->count()-1);$points=[];foreach($revenueChart as $i=>$row){$x=10+($i/$rc)*210;$v=(float)data_get($row,'value',data_get($row,'revenue',data_get($row,'total',0)));$y=86-(($v/$revenueMax)*68);$points[]="$x,$y";} @endphp<polyline points="{{ implode(' ',$points) }}"/>@foreach($revenueChart as $i=>$row)@php $x=10+($i/$rc)*210;$v=(float)data_get($row,'value',data_get($row,'revenue',data_get($row,'total',0)));$y=86-(($v/$revenueMax)*68); @endphp<circle cx="{{ $x }}" cy="{{ $y }}" r="4"><title>{{ data_get($row,'date',data_get($row,'label','-')) }} · {{ $money($v) }}</title></circle>@endforeach</svg>@endif</article>
 
         <article class="or-panel"><x-owner-panel-head title="Perbandingan Lokasi" :url="$detail('locations')"/><p>Kinerja pendapatan, stok, dan risiko per lokasi.</p><div class="or-location-bars">@foreach(array_slice($report['locations'] ?? [],0,4) as $location)<div title="{{ $location['name'] }}"><span>{{ $location['name'] }}</span><i><em style="width:{{ min(100,((float)$location['revenue']/$revenueMax)*100) }}%"></em></i></div>@endforeach</div><div class="or-table"><table><thead><tr><th>Lokasi</th><th>Pendapatan</th><th>Stok</th><th>Kritis</th></tr></thead><tbody>@forelse(array_slice($report['locations'] ?? [],0,5) as $location)<tr><td>{{ $location['name'] }}</td><td>{{ $money($location['revenue']) }}</td><td>{{ $money($location['stock_value']) }}</td><td>{{ $location['critical_count'] }}</td></tr>@empty<tr><td colspan="4">Belum ada lokasi aktif.</td></tr>@endforelse</tbody></table></div></article>
 

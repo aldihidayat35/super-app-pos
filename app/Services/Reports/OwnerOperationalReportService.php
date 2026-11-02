@@ -95,6 +95,14 @@ class OwnerOperationalReportService
             ];
         })->sortByDesc('revenue')->values()->all();
 
+        $marginTrend = $canViewSensitive ? $this->marginTrend($filters) : [];
+        $receivableByLocation = (clone $receivableQuery)
+            ->selectRaw('receivables.work_location_id, COALESCE(SUM(receivables.outstanding_amount),0) as value')
+            ->groupBy('receivables.work_location_id')->orderBy('receivables.work_location_id')->pluck('value')->map(fn ($value): string => (string) $value)->all();
+        $openAccountsByLocation = (clone $receivableQuery)->where('outstanding_amount', '>', 0)
+            ->selectRaw('receivables.work_location_id, COUNT(*) as value')
+            ->groupBy('receivables.work_location_id')->orderBy('receivables.work_location_id')->pluck('value')->map(fn ($value): string => (string) $value)->all();
+
         $critical = (int) ($summary['critical_stock_count'] ?? 0);
         $productCount = (int) ($stock->products ?? 0);
         $availableStock = Decimal::sub(
@@ -141,6 +149,14 @@ class OwnerOperationalReportService
                 'revenue' => $revenueRows,
                 'channel_mix' => $channelRows,
                 'aging' => is_array($sections['aging'] ?? null) ? $sections['aging'] : [],
+            ],
+            'sparklines' => [
+                'revenue' => collect($revenueRows)->map(fn (array $row): string => (string) ($row['total'] ?? $row['value'] ?? $row['revenue'] ?? '0'))->values()->all(),
+                'gross_margin' => $marginTrend,
+                'stock_value' => $canViewSensitive ? collect($locations)->map(fn (array $row): string => (string) ($row['stock_value'] ?? '0'))->values()->all() : [],
+                'receivable' => array_values($receivableByLocation),
+                'critical_stock' => collect($locations)->map(fn (array $row): string => (string) $row['critical_count'])->values()->all(),
+                'open_accounts' => array_values($openAccountsByLocation),
             ],
             'locations' => $locations,
             'receivables' => $latestReceivables,
@@ -215,5 +231,27 @@ class OwnerOperationalReportService
 
             return $row;
         })->values()->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return list<string>
+     */
+    private function marginTrend(array $filters): array
+    {
+        $driver = DB::connection()->getDriverName();
+        $dateSql = match ([$driver, (string) $filters['range']]) {
+            ['mysql', 'monthly'] => "DATE_FORMAT(completed_at, '%Y-%m')",
+            ['mysql', 'yearly'] => "DATE_FORMAT(completed_at, '%Y')",
+            ['sqlite', 'monthly'] => "strftime('%Y-%m', completed_at)",
+            ['sqlite', 'yearly'] => "strftime('%Y', completed_at)",
+            default => 'DATE(completed_at)',
+        };
+
+        return DB::table('pos_sales')->whereIn('work_location_id', $filters['location_ids'])
+            ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+            ->whereIn('status', ['completed', 'returned'])
+            ->selectRaw($dateSql.' as period, COALESCE(SUM(total_margin_amount),0) as value')
+            ->groupBy('period')->orderBy('period')->pluck('value')->map(fn ($value): string => (string) $value)->values()->all();
     }
 }
