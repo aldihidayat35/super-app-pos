@@ -20,20 +20,36 @@ class ProductImportService
         private readonly ProductSkuService $skuService,
     ) {}
 
-    /** @return array{rows: array<int, array<string, mixed>>, errors: array<int, array<int, string>>} */
+    /** @return array{rows: array<int, array<string, mixed>>, errors: array<int, array<int, string>>, total_count: int, valid_count: int, error_count: int} */
     public function preview(UploadedFile $file): array
     {
         $rows = $this->readRows($file);
         $errors = [];
+        $enrichedRows = [];
 
         foreach ($rows as $index => $row) {
+            $rowNum = $index + 2;
             $validator = Validator::make($row, $this->rules(), [], $this->attributes());
-            if ($validator->fails()) {
-                $errors[$index + 2] = $validator->errors()->all();
+            $hasError = $validator->fails();
+            $rowErrors = $hasError ? $validator->errors()->all() : [];
+
+            if ($hasError) {
+                $errors[$rowNum] = $rowErrors;
             }
+
+            $row['__row_num'] = $rowNum;
+            $row['__is_valid'] = ! $hasError;
+            $row['__errors'] = $rowErrors;
+            $enrichedRows[] = $row;
         }
 
-        return ['rows' => $rows, 'errors' => $errors];
+        return [
+            'rows' => $enrichedRows,
+            'errors' => $errors,
+            'total_count' => count($rows),
+            'valid_count' => count($rows) - count($errors),
+            'error_count' => count($errors),
+        ];
     }
 
     /**

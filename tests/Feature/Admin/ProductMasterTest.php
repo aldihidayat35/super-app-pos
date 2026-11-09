@@ -15,6 +15,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -385,5 +386,31 @@ class ProductMasterTest extends TestCase
         $this->assertSame('Umum', $product->category?->name);
         $this->assertSame('PCS', $product->baseUnit?->code);
         $this->assertSame('0.0000', $product->minimum_order);
+    }
+
+    public function test_import_template_downloads_two_sheet_spreadsheet(): void
+    {
+        ProductCategory::factory()->create(['code' => 'DAPUR', 'name' => 'Alat Dapur', 'is_active' => true]);
+        Unit::factory()->create(['code' => 'LSN', 'name' => 'Lusin', 'symbol' => 'lsn', 'is_active' => true]);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.products.import.template'));
+        $response->assertOk();
+        $this->assertStringContainsString('spreadsheetml.sheet', (string) $response->headers->get('content-type'));
+
+        ob_start();
+        $response->sendContent();
+        $content = (string) ob_get_clean();
+
+        $tempFile = (string) tempnam(sys_get_temp_dir(), 'tpl');
+        file_put_contents($tempFile, $content);
+
+        $spreadsheet = IOFactory::load($tempFile);
+        $this->assertSame(2, $spreadsheet->getSheetCount());
+        $this->assertSame('Data Import', $spreadsheet->getSheet(0)->getTitle());
+        $this->assertSame('Referensi Sistem', $spreadsheet->getSheet(1)->getTitle());
+        $this->assertSame('name', $spreadsheet->getSheet(0)->getCell('A1')->getValue());
+        $this->assertSame('sku', $spreadsheet->getSheet(0)->getCell('B1')->getValue());
+
+        @unlink($tempFile);
     }
 }
