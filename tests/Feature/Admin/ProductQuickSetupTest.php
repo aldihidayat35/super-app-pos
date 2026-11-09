@@ -113,9 +113,7 @@ class ProductQuickSetupTest extends TestCase
             ->assertSee('Gudang Pusat')
             ->assertSee('Biskuit Cokelat')
             ->assertSee('BSK-001')
-            ->assertSee('Ring Retail')
-            ->assertSee('Ring B2B')
-            ->assertSee('Ring POS');
+            ->assertSee('Harga Jual Minimum (Anti-Rugi)');
     }
 
     public function test_kepala_toko_cannot_access_unpermitted_location(): void
@@ -189,28 +187,101 @@ class ProductQuickSetupTest extends TestCase
         $this->assertEquals('24.0000', (string) $stock->quantity_on_hand);
         $this->assertEquals('240000.00', (string) $stock->cost_value);
 
-        // Verifikasi Ketiga Ring Harga di product_prices
+        // Verifikasi Ketiga Ring Harga di product_prices (Semua channel tersinkron ke single minimum price)
         $this->assertDatabaseHas('product_prices', [
             'product_id' => $product->id,
             'work_location_id' => $this->gudang->id,
             'channel' => 'retail',
-            'price_ring' => 'Ring Retail',
             'recommended_price' => '15000.00',
+            'min_price' => '15000.00',
         ]);
         $this->assertDatabaseHas('product_prices', [
             'product_id' => $product->id,
             'work_location_id' => $this->gudang->id,
             'channel' => 'b2b',
-            'price_ring' => 'Ring B2B',
-            'recommended_price' => '140000.00',
+            'recommended_price' => '15000.00',
+            'min_price' => '15000.00',
         ]);
         $this->assertDatabaseHas('product_prices', [
             'product_id' => $product->id,
             'work_location_id' => $this->gudang->id,
             'channel' => 'pos',
-            'price_ring' => 'Ring POS',
             'recommended_price' => '15000.00',
+            'min_price' => '15000.00',
         ]);
+    }
+
+    public function test_save_single_row_with_selling_unit_and_anti_loss_rule(): void
+    {
+        $product = Product::factory()->create([
+            'name' => 'Kopi Kemasan Grosir',
+            'sku' => 'KOP-GRO-01',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'cost_price' => 0,
+            'status' => 'active',
+        ]);
+
+        // HPP 1 Lusin = 120.000 (10.000 / pcs)
+        // Jual 1 Lusin = 150.000 (12.500 / pcs) -> Di atas HPP
+        $payload = [
+            'work_location_id' => $this->gudang->id,
+            'product_id' => $product->id,
+            'hpp_unit_id' => $this->lsn->id,
+            'hpp_amount' => 120000,
+            'stock_unit_id' => $this->pcs->id,
+            'stock_qty' => 10,
+            'sell_unit_id' => $this->lsn->id,
+            'min_price_amount' => 150000,
+        ];
+
+        $response = $this->actingAs($this->kepalaGudang)
+            ->postJson(route('admin.products.quick-setup.save-row'), $payload);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'product_id' => $product->id,
+                    'retail_cost_price' => '10000.00',
+                    'retail_min_price' => '12500.00',
+                ],
+            ]);
+
+        $product->refresh();
+        $this->assertEquals('10000.00', (string) $product->cost_price);
+        $this->assertEquals('12500.00', (string) $product->minimum_price);
+    }
+
+    public function test_save_single_row_blocks_price_below_cost_price(): void
+    {
+        $product = Product::factory()->create([
+            'name' => 'Sabun Mandi Murah',
+            'sku' => 'SBN-001',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'cost_price' => 0,
+            'status' => 'active',
+        ]);
+
+        // HPP 1 Pcs = 5.000
+        // Jual 1 Pcs = 4.000 (RUGI! Di bawah modal)
+        $payload = [
+            'work_location_id' => $this->gudang->id,
+            'product_id' => $product->id,
+            'hpp_unit_id' => $this->pcs->id,
+            'hpp_amount' => 5000,
+            'stock_unit_id' => $this->pcs->id,
+            'stock_qty' => 5,
+            'sell_unit_id' => $this->pcs->id,
+            'min_price_amount' => 4000,
+        ];
+
+        $response = $this->actingAs($this->kepalaGudang)
+            ->postJson(route('admin.products.quick-setup.save-row'), $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['min_price_amount']);
     }
 
     public function test_save_row_is_idempotent_for_opening_stock(): void

@@ -26,28 +26,10 @@ use Illuminate\Validation\ValidationException;
 
 final class ProductQuickSetupService
 {
-    public const DEFAULT_RINGS = [
-        'ring_retail' => [
-            'key' => 'ring_retail',
-            'label' => 'Ring Retail',
-            'price_ring' => 'Ring Retail',
-            'channel' => 'retail',
-            'aliases' => ['Ring Retail', 'retail', 'ring_retail', 'ring_1'],
-        ],
-        'ring_b2b' => [
-            'key' => 'ring_b2b',
-            'label' => 'Ring B2B',
-            'price_ring' => 'Ring B2B',
-            'channel' => 'b2b',
-            'aliases' => ['Ring B2B', 'b2b', 'ring_b2b', 'ring_grosir', 'ring_2'],
-        ],
-        'ring_pos' => [
-            'key' => 'ring_pos',
-            'label' => 'Ring POS',
-            'price_ring' => 'Ring POS',
-            'channel' => 'pos',
-            'aliases' => ['Ring POS', 'pos', 'ring_pos', 'Ring Kasir', 'ring_3'],
-        ],
+    public const CHANNELS = [
+        'retail' => 'Ring Retail',
+        'pos' => 'Ring POS',
+        'b2b' => 'Ring B2B',
     ];
 
     public function __construct(
@@ -105,12 +87,14 @@ final class ProductQuickSetupService
             $query->where(function (Builder $q) use ($workLocation): void {
                 $q->whereDoesntHave('prices', fn ($p) => $p->where('work_location_id', $workLocation->id)->where('status', 'active')->where('recommended_price', '>', 0))
                     ->orWhereDoesntHave('stockBatches', fn ($b) => $b->where('work_location_id', $workLocation->id)->where('source_type', 'opening_stock'))
-                    ->orWhere('cost_price', '<=', 0);
+                    ->orWhere('cost_price', '<=', 0)
+                    ->orWhere('minimum_price', '<=', 0);
             });
         } elseif ($completeness === 'complete') {
             $query->whereHas('prices', fn ($p) => $p->where('work_location_id', $workLocation->id)->where('status', 'active')->where('recommended_price', '>', 0))
                 ->whereHas('stockBatches', fn ($b) => $b->where('work_location_id', $workLocation->id)->where('source_type', 'opening_stock'))
-                ->where('cost_price', '>', 0);
+                ->where('cost_price', '>', 0)
+                ->where('minimum_price', '>', 0);
         }
 
         return $query->orderBy('name')->paginate($perPage)->withQueryString();
@@ -128,6 +112,7 @@ final class ProductQuickSetupService
             ->whereHas('prices', fn ($p) => $p->where('work_location_id', $workLocation->id)->where('status', 'active')->where('recommended_price', '>', 0))
             ->whereHas('stockBatches', fn ($b) => $b->where('work_location_id', $workLocation->id)->where('source_type', 'opening_stock'))
             ->where('cost_price', '>', 0)
+            ->where('minimum_price', '>', 0)
             ->count();
 
         return [
@@ -167,7 +152,7 @@ final class ProductQuickSetupService
     }
 
     /**
-     * Menyimpan data per baris produk.
+     * Menyimpan data per baris produk dengan 1 Harga Jual Minimum (Anti-Rugi).
      *
      * @param array{
      *     product_id: int,
@@ -176,7 +161,9 @@ final class ProductQuickSetupService
      *     hpp_amount: string|numeric,
      *     stock_unit_id: int,
      *     stock_qty: string|numeric,
-     *     prices: array<string, mixed>,
+     *     sell_unit_id?: int|null,
+     *     min_price_amount?: string|numeric|null,
+     *     prices?: array<string, mixed>|null,
      *     unlimited?: bool|string|int,
      *     starts_at?: string|null,
      *     ends_at?: string|null,
@@ -187,8 +174,12 @@ final class ProductQuickSetupService
      *     sku: string,
      *     name: string,
      *     retail_cost_price: string,
+     *     retail_min_price: string,
+     *     margin_amount: string,
+     *     margin_percent: string,
      *     initial_stock_base_qty: string,
      *     stock_initialized: bool,
+     *     is_complete: bool,
      *     message: string
      * }
      */
@@ -203,8 +194,14 @@ final class ProductQuickSetupService
             $stockUnitId = (int) $data['stock_unit_id'];
             $stockQty = Decimal::normalize((string) $data['stock_qty'], 4);
 
+            $pcsUnit = Unit::query()->where('code', 'PCS')->first() ?? Unit::query()->first();
+            $baseUnitId = $pcsUnit ? $pcsUnit->id : $product->base_unit_id;
+
+            $sellUnitId = (int) ($data['sell_unit_id'] ?? $baseUnitId);
+
             $hppFactor = $this->resolveUnitFactor($product, $hppUnitId);
             $stockFactor = $this->resolveUnitFactor($product, $stockUnitId);
+            $sellFactor = $this->resolveUnitFactor($product, $sellUnitId);
 
             if (Decimal::compare($hppFactor, '0', 6) <= 0) {
                 $hppFactor = '1.000000';
@@ -212,16 +209,41 @@ final class ProductQuickSetupService
             if (Decimal::compare($stockFactor, '0', 6) <= 0) {
                 $stockFactor = '1.000000';
             }
+            if (Decimal::compare($sellFactor, '0', 6) <= 0) {
+                $sellFactor = '1.000000';
+            }
 
             // 1. Hitung HPP Eceran (per pcs): HPP Beli / Rasio Konversi Satuan HPP
             $retailCostPrice = Decimal::div($hppAmount, $hppFactor, 2, 6, 2);
 
-            // 2. Hitung Total Kuantitas Eceran (pcs): Stok Input * Rasio Konversi Satuan Stok
-            $initialStockBaseQty = Decimal::mul($stockQty, $stockFactor, 4, 6, 4);
+            // 2. Ekstrak & Hitung Harga Jual Minimum per pcs
+            $rawSellAmount = '0.00';
+            if (array_key_exists('min_price_amount', $data) && $data['min_price_amount'] !== null && $data['min_price_amount'] !== '') {
+                $rawSellAmount = Decimal::normalize((string) $data['min_price_amount'], 2);
+            } elseif (! empty($data['prices'])) {
+                $rawPrice = $data['prices']['ring_retail']['recommended']
+                    ?? $data['prices']['ring_retail']['min']
+                    ?? $data['prices']['ring_retail']
+                    ?? $data['prices']['ring_pos']['recommended']
+                    ?? '0.00';
+                $rawSellAmount = Decimal::normalize((string) $rawPrice, 2);
+            }
 
-            // 3. Pastikan satuan dasar produk (PCS)
-            $pcsUnit = Unit::query()->where('code', 'PCS')->first() ?? Unit::query()->first();
-            $baseUnitId = $pcsUnit ? $pcsUnit->id : $product->base_unit_id;
+            $retailMinPrice = Decimal::div($rawSellAmount, $sellFactor, 2, 6, 2);
+
+            // 3. Validasi Proteksi Anti-Rugi: Harga Jual Minimum tidak boleh di bawah HPP
+            if (Decimal::compare($retailMinPrice, '0.00', 2) > 0 && Decimal::compare($retailCostPrice, '0.00', 2) > 0) {
+                if (Decimal::compare($retailMinPrice, $retailCostPrice, 2) < 0) {
+                    $formattedHpp = number_format((float) $retailCostPrice, 0, ',', '.');
+                    $formattedMin = number_format((float) $retailMinPrice, 0, ',', '.');
+                    throw ValidationException::withMessages([
+                        'min_price_amount' => "Harga jual minimum (Rp {$formattedMin}/pcs) tidak boleh lebih rendah dari modal HPP (Rp {$formattedHpp}/pcs).",
+                    ]);
+                }
+            }
+
+            // 4. Hitung Total Kuantitas Eceran (pcs): Stok Input * Rasio Konversi Satuan Stok
+            $initialStockBaseQty = Decimal::mul($stockQty, $stockFactor, 4, 6, 4);
 
             $attributes = $product->attributes ?? [];
             $quickSetupAttrs = (array) ($attributes['quick_setup'] ?? []);
@@ -232,12 +254,16 @@ final class ProductQuickSetupService
                 'hpp_amount' => $hppAmount,
                 'stock_unit_id' => $stockUnitId,
                 'stock_qty' => $stockQty,
+                'sell_unit_id' => $sellUnitId,
+                'min_price_amount' => $rawSellAmount,
             ];
 
             $quickSetupAttrs['hpp_unit_id'] = $hppUnitId;
             $quickSetupAttrs['hpp_amount'] = $hppAmount;
             $quickSetupAttrs['stock_unit_id'] = $stockUnitId;
             $quickSetupAttrs['stock_qty'] = $stockQty;
+            $quickSetupAttrs['sell_unit_id'] = $sellUnitId;
+            $quickSetupAttrs['min_price_amount'] = $rawSellAmount;
             $quickSetupAttrs['locations'] = $locationsAttrs;
 
             $attributes['quick_setup'] = $quickSetupAttrs;
@@ -245,10 +271,11 @@ final class ProductQuickSetupService
             $product->forceFill([
                 'base_unit_id' => $baseUnitId,
                 'cost_price' => $retailCostPrice,
+                'minimum_price' => $retailMinPrice,
                 'attributes' => $attributes,
             ])->save();
 
-            // 4. Sinkronisasi tabel product_units
+            // 5. Sinkronisasi tabel product_units
             $unitsPayload = [
                 [
                     'unit_id' => $baseUnitId,
@@ -279,70 +306,49 @@ final class ProductQuickSetupService
                 ];
             }
 
+            if ($sellUnitId !== $baseUnitId && $sellUnitId !== $hppUnitId && $sellUnitId !== $stockUnitId) {
+                $unitsPayload[] = [
+                    'unit_id' => $sellUnitId,
+                    'conversion_factor' => $sellFactor,
+                    'name' => Unit::find($sellUnitId)?->name ?: 'Satuan penjualan',
+                    'is_sellable' => true,
+                    'is_active' => true,
+                ];
+            }
+
             $this->conversion->syncProductUnits($product, $unitsPayload);
 
-            // 5. Masa Berlaku & Branch ID
+            // 6. Sinkronisasi Harga ke Seluruh Channel Penjualan (Retail, POS, B2B)
             $branchId = Branch::query()->where('work_location_id', $workLocation->id)->value('id');
-            $isUnlimited = filter_var($data['unlimited'] ?? true, FILTER_VALIDATE_BOOLEAN) || empty($data['ends_at']);
-            $startsAt = filled($data['starts_at'] ?? null) ? $data['starts_at'] : now()->toDateString();
-            $endsAt = $isUnlimited ? null : ($data['ends_at'] ?? null);
 
-            // 6. Simpan Ketiga Ring Harga (Ring Retail, Ring B2B, Ring POS) persis seperti di ProductPriceController
-            $incomingPrices = (array) $data['prices'];
-            foreach (self::DEFAULT_RINGS as $rKey => $rConf) {
-                $raw = $incomingPrices[$rKey] ?? null;
-                if ($raw === null || $raw === '') {
-                    continue;
+            if (Decimal::compare($retailMinPrice, '0.00', 2) > 0) {
+                foreach (self::CHANNELS as $channel => $ringLabel) {
+                    ProductPrice::query()->updateOrCreate(
+                        [
+                            'product_id' => $product->id,
+                            'work_location_id' => $workLocation->id,
+                            'channel' => $channel,
+                            'price_ring' => $ringLabel,
+                        ],
+                        [
+                            'branch_id' => $branchId,
+                            'min_price' => $retailMinPrice,
+                            'recommended_price' => $retailMinPrice,
+                            'max_price' => $retailMinPrice,
+                            'minimum_qty' => 1,
+                            'priority' => 10,
+                            'starts_at' => now()->toDateString(),
+                            'ends_at' => null,
+                            'status' => ProductPriceStatus::ACTIVE->value,
+                            'notes' => $data['notes'] ?? 'Setup harga jual minimum anti-rugi',
+                        ]
+                    );
                 }
-
-                if (is_array($raw)) {
-                    $rawRec = $raw['recommended'] ?? $raw['price'] ?? null;
-                    $rawMin = $raw['min'] ?? null;
-                    $rawMax = $raw['max'] ?? null;
-                } else {
-                    $rawRec = $raw;
-                    $rawMin = null;
-                    $rawMax = null;
-                }
-
-                if (($rawRec === null || $rawRec === '') && ($rawMin === null || $rawMin === '') && ($rawMax === null || $rawMax === '')) {
-                    continue;
-                }
-
-                $recVal = ($rawRec !== null && $rawRec !== '') ? Decimal::normalize((string) $rawRec, 2) : '0.00';
-                $minVal = ($rawMin !== null && $rawMin !== '') ? Decimal::normalize((string) $rawMin, 2) : $recVal;
-                $maxVal = ($rawMax !== null && $rawMax !== '') ? Decimal::normalize((string) $rawMax, 2) : $recVal;
-
-                if (Decimal::compare($recVal, '0.00', 2) <= 0 && Decimal::compare($minVal, '0.00', 2) <= 0) {
-                    continue;
-                }
-
-                // Update or create product_prices record for this ring
-                ProductPrice::query()->updateOrCreate(
-                    [
-                        'product_id' => $product->id,
-                        'work_location_id' => $workLocation->id,
-                        'channel' => $rConf['channel'],
-                        'price_ring' => $rConf['price_ring'],
-                    ],
-                    [
-                        'branch_id' => $branchId,
-                        'min_price' => $minVal,
-                        'recommended_price' => $recVal,
-                        'max_price' => $maxVal,
-                        'minimum_qty' => 1,
-                        'priority' => 10,
-                        'starts_at' => $startsAt,
-                        'ends_at' => $endsAt,
-                        'status' => ProductPriceStatus::ACTIVE->value,
-                        'notes' => $data['notes'] ?? 'Setup operasional cepat produk',
-                    ]
-                );
             }
 
             // 7. Pencatatan Persediaan Awal (Stok Awal) - Idempotent
             $stockInitialized = false;
-            $stockMessage = 'Parameter HPP dan harga jual berhasil disimpan.';
+            $stockMessage = 'Parameter HPP dan harga jual minimum berhasil disimpan.';
 
             $existingOpeningBatch = StockBatch::query()
                 ->where('product_id', $product->id)
@@ -350,16 +356,9 @@ final class ProductQuickSetupService
                 ->where('source_type', 'opening_stock')
                 ->first();
 
-            $retailPriceForSnapshot = ProductPrice::query()
-                ->where('product_id', $product->id)
-                ->where('work_location_id', $workLocation->id)
-                ->where('channel', 'retail')
-                ->value('recommended_price');
-
             if (! $existingOpeningBatch && Decimal::compare($stockQty, '0', 4) > 0) {
                 $batchNo = 'OPN-'.now()->format('Ymd').'-'.strtoupper(Str::random(5));
 
-                // Mutasi stok via InventoryService
                 $mutation = $this->inventory->adjust(
                     product: $product,
                     workLocation: $workLocation,
@@ -372,7 +371,6 @@ final class ProductQuickSetupService
                     metadata: ['hpp' => $retailCostPrice, 'source' => 'quick_operational_setup'],
                 );
 
-                // Buat StockBatch FIFO layer
                 $layer = $this->layers->createLayer([
                     'source_batch_id' => null,
                     'product_id' => $product->id,
@@ -391,26 +389,24 @@ final class ProductQuickSetupService
                     'received_at' => now()->toDateString(),
                     'expires_at' => null,
                     'cost_price' => $retailCostPrice,
-                    'entry_sale_price_snapshot' => $retailPriceForSnapshot,
+                    'entry_sale_price_snapshot' => $retailMinPrice,
                     'quantity_on_hand' => $initialStockBaseQty,
                     'quantity_reserved' => '0.0000',
                     'quantity_damaged' => '0.0000',
                 ]);
 
-                // Catat alokasi layer
                 $this->layers->recordAllocation($layer, [
                     'reference_type' => 'opening_stock',
                     'reference_id' => $layer->id,
                     'event_type' => 'opening_stock',
                     'quantity' => $initialStockBaseQty,
                     'unit_cost' => $retailCostPrice,
-                    'sale_price_snapshot' => $retailPriceForSnapshot,
+                    'sale_price_snapshot' => $retailMinPrice,
                     'actor_user_id' => $actor->id,
                     'metadata' => ['batch_no' => $batchNo, 'source' => 'quick_operational_setup'],
                     'occurred_at' => now(),
                 ]);
 
-                // Sinkronisasi nilai persediaan stok
                 $stock = Stock::query()->find($mutation->stock_id);
                 if ($stock instanceof Stock) {
                     $stock->forceFill([
@@ -418,7 +414,6 @@ final class ProductQuickSetupService
                     ])->save();
                 }
 
-                // Catat riwayat biaya produk
                 ProductCostHistory::query()->create([
                     'product_id' => $product->id,
                     'method' => 'opening_stock',
@@ -441,7 +436,7 @@ final class ProductQuickSetupService
                 $stockMessage = 'Stok awal sudah pernah dicatat sebelumnya di lokasi ini; saldo persediaan tidak diduplikasi.';
             }
 
-            // 7. Simpan Barcode (opsional & unik)
+            // 8. Simpan Barcode (opsional & unik)
             if (array_key_exists('barcode', $data)) {
                 $barcode = trim((string) ($data['barcode'] ?? ''));
                 if ($barcode !== '') {
@@ -475,7 +470,7 @@ final class ProductQuickSetupService
                 }
             }
 
-            // 8. Audit log penanggung jawab
+            // 9. Audit log penanggung jawab
             $this->audit->record(
                 event: 'product.quick_operational_setup',
                 module: 'products',
@@ -488,9 +483,11 @@ final class ProductQuickSetupService
                     'retail_cost_price' => $retailCostPrice,
                     'stock_unit_id' => $stockUnitId,
                     'stock_qty' => $stockQty,
+                    'sell_unit_id' => $sellUnitId,
+                    'min_price_amount' => $rawSellAmount,
+                    'retail_min_price' => $retailMinPrice,
                     'initial_stock_base_qty' => $initialStockBaseQty,
                     'stock_initialized' => $stockInitialized,
-                    'prices' => $incomingPrices,
                 ],
                 reason: "Setup operasional cepat oleh {$actor->name} di {$workLocation->name}: {$stockMessage}",
                 request: $request,
@@ -498,13 +495,28 @@ final class ProductQuickSetupService
                 severity: 'info'
             );
 
+            $hasExistingStock = (bool) ($existingOpeningBatch || $stockInitialized);
+            $isComplete = $hasExistingStock
+                && Decimal::compare($retailCostPrice, '0.00', 2) > 0
+                && Decimal::compare($retailMinPrice, '0.00', 2) > 0
+                && Decimal::compare($retailMinPrice, $retailCostPrice, 2) >= 0;
+
+            $marginAmount = Decimal::sub($retailMinPrice, $retailCostPrice, 2);
+            $marginPercent = Decimal::compare($retailCostPrice, '0.00', 2) > 0
+                ? Decimal::mul(Decimal::div($marginAmount, $retailCostPrice, 4, 6, 4), '100', 1)
+                : '0.0';
+
             return [
                 'product_id' => (int) $product->id,
                 'sku' => (string) $product->sku,
                 'name' => (string) $product->name,
                 'retail_cost_price' => $retailCostPrice,
+                'retail_min_price' => $retailMinPrice,
+                'margin_amount' => $marginAmount,
+                'margin_percent' => $marginPercent,
                 'initial_stock_base_qty' => $initialStockBaseQty,
                 'stock_initialized' => $stockInitialized,
+                'is_complete' => $isComplete,
                 'message' => $stockMessage,
             ];
         });
@@ -524,7 +536,7 @@ final class ProductQuickSetupService
         foreach ($rows as $index => $row) {
             $line = $index + 1;
             try {
-                /** @var array{product_id: int, hpp_unit_id: int, hpp_amount: string|numeric, stock_unit_id: int, stock_qty: string|numeric, prices: array<string, mixed>, unlimited?: bool|string|int, starts_at?: string|null, ends_at?: string|null, notes?: string|null} $validatedRow */
+                /** @var array{product_id: int, hpp_unit_id: int, hpp_amount: string|numeric, stock_unit_id: int, stock_qty: string|numeric, sell_unit_id?: int|null, min_price_amount?: string|numeric|null, prices?: array<string, mixed>|null, unlimited?: bool|string|int, starts_at?: string|null, ends_at?: string|null, notes?: string|null} $validatedRow */
                 $validatedRow = $row;
                 $result = $this->saveRow($validatedRow, $actor, $workLocation, $request);
                 $results[] = $result;

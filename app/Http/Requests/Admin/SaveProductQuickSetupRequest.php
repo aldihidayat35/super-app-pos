@@ -43,10 +43,9 @@ class SaveProductQuickSetupRequest extends FormRequest
             'hpp_amount' => ['required', 'numeric', 'min:0'],
             'stock_unit_id' => ['required', 'integer', 'exists:units,id'],
             'stock_qty' => ['required', 'numeric', 'min:0'],
-            'prices' => ['required', 'array'],
-            'prices.ring_retail' => ['nullable'],
-            'prices.ring_b2b' => ['nullable'],
-            'prices.ring_pos' => ['nullable'],
+            'sell_unit_id' => ['nullable', 'integer', 'exists:units,id'],
+            'min_price_amount' => ['nullable', 'numeric', 'min:0'],
+            'prices' => ['nullable', 'array'],
             'unlimited' => ['nullable'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date'],
@@ -67,10 +66,9 @@ class SaveProductQuickSetupRequest extends FormRequest
             'hpp_amount' => 'Nominal HPP',
             'stock_unit_id' => 'Satuan Stok',
             'stock_qty' => 'Jumlah Stok',
+            'sell_unit_id' => 'Satuan Jual',
+            'min_price_amount' => 'Harga Jual Minimum',
             'prices' => 'Ring Harga',
-            'prices.ring_retail' => 'Ring Retail',
-            'prices.ring_b2b' => 'Ring B2B',
-            'prices.ring_pos' => 'Ring POS',
         ];
     }
 }
