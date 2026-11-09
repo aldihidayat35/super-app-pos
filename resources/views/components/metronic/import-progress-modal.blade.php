@@ -5,8 +5,8 @@
     'icon' => 'ki-file-sheet',
 ])
 
-<div class="modal fade" id="{{ $id }}" data-bs-backdrop="false" data-bs-keyboard="false" tabindex="-1" aria-hidden="true" style="z-index: 99999; background: transparent; pointer-events: auto;">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+<div class="modal fade import-progress-modal" id="{{ $id }}" data-bs-backdrop="false" data-bs-keyboard="false" tabindex="-1" aria-hidden="true" style="z-index: 99999; background: transparent; pointer-events: auto;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px; z-index: 100000;">
         <div class="modal-content shadow-lg border border-gray-300 rounded-4 overflow-hidden bg-white">
             <div class="modal-body p-8 text-center bg-white">
                 {{-- Animated Icon Container --}}
@@ -27,21 +27,21 @@
                         class="progress h-20px w-100 bg-light-secondary rounded-pill overflow-hidden shadow-xs border border-gray-200">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
                             role="progressbar" id="{{ $id }}-bar"
-                            style="width: 8%; transition: width 0.35s ease;" aria-valuenow="8" aria-valuemin="0"
+                            style="width: 5%; transition: width 0.35s ease;" aria-valuenow="5" aria-valuemin="0"
                             aria-valuemax="100">
                         </div>
                     </div>
                 </div>
 
-                {{-- Status Text & Percentage Indicator --}}
-                <div class="d-flex justify-content-between align-items-center mb-6 px-1">
-                    <span class="fs-7 fw-semibold text-gray-700 text-truncate pe-2 text-start"
+                {{-- Status Text & Data Count Indicator (By Data Count, Not Percent) --}}
+                <div class="d-flex justify-content-between align-items-center mb-6 px-1 gap-2">
+                    <span class="fs-7 fw-semibold text-gray-700 text-truncate pe-2 text-start flex-grow-1"
                         id="{{ $id }}-stage-text">
                         <span class="spinner-grow spinner-grow-sm text-primary me-2 align-middle"></span>
                         <span id="{{ $id }}-stage-label">Mengunggah dan membaca berkas...</span>
                     </span>
-                    <span class="fs-6 fw-bolder text-primary font-monospace flex-shrink-0"
-                        id="{{ $id }}-percent-label">8%</span>
+                    <span class="badge badge-light-primary fs-7 fw-bolder font-monospace px-3 py-2 flex-shrink-0"
+                        id="{{ $id }}-percent-label">Memulai...</span>
                 </div>
 
                 {{-- Reassuring Warning Alert --}}
@@ -67,15 +67,30 @@
                 const modalEl = document.getElementById(modalId);
                 if (!modalEl) return null;
 
-    // Matikan overlay loading global "Memproses..." agar tidak bertumpuk
-    if (window.AppLoading && typeof window.AppLoading.hide === 'function') {
-        window.AppLoading.hide();
-    }
-    const globalLoading = document.querySelector('[data-app-loading]');
-    if (globalLoading) {
-        globalLoading.classList.remove('is-visible');
-        globalLoading.style.display = 'none';
-    }
+                // Lumpuhkan overlay loading global "Memproses..." agar tidak bertumpuk di atas modal
+                document.body.classList.add('has-import-modal-open');
+                if (window.AppLoading) {
+                    window.AppLoading.hide();
+                    window.AppLoading.show = function() {}; // Matikan fungsi show saat proses import berjalan
+                }
+                const globalLoading = document.querySelector('[data-app-loading]');
+                if (globalLoading) {
+                    globalLoading.classList.remove('is-visible');
+                    globalLoading.style.setProperty('display', 'none', 'important');
+                    globalLoading.style.setProperty('opacity', '0', 'important');
+                    globalLoading.style.setProperty('visibility', 'hidden', 'important');
+                }
+
+                // Bersihkan modal-backdrop bawaan Bootstrap
+                const purgeBackdrop = function() {
+                    document.querySelectorAll('.modal-backdrop').forEach(function(b) {
+                        b.remove();
+                    });
+                };
+                purgeBackdrop();
+                setTimeout(purgeBackdrop, 10);
+                setTimeout(purgeBackdrop, 50);
+                setTimeout(purgeBackdrop, 200);
 
                 const titleEl = document.getElementById(modalId + '-title');
                 const subtitleEl = document.getElementById(modalId + '-subtitle');
@@ -112,6 +127,9 @@
                     },
                 ];
 
+                const totalCount = parseInt(options.totalCount || 0, 10);
+                const unitLabel = options.unitLabel || 'Data';
+
                 let currentPercent = 5;
                 let stageIndex = 0;
 
@@ -122,31 +140,31 @@
                         barEl.setAttribute('aria-valuenow', currentPercent);
                     }
                     if (percentLabelEl) {
-                        percentLabelEl.textContent = Math.round(currentPercent) + '%';
+                        if (totalCount > 0) {
+                            const currentCount = Math.max(1, Math.min(totalCount, Math.round((currentPercent / 100) * totalCount)));
+                            percentLabelEl.textContent = currentCount.toLocaleString('id-ID') + ' / ' + totalCount.toLocaleString('id-ID') + ' ' + unitLabel;
+                        } else {
+                            const estimatedCount = Math.max(1, Math.round(currentPercent * 10));
+                            percentLabelEl.textContent = estimatedCount.toLocaleString('id-ID') + ' ' + unitLabel;
+                        }
                     }
                     if (text && stageLabelEl) {
                         stageLabelEl.textContent = text;
                     }
                 }
 
-    // Tampilkan modal TANPA backdrop gelap/blur
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl, {
-            backdrop: false,
-            keyboard: false
-        });
-        bsModal.show();
-    } else {
-        $(modalEl).modal({ backdrop: false, keyboard: false }).modal('show');
-    }
+                // Tampilkan modal TANPA backdrop gelap/blur
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl, {
+                        backdrop: false,
+                        keyboard: false
+                    });
+                    bsModal.show();
+                } else {
+                    $(modalEl).modal({ backdrop: false, keyboard: false }).modal('show');
+                }
 
-    // Hapus backdrop jika Bootstrap secara otomatis membuatnya
-    setTimeout(function () {
-        document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
-            backdrop.remove();
-        });
-    }, 20);
-
+                // Inisialisasi progress awal
                 updateProgress(8, stages[0]?.text || 'Memulai proses...');
 
                 // Animasi bertahap
@@ -180,7 +198,20 @@
                 return {
                     finish: function() {
                         clearInterval(timer);
-                        updateProgress(100, 'Selesai!');
+                        if (barEl) {
+                            barEl.style.width = '100%';
+                            barEl.setAttribute('aria-valuenow', 100);
+                        }
+                        if (percentLabelEl) {
+                            if (totalCount > 0) {
+                                percentLabelEl.textContent = totalCount.toLocaleString('id-ID') + ' / ' + totalCount.toLocaleString('id-ID') + ' ' + unitLabel;
+                            } else {
+                                percentLabelEl.textContent = 'Selesai!';
+                            }
+                        }
+                        if (stageLabelEl) {
+                            stageLabelEl.textContent = 'Selesai!';
+                        }
                     }
                 };
             };

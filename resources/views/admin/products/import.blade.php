@@ -581,7 +581,7 @@
                         @else
                             <form method="POST" action="{{ route('admin.products.import.commit') }}" id="form-commit-import" data-no-loading="true">
                                 @csrf
-                                <button type="button" class="btn btn-success btn-lg shadow-sm px-8" id="btn-commit-import">
+                                <button type="button" class="btn btn-success btn-lg shadow-sm px-8" id="btn-commit-import" data-total-rows="{{ $validCount }}">
                                     <i class="ki-outline ki-check-circle fs-3 me-2"></i> Commit Import ({{ number_format($validCount) }} Produk)
                                 </button>
                             </form>
@@ -626,6 +626,16 @@ document.addEventListener('DOMContentLoaded', function () {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
 
+    let estimatedProductRows = 0;
+
+    function estimateRowsFromFile(file) {
+        if (!file) return 0;
+        if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+            return Math.max(10, Math.round(file.size / 55));
+        }
+        return Math.max(10, Math.round(Math.max(100, file.size - 8000) / 30));
+    }
+
     function handleFileSelected(file) {
         if (!file) return;
         selectedFilename.textContent = file.name;
@@ -635,6 +645,19 @@ document.addEventListener('DOMContentLoaded', function () {
         btnSubmitPreview.disabled = false;
         dropzoneBox.classList.remove('border-primary');
         dropzoneBox.classList.add('border-success', 'bg-light-success');
+
+        estimatedProductRows = estimateRowsFromFile(file);
+
+        if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = (e.target.result || '').split('\n').filter(l => l.trim().length > 0);
+                if (lines.length > 1) {
+                    estimatedProductRows = lines.length - 1;
+                }
+            };
+            reader.readAsText(file);
+        }
     }
 
     function clearFileSelection() {
@@ -701,6 +724,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (typeof window.startImportProgress === 'function') {
                 window.startImportProgress({
                     modalId: 'product-import-progress-modal',
+                    totalCount: estimatedProductRows,
+                    unitLabel: 'Data Produk',
                     title: 'Memvalidasi Berkas Produk...',
                     subtitle: 'Sistem sedang membaca dan memverifikasi data produk dari berkas yang diunggah.',
                     icon: 'ki-magnifier',
@@ -768,6 +793,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const formCommit = document.getElementById('form-commit-import');
 
     if (btnCommit && formCommit) {
+        const totalCommitRows = parseInt(btnCommit.getAttribute('data-total-rows') || '0', 10);
+
         btnCommit.addEventListener('click', function () {
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
@@ -789,6 +816,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (typeof window.startImportProgress === 'function') {
                             window.startImportProgress({
                                 modalId: 'product-import-progress-modal',
+                                totalCount: totalCommitRows,
+                                unitLabel: 'Produk',
                                 title: 'Menyimpan Produk ke Database...',
                                 subtitle: 'Sistem sedang menyimpan data produk secara massal dalam 1 transaksi database yang aman.',
                                 icon: 'ki-data',
@@ -812,6 +841,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (typeof window.startImportProgress === 'function') {
                         window.startImportProgress({
                             modalId: 'product-import-progress-modal',
+                            totalCount: totalCommitRows,
+                            unitLabel: 'Produk',
                             title: 'Menyimpan Produk ke Database...',
                             subtitle: 'Sistem sedang menyimpan data produk secara massal dalam 1 transaksi database yang aman.',
                             icon: 'ki-data',

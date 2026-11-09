@@ -355,7 +355,7 @@
                     <form method="POST" action="{{ route('warehouse.opening-stocks.import.commit') }}" id="form-commit-stock" data-no-loading="true"
                         onsubmit="return confirm('Apakah Anda yakin ingin menyimpan seluruh saldo stok ini ke database? Mutasi penyesuaian stok akan dicatat secara otomatis.');">
                         @csrf
-                        <button type="submit" class="btn btn-success" id="btn-commit-stock">
+                        <button type="submit" class="btn btn-success" id="btn-commit-stock" data-total-rows="{{ $preview['totals']['valid_rows'] ?? $totalRows }}">
                             <i class="ki-outline ki-check-circle fs-2 me-1"></i> Commit ke Database Sekarang
                         </button>
                     </form>
@@ -512,7 +512,33 @@ document.addEventListener('DOMContentLoaded', function () {
         checkUploadReadiness();
     });
 
-    inputFile?.addEventListener('change', checkUploadReadiness);
+    let estimatedStockRows = 0;
+
+    function estimateStockRowsFromFile(file) {
+        if (!file) return 0;
+        if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+            return Math.max(10, Math.round(file.size / 55));
+        }
+        return Math.max(10, Math.round(Math.max(100, file.size - 8000) / 30));
+    }
+
+    inputFile?.addEventListener('change', function () {
+        const file = inputFile.files ? inputFile.files[0] : null;
+        if (file) {
+            estimatedStockRows = estimateStockRowsFromFile(file);
+            if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const lines = (e.target.result || '').split('\n').filter(l => l.trim().length > 0);
+                    if (lines.length > 1) {
+                        estimatedStockRows = lines.length - 1;
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+        checkUploadReadiness();
+    });
 
     // Initial run
     // If a location is preselected, match the toggle radio
@@ -540,6 +566,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (typeof window.startImportProgress === 'function') {
                 window.startImportProgress({
                     modalId: 'stock-import-progress-modal',
+                    totalCount: estimatedStockRows,
+                    unitLabel: 'Item Stok',
                     title: 'Memvalidasi Saldo Stok...',
                     subtitle: 'Sistem sedang membaca berkas Excel dan memverifikasi data stok.',
                     icon: 'ki-magnifier',
@@ -560,6 +588,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (formCommitStock) {
         formCommitStock.addEventListener('submit', function () {
             const btnCommit = document.getElementById('btn-commit-stock');
+            const totalRows = parseInt(btnCommit?.getAttribute('data-total-rows') || '0', 10);
+
             if (btnCommit) {
                 btnCommit.disabled = true;
                 btnCommit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Menyimpan saldo stok...';
@@ -567,6 +597,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (typeof window.startImportProgress === 'function') {
                 window.startImportProgress({
                     modalId: 'stock-import-progress-modal',
+                    totalCount: totalRows,
+                    unitLabel: 'Item Stok',
                     title: 'Menyimpan Saldo Stok ke Database...',
                     subtitle: 'Sistem sedang memperbarui saldo stok fisik dan mencatat mutasi penyesuaian persediaan.',
                     icon: 'ki-cube-2',

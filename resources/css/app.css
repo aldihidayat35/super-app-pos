@@ -35,6 +35,24 @@ body::-webkit-scrollbar {
     z-index: var(--gt-loading-z-index);
 }
 
+/* Hindari tumpukan overlay loading global dengan modal import progress */
+body.has-import-modal-open .app-loading-overlay,
+body.has-import-modal-open .modal-backdrop,
+.modal.import-progress-modal ~ .app-loading-overlay {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+.import-progress-modal {
+    z-index: 99999 !important;
+}
+
+.import-progress-modal .modal-dialog {
+    z-index: 100000 !important;
+}
+
 [data-bs-theme='dark'] .app-loading-overlay {
     background: rgb(20 20 30 / 78%);
 }
