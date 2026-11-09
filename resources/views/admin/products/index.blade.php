@@ -5,6 +5,14 @@
     <x-metronic.permission-button permission="products.import" :href="route('admin.products.import.index')" class="btn-light" icon="ki-outline ki-file-up">Import</x-metronic.permission-button>
     <x-metronic.permission-button permission="products.export" :href="route('admin.products.export')" class="btn-light" icon="ki-outline ki-file-down">Export</x-metronic.permission-button>
     <x-metronic.permission-button permission="products.create" :href="route('admin.products.create')" icon="ki-outline ki-plus">Tambah Produk</x-metronic.permission-button>
+    @if(auth()->user()?->hasRole('super_admin'))
+        <form method="POST" action="{{ route('admin.products.reset-all') }}" id="form-reset-products" class="d-inline" data-no-loading="true">
+            @csrf
+            <button type="button" class="btn btn-light-danger" id="btn-reset-products" title="Khusus Super Admin: Reset seluruh produk & stok untuk uji coba">
+                <i class="ki-outline ki-trash fs-4 me-1"></i> Reset Produk (Uji Coba)
+            </button>
+        </form>
+    @endif
 @endsection
 @section('page_guide')
     <x-metronic.page-guide id="admin-products" title="Panduan Halaman Daftar Produk">
@@ -67,4 +75,45 @@
     @endforelse
     </tbody></table></div>{{ $products->links() }}
 </x-metronic.card>
+
+@if(auth()->user()?->hasRole('super_admin'))
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const btnResetProducts = document.getElementById('btn-reset-products');
+        const formResetProducts = document.getElementById('form-reset-products');
+
+        if (btnResetProducts && formResetProducts) {
+            btnResetProducts.addEventListener('click', function () {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Reset Semua Produk?',
+                        html: '<div class="text-start fs-7 text-gray-700">Tindakan ini akan <strong>menghapus seluruh data master produk, barcode, satuan, harga, dan saldo stok</strong> yang ada di sistem.<br><br><span class="text-danger fw-bold"><i class="ki-outline ki-information-2 text-danger"></i> Fitur ini khusus mode uji coba untuk memudahkan pembersihan data tes.</span></div>',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="ki-outline ki-trash fs-4 me-1"></i> Ya, Reset Semua Produk',
+                        cancelButtonText: 'Batal',
+                        customClass: {
+                            confirmButton: 'btn btn-danger fw-bold',
+                            cancelButton: 'btn btn-light fw-bold'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            btnResetProducts.disabled = true;
+                            btnResetProducts.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Mereset Produk...';
+                            formResetProducts.submit();
+                        }
+                    });
+                } else {
+                    if (confirm('PERINGATAN: Apakah Anda yakin ingin mereset seluruh data master produk dan stok untuk keperluan uji coba?')) {
+                        btnResetProducts.disabled = true;
+                        formResetProducts.submit();
+                    }
+                }
+            });
+        }
+    });
+    </script>
+    @endpush
+@endif
 @endsection

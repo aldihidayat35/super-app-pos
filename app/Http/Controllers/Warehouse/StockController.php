@@ -8,7 +8,10 @@ use App\Models\Stock;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StockController extends Controller
@@ -71,5 +74,64 @@ class StockController extends Controller
             ->when($status === 'critical', fn ($query) => $query->whereHas('product', fn ($inner) => $inner->whereRaw('(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock')))
             ->when($status === 'empty', fn ($query) => $query->where('quantity_on_hand', '<=', 0))
             ->orderByDesc('updated_at');
+    }
+
+    public function resetAll(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('super_admin'), 403, 'Aksi ini hanya dapat dilakukan oleh Super Admin.');
+
+        DB::transaction(function (): void {
+            Schema::disableForeignKeyConstraints();
+
+            $tables = [
+                'pos_sale_allocations',
+                'stock_layer_allocations',
+                'stock_mutations',
+                'stock_batches',
+                'inventory_losses',
+                'stock_opname_items',
+                'stock_transfer_items',
+                'stock_direct_adjustment_items',
+                'stocks',
+            ];
+
+            foreach ($tables as $table) {
+                if (Schema::hasTable($table)) {
+                    DB::table($table)->delete();
+                    if (DB::getDriverName() === 'mysql') {
+                        try {
+                            DB::statement("ALTER TABLE `{$table}` AUTO_INCREMENT = 1");
+                        } catch (\Throwable) {
+                        }
+                    }
+                }
+            }
+
+            if (Schema::hasTable('product_cost_histories')) {
+                DB::table('product_cost_histories')->delete();
+            }
+
+            if (Schema::hasTable('products')) {
+                DB::table('products')->update([
+                    'total_stock' => '0.0000',
+                    'cost_price' => '0.00',
+                ]);
+            }
+
+            Schema::enableForeignKeyConstraints();
+        });
+
+        $request->session()->forget([
+            'opening_stock_import_preview',
+        ]);
+
+        activity()
+            ->causedBy($request->user())
+            ->log('stock.all_reset_by_super_admin');
+
+        return redirect()->route('warehouse.stocks.index')->with('notification', [
+            'type' => 'success',
+            'message' => 'Seluruh data saldo stok dan histori mutasi berhasil direset untuk pengujian.',
+        ]);
     }
 }

@@ -335,6 +335,35 @@ class InventoryCoreTest extends TestCase
             ->assertDontSee('PRD-B');
     }
 
+    public function test_super_admin_can_reset_all_stocks_for_testing(): void
+    {
+        [$product, $workLocation, $bin] = $this->inventoryFixture();
+        $this->inventory->receive($product, $workLocation, $bin, '10', $this->admin, ['type' => 'test', 'no' => 'RCV-1'], 'Terima stok');
+        $this->assertDatabaseCount('stocks', 1);
+        $this->assertDatabaseCount('stock_mutations', 1);
+
+        $response = $this->actingAs($this->admin)->post(route('warehouse.stocks.reset-all'));
+        $response->assertRedirect(route('warehouse.stocks.index'))
+            ->assertSessionHas('notification.type', 'success');
+
+        $this->assertDatabaseCount('stocks', 0);
+        $this->assertDatabaseCount('stock_mutations', 0);
+        $this->assertDatabaseCount('products', 1);
+        $this->assertEquals(0, (float) $product->fresh()->total_stock);
+    }
+
+    public function test_non_super_admin_cannot_reset_all_stocks(): void
+    {
+        [$product, $workLocation, $bin] = $this->inventoryFixture();
+        $this->inventory->receive($product, $workLocation, $bin, '10', $this->admin, ['type' => 'test', 'no' => 'RCV-1'], 'Terima stok');
+
+        $staff = User::factory()->create(['is_active' => true]);
+        $staff->assignRole(Role::findOrCreate('staff_gudang'));
+
+        $this->actingAs($staff)->post(route('warehouse.stocks.reset-all'))->assertForbidden();
+        $this->assertDatabaseCount('stocks', 1);
+    }
+
     /** @return array{Product, WorkLocation, WarehouseLocation} */
     private function inventoryFixture(string $warehouseCode = 'GDG-TEST', string $sku = 'PRD-TEST'): array
     {

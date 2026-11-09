@@ -424,4 +424,29 @@ class ProductMasterTest extends TestCase
 
         @unlink($tempFile);
     }
+
+    public function test_super_admin_can_reset_all_products_for_testing(): void
+    {
+        $superAdmin = User::factory()->create(['is_active' => true]);
+        $superAdmin->assignRole(Role::findOrCreate('super_admin'));
+
+        Product::factory()->count(3)->create();
+        $this->assertDatabaseCount('products', 3);
+
+        $response = $this->actingAs($superAdmin)->post(route('admin.products.reset-all'));
+        $response->assertRedirect(route('admin.products.index'))
+            ->assertSessionHas('notification.type', 'success');
+
+        $this->assertDatabaseCount('products', 0);
+    }
+
+    public function test_non_super_admin_cannot_reset_all_products(): void
+    {
+        Product::factory()->create();
+        $staff = User::factory()->create(['is_active' => true]);
+        $staff->assignRole(Role::findOrCreate('staff_gudang'));
+
+        $this->actingAs($staff)->post(route('admin.products.reset-all'))->assertForbidden();
+        $this->assertDatabaseCount('products', 1);
+    }
 }

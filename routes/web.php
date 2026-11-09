@@ -679,6 +679,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/products/quick-setup/batch', [ProductQuickSetupController::class, 'batchSave'])
             ->middleware('permission:products.update|products.create|retail.catalog.manage')
             ->name('products.quick-setup.batch-save');
+        Route::post('/products/reset-all', [ProductController::class, 'resetAll'])
+            ->middleware('role:super_admin')
+            ->name('products.reset-all');
         Route::resource('products', ProductController::class)
             ->except(['destroy'])
             ->middlewareFor(['index', 'show'], 'permission:products.view')
@@ -846,6 +849,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/stocks', [StockController::class, 'index'])
             ->middleware('permission:stock.view')
             ->name('stocks.index');
+        Route::post('/stocks/reset-all', [StockController::class, 'resetAll'])
+            ->middleware('role:super_admin')
+            ->name('stocks.reset-all');
         Route::get('/stocks/export', [StockController::class, 'export'])
             ->middleware('permission:reports.export|stock.view')
             ->name('stocks.export');

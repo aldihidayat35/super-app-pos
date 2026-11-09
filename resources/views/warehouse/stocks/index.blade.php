@@ -40,6 +40,15 @@
         <a href="{{ route('pricing.hpp-history.index') }}" class="btn btn-light"><i class="ki-outline ki-chart-line-up"></i> Histori HPP</a>
     @endcan
     <a href="{{ route('warehouse.stocks.export', request()->query()) }}" class="btn btn-light-primary"><i class="ki-outline ki-file-down"></i> Export CSV</a>
+
+    @if(auth()->user()?->hasRole('super_admin'))
+        <form method="POST" action="{{ route('warehouse.stocks.reset-all') }}" id="form-reset-stocks" class="d-inline" data-no-loading="true">
+            @csrf
+            <button type="button" class="btn btn-light-danger" id="btn-reset-stocks" title="Khusus Super Admin: Reset seluruh saldo stok untuk uji coba">
+                <i class="ki-outline ki-arrows-circle fs-4 me-1"></i> Reset Stok (Uji Coba)
+            </button>
+        </form>
+    @endif
 @endsection
 
 @section('content')
@@ -117,4 +126,45 @@
         </div>
         {{ $stocks->links() }}
     </x-metronic.card>
+
+@if(auth()->user()?->hasRole('super_admin'))
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const btnResetStocks = document.getElementById('btn-reset-stocks');
+        const formResetStocks = document.getElementById('form-reset-stocks');
+
+        if (btnResetStocks && formResetStocks) {
+            btnResetStocks.addEventListener('click', function () {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Reset Semua Saldo Stok?',
+                        html: '<div class="text-start fs-7 text-gray-700">Tindakan ini akan <strong>mengosongkan seluruh saldo stok fisik (on-hand, reserved, damaged), batch, dan histori mutasi</strong> di semua gudang/cabang.<br><br>Master produk tetap ada dengan saldo 0.<br><br><span class="text-danger fw-bold"><i class="ki-outline ki-information-2 text-danger"></i> Fitur ini khusus mode uji coba untuk memudahkan pembersihan data tes saldo stok.</span></div>',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="ki-outline ki-arrows-circle fs-4 me-1"></i> Ya, Reset Semua Stok',
+                        cancelButtonText: 'Batal',
+                        customClass: {
+                            confirmButton: 'btn btn-danger fw-bold',
+                            cancelButton: 'btn btn-light fw-bold'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            btnResetStocks.disabled = true;
+                            btnResetStocks.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Mereset Stok...';
+                            formResetStocks.submit();
+                        }
+                    });
+                } else {
+                    if (confirm('PERINGATAN: Apakah Anda yakin ingin mereset seluruh saldo stok dan mutasi persediaan untuk keperluan uji coba?')) {
+                        btnResetStocks.disabled = true;
+                        formResetStocks.submit();
+                    }
+                }
+            });
+        }
+    });
+    </script>
+    @endpush
+@endif
 @endsection

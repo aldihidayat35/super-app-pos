@@ -27,6 +27,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -512,5 +513,72 @@ class ProductController extends Controller
                 'unit_id' => $barcode->productUnit?->unit_id,
             ])->values()->all(),
         ];
+    }
+
+    public function resetAll(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('super_admin'), 403, 'Aksi ini hanya dapat dilakukan oleh Super Admin.');
+
+        DB::transaction(function (): void {
+            Schema::disableForeignKeyConstraints();
+
+            $tables = [
+                'pos_sale_allocations',
+                'pos_return_items',
+                'pos_sale_items',
+                'b2b_cart_items',
+                'b2b_favorite_products',
+                'b2b_order_items',
+                'goods_receipt_items',
+                'purchase_order_items',
+                'emergency_purchase_items',
+                'inventory_losses',
+                'stock_opname_items',
+                'stock_transfer_items',
+                'stock_direct_adjustment_items',
+                'stock_layer_allocations',
+                'stock_mutations',
+                'stock_batches',
+                'stocks',
+                'product_cost_histories',
+                'product_prices',
+                'product_barcodes',
+                'product_units',
+                'product_images',
+                'retail_product_placements',
+                'supplier_products',
+                'product_requests',
+                'products',
+            ];
+
+            foreach ($tables as $table) {
+                if (Schema::hasTable($table)) {
+                    DB::table($table)->delete();
+                    if (DB::getDriverName() === 'mysql') {
+                        try {
+                            DB::statement("ALTER TABLE `{$table}` AUTO_INCREMENT = 1");
+                        } catch (\Throwable) {
+                        }
+                    }
+                }
+            }
+
+            Schema::enableForeignKeyConstraints();
+        });
+
+        $request->session()->forget([
+            'product_import_preview',
+            'product_import_result',
+            'opening_stock_import_preview',
+        ]);
+
+        activity()
+            ->causedBy($request->user())
+            ->log('product.all_reset_by_super_admin');
+
+        return redirect()->route('admin.products.index')->with('notification', [
+            'type' => 'success',
+            'message' => 'Seluruh data master produk beserta saldo stok berhasil direset untuk pengujian.',
+        ]);
     }
 }
