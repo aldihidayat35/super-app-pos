@@ -283,7 +283,7 @@
         </div>
         <div class="card-body pt-2">
             
-            <form method="POST" enctype="multipart/form-data" action="{{ route('admin.products.import.preview') }}" id="form-import-preview">
+            <form method="POST" enctype="multipart/form-data" action="{{ route('admin.products.import.preview') }}" id="form-import-preview" data-no-loading="true">
                 @csrf
                 
                 {{-- Dropzone Container --}}
@@ -579,7 +579,7 @@
                                 <i class="ki-outline ki-lock fs-4 me-1"></i> Commit Import Dikunci (Ada Error)
                             </button>
                         @else
-                            <form method="POST" action="{{ route('admin.products.import.commit') }}" id="form-commit-import">
+                            <form method="POST" action="{{ route('admin.products.import.commit') }}" id="form-commit-import" data-no-loading="true">
                                 @csrf
                                 <button type="button" class="btn btn-success btn-lg shadow-sm px-8" id="btn-commit-import">
                                     <i class="ki-outline ki-check-circle fs-3 me-2"></i> Commit Import ({{ number_format($validCount) }} Produk)

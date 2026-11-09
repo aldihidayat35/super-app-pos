@@ -196,7 +196,7 @@
                 </div>
 
                 {{-- Form Upload & Preview --}}
-                <form id="form-import-preview" method="POST" action="{{ route('warehouse.opening-stocks.import.preview') }}" enctype="multipart/form-data">
+                <form id="form-import-preview" method="POST" action="{{ route('warehouse.opening-stocks.import.preview') }}" enctype="multipart/form-data" data-no-loading="true">
                     @csrf
                     <input type="hidden" name="work_location_id" id="hidden-work-location-id" value="{{ old('work_location_id', $preview['extra_data'] ?? '') }}">
 
@@ -352,7 +352,7 @@
                 </form>
 
                 @if ($preview['errors'] === [])
-                    <form method="POST" action="{{ route('warehouse.opening-stocks.import.commit') }}" id="form-commit-stock"
+                    <form method="POST" action="{{ route('warehouse.opening-stocks.import.commit') }}" id="form-commit-stock" data-no-loading="true"
                         onsubmit="return confirm('Apakah Anda yakin ingin menyimpan seluruh saldo stok ini ke database? Mutasi penyesuaian stok akan dicatat secara otomatis.');">
                         @csrf
                         <button type="submit" class="btn btn-success" id="btn-commit-stock">
