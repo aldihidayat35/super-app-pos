@@ -134,10 +134,10 @@
                 let stageIndex = 0;
 
                 function updateProgress(pct, text) {
-                    currentPercent = Math.min(98, Math.max(currentPercent, pct));
+                    currentPercent = Math.min(100, Math.max(currentPercent, pct));
                     if (barEl) {
                         barEl.style.width = currentPercent + '%';
-                        barEl.setAttribute('aria-valuenow', currentPercent);
+                        barEl.setAttribute('aria-valuenow', Math.round(currentPercent));
                     }
                     if (percentLabelEl) {
                         if (totalCount > 0) {
@@ -167,8 +167,8 @@
                 // Inisialisasi progress awal
                 updateProgress(8, stages[0]?.text || 'Memulai proses...');
 
-                // Animasi bertahap
-                const intervalTime = options.interval || 750;
+                // Animasi bertahap yang terus berjalan hingga mencapai 100% (totalCount / totalCount)
+                const intervalTime = options.interval || 500;
                 const timer = setInterval(function() {
                     if (stageIndex < stages.length) {
                         const targetStage = stages[stageIndex];
@@ -182,37 +182,34 @@
                             }
                         }
                     } else {
-                        if (currentPercent < 98) {
-                            updateProgress(currentPercent + 0.5, stages[stages.length - 1]?.text ||
-                                'Menyelesaikan proses...');
+                        if (currentPercent < 100) {
+                            updateProgress(Math.min(100, currentPercent + 1), 'Menyelesaikan proses & memuat halaman...');
                         }
                     }
                 }, intervalTime);
 
-                window.addEventListener('beforeunload', function(e) {
-                    e.preventDefault();
-                    e.returnValue = 'Proses import sedang berjalan di server. Apakah Anda yakin ingin membatalkan?';
-                    return e.returnValue;
-                });
-
-                return {
-                    finish: function() {
-                        clearInterval(timer);
-                        if (barEl) {
-                            barEl.style.width = '100%';
-                            barEl.setAttribute('aria-valuenow', 100);
-                        }
-                        if (percentLabelEl) {
-                            if (totalCount > 0) {
-                                percentLabelEl.textContent = totalCount.toLocaleString('id-ID') + ' / ' + totalCount.toLocaleString('id-ID') + ' ' + unitLabel;
-                            } else {
-                                percentLabelEl.textContent = 'Selesai!';
-                            }
-                        }
-                        if (stageLabelEl) {
-                            stageLabelEl.textContent = 'Selesai!';
+                const finishProgress = function() {
+                    clearInterval(timer);
+                    if (barEl) {
+                        barEl.style.width = '100%';
+                        barEl.setAttribute('aria-valuenow', 100);
+                    }
+                    if (percentLabelEl) {
+                        if (totalCount > 0) {
+                            percentLabelEl.textContent = totalCount.toLocaleString('id-ID') + ' / ' + totalCount.toLocaleString('id-ID') + ' ' + unitLabel;
+                        } else {
+                            percentLabelEl.textContent = 'Selesai!';
                         }
                     }
+                    if (stageLabelEl) {
+                        stageLabelEl.textContent = 'Selesai!';
+                    }
+                };
+
+                window.addEventListener('pagehide', finishProgress, { once: true });
+
+                return {
+                    finish: finishProgress
                 };
             };
         </script>

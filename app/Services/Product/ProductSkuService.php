@@ -10,28 +10,55 @@ class ProductSkuService
     public function generate(): string
     {
         return DB::transaction(function (): string {
-            $monthPrefix = now()->format('mY'); // MMYY, contoh: 0826 untuk Agustus 2026
+            $monthPrefix = now()->format('mY'); // Contoh: 112026 untuk November 2026
+            $prefix = "PRD{$monthPrefix}";
+            $prefixLen = strlen($prefix);
 
-            // Cari SKU terakhir dengan prefix bulan ini untuk reset urutan
-            $lastSku = Product::query()
+            // Cari SKU terakhir yang valid dengan prefix bulan ini untuk melanjutkan urutan
+            $recentSkus = Product::query()
                 ->withTrashed()
-                ->where('sku', 'like', "PRD{$monthPrefix}%")
+                ->where('sku', 'like', "{$prefix}%")
                 ->orderByDesc('id')
-                ->value('sku');
+                ->limit(50)
+                ->pluck('sku');
 
-            if ($lastSku && str_starts_with($lastSku, "PRD{$monthPrefix}")) {
-                $sequence = (int) substr($lastSku, 5); // Ambil 4 digit terakhir setelah PRDMMYY
-                $nextId = $sequence + 1;
-            } else {
-                $nextId = 1;
+            $maxSequence = 0;
+            foreach ($recentSkus as $candidateSku) {
+                if (is_string($candidateSku) && str_starts_with($candidateSku, $prefix)) {
+                    $suffix = substr($candidateSku, $prefixLen);
+                    // Hanya ambil suffix numerik wajar (maksimal 6 digit) agar terhindar dari integer overflow
+                    if (ctype_digit($suffix) && strlen($suffix) <= 6) {
+                        $seq = (int) $suffix;
+                        if ($seq > $maxSequence) {
+                            $maxSequence = $seq;
+                        }
+                    }
+                }
             }
 
+            $nextId = $maxSequence + 1;
+
             do {
-                $sku = 'PRD'.str_pad((string) $monthPrefix, 6, '', STR_PAD_LEFT).str_pad((string) $nextId, 4, '0', STR_PAD_LEFT);
+                $sku = $prefix.str_pad((string) $nextId, 4, '0', STR_PAD_LEFT);
                 $nextId++;
             } while (Product::query()->withTrashed()->where('sku', $sku)->exists());
 
             return $sku;
         });
+    }
+
+    /**
+     * Generate SKU unik berikutnya secara in-memory untuk proses bulk import.
+     *
+     * @param  array<string, int|bool>  $existingSkuMap
+     */
+    public function nextAvailableSku(string $prefix, int &$nextSequence, array &$existingSkuMap): string
+    {
+        do {
+            $sku = $prefix.str_pad((string) $nextSequence, 4, '0', STR_PAD_LEFT);
+            $nextSequence++;
+        } while (isset($existingSkuMap[$sku]));
+
+        return $sku;
     }
 }

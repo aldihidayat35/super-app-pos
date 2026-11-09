@@ -22,11 +22,12 @@ class ProductImportController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('import', Product::class);
-        $preview = $request->session()->get('product_import_preview');
 
-        if (is_array($preview)) {
-            $request->session()->keep('product_import_preview');
+        if ($request->boolean('clear')) {
+            $request->session()->forget('product_import_preview');
         }
+
+        $preview = $request->session()->get('product_import_preview');
 
         $categories = ProductCategory::query()->where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']);
         $units = Unit::query()->where('is_active', true)->orderBy('name')->get(['id', 'code', 'name', 'symbol']);
@@ -44,8 +45,9 @@ class ProductImportController extends Controller
     public function preview(PreviewProductImportRequest $request, ProductImportService $service): RedirectResponse
     {
         $preview = $service->preview($request->file('file'));
+        $request->session()->put('product_import_preview', $preview);
 
-        return redirect()->route('admin.products.import.index')->with('product_import_preview', $preview);
+        return redirect()->route('admin.products.import.index');
     }
 
     public function commit(Request $request, ProductImportService $service): RedirectResponse

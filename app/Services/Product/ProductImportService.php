@@ -11,6 +11,7 @@ use App\Models\Unit;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToArray;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -23,13 +24,36 @@ class ProductImportService
     /** @return array{rows: array<int, array<string, mixed>>, errors: array<int, array<int, string>>, total_count: int, valid_count: int, error_count: int} */
     public function preview(UploadedFile $file): array
     {
+        @set_time_limit(300);
+
         $rows = $this->readRows($file);
         $errors = [];
         $enrichedRows = [];
 
+        $validCategories = ProductCategory::query()
+            ->get(['code', 'name'])
+            ->flatMap(fn (ProductCategory $cat): array => array_filter([trim((string) $cat->code), trim((string) $cat->name)]))
+            ->values()
+            ->all();
+
+        $validBrands = ProductBrand::query()
+            ->get(['code', 'name'])
+            ->flatMap(fn (ProductBrand $brand): array => array_filter([trim((string) $brand->code), trim((string) $brand->name)]))
+            ->values()
+            ->all();
+
+        $validUnits = Unit::query()
+            ->get(['code', 'symbol'])
+            ->flatMap(fn (Unit $unit): array => array_filter([trim((string) $unit->code), trim((string) $unit->symbol)]))
+            ->values()
+            ->all();
+
+        $rules = $this->rules($validCategories, $validBrands, $validUnits);
+        $attributes = $this->attributes();
+
         foreach ($rows as $index => $row) {
             $rowNum = $index + 2;
-            $validator = Validator::make($row, $this->rules(), [], $this->attributes());
+            $validator = Validator::make($row, $rules, [], $attributes);
             $hasError = $validator->fails();
             $rowErrors = $hasError ? $validator->errors()->all() : [];
 
@@ -58,6 +82,8 @@ class ProductImportService
      */
     public function commit(array $rows): array
     {
+        @set_time_limit(300);
+
         $created = 0;
         $updated = 0;
 
@@ -75,53 +101,101 @@ class ProductImportService
                     ['name' => 'Pieces', 'symbol' => 'pcs', 'is_active' => true]
                 );
 
+            // Pre-load referensi ke memori untuk mencegah ribuan query N+1 saat import massal
+            $categoryMap = [];
+            foreach (ProductCategory::query()->get() as $cat) {
+                $categoryMap[mb_strtoupper(trim((string) $cat->code))] = $cat;
+                $categoryMap[mb_strtoupper(trim((string) $cat->name))] = $cat;
+            }
+
+            $unitMap = [];
+            foreach (Unit::query()->get() as $u) {
+                $unitMap[mb_strtoupper(trim((string) $u->code))] = $u;
+                if (filled($u->symbol)) {
+                    $unitMap[mb_strtoupper(trim((string) $u->symbol))] = $u;
+                }
+            }
+
+            $brandMap = [];
+            foreach (ProductBrand::query()->get() as $b) {
+                $brandMap[mb_strtoupper(trim((string) $b->code))] = $b;
+                $brandMap[mb_strtoupper(trim((string) $b->name))] = $b;
+            }
+
+            // Pre-load semua SKU yang sudah ada agar generasi SKU otomatis ribuan baris instan tanpa N+1 query
+            $existingSkuMap = Product::query()->withTrashed()->pluck('id', 'sku')->all();
+            $monthPrefix = now()->format('mY');
+            $skuPrefix = "PRD{$monthPrefix}";
+            $skuPrefixLen = strlen($skuPrefix);
+
+            $maxSequence = 0;
+            foreach ($existingSkuMap as $existingSku => $existingId) {
+                $existingSkuStr = (string) $existingSku;
+                if (str_starts_with($existingSkuStr, $skuPrefix)) {
+                    $suffix = substr($existingSkuStr, $skuPrefixLen);
+                    if (ctype_digit($suffix) && strlen($suffix) <= 6) {
+                        $seq = (int) $suffix;
+                        if ($seq > $maxSequence) {
+                            $maxSequence = $seq;
+                        }
+                    }
+                }
+            }
+            $nextSkuSequence = $maxSequence + 1;
+
             foreach ($rows as $row) {
-                // Resolusi Kategori: cari berdasarkan code atau nama, jika kosong gunakan default
+                // Resolusi Kategori dari memory map
                 $category = null;
                 if (filled($row['category_code'] ?? null)) {
-                    $category = ProductCategory::query()
-                        ->where('code', $row['category_code'])
-                        ->orWhere('name', $row['category_code'])
-                        ->first();
+                    $catKey = mb_strtoupper(trim((string) $row['category_code']));
+                    $category = $categoryMap[$catKey] ?? null;
                 }
                 $category = $category ?: $defaultCategory;
 
-                // Resolusi Satuan: cari berdasarkan code atau symbol, jika kosong gunakan PCS
+                // Resolusi Satuan dari memory map
                 $unit = null;
                 if (filled($row['base_unit_code'] ?? null)) {
-                    $unit = Unit::query()
-                        ->where('code', $row['base_unit_code'])
-                        ->orWhere('symbol', $row['base_unit_code'])
-                        ->first();
+                    $unitKey = mb_strtoupper(trim((string) $row['base_unit_code']));
+                    $unit = $unitMap[$unitKey] ?? null;
                 }
                 $unit = $unit ?: $defaultUnit;
 
-                // Resolusi Brand: opsional
+                // Resolusi Brand dari memory map
                 $brand = null;
                 if (filled($row['brand_code'] ?? null)) {
-                    $brand = ProductBrand::query()
-                        ->where('code', $row['brand_code'])
-                        ->orWhere('name', $row['brand_code'])
-                        ->first();
+                    $brandKey = mb_strtoupper(trim((string) $row['brand_code']));
+                    $brand = $brandMap[$brandKey] ?? null;
                 }
 
-                // Resolusi SKU: jika kosong, generate otomatis dengan format unik PRD{MMYY}{0001}
-                $sku = filled($row['sku'] ?? null) ? trim((string) $row['sku']) : $this->skuService->generate();
+                // Resolusi SKU: jika kosong, generate otomatis secara sekuensial & unik
+                if (filled($row['sku'] ?? null)) {
+                    $sku = trim((string) $row['sku']);
+                } else {
+                    $sku = $this->skuService->nextAvailableSku($skuPrefix, $nextSkuSequence, $existingSkuMap);
+                }
 
-                /** @var Product $product */
-                $product = Product::query()->updateOrCreate(
-                    ['sku' => $sku],
-                    [
-                        'name' => trim((string) $row['name']),
-                        'category_id' => $category->id,
-                        'brand_id' => $brand?->id,
-                        'base_unit_id' => $unit->id,
-                        'status' => ProductStatus::ACTIVE->value,
-                        'minimum_order' => $row['minimum_order'] ?: 0,
-                        'minimum_stock' => $row['minimum_stock'] ?: 0,
-                        'safety_stock' => $row['safety_stock'] ?: 0,
-                    ],
-                );
+                $attributes = [
+                    'name' => trim((string) $row['name']),
+                    'category_id' => $category->id,
+                    'brand_id' => $brand?->id,
+                    'base_unit_id' => $unit->id,
+                    'status' => ProductStatus::ACTIVE->value,
+                    'minimum_order' => $row['minimum_order'] ?: 0,
+                    'minimum_stock' => $row['minimum_stock'] ?: 0,
+                    'safety_stock' => $row['safety_stock'] ?: 0,
+                ];
+
+                if (! isset($existingSkuMap[$sku])) {
+                    /** @var Product $product */
+                    $product = Product::query()->create(array_merge(['sku' => $sku], $attributes));
+                    $existingSkuMap[$sku] = $product->id;
+                    $created++;
+                } else {
+                    /** @var Product $product */
+                    $product = Product::query()->updateOrCreate(['sku' => $sku], $attributes);
+                    $existingSkuMap[$sku] = $product->id;
+                    $product->wasRecentlyCreated ? $created++ : $updated++;
+                }
 
                 // Resolusi Barcode jika diisi di file Excel
                 if (filled($row['barcode'] ?? null)) {
@@ -145,8 +219,6 @@ class ProductImportService
                         );
                     }
                 }
-
-                $product->wasRecentlyCreated ? $created++ : $updated++;
             }
         });
 
@@ -202,16 +274,21 @@ class ProductImportService
             ->all();
     }
 
-    /** @return array<string, mixed> */
-    private function rules(): array
+    /**
+     * @param  list<string>  $validCategories
+     * @param  list<string>  $validBrands
+     * @param  list<string>  $validUnits
+     * @return array<string, mixed>
+     */
+    private function rules(array $validCategories = [], array $validBrands = [], array $validUnits = []): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['nullable', 'string', 'max:80'],
             'barcode' => ['nullable', 'string', 'max:120'],
-            'category_code' => ['nullable', 'string', 'max:100', 'exists:product_categories,code'],
-            'brand_code' => ['nullable', 'string', 'max:100', 'exists:product_brands,code'],
-            'base_unit_code' => ['nullable', 'string', 'max:50', 'exists:units,code'],
+            'category_code' => ['nullable', 'string', 'max:100', Rule::in($validCategories)],
+            'brand_code' => ['nullable', 'string', 'max:100', Rule::in($validBrands)],
+            'base_unit_code' => ['nullable', 'string', 'max:50', Rule::in($validUnits)],
             'minimum_order' => ['nullable', 'numeric', 'min:0'],
             'minimum_stock' => ['nullable', 'numeric', 'min:0'],
             'safety_stock' => ['nullable', 'numeric', 'min:0'],

@@ -97,6 +97,8 @@ final class InitialDataImportService
             abort(422, 'Data dengan error validasi tidak dapat di-commit.');
         }
 
+        @set_time_limit(300);
+
         $rows = $preview['rows'];
         $changed = 0;
         $unchanged = 0;
@@ -104,10 +106,11 @@ final class InitialDataImportService
         $referenceNo = 'IMPORT-'.now()->format('Ymd-His');
 
         DB::transaction(function () use ($preview, $rows, $actor, $referenceNo, &$changed, &$unchanged, &$hppRecorded): void {
+            $workLocation = WorkLocation::query()->find($preview['extra_data']);
+
             foreach ($rows as $index => $row) {
                 $line = $index + 2;
                 $product = Product::query()->where('sku', $row['product_sku'])->lockForUpdate()->first();
-                $workLocation = WorkLocation::query()->find($preview['extra_data']);
                 $warehouseLocation = filled($row['warehouse_location_code'] ?? null) ? $this->warehouseLocation($row['warehouse_location_code'], $workLocation) : null;
 
                 if (! $product || ! $workLocation || (filled($row['warehouse_location_code'] ?? null) && ! $warehouseLocation)) {

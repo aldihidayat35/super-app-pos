@@ -361,9 +361,15 @@ class ProductMasterTest extends TestCase
 
     public function test_import_with_only_product_name_auto_generates_sku_and_defaults_category_and_unit(): void
     {
+        $csvRows = ['name,sku,barcode,category_code,brand_code,base_unit_code,minimum_order,minimum_stock,safety_stock'];
+        $csvRows[] = 'Piring Keramik Putih Polos,,,,,,,,';
+        for ($i = 2; $i <= 10; $i++) {
+            $csvRows[] = "Produk Massal Ke-{$i},,,,,,,,";
+        }
+
         $file = UploadedFile::fake()->createWithContent(
             'produk-name-only.csv',
-            "name,sku,barcode,category_code,brand_code,base_unit_code,minimum_order,minimum_stock,safety_stock\nPiring Keramik Putih Polos,,,,,,,,\n"
+            implode("\n", $csvRows)."\n"
         );
 
         $this->actingAs($this->admin)
@@ -373,19 +379,24 @@ class ProductMasterTest extends TestCase
 
         $preview = session('product_import_preview');
         $this->assertEmpty($preview['errors'] ?? []);
+        $this->assertSame(10, $preview['valid_count'] ?? 0);
 
         $this->actingAs($this->admin)
             ->post(route('admin.products.import.commit'))
             ->assertRedirect(route('admin.products.import.index'))
             ->assertSessionHas('notification.type', 'success');
 
+        $monthPrefix = now()->format('mY');
         $product = Product::query()->where('name', 'Piring Keramik Putih Polos')->first();
         $this->assertNotNull($product);
-        $this->assertNotEmpty($product->sku);
-        $this->assertStringStartsWith('PRD', $product->sku);
+        $this->assertSame("PRD{$monthPrefix}0001", $product->sku);
         $this->assertSame('Umum', $product->category?->name);
         $this->assertSame('PCS', $product->baseUnit?->code);
         $this->assertSame('0.0000', $product->minimum_order);
+
+        $tenthProduct = Product::query()->where('name', 'Produk Massal Ke-10')->first();
+        $this->assertNotNull($tenthProduct);
+        $this->assertSame("PRD{$monthPrefix}0010", $tenthProduct->sku);
     }
 
     public function test_import_template_downloads_two_sheet_spreadsheet(): void

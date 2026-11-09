@@ -571,7 +571,7 @@
                         </span>
                     </div>
                     <div class="d-flex align-items-center gap-3">
-                        <a href="{{ route('admin.products.import.index') }}" class="btn btn-light">
+                        <a href="{{ route('admin.products.import.index', ['clear' => 1]) }}" class="btn btn-light">
                             Batal
                         </a>
                         @if($hasErrors)
