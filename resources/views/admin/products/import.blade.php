@@ -595,6 +595,13 @@
 
 </div>
 
+{{-- Modal Progress Bar Import Produk --}}
+<x-metronic.import-progress-modal 
+    id="product-import-progress-modal" 
+    title="Sedang Memproses Data Produk..." 
+    subtitle="Mohon menunggu, sistem sedang membaca dan memvalidasi berkas spreadsheet Anda." 
+    icon="ki-file-sheet" />
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -683,12 +690,28 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Form submit loading spinner
+    // Form submit loading spinner & Progress Bar
     if (formImportPreview) {
         formImportPreview.addEventListener('submit', function () {
             if (btnSubmitPreview) {
                 btnSubmitPreview.disabled = true;
                 btnSubmitPreview.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Membaca & Memvalidasi Spreadsheet...';
+            }
+
+            if (typeof window.startImportProgress === 'function') {
+                window.startImportProgress({
+                    modalId: 'product-import-progress-modal',
+                    title: 'Memvalidasi Berkas Produk...',
+                    subtitle: 'Sistem sedang membaca dan memverifikasi data produk dari berkas yang diunggah.',
+                    icon: 'ki-magnifier',
+                    stages: [
+                        { percent: 18, text: 'Mengunggah berkas spreadsheet...' },
+                        { percent: 42, text: 'Membaca baris data dan struktur kolom...' },
+                        { percent: 68, text: 'Memeriksa kelengkapan nama, keunikan SKU & barcode...' },
+                        { percent: 88, text: 'Menyiapkan tabel pratinjau verifikasi...' },
+                        { percent: 96, text: 'Hampir selesai, memuat tampilan...' }
+                    ]
+                });
             }
         });
     }
@@ -762,12 +785,46 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (result.isConfirmed) {
                         btnCommit.disabled = true;
                         btnCommit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Menyimpan ke database...';
+
+                        if (typeof window.startImportProgress === 'function') {
+                            window.startImportProgress({
+                                modalId: 'product-import-progress-modal',
+                                title: 'Menyimpan Produk ke Database...',
+                                subtitle: 'Sistem sedang menyimpan data produk secara massal dalam 1 transaksi database yang aman.',
+                                icon: 'ki-data',
+                                stages: [
+                                    { percent: 20, text: 'Memulai transaksi database...' },
+                                    { percent: 45, text: 'Menyimpan produk baru dan mengenerate SKU otomatis...' },
+                                    { percent: 70, text: 'Menyinkronkan barcode dan unit satuan...' },
+                                    { percent: 92, text: 'Menyelesaikan transaksi database...' },
+                                    { percent: 97, text: 'Memperbarui katalog produk...' }
+                                ]
+                            });
+                        }
+
                         formCommit.submit();
                     }
                 });
             } else {
                 if (confirm('Simpan import produk ke database sekarang?')) {
                     btnCommit.disabled = true;
+
+                    if (typeof window.startImportProgress === 'function') {
+                        window.startImportProgress({
+                            modalId: 'product-import-progress-modal',
+                            title: 'Menyimpan Produk ke Database...',
+                            subtitle: 'Sistem sedang menyimpan data produk secara massal dalam 1 transaksi database yang aman.',
+                            icon: 'ki-data',
+                            stages: [
+                                { percent: 20, text: 'Memulai transaksi database...' },
+                                { percent: 45, text: 'Menyimpan produk baru dan mengenerate SKU otomatis...' },
+                                { percent: 70, text: 'Menyinkronkan barcode dan unit satuan...' },
+                                { percent: 92, text: 'Menyelesaikan transaksi database...' },
+                                { percent: 97, text: 'Memperbarui katalog produk...' }
+                            ]
+                        });
+                    }
+
                     formCommit.submit();
                 }
             }

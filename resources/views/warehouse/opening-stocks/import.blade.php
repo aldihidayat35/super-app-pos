@@ -352,10 +352,10 @@
                 </form>
 
                 @if ($preview['errors'] === [])
-                    <form method="POST" action="{{ route('warehouse.opening-stocks.import.commit') }}"
+                    <form method="POST" action="{{ route('warehouse.opening-stocks.import.commit') }}" id="form-commit-stock"
                         onsubmit="return confirm('Apakah Anda yakin ingin menyimpan seluruh saldo stok ini ke database? Mutasi penyesuaian stok akan dicatat secara otomatis.');">
                         @csrf
-                        <button type="submit" class="btn btn-success">
+                        <button type="submit" class="btn btn-success" id="btn-commit-stock">
                             <i class="ki-outline ki-check-circle fs-2 me-1"></i> Commit ke Database Sekarang
                         </button>
                     </form>
@@ -367,6 +367,13 @@
             </div>
         </x-metronic.card>
     @endif
+
+    {{-- Modal Progress Bar Import Saldo Stok --}}
+    <x-metronic.import-progress-modal 
+        id="stock-import-progress-modal" 
+        title="Sedang Memproses Saldo Stok..." 
+        subtitle="Mohon menunggu, sistem sedang memverifikasi dan mencatat saldo stok persediaan." 
+        icon="ki-cube-2" />
 @endsection
 
 @push('scripts')
@@ -521,6 +528,59 @@ document.addEventListener('DOMContentLoaded', function () {
     filterOptionsByType();
     updateLocationDetails();
     checkUploadReadiness();
+
+    // Progress Bar Handling saat Validasi Preview
+    const formImport = document.getElementById('form-import-preview');
+    if (formImport) {
+        formImport.addEventListener('submit', function () {
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Memvalidasi Berkas...';
+            }
+            if (typeof window.startImportProgress === 'function') {
+                window.startImportProgress({
+                    modalId: 'stock-import-progress-modal',
+                    title: 'Memvalidasi Saldo Stok...',
+                    subtitle: 'Sistem sedang membaca berkas Excel dan memverifikasi data stok.',
+                    icon: 'ki-magnifier',
+                    stages: [
+                        { percent: 18, text: 'Mengunggah berkas Excel saldo stok...' },
+                        { percent: 45, text: 'Mencocokkan SKU dengan master produk aktif...' },
+                        { percent: 68, text: 'Memverifikasi kode rak/bin dan lokasi tujuan...' },
+                        { percent: 88, text: 'Menghitung total kuantitas dan HPP persediaan...' },
+                        { percent: 96, text: 'Menyiapkan tabel pratinjau verifikasi...' }
+                    ]
+                });
+            }
+        });
+    }
+
+    // Progress Bar Handling saat Commit ke Database
+    const formCommitStock = document.getElementById('form-commit-stock');
+    if (formCommitStock) {
+        formCommitStock.addEventListener('submit', function () {
+            const btnCommit = document.getElementById('btn-commit-stock');
+            if (btnCommit) {
+                btnCommit.disabled = true;
+                btnCommit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Menyimpan saldo stok...';
+            }
+            if (typeof window.startImportProgress === 'function') {
+                window.startImportProgress({
+                    modalId: 'stock-import-progress-modal',
+                    title: 'Menyimpan Saldo Stok ke Database...',
+                    subtitle: 'Sistem sedang memperbarui saldo stok fisik dan mencatat mutasi penyesuaian persediaan.',
+                    icon: 'ki-cube-2',
+                    stages: [
+                        { percent: 18, text: 'Memulai transaksi mutasi persediaan...' },
+                        { percent: 42, text: 'Mencatat saldo fisik (on-hand) per produk & rak...' },
+                        { percent: 68, text: 'Membentuk lapisan FIFO (Stock Batch) & riwayat HPP...' },
+                        { percent: 88, text: 'Menyinkronkan total nilai persediaan lokasi...' },
+                        { percent: 97, text: 'Finalisasi penyimpanan saldo stok...' }
+                    ]
+                });
+            }
+        });
+    }
 });
 </script>
 @endpush
