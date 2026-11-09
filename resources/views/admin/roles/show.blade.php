@@ -138,43 +138,19 @@
                     @csrf
                     @method('PUT')
 
-                    <div class="row">
-                        @foreach ($permissions as $group => $groupPermissions)
-                            <div class="col-md-4 mb-8">
-                                <div class="card card-bordered h-100 shadow-sm">
-                                    <div class="card-header bg-light-primary min-h-40px px-4 py-2 border-bottom-0">
-                                        <h4 class="card-title fw-bold text-primary m-0 d-flex align-items-center fs-5">
-                                            <i class="ki-outline ki-abstract-26 fs-3 me-2"></i>
-                                            {{ strtoupper($group) }}
-                                            @include('admin.roles._help-icon', ['text' => 'Bagian ini berisi hak akses untuk satu area kerja. Centang berarti role ini boleh melakukan tindakan tersebut.'])
-                                        </h4>
-                                    </div>
-                                    <div class="card-body p-4">
-                                        <div class="d-flex flex-column gap-3">
-                                            @foreach ($groupPermissions as $permission)
-                                                <label class="form-check form-check-custom form-check-solid border border-dashed rounded p-3">
-                                                    <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->id }}" @checked(collect(old('permissions', $selectedPermissions))->contains($permission->id)) @disabled(! auth()->user()?->can('updatePermissions', $role))>
-                                                    <span class="form-check-label ms-2 d-flex flex-column">
-                                                        <span class="fw-bold text-gray-800 d-flex align-items-center">
-                                                            {{ $permission->label ?: $permission->name }}
-                                                            @include('admin.roles._help-icon', ['text' => $permission->help_text])
-                                                        </span>
-                                                        <span class="text-muted fs-8">{{ $permission->description ?? ($permission->name . ' · ' . $permission->guard_name) }}</span>
-                                                    </span>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
+                    @include('admin.roles._permission_matrix', [
+                        'permissions' => $permissions,
+                        'selectedPermissions' => $selectedPermissions,
+                        'disabled' => ! auth()->user()?->can('updatePermissions', $role),
+                    ])
 
                     @error('permissions')<div class="invalid-feedback d-block mb-4">{{ $message }}</div>@enderror
 
                     @can('updatePermissions', $role)
-                        <div class="d-flex justify-content-end mt-4">
-                            <button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i> Simpan Matriks Permission</button>
+                        <div class="d-flex justify-content-end mt-6 pt-4 border-top">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ki-outline ki-check fs-2 me-1"></i> Simpan Matriks Permission
+                            </button>
                         </div>
                     @endcan
                 </form>

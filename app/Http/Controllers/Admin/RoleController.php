@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreRoleRequest;
 use App\Http\Requests\Admin\SyncRolePermissionsRequest;
 use App\Http\Requests\Admin\UpdateRoleRequest;
+use App\Support\PermissionHierarchy;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -203,15 +205,30 @@ class RoleController extends Controller
         return $ids;
     }
 
-    private function groupedPermissions(): mixed
+    /**
+     * @return array<string, array{
+     *     key: string,
+     *     title: string,
+     *     icon: string,
+     *     description: string,
+     *     total_permissions: int,
+     *     sub_modules: array<string, array{
+     *         key: string,
+     *         label: string,
+     *         permissions: Collection<int, Permission>
+     *     }>
+     * }>
+     */
+    private function groupedPermissions(): array
     {
-        return Permission::query()
+        $permissions = Permission::query()
             ->orderBy('module')
             ->orderBy('action')
             ->orderBy('name')
             ->get()
-            ->each(fn (Permission $permission) => $permission->setAttribute('help_text', $this->permissionHelpText($permission)))
-            ->groupBy(fn (Permission $permission): string => (string) ($permission->getAttribute('module') ?: explode('.', $permission->name)[0]));
+            ->each(fn (Permission $permission) => $permission->setAttribute('help_text', $this->permissionHelpText($permission)));
+
+        return PermissionHierarchy::group($permissions);
     }
 
     private function permissionHelpText(Permission $permission): string

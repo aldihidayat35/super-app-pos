@@ -306,8 +306,8 @@ class UserRbacManagementTest extends TestCase
             'start' => 0,
             'length' => 15,
         ]));
-        $actionHtml = collect($dataTable->json('data'))->firstWhere('id', $target->id)['action'];
-        $ownActionHtml = collect($dataTable->json('data'))->firstWhere('id', $superAdmin->id)['action'];
+        $actionHtml = collect((array) $dataTable->json('data'))->firstWhere('id', $target->id)['action'];
+        $ownActionHtml = collect((array) $dataTable->json('data'))->firstWhere('id', $superAdmin->id)['action'];
 
         $dataTable->assertOk();
         $this->assertStringContainsString('id="delete-user-'.$target->id.'"', $actionHtml);
@@ -338,7 +338,7 @@ class UserRbacManagementTest extends TestCase
             'start' => 0,
             'length' => 15,
         ]));
-        $targetActionHtml = collect($adminDataTable->json('data'))->firstWhere('id', $target->id)['action'];
+        $targetActionHtml = collect((array) $adminDataTable->json('data'))->firstWhere('id', $target->id)['action'];
 
         $adminDataTable->assertOk();
         $this->assertStringNotContainsString('id="delete-user-'.$target->id.'"', $targetActionHtml);
@@ -476,21 +476,23 @@ class UserRbacManagementTest extends TestCase
         $shiftSupervisor->assignRole(Role::findByName('supervisor_shift'));
 
         $this->assertFalse($ownerViewer->can('approvals.approve'));
-        $this->assertTrue($ownerApprover->can('approvals.approve'));
+        $this->assertFalse($ownerApprover->can('approvals.approve'));
+        $this->assertTrue($ownerApprover->can('staff_bonuses.pay'));
         $this->assertFalse($cashier->can('margins.view_sensitive'));
         $this->assertFalse($warehouseHead->can('pos.view'));
         $this->assertTrue($warehouseHead->can('stock_transfers.approve'));
         $this->assertTrue($warehouseHead->can('stock_adjustments.approve'));
         $this->assertTrue($warehouseHead->can('purchase_orders.approve'));
         $this->assertTrue($warehouseHead->can('b2b_orders.approve'));
-        $this->assertFalse($warehouseHead->can('approvals.approve'));
+        $this->assertTrue($warehouseHead->can('approvals.approve'));
         $this->assertTrue($storeHead->can('cash_shifts.approve'));
         $this->assertTrue($storeHead->can('attendance.approve'));
         $this->assertTrue($storeHead->can('stock_adjustments.approve'));
         $this->assertTrue($storeHead->can('returns.approve'));
-        $this->assertFalse($storeHead->can('purchase_orders.approve'));
+        $this->assertTrue($storeHead->can('purchase_orders.approve'));
         $this->assertFalse($storeHead->can('b2b_orders.approve'));
-        $this->assertFalse($storeHead->can('approvals.approve'));
+        $this->assertTrue($storeHead->can('approvals.approve'));
+        $this->assertFalse($shiftSupervisor->can('approvals.approve'));
         $this->assertFalse($shiftSupervisor->can('cash_shifts.approve'));
         $this->assertTrue($shiftSupervisor->can('attendance.check'));
         $this->assertFalse($shiftSupervisor->can('attendance.approve'));
@@ -509,6 +511,59 @@ class UserRbacManagementTest extends TestCase
 
         $this->assertTrue(Gate::forUser($cashier)->allows('view', $allowed));
         $this->assertTrue(Gate::forUser($cashier)->denies('view', $blocked));
+    }
+
+    #[Test]
+    public function role_edit_and_create_views_display_hierarchical_grand_modules(): void
+    {
+        $admin = $this->createAdmin();
+        $role = Role::findByName('kasir');
+
+        $responseEdit = $this->actingAs($admin)->get(route('admin.roles.edit', $role));
+        $responseEdit->assertOk()
+            ->assertSee('Toko Internal & Kasir')
+            ->assertSee('Gudang & Persediaan Stok')
+            ->assertSee('Master Produk & Relasi Bisnis')
+            ->assertSee('Kasir & Transaksi POS')
+            ->assertSee('permission-search-input')
+            ->assertSee('btn-expand-all');
+
+        $responseCreate = $this->actingAs($admin)->get(route('admin.roles.create'));
+        $responseCreate->assertOk()
+            ->assertSee('Toko Internal & Kasir')
+            ->assertSee('Gudang & Persediaan Stok')
+            ->assertSee('Kasir & Transaksi POS');
+
+        $responseShow = $this->actingAs($admin)->get(route('admin.roles.show', $role));
+        $responseShow->assertOk()
+            ->assertSee('Toko Internal & Kasir')
+            ->assertSee('Gudang & Persediaan Stok');
+    }
+
+    #[Test]
+    public function role_permissions_can_be_synchronized_from_hierarchical_matrix(): void
+    {
+        $admin = $this->createAdmin();
+        $role = Role::query()->create([
+            'name' => 'custom_kasir_cabang',
+            'label' => 'Kasir Cabang Kustom',
+            'guard_name' => 'web',
+            'is_system' => false,
+        ]);
+
+        $posView = Permission::findByName('pos.view');
+        $posCreate = Permission::findByName('pos.create');
+
+        $this->actingAs($admin)
+            ->put(route('admin.roles.permissions.update', $role), [
+                'permissions' => [$posView->id, $posCreate->id],
+            ])
+            ->assertRedirect(route('admin.roles.show', $role));
+
+        $role->refresh();
+        $this->assertTrue($role->hasPermissionTo('pos.view'));
+        $this->assertTrue($role->hasPermissionTo('pos.create'));
+        $this->assertFalse($role->hasPermissionTo('pos.void'));
     }
 
     private function createAdmin(): User
