@@ -291,7 +291,7 @@
             e.stopPropagation();
             const subKey = this.getAttribute('data-toggle-sub');
             const checkboxes = document.querySelectorAll(`.permission-checkbox[data-sub="${subKey}"]:not(:disabled)`);
-            
+
             const allChecked = Array.from(checkboxes).every(cb => cb.checked);
             const targetState = !allChecked;
 
@@ -461,3 +461,4 @@
 })();
 </script>
 @endpush
+

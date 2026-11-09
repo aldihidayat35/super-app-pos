@@ -80,10 +80,11 @@
     }
     .btn-margin-shortcut {
         border-radius: 0.35rem;
-        padding: 2px 7px !important;
-        font-size: 0.75rem !important;
+        padding: 2px 6px !important;
+        font-size: 0.72rem !important;
         font-weight: 700 !important;
         line-height: 1.2;
+        white-space: nowrap;
     }
     .btn-margin-shortcut:hover {
         transform: translateY(-1px);
@@ -243,22 +244,22 @@
                 <thead class="bg-light">
                     <tr class="fw-bolder text-gray-800 fs-8 text-uppercase">
                         {{-- Kolom 1: Produk & Barcode --}}
-                        <th style="width: 28%; min-width: 260px;" class="ps-4">
+                        <th style="width: 27%; min-width: 250px;" class="ps-4">
                             <span class="text-gray-900 fw-bolder">Produk &amp; Barcode</span>
                             <div class="text-muted fs-9 fw-normal">Nama · SKU · Barcode Scanner</div>
                         </th>
                         {{-- Kolom 2: HPP (Modal Beli) --}}
-                        <th style="width: 24%; min-width: 220px; background-color: rgba(var(--bs-primary-rgb), 0.02);">
+                        <th style="width: 23%; min-width: 210px; background-color: rgba(var(--bs-primary-rgb), 0.02);">
                             <span class="text-primary fw-bolder">HPP (Modal Beli)</span>
                             <div class="text-muted fs-9 fw-normal">Satuan Kulakan &rarr; Modal per Pcs</div>
                         </th>
                         {{-- Kolom 3: Stok Awal --}}
-                        <th style="width: 20%; min-width: 190px;">
+                        <th style="width: 20%; min-width: 180px;">
                             <span class="text-gray-900 fw-bolder">Stok Awal Fisik</span>
                             <div class="text-muted fs-9 fw-normal">Satuan Stok &rarr; Total Pieces</div>
                         </th>
                         {{-- Kolom 4: Harga Jual Minimum (Anti-Rugi) --}}
-                        <th style="width: 28%; min-width: 280px; background-color: rgba(var(--bs-success-rgb), 0.02);" class="pe-4">
+                        <th style="width: 30%; min-width: 280px; background-color: rgba(var(--bs-success-rgb), 0.02);" class="pe-4">
                             <span class="text-success fw-bolder">Harga Jual Minimum (Anti-Rugi)</span>
                             <div class="text-muted fs-9 fw-normal">Satuan Jual · Shortcut Margin · Batas Anti-Rugi</div>
                         </th>
@@ -501,20 +502,22 @@
                             <td class="align-top pe-4" style="background-color: rgba(var(--bs-success-rgb), 0.02);">
                                 <div class="setup-mini-card d-flex flex-column gap-2 border-success border-opacity-25">
                                     {{-- Shortcut Margin Buttons --}}
-                                    <div class="d-flex align-items-center justify-content-between gap-1">
-                                        <span class="text-muted fs-9 fw-bolder text-uppercase">Shortcut Margin:</span>
-                                        <div class="d-flex align-items-center gap-1">
-                                            <button type="button" class="btn btn-xs btn-light-success btn-margin-shortcut" data-percent="10" title="Isi harga jual dengan margin +10% di atas HPP">+10%</button>
-                                            <button type="button" class="btn btn-xs btn-light-success btn-margin-shortcut" data-percent="20" title="Isi harga jual dengan margin +20% di atas HPP">+20%</button>
-                                            <button type="button" class="btn btn-xs btn-light-success btn-margin-shortcut" data-percent="30" title="Isi harga jual dengan margin +30% di atas HPP">+30%</button>
-                                            <button type="button" class="btn btn-xs btn-light-success btn-margin-shortcut" data-percent="50" title="Isi harga jual dengan margin +50% di atas HPP">+50%</button>
+                                    <div class="d-flex align-items-center justify-content-between gap-1 flex-nowrap">
+                                        <span class="text-muted fs-9 fw-bolder text-uppercase text-nowrap">
+                                            <i class="ki-outline ki-flash text-warning fs-8 me-0.5"></i>Margin:
+                                        </span>
+                                        <div class="d-flex align-items-center gap-1 flex-nowrap">
+                                            <button type="button" class="btn btn-xs btn-light-success btn-margin-shortcut px-1.5 py-0.5" data-percent="10" title="Isi harga jual dengan margin +10% di atas HPP">+10%</button>
+                                            <button type="button" class="btn btn-xs btn-light-success btn-margin-shortcut px-1.5 py-0.5" data-percent="20" title="Isi harga jual dengan margin +20% di atas HPP">+20%</button>
+                                            <button type="button" class="btn btn-xs btn-light-success btn-margin-shortcut px-1.5 py-0.5" data-percent="30" title="Isi harga jual dengan margin +30% di atas HPP">+30%</button>
+                                            <button type="button" class="btn btn-xs btn-light-success btn-margin-shortcut px-1.5 py-0.5" data-percent="50" title="Isi harga jual dengan margin +50% di atas HPP">+50%</button>
                                         </div>
                                     </div>
 
                                     {{-- Input Pilihan Satuan Jual & Nominal Harga Jual Minimum --}}
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="d-flex flex-column" style="width: 85px;">
-                                            <label class="text-gray-600 fs-9 fw-bolder text-uppercase mb-1">Satuan:</label>
+                                        <div class="d-flex flex-column" style="width: 72px; min-width: 68px;">
+                                            <label class="text-gray-600 fs-9 fw-bolder text-uppercase mb-0.5 text-nowrap">Satuan:</label>
                                             <select class="form-select form-select-sm form-select-solid input-sell-unit px-2 py-1 fs-8 fw-semibold" style="height: 32px;">
                                                 @foreach($units as $unit)
                                                     @php
@@ -538,40 +541,42 @@
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <div class="d-flex flex-column flex-grow-1">
-                                            <label class="text-success fs-9 fw-bolder text-uppercase mb-1">Harga Jual Minimum:</label>
+                                        <div class="d-flex flex-column flex-grow-1 min-w-0">
+                                            <label class="text-success fs-9 fw-bolder text-uppercase mb-0.5 text-nowrap text-truncate" title="Harga Jual Minimum">Harga Min:</label>
                                             <div class="input-group input-group-sm input-group-solid" style="height: 32px;">
                                                 <span class="input-group-text px-2 fs-9 text-success fw-bold">Rp</span>
                                                 <input type="text" 
                                                        inputmode="numeric" 
-                                                       class="form-control form-control-sm form-control-solid input-price-amount price-input-box format-thousand text-end fw-bolder fs-7 py-1 text-success" 
+                                                       class="form-control form-control-sm form-control-solid input-price-amount price-input-box format-thousand text-end fw-bolder fs-7 py-1 px-2 text-success" 
                                                        value="{{ $defaultSellAmount > 0 ? number_format($defaultSellAmount, 0, ',', '.') : '' }}"
                                                        placeholder="0">
                                             </div>
                                         </div>
                                     </div>
 
-                                    {{-- Hasil Konversi Real-Time Harga per Pcs & Status Margin Anti-Rugi --}}
-                                    <div class="conversion-pill d-flex align-items-center justify-content-between bg-light-success border border-success border-opacity-25 conversion-price-pill">
-                                        <div class="d-flex align-items-center">
-                                            <span class="fs-9 text-gray-700 fw-semibold me-1">Harga/pcs:</span>
-                                            <span class="fs-8 fw-bolder text-success">
-                                                Rp <span class="val-price-pcs">{{ number_format($retailMinPrice, 0, ',', '.') }}</span>
+                                    {{-- Hasil Konversi Real-Time Harga per Pcs & Status Margin Anti-Rugi (Micro-Card 2 Tingkat Rapi & Anti-Wrap) --}}
+                                    <div class="conversion-pill d-flex flex-column gap-1 bg-light-success border border-success border-opacity-25 px-2.5 py-1.5 conversion-price-pill">
+                                        <div class="d-flex align-items-center justify-content-between text-nowrap">
+                                            <span class="fs-9 text-gray-700 fw-semibold text-nowrap">
+                                                <i class="ki-outline ki-tag fs-9 text-success me-0.5"></i>Harga /pcs:
+                                            </span>
+                                            <span class="fs-8 fw-bolder text-success text-nowrap">
+                                                Rp&nbsp;<span class="val-price-pcs">{{ number_format($retailMinPrice, 0, ',', '.') }}</span>
                                             </span>
                                         </div>
-                                        <div class="margin-indicator">
+                                        <div class="margin-indicator w-100">
                                             @if($retailMinPrice > 0 && $retailCostPrice > 0)
                                                 @if($retailMinPrice < $retailCostPrice)
-                                                    <span class="badge badge-light-danger text-danger fs-9 fw-bold">
+                                                    <span class="badge badge-light-danger text-danger fs-9 fw-bold w-100 text-center py-1 text-truncate d-flex align-items-center justify-content-center">
                                                         <i class="ki-outline ki-cross-circle fs-9 text-danger me-1"></i> Di bawah Modal!
                                                     </span>
                                                 @else
-                                                    <span class="badge badge-light-success text-success fs-9 fw-bold">
+                                                    <span class="badge badge-light-success text-success fs-9 fw-bold w-100 text-center py-1 text-truncate d-flex align-items-center justify-content-center">
                                                         <i class="ki-outline ki-arrow-up-right fs-9 text-success me-1"></i> Untung +Rp {{ number_format($marginAmount, 0, ',', '.') }} (+{{ $marginPercent }}%)
                                                     </span>
                                                 @endif
                                             @else
-                                                <span class="text-muted fs-9">Tentukan harga</span>
+                                                <span class="text-muted fs-9 text-center w-100 d-block">Tentukan harga</span>
                                             @endif
                                         </div>
                                     </div>
@@ -762,11 +767,11 @@
                     // Peringatan Anti-Rugi (Di bawah modal)
                     priceAmountInput.classList.add('is-invalid');
                     if (pricePill) {
-                        pricePill.className = 'conversion-pill d-flex align-items-center justify-content-between bg-light-danger border border-danger border-opacity-50 conversion-price-pill';
+                        pricePill.className = 'conversion-pill d-flex flex-column gap-1 bg-light-danger border border-danger border-opacity-50 px-2.5 py-1.5 conversion-price-pill';
                     }
                     if (marginIndicator) {
                         marginIndicator.innerHTML = `
-                            <span class="badge badge-danger text-white fs-9 fw-bold">
+                            <span class="badge badge-danger text-white fs-9 fw-bold w-100 text-center py-1 text-truncate d-flex align-items-center justify-content-center">
                                 <i class="ki-outline ki-cross-circle fs-9 text-white me-1"></i> Rugi Rp ${formatNumber(Math.abs(marginAmount))} (${marginPercent}%)
                             </span>
                         `;
@@ -779,11 +784,11 @@
                     // Margin Aman & Menguntungkan
                     priceAmountInput.classList.remove('is-invalid');
                     if (pricePill) {
-                        pricePill.className = 'conversion-pill d-flex align-items-center justify-content-between bg-light-success border border-success border-opacity-25 conversion-price-pill';
+                        pricePill.className = 'conversion-pill d-flex flex-column gap-1 bg-light-success border border-success border-opacity-25 px-2.5 py-1.5 conversion-price-pill';
                     }
                     if (marginIndicator) {
                         marginIndicator.innerHTML = `
-                            <span class="badge badge-light-success text-success fs-9 fw-bold">
+                            <span class="badge badge-light-success text-success fs-9 fw-bold w-100 text-center py-1 text-truncate d-flex align-items-center justify-content-center">
                                 <i class="ki-outline ki-arrow-up-right fs-9 text-success me-1"></i> Untung +Rp ${formatNumber(marginAmount)} (+${marginPercent}%)
                             </span>
                         `;
@@ -793,10 +798,10 @@
             } else if (sellAmount === 0) {
                 priceAmountInput.classList.remove('is-invalid');
                 if (pricePill) {
-                    pricePill.className = 'conversion-pill d-flex align-items-center justify-content-between bg-light-success border border-success border-opacity-25 conversion-price-pill';
+                    pricePill.className = 'conversion-pill d-flex flex-column gap-1 bg-light-success border border-success border-opacity-25 px-2.5 py-1.5 conversion-price-pill';
                 }
                 if (marginIndicator) {
-                    marginIndicator.innerHTML = '<span class="text-muted fs-9">Tentukan harga</span>';
+                    marginIndicator.innerHTML = '<span class="text-muted fs-9 text-center w-100 d-block">Tentukan harga</span>';
                 }
                 row.setAttribute('data-can-save', '1');
             }
