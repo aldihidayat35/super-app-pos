@@ -109,25 +109,31 @@
 </style>
 
 <div class="d-flex flex-column gap-5">
-    {{-- KPI & Location Selector --}}
-    <div class="row g-5">
+    {{-- KPI & Location Selector (Clean & Modern Cards Tanpa Border Warna Kiri) --}}
+    <div class="row g-4 g-xl-5">
+        {{-- Card 1: Lokasi Kerja Target --}}
         <div class="col-12 col-md-4">
-            <div class="card card-flush bg-body shadow-sm h-100 border border-gray-200">
+            <div class="card card-flush bg-body border border-gray-200 shadow-sm rounded-3 h-100">
                 <div class="card-body d-flex flex-column justify-content-between p-5">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-gray-600 fw-bold fs-7 text-uppercase">Lokasi Kerja Target</span>
-                        <span class="badge badge-light-primary fw-bold">{{ ucfirst($currentLocation->type) }}</span>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <div class="symbol symbol-35px symbol-circle bg-light-primary">
+                                <span class="symbol-label"><i class="ki-outline ki-shop text-primary fs-3"></i></span>
+                            </div>
+                            <span class="text-gray-500 fw-bold fs-7 text-uppercase tracking-wider">Lokasi Kerja</span>
+                        </div>
+                        <span class="badge badge-light-primary fw-bold fs-8 px-2.5 py-1">{{ ucfirst($currentLocation->type) }}</span>
                     </div>
-                    <div>
-                        <h4 class="fw-bolder text-gray-900 mb-1">{{ $currentLocation->name }}</h4>
-                        <div class="text-muted fs-8">{{ $currentLocation->city ?: 'Operasional Aktif' }} · {{ $currentLocation->code }}</div>
+                    <div class="my-1">
+                        <h3 class="fw-bolder text-gray-900 mb-1 fs-3 text-truncate" title="{{ $currentLocation->name }}">{{ $currentLocation->name }}</h3>
+                        <div class="text-muted fs-8">{{ $currentLocation->city ?: 'Operasional Aktif' }} · <span class="badge badge-light text-gray-600 fw-semibold px-2 py-0.5 fs-9">{{ $currentLocation->code }}</span></div>
                     </div>
                     <div class="mt-4 pt-3 border-top border-gray-100">
                         <form method="GET" id="form-change-location" class="d-flex align-items-center gap-2">
                             <input type="hidden" name="completeness" value="{{ $filters['completeness'] }}">
                             <input type="hidden" name="category_id" value="{{ $filters['category_id'] }}">
                             <input type="hidden" name="q" value="{{ $filters['q'] }}">
-                            <select name="work_location_id" class="form-select form-select-sm form-select-solid" onchange="this.form.submit()">
+                            <select name="work_location_id" class="form-select form-select-sm form-select-solid fw-semibold fs-8" onchange="this.form.submit()">
                                 @foreach($locations as $loc)
                                     <option value="{{ $loc->id }}" @selected($loc->id === $currentLocation->id)>
                                         {{ $loc->name }} ({{ ucfirst($loc->type) }})
@@ -140,38 +146,50 @@
             </div>
         </div>
 
+        {{-- Card 2: Belum Lengkap (Clean Tanpa Border Warna Kiri) --}}
         <div class="col-6 col-md-4">
-            <div class="card card-flush bg-body shadow-sm h-100 border border-amber-200" style="border-left: 4px solid #f59e0b !important;">
+            <div class="card card-flush bg-body border border-gray-200 shadow-sm rounded-3 h-100">
                 <div class="card-body d-flex flex-column justify-content-between p-5">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="text-gray-600 fw-bold fs-7">BELUM LENGKAP</span>
-                        <div class="symbol symbol-35px bg-light-warning">
-                            <span class="symbol-label"><i class="ki-outline ki-timer text-warning fs-3"></i></span>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <div class="symbol symbol-35px symbol-circle bg-light-warning">
+                                <span class="symbol-label"><i class="ki-outline ki-time text-warning fs-3"></i></span>
+                            </div>
+                            <span class="text-gray-500 fw-bold fs-7 text-uppercase tracking-wider">Belum Lengkap</span>
                         </div>
+                        <span class="badge badge-light-warning text-warning fw-bold fs-8 px-2.5 py-1">Perlu Setup</span>
                     </div>
-                    <div class="my-2">
-                        <span class="fs-2hx fw-bolder text-warning" id="kpi-incomplete-count">{{ number_format($stats['incomplete_count'], 0, ',', '.') }}</span>
-                        <span class="text-muted fs-7 ms-1">produk</span>
+                    <div class="my-1 d-flex align-items-baseline gap-2">
+                        <span class="fs-2hx fw-bolder text-gray-900" id="kpi-incomplete-count">{{ number_format($stats['incomplete_count'], 0, ',', '.') }}</span>
+                        <span class="text-gray-500 fw-bold fs-7">produk</span>
                     </div>
-                    <div class="text-muted fs-8">Perlu dilengkapi HPP, Stok Awal, &amp; Harga Jual.</div>
+                    <div class="mt-4 pt-3 border-top border-gray-100 text-muted fs-8">
+                        <i class="ki-outline ki-information-2 fs-7 text-warning me-1"></i>Perlu dilengkapi HPP, Stok Awal, &amp; Harga Jual.
+                    </div>
                 </div>
             </div>
         </div>
 
+        {{-- Card 3: Lengkap & Aktif (Clean Tanpa Border Warna Kiri) --}}
         <div class="col-6 col-md-4">
-            <div class="card card-flush bg-body shadow-sm h-100 border border-emerald-200" style="border-left: 4px solid #10b981 !important;">
+            <div class="card card-flush bg-body border border-gray-200 shadow-sm rounded-3 h-100">
                 <div class="card-body d-flex flex-column justify-content-between p-5">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="text-gray-600 fw-bold fs-7">LENGKAP &amp; AKTIF</span>
-                        <div class="symbol symbol-35px bg-light-success">
-                            <span class="symbol-label"><i class="ki-outline ki-check-circle text-success fs-3"></i></span>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <div class="symbol symbol-35px symbol-circle bg-light-success">
+                                <span class="symbol-label"><i class="ki-outline ki-check-circle text-success fs-3"></i></span>
+                            </div>
+                            <span class="text-gray-500 fw-bold fs-7 text-uppercase tracking-wider">Lengkap &amp; Aktif</span>
                         </div>
+                        <span class="badge badge-light-success text-success fw-bold fs-8 px-2.5 py-1">Siap Jual</span>
                     </div>
-                    <div class="my-2">
-                        <span class="fs-2hx fw-bolder text-success" id="kpi-complete-count">{{ number_format($stats['complete_count'], 0, ',', '.') }}</span>
-                        <span class="text-muted fs-7 ms-1">produk</span>
+                    <div class="my-1 d-flex align-items-baseline gap-2">
+                        <span class="fs-2hx fw-bolder text-gray-900" id="kpi-complete-count">{{ number_format($stats['complete_count'], 0, ',', '.') }}</span>
+                        <span class="text-gray-500 fw-bold fs-7">produk</span>
                     </div>
-                    <div class="text-muted fs-8">HPP, stok fisik, &amp; harga minimum siap transaksi.</div>
+                    <div class="mt-4 pt-3 border-top border-gray-100 text-muted fs-8">
+                        <i class="ki-outline ki-verify fs-7 text-success me-1"></i>HPP, stok fisik, &amp; harga minimum siap transaksi.
+                    </div>
                 </div>
             </div>
         </div>
@@ -179,62 +197,80 @@
 
     {{-- Filter Toolbar & Auto-Save Badge Header --}}
     <x-metronic.card>
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-5">
-            {{-- Filter Form --}}
-            <form method="GET" class="d-flex flex-wrap align-items-center gap-3">
-                <input type="hidden" name="work_location_id" value="{{ $currentLocation->id }}">
+        <div class="d-flex flex-column gap-4 mb-5">
+            {{-- Baris Filter & Action Bar --}}
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                {{-- Form Filter Kiri: Tabs Status & Filter Input --}}
+                <form method="GET" class="d-flex flex-wrap align-items-center gap-2.5">
+                    <input type="hidden" name="work_location_id" value="{{ $currentLocation->id }}">
 
-                {{-- Status Kelengkapan Tabs --}}
-                <div class="nav-group nav-group-fluid bg-light p-1 rounded">
-                    <a href="{{ request()->fullUrlWithQuery(['completeness' => 'incomplete', 'page' => 1]) }}"
-                       class="btn btn-sm btn-color-gray-600 px-4 {{ $filters['completeness'] === 'incomplete' ? 'btn-active btn-white active shadow-sm text-warning fw-bolder' : '' }}">
-                        <i class="ki-outline ki-cross-circle fs-6 me-1"></i> Belum Lengkap
-                    </a>
-                    <a href="{{ request()->fullUrlWithQuery(['completeness' => 'all', 'page' => 1]) }}"
-                       class="btn btn-sm btn-color-gray-600 px-4 {{ $filters['completeness'] === 'all' ? 'btn-active btn-white active shadow-sm fw-bolder' : '' }}">
-                        Semua ({{ $stats['total_products'] }})
-                    </a>
-                    <a href="{{ request()->fullUrlWithQuery(['completeness' => 'complete', 'page' => 1]) }}"
-                       class="btn btn-sm btn-color-gray-600 px-4 {{ $filters['completeness'] === 'complete' ? 'btn-active btn-white active shadow-sm text-success fw-bolder' : '' }}">
-                        <i class="ki-outline ki-check-circle fs-6 me-1"></i> Lengkap
-                    </a>
+                    {{-- Status Kelengkapan Segmented Control --}}
+                    <div class="nav-group nav-group-fluid bg-light p-1 rounded-2 border border-gray-200 d-inline-flex flex-nowrap">
+                        <a href="{{ request()->fullUrlWithQuery(['completeness' => 'incomplete', 'page' => 1]) }}"
+                           class="btn btn-sm btn-color-gray-600 px-3 py-2 text-nowrap {{ $filters['completeness'] === 'incomplete' ? 'btn-active btn-white active shadow-xs text-warning fw-bolder' : 'fw-semibold' }}">
+                            <i class="ki-outline ki-time fs-7 me-1 text-warning"></i>
+                            <span>Belum Lengkap</span>
+                            <span class="badge {{ $filters['completeness'] === 'incomplete' ? 'badge-warning text-white' : 'badge-light-warning text-warning' }} fs-9 ms-1.5 px-1.5 py-0.5">
+                                {{ number_format($stats['incomplete_count'], 0, ',', '.') }}
+                            </span>
+                        </a>
+                        <a href="{{ request()->fullUrlWithQuery(['completeness' => 'all', 'page' => 1]) }}"
+                           class="btn btn-sm btn-color-gray-600 px-3 py-2 text-nowrap {{ $filters['completeness'] === 'all' ? 'btn-active btn-white active shadow-xs text-gray-900 fw-bolder' : 'fw-semibold' }}">
+                            <span>Semua</span>
+                            <span class="badge {{ $filters['completeness'] === 'all' ? 'badge-secondary text-gray-900' : 'badge-light-secondary text-gray-700' }} fs-9 ms-1.5 px-1.5 py-0.5">
+                                {{ number_format($stats['total_products'], 0, ',', '.') }}
+                            </span>
+                        </a>
+                        <a href="{{ request()->fullUrlWithQuery(['completeness' => 'complete', 'page' => 1]) }}"
+                           class="btn btn-sm btn-color-gray-600 px-3 py-2 text-nowrap {{ $filters['completeness'] === 'complete' ? 'btn-active btn-white active shadow-xs text-success fw-bolder' : 'fw-semibold' }}">
+                            <i class="ki-outline ki-check-circle fs-7 me-1 text-success"></i>
+                            <span>Lengkap</span>
+                            <span class="badge {{ $filters['completeness'] === 'complete' ? 'badge-success text-white' : 'badge-light-success text-success' }} fs-9 ms-1.5 px-1.5 py-0.5">
+                                {{ number_format($stats['complete_count'], 0, ',', '.') }}
+                            </span>
+                        </a>
+                    </div>
+
+                    {{-- Separator Vertikal --}}
+                    <div class="bullet bg-gray-300 h-25px w-1px d-none d-md-block mx-1"></div>
+
+                    {{-- Kategori --}}
+                    <select name="category_id" class="form-select form-select-sm form-select-solid w-160px fs-8 fw-semibold" onchange="this.form.submit()">
+                        <option value="">Semua Kategori</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}" @selected((int) $filters['category_id'] === $category->id)>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    {{-- Pencarian --}}
+                    <div class="position-relative">
+                        <i class="ki-outline ki-magnifier fs-6 position-absolute top-50 translate-middle-y ms-3 text-gray-500"></i>
+                        <input type="text" name="q" value="{{ $filters['q'] }}" class="form-control form-control-sm form-control-solid ps-9 w-180px w-lg-220px fs-8" placeholder="Cari SKU, barcode, nama...">
+                    </div>
+
+                    <button type="submit" class="btn btn-sm btn-light-primary fw-bold px-3 py-2 text-nowrap">
+                        <i class="ki-outline ki-filter me-1 fs-6"></i> Filter
+                    </button>
+                    @if($filters['q'] !== '' || $filters['category_id'] || $filters['completeness'] !== 'incomplete')
+                        <a href="{{ route('admin.products.quick-setup.index', ['work_location_id' => $currentLocation->id]) }}" class="btn btn-sm btn-light-danger fw-bold px-3 py-2 text-nowrap" title="Reset Filter">
+                            <i class="ki-outline ki-cross fs-7 me-0.5"></i> Reset
+                        </a>
+                    @endif
+                </form>
+
+                {{-- Status Auto-Save & Simpan Manual Kanan --}}
+                <div class="d-flex align-items-center gap-2.5 ms-auto">
+                    <div class="d-flex align-items-center text-success bg-light-success border border-success border-opacity-25 rounded-2 px-3 py-2 fs-8 fw-semibold text-nowrap">
+                        <span class="bullet bullet-dot bg-success h-6px w-6px me-2"></span>
+                        <span class="fw-bold me-1">Auto-Save Aktif</span>
+                        <span class="d-none d-xl-inline text-muted fs-9 ms-1">· Tersimpan otomatis saat selesai mengetik</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary fw-bolder px-4 py-2 text-nowrap" id="btn-save-all" onclick="saveAllRows()">
+                        <i class="ki-outline ki-check fs-5 me-1"></i> Simpan Semua Baris
+                    </button>
                 </div>
-
-                {{-- Kategori --}}
-                <select name="category_id" class="form-select form-select-sm form-select-solid w-175px" onchange="this.form.submit()">
-                    <option value="">Semua Kategori</option>
-                    @foreach($categories as $category)
-                        <option value="{{ $category->id }}" @selected((int) $filters['category_id'] === $category->id)>
-                            {{ $category->name }}
-                        </option>
-                    @endforeach
-                </select>
-
-                {{-- Pencarian --}}
-                <div class="position-relative">
-                    <i class="ki-outline ki-magnifier fs-5 position-absolute top-50 translate-middle-y ms-3 text-gray-500"></i>
-                    <input type="text" name="q" value="{{ $filters['q'] }}" class="form-control form-control-sm form-control-solid ps-9 w-200px" placeholder="Cari SKU, barcode, nama...">
-                </div>
-
-                <button type="submit" class="btn btn-sm btn-light-primary">
-                    <i class="ki-outline ki-filter me-1"></i> Filter
-                </button>
-                @if($filters['q'] !== '' || $filters['category_id'] || $filters['completeness'] !== 'incomplete')
-                    <a href="{{ route('admin.products.quick-setup.index', ['work_location_id' => $currentLocation->id]) }}" class="btn btn-sm btn-light-danger">
-                        Reset
-                    </a>
-                @endif
-            </form>
-
-            {{-- Status Auto-Save & Batch Action --}}
-            <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center text-success bg-light-success border border-success border-opacity-25 rounded px-3 py-2 fs-8 fw-bold">
-                    <i class="ki-outline ki-cloud-change fs-5 text-success me-2"></i>
-                    <span>Auto-Save Aktif: Data otomatis tersimpan saat Anda selesai mengetik</span>
-                </div>
-                <button type="button" class="btn btn-sm btn-primary fw-bold" id="btn-save-all" onclick="saveAllRows()">
-                    <i class="ki-outline ki-check fs-5 me-1"></i> Simpan Semua Baris
-                </button>
             </div>
         </div>
 
