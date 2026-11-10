@@ -503,7 +503,7 @@ final class ProductQuickSetupService
 
             $marginAmount = Decimal::sub($retailMinPrice, $retailCostPrice, 2);
             $marginPercent = Decimal::compare($retailCostPrice, '0.00', 2) > 0
-                ? Decimal::mul(Decimal::div($marginAmount, $retailCostPrice, 4, 6, 4), '100', 1)
+                ? Decimal::mul(Decimal::div($marginAmount, $retailCostPrice, 2, 2, 4), '100', 4, 0, 1)
                 : '0.0';
 
             return [
