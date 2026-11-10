@@ -13,7 +13,9 @@
 @endsection
 
 @section('toolbar_actions')
-    @php($canDeleteRole = auth()->user()?->hasRole('super_admin') && ! (bool) $role->is_system && $role->users->count() === 0)
+    @php($isSuperAdmin = (bool) auth()->user()?->hasRole('super_admin'))
+    @php($userCount = (int) $role->users->count())
+    @php($canDeleteRole = $isSuperAdmin && $role->name !== 'super_admin' && $userCount === 0)
 
     @can('create', \Spatie\Permission\Models\Role::class)
         <form method="POST" action="{{ route('admin.roles.duplicate', $role) }}">
@@ -34,12 +36,21 @@
                 data-confirm
                 data-confirm-form="delete-role-{{ $role->id }}"
                 data-confirm-title="Hapus role ini?"
-                data-confirm-text="Role kustom ini akan dihapus permanen. Pastikan tidak ada pengguna yang masih membutuhkan role ini."
+                data-confirm-text="Role '{{ $role->label ?: $role->name }}' akan dihapus permanen dari sistem."
                 data-confirm-button="Ya, hapus role"
             >
-                <i class="ki-outline ki-cross-circle"></i> Hapus Role
+                <i class="ki-outline ki-trash fs-5 me-1"></i> Hapus Role
             </button>
         </form>
+    @elseif ($isSuperAdmin && $role->name !== 'super_admin')
+        <button
+            type="button"
+            class="btn btn-light-secondary opacity-50"
+            disabled
+            title="Role tidak dapat dihapus karena masih digunakan oleh {{ $userCount }} pengguna"
+        >
+            <i class="ki-outline ki-trash fs-5 me-1"></i> Hapus Role (Masih Dipakai {{ $userCount }} Pengguna)
+        </button>
     @endif
 @endsection
 

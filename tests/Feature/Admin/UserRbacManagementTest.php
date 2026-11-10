@@ -424,6 +424,24 @@ class UserRbacManagementTest extends TestCase
     }
 
     #[Test]
+    public function super_admin_can_delete_unused_system_role(): void
+    {
+        $superAdmin = $this->createAdmin();
+        $unusedSystemRole = Role::query()->create([
+            'name' => 'unused_system_role',
+            'label' => 'Role Sistem Tidak Terpakai',
+            'guard_name' => 'web',
+            'is_system' => true,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->delete(route('admin.roles.destroy', $unusedSystemRole))
+            ->assertRedirect(route('admin.roles.index'));
+
+        $this->assertDatabaseMissing('roles', ['name' => 'unused_system_role']);
+    }
+
+    #[Test]
     public function system_or_used_role_cannot_be_deleted(): void
     {
         $superAdmin = $this->createAdmin();

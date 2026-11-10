@@ -73,9 +73,39 @@
                                 @can('create', \Spatie\Permission\Models\Role::class)
                                     <form method="POST" action="{{ route('admin.roles.duplicate', $role) }}" class="d-inline">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-light">Salin</button>
+                                        <button type="submit" class="btn btn-sm btn-light" title="Duplikasi role ini">Salin</button>
                                     </form>
                                 @endcan
+                                @if($role->name !== 'super_admin' && auth()->user()?->hasRole('super_admin'))
+                                    @if((int) $role->users_count === 0)
+                                        <form method="POST" action="{{ route('admin.roles.destroy', $role) }}" class="d-inline" id="delete-role-{{ $role->id }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button
+                                                type="submit"
+                                                class="btn btn-sm btn-icon btn-light-danger"
+                                                data-confirm
+                                                data-confirm-form="delete-role-{{ $role->id }}"
+                                                data-confirm-title="Hapus role ini?"
+                                                data-confirm-text="Role '{{ $role->label ?: $role->name }}' akan dihapus permanen dari sistem."
+                                                data-confirm-button="Ya, hapus role"
+                                                title="Hapus Role {{ $role->label ?: $role->name }}"
+                                                aria-label="Hapus role {{ $role->label ?: $role->name }}"
+                                            >
+                                                <i class="ki-outline ki-trash fs-5"></i>
+                                            </button>
+                                        </form>
+                                    @else
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-icon btn-light-secondary opacity-50"
+                                            title="Role tidak dapat dihapus karena masih digunakan oleh {{ $role->users_count }} pengguna"
+                                            disabled
+                                        >
+                                            <i class="ki-outline ki-trash fs-5"></i>
+                                        </button>
+                                    @endif
+                                @endif
                             </td>
                         </tr>
                     @empty

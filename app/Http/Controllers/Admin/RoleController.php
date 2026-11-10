@@ -165,15 +165,19 @@ class RoleController extends Controller
     public function destroy(Request $request, Role $role): RedirectResponse
     {
         $this->authorize('delete', $role);
-        abort_if((bool) $role->getAttribute('is_system'), 403, 'Role sistem tidak boleh dihapus.');
+        abort_if($role->name === 'super_admin', 403, 'Role Super Admin adalah role utama sistem dan tidak boleh dihapus.');
         abort_if($role->users()->count() > 0, 403, 'Role yang masih dipakai pengguna tidak boleh dihapus.');
 
-        DB::transaction(function () use ($request, $role): void {
+        $roleLabel = (string) ($role->getAttribute('label') ?: $role->name);
+        $roleName = $role->name;
+
+        DB::transaction(function () use ($request, $role, $roleName, $roleLabel): void {
             $this->audit($request, $role, 'admin.role.deleted', [
-                'role_name' => $role->name,
-                'role_label' => $role->getAttribute('label'),
+                'role_name' => $roleName,
+                'role_label' => $roleLabel,
             ]);
 
+            $role->syncPermissions([]);
             $role->delete();
         });
 
@@ -181,7 +185,7 @@ class RoleController extends Controller
 
         return redirect()->route('admin.roles.index')->with('notification', [
             'type' => 'success',
-            'message' => 'Role berhasil dihapus.',
+            'message' => "Role '{$roleLabel}' berhasil dihapus.",
         ]);
     }
 

@@ -35,7 +35,7 @@ class RolePolicy
     public function delete(User $user, Role $role): bool
     {
         return $user->hasRole('super_admin')
-            && ! (bool) $role->getAttribute('is_system')
+            && $role->name !== 'super_admin'
             && $role->users()->count() === 0;
     }
 }

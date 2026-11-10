@@ -3,6 +3,38 @@
 @section('title', 'Edit Role - ' . config('app.name'))
 @section('page_title', 'Edit Role')
 
+@section('toolbar_actions')
+    <a href="{{ route('admin.roles.show', $role) }}" class="btn btn-light me-2"><i class="ki-outline ki-arrow-left fs-5 me-1"></i> Kembali ke Rincian</a>
+    @if(auth()->user()?->hasRole('super_admin') && $role->name !== 'super_admin')
+        @if((int) $role->users->count() === 0)
+            <form method="POST" action="{{ route('admin.roles.destroy', $role) }}" id="delete-role-edit-{{ $role->id }}" class="d-inline">
+                @csrf
+                @method('DELETE')
+                <button
+                    type="submit"
+                    class="btn btn-light-danger"
+                    data-confirm
+                    data-confirm-form="delete-role-edit-{{ $role->id }}"
+                    data-confirm-title="Hapus role ini?"
+                    data-confirm-text="Role '{{ $role->label ?: $role->name }}' akan dihapus permanen dari sistem."
+                    data-confirm-button="Ya, hapus role"
+                >
+                    <i class="ki-outline ki-trash fs-5 me-1"></i> Hapus Role
+                </button>
+            </form>
+        @else
+            <button
+                type="button"
+                class="btn btn-light-secondary opacity-50"
+                disabled
+                title="Role tidak dapat dihapus karena masih digunakan oleh {{ $role->users->count() }} pengguna"
+            >
+                <i class="ki-outline ki-trash fs-5 me-1"></i> Hapus Role (Masih Dipakai)
+            </button>
+        @endif
+    @endif
+@endsection
+
 @section('page_guide')
     <x-metronic.page-guide id="admin-role-edit" title="Panduan Edit Role">
         <x-slot:function><p>Form mengubah metadata role dan matriks permission.</p></x-slot:function>
