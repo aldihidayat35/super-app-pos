@@ -88,11 +88,19 @@
 @section('page_description', $scopeMeta['description'])
 
 @section('toolbar_actions')
-    @can('reports.export')
-        <a href="{{ route('reports.exports.index', ['report_type'=>'daily','start_date'=>$filters['start_date'],'end_date'=>$filters['end_date']]) }}" class="btn btn-light-primary">
-            <i class="ki-outline ki-file-down me-2 fs-4"></i><span class="fw-semibold">Export</span>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ route('reports.daily.print', array_merge(request()->query(), ['format' => 'thermal'])) }}" target="_blank" class="btn btn-sm btn-light-primary fw-bold" title="Cetak Ringkasan Kasir/Shift ke Printer Termal 80mm">
+            <i class="ki-outline ki-receipt-square me-1 fs-5"></i><span>Slip Termal (80mm)</span>
         </a>
-    @endcan
+        <a href="{{ route('reports.daily.print', array_merge(request()->query(), ['format' => 'dotmatrix'])) }}" target="_blank" class="btn btn-sm btn-light-success fw-bold" title="Cetak Rekapitulasi Lengkap ke Epson LX-310 Continuous Form">
+            <i class="ki-outline ki-document me-1 fs-5"></i><span>Rekap LX-310</span>
+        </a>
+        @can('reports.export')
+            <a href="{{ route('reports.exports.index', ['report_type'=>'daily','start_date'=>$filters['start_date'],'end_date'=>$filters['end_date']]) }}" class="btn btn-sm btn-light-secondary">
+                <i class="ki-outline ki-file-down me-1 fs-5"></i><span>Export</span>
+            </a>
+        @endcan
+    </div>
 @endsection
 
 @push('styles')

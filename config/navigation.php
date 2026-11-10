@@ -70,6 +70,12 @@ return [
                 'permission' => 'admin.settings.view',
             ],
             [
+                'label' => 'Pengaturan Printer',
+                'route' => 'admin.settings.printer.edit',
+                'active' => ['admin.settings.printer.*'],
+                'permission' => 'admin.settings.view',
+            ],
+            [
                 'label' => 'Nomor Dokumen',
                 'route' => 'admin.settings.document-numbers.index',
                 'active' => ['admin.settings.document-numbers.*'],

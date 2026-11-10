@@ -10,6 +10,7 @@ use App\Http\Requests\Retail\StorePosReturnRequest;
 use App\Http\Requests\Retail\VoidPosSaleRequest;
 use App\Models\PosSale;
 use App\Models\PosSaleItem;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Retail\PosService;
 use Illuminate\Contracts\View\View;
@@ -130,8 +131,23 @@ class PosSaleController extends Controller
         $sale->increment('receipt_print_count');
         $sale->forceFill(['last_printed_at' => now()])->save();
 
+        $settings = SystemSetting::getPrinterSettings();
+        $companyName = SystemSetting::getCompanyName();
+
+        $sale->load(['items.product', 'items.unit', 'payments', 'branch', 'cashier', 'customer']);
+
+        if ($request->query('format') === 'dotmatrix') {
+            return view('retail.sales.invoice-dotmatrix', [
+                'sale' => $sale,
+                'settings' => $settings,
+                'companyName' => $companyName,
+            ]);
+        }
+
         return view('retail.sales.receipt', [
-            'sale' => $sale->load(['items.product', 'payments', 'branch', 'cashier', 'customer']),
+            'sale' => $sale,
+            'settings' => $settings,
+            'companyName' => $companyName,
         ]);
     }
 

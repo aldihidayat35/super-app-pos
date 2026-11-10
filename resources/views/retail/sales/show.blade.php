@@ -4,7 +4,8 @@
 @section('page_title', 'Detail Penjualan dan Struk')
 
 @section('toolbar_actions')
-    <a href="{{ route('retail.sales.print', $sale) }}" class="btn btn-light-primary"><i class="ki-outline ki-printer"></i> Cetak Struk</a>
+    <a href="{{ route('retail.sales.print', $sale) }}" target="_blank" class="btn btn-light-primary"><i class="ki-outline ki-receipt-square"></i> Cetak Struk (Thermal)</a>
+    <a href="{{ route('retail.sales.print', [$sale, 'format' => 'dotmatrix']) }}" target="_blank" class="btn btn-light-success"><i class="ki-outline ki-document"></i> Cetak Faktur (LX-310)</a>
     @can('void', $sale)<a href="{{ route('retail.sales.void', $sale) }}" class="btn btn-light-danger">Batalkan</a>@endcan
     @can('return', $sale)<a href="{{ route('retail.sales.return', $sale) }}" class="btn btn-light-warning">Retur</a>@endcan
 @endsection

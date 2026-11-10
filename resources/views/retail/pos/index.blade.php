@@ -257,11 +257,16 @@
                         <div id="success-total" class="fs-2x fw-bold"></div>
                         <div class="mt-3 text-muted">Kembalian</div>
                         <div id="success-change" class="fs-2 fw-bold text-success"></div>
-                        <div class="d-grid gap-3 mt-7"><button type="button" id="success-print"
-                                class="btn btn-primary"><i class="ki-outline ki-printer fs-4 me-2"></i>Cetak
-                                Struk</button><button type="button" id="new-transaction"
-                                class="btn btn-light-primary">Transaksi Baru</button><a id="success-detail"
-                                class="btn btn-light">Lihat Detail</a></div>
+                        <div class="d-grid gap-2.5 mt-7">
+                            <button type="button" id="success-print" class="btn btn-primary fw-bold">
+                                <i class="ki-outline ki-receipt-square fs-4 me-1"></i>Cetak Struk (Thermal 80mm)
+                            </button>
+                            <button type="button" id="success-print-dotmatrix" class="btn btn-light-success fw-bold">
+                                <i class="ki-outline ki-document fs-4 me-1"></i>Cetak Faktur (Epson LX-310)
+                            </button>
+                            <button type="button" id="new-transaction" class="btn btn-light-primary fw-bold">Transaksi Baru</button>
+                            <a id="success-detail" class="btn btn-light">Lihat Detail</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1067,6 +1072,7 @@
                 let requestSequence = 0;
                 let idempotencyKey = makeUuid();
                 let receiptPrintUrl = null;
+                const printerSettings = @json(\App\Models\SystemSetting::getPrinterSettings());
 
                 const money = value => 'Rp ' + Number(value || 0).toLocaleString('id-ID', {
                     maximumFractionDigits: 0
@@ -1905,6 +1911,9 @@
                         document.getElementById('success-detail').href = data.sale.show_url;
                         clearTransaction();
                         successModal.show();
+                        if (printerSettings && printerSettings.printer_auto_print_pos) {
+                            setTimeout(() => printReceipt('thermal'), 300);
+                        }
                     } catch (error) {
                         window.Swal ? Swal.fire('Checkout gagal', error.message, 'error') : alert(error.message);
                         button.disabled = false;
@@ -2020,11 +2029,16 @@
                     focusScanner();
                 }
 
-                function printReceipt() {
+                function printReceipt(format = 'thermal') {
                     if (!receiptPrintUrl) return;
-                    const printWindow = window.open(receiptPrintUrl, 'pos-receipt-print', 'popup=yes,width=420,height=720');
+                    const url = format === 'dotmatrix' 
+                        ? (receiptPrintUrl + (receiptPrintUrl.includes('?') ? '&' : '?') + 'format=dotmatrix')
+                        : receiptPrintUrl;
+                    const width = format === 'dotmatrix' ? 850 : ((printerSettings && printerSettings.printer_thermal_width === '58mm') ? 320 : 420);
+                    const height = 720;
+                    const printWindow = window.open(url, 'pos-receipt-print', `popup=yes,width=${width},height=${height}`);
                     if (!printWindow) {
-                        showToast('Popup cetak diblokir browser. Izinkan popup untuk mencetak struk.');
+                        showToast('Popup cetak diblokir browser. Izinkan popup untuk mencetak.');
                         return;
                     }
                     startNewTransaction();
@@ -2091,7 +2105,8 @@
                 document.getElementById('hold-cart').addEventListener('click', holdCart);
                 document.getElementById('open-holds').addEventListener('click', openHolds);
                 document.getElementById('new-transaction').addEventListener('click', startNewTransaction);
-                document.getElementById('success-print').addEventListener('click', printReceipt);
+                document.getElementById('success-print')?.addEventListener('click', () => printReceipt('thermal'));
+                document.getElementById('success-print-dotmatrix')?.addEventListener('click', () => printReceipt('dotmatrix'));
                 document.getElementById('payment-modal').addEventListener('shown.bs.modal', () => document.querySelector(
                     '.payment-amount')?.focus());
                 document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('hidden.bs.modal',

@@ -251,8 +251,11 @@
                                             <i class="ki-outline ki-eye fs-3"></i>
                                         </a>
                                         @if($sale->status->value === 'completed')
-                                            <a href="{{ route('retail.sales.print', $sale) }}" target="_blank" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Cetak Ulang Struk">
-                                                <i class="ki-outline ki-printer fs-3"></i>
+                                            <a href="{{ route('retail.sales.print', $sale) }}" target="_blank" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Cetak Ulang Struk (Thermal 80mm)">
+                                                <i class="ki-outline ki-receipt-square fs-3"></i>
+                                            </a>
+                                            <a href="{{ route('retail.sales.print', [$sale, 'format' => 'dotmatrix']) }}" target="_blank" class="btn btn-icon btn-bg-light btn-active-color-success btn-sm me-1" title="Cetak Faktur (Epson LX-310)">
+                                                <i class="ki-outline ki-document fs-3"></i>
                                             </a>
                                         @endif
                                     </td>

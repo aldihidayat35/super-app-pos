@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CustomerSettingsController;
 use App\Http\Controllers\Admin\DocumentSequenceController;
 use App\Http\Controllers\Admin\PartyImportController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\PrinterSettingController;
 use App\Http\Controllers\Admin\ProductBarcodeController;
 use App\Http\Controllers\Admin\ProductBrandController;
 use App\Http\Controllers\Admin\ProductBrandImportController;
@@ -134,6 +135,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/reports/daily/{token}', [SecureDailyReportController::class, 'show'])
+    ->where('token', '^(?!print$).+')
     ->middleware('throttle:20,1')
     ->name('reports.daily.secure');
 
@@ -582,6 +584,15 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::put('/settings/general', [SystemSettingController::class, 'update'])
             ->middleware('permission:admin.settings.update')
             ->name('settings.general.update');
+        Route::get('/settings/printer', [PrinterSettingController::class, 'edit'])
+            ->middleware('permission:admin.settings.view')
+            ->name('settings.printer.edit');
+        Route::put('/settings/printer', [PrinterSettingController::class, 'update'])
+            ->middleware('permission:admin.settings.update')
+            ->name('settings.printer.update');
+        Route::get('/settings/printer/test/{type}', [PrinterSettingController::class, 'testPrint'])
+            ->middleware('permission:admin.settings.view')
+            ->name('settings.printer.test');
         Route::get('/settings/document-numbers', [DocumentSequenceController::class, 'index'])
             ->middleware('permission:admin.settings.view')
             ->name('settings.document-numbers.index');
@@ -1237,6 +1248,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->defaults('type', 'daily')
             ->middleware('permission:reports.view')
             ->name('daily.index');
+        Route::get('/daily/print', [ReportController::class, 'printDaily'])
+            ->middleware('permission:reports.view')
+            ->name('daily.print');
         Route::get('/warehouse', [ReportController::class, 'show'])
             ->defaults('type', 'warehouse')
             ->middleware('permission:reports.view|stock.view')

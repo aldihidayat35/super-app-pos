@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Reports\ReportFilterRequest;
+use App\Models\SystemSetting;
 use App\Services\Reports\ReportMetricService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,37 @@ class ReportController extends Controller
                 ->orderBy('business_name')
                 ->limit(300)
                 ->get(['id', 'code', 'business_name']),
+        ]);
+    }
+
+    public function printDaily(ReportFilterRequest $request, ReportMetricService $reports): View
+    {
+        abort_unless($this->canViewSpecialReport($request->user(), 'daily'), 403);
+
+        $input = $request->validated();
+        $today = now('Asia/Jakarta')->toDateString();
+        $input['start_date'] ??= $today;
+        $input['end_date'] ??= $today;
+
+        $filters = $reports->filters($request->user(), $input);
+        $reportData = $reports->report('daily', $request->user(), $filters);
+        $settings = SystemSetting::getPrinterSettings();
+        $companyName = SystemSetting::getCompanyName();
+
+        if ($request->query('format') === 'dotmatrix') {
+            return view('reports.print-daily-dotmatrix', [
+                'report' => $reportData,
+                'filters' => $filters,
+                'settings' => $settings,
+                'companyName' => $companyName,
+            ]);
+        }
+
+        return view('reports.print-daily-thermal', [
+            'report' => $reportData,
+            'filters' => $filters,
+            'settings' => $settings,
+            'companyName' => $companyName,
         ]);
     }
 
