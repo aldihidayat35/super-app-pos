@@ -13,7 +13,8 @@ class BatchProductQuickSetupRequest extends FormRequest
             return false;
         }
 
-        $canManage = $user->can('products.update')
+        $canManage = $user->can('products.quick_setup')
+            || $user->can('products.update')
             || $user->can('products.create')
             || $user->can('retail.catalog.manage')
             || $user->hasRole(['kepala_toko', 'kepala_gudang', 'super_admin']);

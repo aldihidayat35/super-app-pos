@@ -163,7 +163,7 @@ return [
                 'label' => 'Setup Operasional Cepat',
                 'route' => 'admin.products.quick-setup.index',
                 'active' => ['admin.products.quick-setup.*'],
-                'permission' => 'products.view',
+                'permission' => 'products.quick_setup',
             ],
         ],
     ],

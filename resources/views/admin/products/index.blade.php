@@ -2,6 +2,7 @@
 @section('title', 'Daftar Produk')
 @section('page_title', 'Daftar Produk')
 @section('toolbar_actions')
+    <x-metronic.permission-button permission="products.quick_setup" :href="route('admin.products.quick-setup.index')" class="btn-light-primary" icon="ki-outline ki-flash-circle">Setup Cepat</x-metronic.permission-button>
     <x-metronic.permission-button permission="products.import" :href="route('admin.products.import.index')" class="btn-light" icon="ki-outline ki-file-up">Import</x-metronic.permission-button>
     <x-metronic.permission-button permission="products.export" :href="route('admin.products.export')" class="btn-light" icon="ki-outline ki-file-down">Export</x-metronic.permission-button>
     <x-metronic.permission-button permission="products.create" :href="route('admin.products.create')" icon="ki-outline ki-plus">Tambah Produk</x-metronic.permission-button>

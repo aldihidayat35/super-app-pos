@@ -682,13 +682,13 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:products.import')
             ->name('products.import.commit');
         Route::get('/products/quick-setup', [ProductQuickSetupController::class, 'index'])
-            ->middleware('permission:products.view')
+            ->middleware('permission:products.quick_setup')
             ->name('products.quick-setup.index');
         Route::post('/products/quick-setup/row', [ProductQuickSetupController::class, 'saveRow'])
-            ->middleware('permission:products.update|products.create|retail.catalog.manage')
+            ->middleware('permission:products.quick_setup')
             ->name('products.quick-setup.save-row');
         Route::post('/products/quick-setup/batch', [ProductQuickSetupController::class, 'batchSave'])
-            ->middleware('permission:products.update|products.create|retail.catalog.manage')
+            ->middleware('permission:products.quick_setup')
             ->name('products.quick-setup.batch-save');
         Route::post('/products/reset-all', [ProductController::class, 'resetAll'])
             ->middleware('role:super_admin')

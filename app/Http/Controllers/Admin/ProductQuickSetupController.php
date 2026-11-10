@@ -23,7 +23,7 @@ class ProductQuickSetupController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user && ($user->can('products.view') || $user->can('products.update') || $user->can('products.create')), 403);
+        abort_unless($user && $user->can('products.quick_setup'), 403);
 
         $isUnrestricted = $user->hasUnrestrictedLocationScope();
         if ($isUnrestricted) {
