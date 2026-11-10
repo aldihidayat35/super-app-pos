@@ -80,9 +80,9 @@ class StockController extends Controller
     {
         abort_unless($request->user()?->hasRole('super_admin'), 403, 'Aksi ini hanya dapat dilakukan oleh Super Admin.');
 
-        DB::transaction(function (): void {
-            Schema::disableForeignKeyConstraints();
+        Schema::disableForeignKeyConstraints();
 
+        try {
             $tables = [
                 'pos_sale_allocations',
                 'stock_layer_allocations',
@@ -117,9 +117,9 @@ class StockController extends Controller
                     'cost_price' => '0.00',
                 ]);
             }
-
+        } finally {
             Schema::enableForeignKeyConstraints();
-        });
+        }
 
         $request->session()->forget([
             'opening_stock_import_preview',

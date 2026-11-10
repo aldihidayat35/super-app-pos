@@ -519,9 +519,9 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->hasRole('super_admin'), 403, 'Aksi ini hanya dapat dilakukan oleh Super Admin.');
 
-        DB::transaction(function (): void {
-            Schema::disableForeignKeyConstraints();
+        Schema::disableForeignKeyConstraints();
 
+        try {
             $tables = [
                 'pos_sale_allocations',
                 'pos_return_items',
@@ -562,9 +562,9 @@ class ProductController extends Controller
                     }
                 }
             }
-
+        } finally {
             Schema::enableForeignKeyConstraints();
-        });
+        }
 
         $request->session()->forget([
             'product_import_preview',
