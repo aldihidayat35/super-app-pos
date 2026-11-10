@@ -67,3 +67,4 @@ class DecimalTest extends TestCase
         $this->assertSame('-5.00', Decimal::normalize('-5', 2));
     }
 }
+
