@@ -916,6 +916,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/goods-receipts/{goodsReceipt}/post', [GoodsReceiptController::class, 'post'])
             ->middleware('permission:goods_receipts.create')
             ->name('goods-receipts.post');
+        Route::post('/goods-receipts/store-product-ajax', [GoodsReceiptController::class, 'storeProductAjax'])
+            ->middleware('permission:goods_receipts.create')
+            ->name('goods-receipts.store-product-ajax');
         Route::resource('goods-receipts', GoodsReceiptController::class)
             ->except(['destroy'])
             ->middlewareFor(['index', 'show'], 'permission:goods_receipts.view')
@@ -1268,7 +1271,7 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             ->middleware('permission:reports.view|prices.view')
             ->name('pricing.index');
         Route::get('/suppliers', SupplierPerformanceController::class)
-            ->middleware('permission:reports.warehouse.view|reports.owner.view|reports.system.view')
+            ->middleware('permission:reports.warehouse.view|reports.owner.view|reports.system.view|suppliers.view')
             ->name('suppliers.index');
         Route::get('/losses', LossReportController::class)
             ->middleware('permission:reports.warehouse.view|reports.retail.view|reports.owner.view|reports.system.view')

@@ -4,6 +4,7 @@ namespace Tests\Feature\Warehouse;
 
 use App\Enums\GoodsReceiptStatus;
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\ReceiptQcStatus;
 use App\Exceptions\ServiceException;
 use App\Models\Product;
 use App\Models\ProductCostHistory;
@@ -125,17 +126,17 @@ class GoodsReceiptWorkflowTest extends TestCase
         $this->assertSame('10.00', $history->hpp_before);
         $this->assertSame('300.00', $history->incoming_cost);
         $this->assertSame('100.00', $history->landed_cost_allocated);
-        $this->assertSame('20.00', $history->hpp_after);
+        $this->assertSame('30.00', $history->hpp_after);
         $this->assertSame('10.00', $product->fresh()->cost_price);
         $this->assertDatabaseHas('stock_batches', [
             'goods_receipt_id' => $receipt->id,
             'product_id' => $product->id,
-            'cost_price' => '20.00',
+            'cost_price' => '30.00',
             'quantity_on_hand' => '10.0000',
         ]);
 
         $secondHistory = $history->replicate();
-        $secondHistory->hpp_after = '21.00';
+        $secondHistory->hpp_after = 21.00;
         $secondHistory->effective_at = now()->addMinute();
         $secondHistory->save();
         $sameNameProduct = Product::factory()->create([
@@ -173,7 +174,8 @@ class GoodsReceiptWorkflowTest extends TestCase
         $this->assertDatabaseCount('stock_mutations', 0);
         $this->assertSame('0.0000', $po->items()->firstOrFail()->quantity_received);
         $this->assertSame(PurchaseOrderStatus::SENT_TO_SUPPLIER, $po->fresh()->status);
-        $this->assertSame('rejected', ReceiptQcResult::query()->firstOrFail()->qc_status->value);
+        $qcResult = ReceiptQcResult::query()->firstOrFail();
+        $this->assertSame(ReceiptQcStatus::REJECTED, $qcResult->qc_status);
     }
 
     public function test_over_receipt_is_rejected_and_rolls_back_document(): void

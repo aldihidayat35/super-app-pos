@@ -6,6 +6,9 @@ use App\Enums\ReceiptQcStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property ReceiptQcStatus $qc_status
+ */
 class ReceiptQcResult extends Model
 {
     protected $fillable = ['goods_receipt_item_id', 'qc_status', 'quantity', 'reason'];

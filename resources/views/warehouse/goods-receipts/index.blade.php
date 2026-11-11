@@ -32,7 +32,7 @@
 
 @section('toolbar_actions')
     <a href="{{ route('warehouse.goods-receipts.export', request()->query()) }}" class="btn btn-light-success"><i class="ki-outline ki-file-down"></i> Export</a>
-    <x-metronic.permission-button permission="goods_receipts.create" :href="route('warehouse.goods-receipts.create')" icon="ki-outline ki-plus">Buat Receipt</x-metronic.permission-button>
+    <x-metronic.permission-button permission="goods_receipts.create" :href="route('warehouse.goods-receipts.create')" icon="ki-outline ki-plus">Penerimaan Barang</x-metronic.permission-button>
 @endsection
 
 @section('content')
@@ -52,7 +52,13 @@
                 @forelse($receipts as $receipt)
                     <tr>
                         <td class="fw-bold">{{ $receipt->number }}</td>
-                        <td>{{ $receipt->purchaseOrder?->number }}</td>
+                        <td>
+                            @if($receipt->purchaseOrder)
+                                <span class="badge badge-light-primary fw-semibold">{{ $receipt->purchaseOrder->number }}</span>
+                            @else
+                                <span class="badge badge-light-info fw-semibold">Langsung</span>
+                            @endif
+                        </td>
                         <td>{{ $receipt->supplier?->name }}</td>
                         <td><span class="badge badge-light-primary me-1">{{ $receipt->destinationWorkLocation?->typeLabel() ?? 'Gudang' }}</span>{{ $receipt->destinationName() }}</td>
                         <td>{{ $receipt->received_at?->format('d/m/Y') }}</td>

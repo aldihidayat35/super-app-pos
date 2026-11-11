@@ -14,9 +14,13 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\ReceiptQcResult;
 use App\Models\Stock;
+use App\Models\StockBatch;
+use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\SupplierScore;
+use App\Models\Unit;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Models\WarehouseLocation;
 use App\Models\WorkLocation;
 use App\Services\Inventory\InventoryService;
@@ -43,23 +47,41 @@ class GoodsReceiptService
     public function createDraft(array $data, User $actor): GoodsReceipt
     {
         return DB::transaction(function () use ($data, $actor): GoodsReceipt {
-            $purchaseOrder = PurchaseOrder::query()->with(['warehouse.workLocation', 'destinationWorkLocation', 'supplier', 'items.product', 'items.unit'])->lockForUpdate()->findOrFail($data['purchase_order_id']);
+            $purchaseOrder = null;
+            if (! empty($data['purchase_order_id'])) {
+                $purchaseOrder = PurchaseOrder::query()->with(['warehouse.workLocation', 'destinationWorkLocation', 'supplier', 'items.product', 'items.unit'])->lockForUpdate()->findOrFail($data['purchase_order_id']);
 
-            if (! in_array($purchaseOrder->status, [PurchaseOrderStatus::APPROVED, PurchaseOrderStatus::SENT_TO_SUPPLIER, PurchaseOrderStatus::PARTIALLY_RECEIVED], true)) {
-                throw ServiceException::validation('PO belum siap diterima.');
+                if (! in_array($purchaseOrder->status, [PurchaseOrderStatus::APPROVED, PurchaseOrderStatus::SENT_TO_SUPPLIER, PurchaseOrderStatus::PARTIALLY_RECEIVED], true)) {
+                    throw ServiceException::validation('PO belum siap diterima.');
+                }
+
+                $destination = $purchaseOrder->destinationWorkLocation ?? $purchaseOrder->warehouse?->workLocation;
+                $supplierId = $purchaseOrder->supplier_id;
+                $warehouseId = $purchaseOrder->warehouse_id;
+            } else {
+                $destinationId = (int) ($data['destination_work_location_id'] ?? 0);
+                $destination = WorkLocation::query()->findOrFail($destinationId);
+
+                if (! in_array($destination->id, $actor->permittedWorkLocationIds(), true) && ! $actor->hasRole('super_admin')) {
+                    throw ServiceException::validation('Anda tidak memiliki izin di lokasi kerja penerima ini.');
+                }
+
+                $supplier = Supplier::query()->findOrFail($data['supplier_id']);
+                $supplierId = $supplier->id;
+                $warehouse = Warehouse::query()->where('work_location_id', $destination->id)->first();
+                $warehouseId = $warehouse?->id;
             }
 
-            $destination = $purchaseOrder->destinationWorkLocation ?? $purchaseOrder->warehouse?->workLocation;
             if (! $destination) {
-                throw ServiceException::validation('Lokasi penerima PO tidak ditemukan.');
+                throw ServiceException::validation('Lokasi penerima tidak ditemukan.');
             }
 
             $receipt = GoodsReceipt::query()->create([
                 'number' => $this->numbers->next('receipt', $destination),
-                'purchase_order_id' => $purchaseOrder->id,
-                'warehouse_id' => $purchaseOrder->warehouse_id,
+                'purchase_order_id' => $purchaseOrder?->id,
+                'warehouse_id' => $warehouseId,
                 'destination_work_location_id' => $destination->id,
-                'supplier_id' => $purchaseOrder->supplier_id,
+                'supplier_id' => $supplierId,
                 'received_at' => $data['received_at'],
                 'delivery_note_number' => $data['delivery_note_number'] ?? null,
                 'received_by' => $actor->id,
@@ -71,7 +93,7 @@ class GoodsReceiptService
                 'idempotency_key' => $data['idempotency_key'] ?? null,
             ]);
 
-            $this->replaceItems($receipt, $purchaseOrder, $data['items'] ?? []);
+            $this->replaceItems($receipt, $data['items'] ?? [], $purchaseOrder);
 
             return $receipt->fresh(['items', 'purchaseOrder', 'supplier', 'warehouse', 'destinationWorkLocation']);
         });
@@ -82,14 +104,30 @@ class GoodsReceiptService
      */
     public function updateDraft(GoodsReceipt $receipt, array $data, User $actor): GoodsReceipt
     {
-        return DB::transaction(function () use ($receipt, $data): GoodsReceipt {
+        return DB::transaction(function () use ($receipt, $data, $actor): GoodsReceipt {
             $receipt = GoodsReceipt::query()->with('purchaseOrder.items')->lockForUpdate()->findOrFail($receipt->id);
 
             if (! $receipt->status->isEditable()) {
                 throw ServiceException::validation('Receipt yang sudah posted tidak boleh diedit.');
             }
 
+            $supplierId = $receipt->purchase_order_id ? $receipt->supplier_id : (int) ($data['supplier_id'] ?? $receipt->supplier_id);
+            $destinationId = $receipt->purchase_order_id ? $receipt->destination_work_location_id : (int) ($data['destination_work_location_id'] ?? $receipt->destination_work_location_id);
+            $warehouseId = $receipt->warehouse_id;
+
+            if ($destinationId !== (int) $receipt->destination_work_location_id && ! $receipt->purchase_order_id) {
+                $destination = WorkLocation::query()->findOrFail($destinationId);
+                if (! in_array($destination->id, $actor->permittedWorkLocationIds(), true) && ! $actor->hasRole('super_admin')) {
+                    throw ServiceException::validation('Anda tidak memiliki izin di lokasi kerja penerima ini.');
+                }
+                $warehouse = Warehouse::query()->where('work_location_id', $destination->id)->first();
+                $warehouseId = $warehouse?->id;
+            }
+
             $receipt->fill([
+                'supplier_id' => $supplierId,
+                'destination_work_location_id' => $destinationId,
+                'warehouse_id' => $warehouseId,
                 'received_at' => $data['received_at'],
                 'delivery_note_number' => $data['delivery_note_number'] ?? null,
                 'actual_freight_cost' => Decimal::normalize($data['actual_freight_cost'] ?? 0, 2),
@@ -98,7 +136,7 @@ class GoodsReceiptService
                 'proof_path' => $data['proof_path'] ?? $receipt->proof_path,
             ])->save();
 
-            $this->replaceItems($receipt, $receipt->purchaseOrder, $data['items'] ?? []);
+            $this->replaceItems($receipt, $data['items'] ?? [], $receipt->purchaseOrder);
 
             return $receipt->fresh(['items', 'purchaseOrder']);
         });
@@ -117,7 +155,10 @@ class GoodsReceiptService
                 throw ServiceException::validation('Hanya receipt draft yang dapat di-posting.');
             }
 
-            $purchaseOrder = PurchaseOrder::query()->with('items')->lockForUpdate()->findOrFail($receipt->purchase_order_id);
+            $purchaseOrder = $receipt->purchase_order_id
+                ? PurchaseOrder::query()->with('items')->lockForUpdate()->find($receipt->purchase_order_id)
+                : null;
+
             $lineCosts = $this->acceptedLineCosts($receipt);
             $totalLineCost = array_reduce($lineCosts, fn (string $carry, string $value): string => Decimal::add($carry, $value, 2), '0.00');
             $totalLandedCost = Decimal::add((string) $receipt->actual_freight_cost, (string) $receipt->actual_additional_cost, 2);
@@ -128,11 +169,14 @@ class GoodsReceiptService
             $totalDamaged = '0.0000';
 
             foreach ($receipt->items as $item) {
-                $poItem = PurchaseOrderItem::query()->lockForUpdate()->findOrFail($item->purchase_order_item_id);
-                $newAcceptedTotal = Decimal::add((string) $poItem->quantity_received, (string) $item->quantity_accepted);
+                if ($purchaseOrder && $item->purchase_order_item_id) {
+                    $poItem = PurchaseOrderItem::query()->lockForUpdate()->findOrFail($item->purchase_order_item_id);
+                    $newAcceptedTotal = Decimal::add((string) $poItem->quantity_received, (string) $item->quantity_accepted);
 
-                if (Decimal::compare($newAcceptedTotal, (string) $poItem->quantity_ordered) > 0) {
-                    throw ServiceException::validation("Qty diterima produk {$poItem->product_sku_snapshot} melebihi outstanding PO.");
+                    if (Decimal::compare($newAcceptedTotal, (string) $poItem->quantity_ordered) > 0) {
+                        throw ServiceException::validation("Qty diterima produk {$poItem->product_sku_snapshot} melebihi outstanding PO.");
+                    }
+                    $poReceivedMap[$poItem->id] = $newAcceptedTotal;
                 }
 
                 $acceptedBase = $item->acceptedBaseQuantity();
@@ -142,7 +186,6 @@ class GoodsReceiptService
                 $this->postDamagedStock($receipt, $item, $damagedBase, $actor);
                 $this->writeQcResults($item);
 
-                $poReceivedMap[$poItem->id] = $newAcceptedTotal;
                 $totalReceived = Decimal::add($totalReceived, (string) $item->quantity_received);
                 $totalAccepted = Decimal::add($totalAccepted, (string) $item->quantity_accepted);
                 $totalRejected = Decimal::add($totalRejected, (string) $item->quantity_rejected);
@@ -160,7 +203,9 @@ class GoodsReceiptService
                 'posted_by' => $actor->id,
             ])->save();
 
-            $this->purchaseOrders->recordReceiptProgress($purchaseOrder, $poReceivedMap, $actor);
+            if ($purchaseOrder) {
+                $this->purchaseOrders->recordReceiptProgress($purchaseOrder, $poReceivedMap, $actor);
+            }
             $this->scoreSupplier($receipt, $totalReceived, $totalAccepted, $totalRejected, $totalDamaged);
             activity()->causedBy($actor)->performedOn($receipt)->log('goods_receipt.posted');
 
@@ -171,7 +216,7 @@ class GoodsReceiptService
     /**
      * @param  list<array<string, mixed>>  $items
      */
-    private function replaceItems(GoodsReceipt $receipt, PurchaseOrder $purchaseOrder, array $items): void
+    private function replaceItems(GoodsReceipt $receipt, array $items, ?PurchaseOrder $purchaseOrder = null): void
     {
         if ($items === []) {
             throw ServiceException::validation('Minimal satu item penerimaan wajib diisi.');
@@ -180,12 +225,6 @@ class GoodsReceiptService
         $receipt->items()->delete();
 
         foreach ($items as $itemData) {
-            $poItem = PurchaseOrderItem::query()->with(['product', 'unit'])->findOrFail($itemData['purchase_order_item_id']);
-
-            if ((int) $poItem->purchase_order_id !== (int) $purchaseOrder->id) {
-                throw ServiceException::validation('Item tidak sesuai dengan PO.');
-            }
-
             $received = Decimal::normalize($itemData['quantity_received']);
             $rejected = Decimal::normalize($itemData['quantity_rejected'] ?? 0);
             $damaged = Decimal::normalize($itemData['quantity_damaged'] ?? 0);
@@ -194,47 +233,103 @@ class GoodsReceiptService
             $accepted = Decimal::sub($received, $nonAcceptedTotal);
 
             if (Decimal::compare($accepted, '0') < 0) {
-                throw ServiceException::validation("Jumlah ditolak, rusak, dan retur supplier untuk produk {$poItem->product_sku_snapshot} melebihi jumlah barang datang.");
+                $productName = $itemData['product_name_snapshot'] ?? 'produk';
+                throw ServiceException::validation("Jumlah ditolak, rusak, dan retur supplier untuk {$productName} melebihi jumlah barang datang.");
             }
 
             if (array_key_exists('quantity_accepted', $itemData)
                 && Decimal::compare(Decimal::normalize($itemData['quantity_accepted']), $accepted) !== 0) {
-                throw ServiceException::validation("Jumlah barang diterima baik untuk produk {$poItem->product_sku_snapshot} tidak sesuai dengan pembagian hasil pemeriksaan.");
+                $productName = $itemData['product_name_snapshot'] ?? 'produk';
+                throw ServiceException::validation("Jumlah barang diterima baik untuk {$productName} tidak sesuai dengan pembagian hasil pemeriksaan.");
             }
 
-            $outstanding = Decimal::sub((string) $poItem->quantity_ordered, (string) $poItem->quantity_received);
-            if (Decimal::compare($accepted, $outstanding) > 0) {
-                throw ServiceException::validation("Qty diterima produk {$poItem->product_sku_snapshot} melebihi outstanding PO.");
-            }
+            if ($purchaseOrder && ! empty($itemData['purchase_order_item_id'])) {
+                $poItem = PurchaseOrderItem::query()->with(['product', 'unit'])->findOrFail($itemData['purchase_order_item_id']);
 
-            $receipt->items()->create([
-                'purchase_order_item_id' => $poItem->id,
-                'product_id' => $poItem->product_id,
-                'unit_id' => $poItem->unit_id,
-                'warehouse_location_id' => $itemData['warehouse_location_id'] ?? null,
-                'product_sku_snapshot' => $poItem->product_sku_snapshot,
-                'product_name_snapshot' => $poItem->product_name_snapshot,
-                'unit_name_snapshot' => $poItem->unit_name_snapshot,
-                'conversion_factor_snapshot' => $poItem->conversion_factor_snapshot,
-                'quantity_ordered' => $poItem->quantity_ordered,
-                'previously_received' => $poItem->quantity_received,
-                'outstanding_before' => $outstanding,
-                'quantity_received' => $received,
-                'quantity_accepted' => $accepted,
-                'quantity_rejected' => $rejected,
-                'quantity_damaged' => $damaged,
-                'quantity_returned_to_supplier' => $returned,
-                'unit_price' => $poItem->unit_price,
-                // Fallback menjaga kompatibilitas integrasi lama yang membuat draft langsung
-                // lewat service. Form HTTP baru tetap mewajibkan kedua nilai ini.
-                'actual_unit_cost' => $itemData['actual_unit_cost'] ?? $poItem->unit_price,
-                'sale_price' => $itemData['sale_price']
-                    ?? (Decimal::compare((string) $poItem->product->minimum_price, '0', 2) > 0
-                        ? $poItem->product->minimum_price
-                        : $poItem->unit_price),
-                'batch_no' => $itemData['batch_no'] ?? null,
-                'qc_notes' => $itemData['qc_notes'] ?? null,
-            ]);
+                if ((int) $poItem->purchase_order_id !== (int) $purchaseOrder->id) {
+                    throw ServiceException::validation('Item tidak sesuai dengan PO.');
+                }
+
+                $outstanding = Decimal::sub((string) $poItem->quantity_ordered, (string) $poItem->quantity_received);
+                if (Decimal::compare($accepted, $outstanding) > 0) {
+                    throw ServiceException::validation("Qty diterima produk {$poItem->product_sku_snapshot} melebihi outstanding PO.");
+                }
+
+                $receipt->items()->create([
+                    'purchase_order_item_id' => $poItem->id,
+                    'product_id' => $poItem->product_id,
+                    'unit_id' => $poItem->unit_id,
+                    'warehouse_location_id' => $itemData['warehouse_location_id'] ?? null,
+                    'product_sku_snapshot' => $poItem->product_sku_snapshot,
+                    'product_name_snapshot' => $poItem->product_name_snapshot,
+                    'unit_name_snapshot' => $poItem->unit_name_snapshot,
+                    'conversion_factor_snapshot' => $poItem->conversion_factor_snapshot,
+                    'quantity_ordered' => $poItem->quantity_ordered,
+                    'previously_received' => $poItem->quantity_received,
+                    'outstanding_before' => $outstanding,
+                    'quantity_received' => $received,
+                    'quantity_accepted' => $accepted,
+                    'quantity_rejected' => $rejected,
+                    'quantity_damaged' => $damaged,
+                    'quantity_returned_to_supplier' => $returned,
+                    'unit_price' => $poItem->unit_price,
+                    // Fallback menjaga kompatibilitas integrasi lama yang membuat draft langsung
+                    // lewat service. Form HTTP baru tetap mewajibkan kedua nilai ini.
+                    'actual_unit_cost' => $itemData['actual_unit_cost'] ?? $poItem->unit_price,
+                    'sale_price' => $itemData['sale_price']
+                        ?? (Decimal::compare((string) $poItem->product->minimum_price, '0', 2) > 0
+                            ? $poItem->product->minimum_price
+                            : null),
+                    'batch_no' => $itemData['batch_no'] ?? null,
+                    'qc_notes' => $itemData['qc_notes'] ?? null,
+                ]);
+            } else {
+                // Direct Goods Receipt (Penerimaan Langsung Tanpa PO)
+                $productId = (int) ($itemData['product_id'] ?? 0);
+                $product = Product::query()->with('units')->findOrFail($productId);
+                $unitId = (int) ($itemData['unit_id'] ?? 0);
+                $unit = Unit::query()->findOrFail($unitId);
+
+                $conversionFactor = '1.000000';
+                $customUnit = $product->units->firstWhere('unit_id', $unit->id);
+                if ($customUnit && (float) $customUnit->conversion_factor > 0) {
+                    $conversionFactor = Decimal::normalize((string) $customUnit->conversion_factor, 6);
+                } elseif (in_array(strtoupper((string) $unit->code), ['PCS', 'PC', 'BH'], true)) {
+                    $conversionFactor = '1.000000';
+                } elseif (strtoupper((string) $unit->code) === 'LSN') {
+                    $conversionFactor = '12.000000';
+                } elseif (strtoupper((string) $unit->code) === 'GROS') {
+                    $conversionFactor = '144.000000';
+                }
+
+                $unitPrice = Decimal::normalize($itemData['unit_price'] ?? $itemData['actual_unit_cost'] ?? 0, 2);
+                $actualUnitCost = Decimal::normalize($itemData['actual_unit_cost'] ?? $unitPrice, 2);
+                $salePrice = Decimal::normalize($itemData['sale_price'] ?? 0, 2);
+
+                $receipt->items()->create([
+                    'purchase_order_item_id' => null,
+                    'product_id' => $product->id,
+                    'unit_id' => $unit->id,
+                    'warehouse_location_id' => $itemData['warehouse_location_id'] ?? null,
+                    'product_sku_snapshot' => $product->sku,
+                    'product_name_snapshot' => $product->name,
+                    'unit_name_snapshot' => $unit->name,
+                    'conversion_factor_snapshot' => $conversionFactor,
+                    'quantity_ordered' => $received,
+                    'previously_received' => '0.0000',
+                    'outstanding_before' => $received,
+                    'quantity_received' => $received,
+                    'quantity_accepted' => $accepted,
+                    'quantity_rejected' => $rejected,
+                    'quantity_damaged' => $damaged,
+                    'quantity_returned_to_supplier' => $returned,
+                    'unit_price' => $unitPrice,
+                    'actual_unit_cost' => $actualUnitCost,
+                    'sale_price' => $salePrice,
+                    'batch_no' => $itemData['batch_no'] ?? null,
+                    'qc_notes' => $itemData['qc_notes'] ?? null,
+                ]);
+            }
         }
     }
 
@@ -250,8 +345,14 @@ class GoodsReceiptService
                 continue;
             }
 
-            $costPerPurchaseUnit = Decimal::div((string) $item->purchaseOrderItem->subtotal, (string) $item->purchaseOrderItem->quantity_ordered, 2, 4, 2);
-            $costs[$item->id] = Decimal::mul((string) $item->quantity_accepted, $costPerPurchaseUnit);
+            if ($item->purchaseOrderItem) {
+                $costPerPurchaseUnit = Decimal::div((string) $item->purchaseOrderItem->subtotal, (string) $item->purchaseOrderItem->quantity_ordered, 2, 4, 2);
+                $costs[$item->id] = Decimal::mul((string) $item->quantity_accepted, $costPerPurchaseUnit);
+            } else {
+                // Standalone / Direct Goods Receipt
+                // Total nilai pembelian barang diterima = quantity_accepted * unit_price
+                $costs[$item->id] = Decimal::mul((string) $item->quantity_accepted, (string) $item->unit_price, 2);
+            }
         }
 
         return $costs;
@@ -283,10 +384,41 @@ class GoodsReceiptService
         $incomingCost = Decimal::add($lineCost, $landedCost, 2);
         $qtyAfter = Decimal::add($beforeQty, $acceptedBase);
 
-        // HPP aktual per item = actual_unit_cost dari GoodsReceiptItem; fallback ke unit_price
-        $actualUnitCost = filled($item->actual_unit_cost)
-            ? Decimal::normalize((string) $item->actual_unit_cost, 2)
-            : Decimal::normalize((string) $item->unit_price, 2);
+        // Hitung HPP Final Aktual per satuan dasar (Pcs):
+        // $unitPrice = harga beli per satuan pembelian
+        // $conversion = faktor konversi ke satuan dasar
+        // $baseCostBeli = $unitPrice / $conversion
+        // $landedCostPerBase = $landedCost / $acceptedBase
+        // $actualUnitCost = $baseCostBeli + $landedCostPerBase
+        $conversion = (string) ($item->conversion_factor_snapshot ?: '1.000000');
+        $baseCostBeli = Decimal::div((string) $item->unit_price, $conversion, 2, 6, 4);
+        $landedCostPerBase = Decimal::compare($landedCost, '0', 2) > 0 && Decimal::compare($acceptedBase, '0', 4) > 0
+            ? Decimal::div($landedCost, $acceptedBase, 2, 6, 4)
+            : '0.00';
+        $actualUnitCost = Decimal::add($baseCostBeli, $landedCostPerBase, 2);
+
+        // Validasi Anti-Rugi pada saat posting:
+        // Cek HPP batch tertinggi yang masih aktif dengan stok di lokasi ini
+        $highestActiveBatchCost = (string) (StockBatch::query()
+            ->where('product_id', $product->id)
+            ->where('work_location_id', $destination->id)
+            ->where('status', 'active')
+            ->where('quantity_on_hand', '>', 0)
+            ->max('cost_price') ?? '0.00');
+
+        $floorCost = Decimal::compare($actualUnitCost, $highestActiveBatchCost, 2) >= 0
+            ? $actualUnitCost
+            : $highestActiveBatchCost;
+
+        if ($item->sale_price !== null) {
+            $salePrice = Decimal::normalize((string) $item->sale_price, 2);
+            if (Decimal::compare($salePrice, $floorCost, 2) <= 0) {
+                throw ServiceException::validation(
+                    "Harga jual minimum untuk {$item->product_name_snapshot} (Rp ".number_format((float) $salePrice, 0, ',', '.').') '.
+                    'dilarang lebih rendah atau sama dengan batas modal anti-rugi (Rp '.number_format((float) $floorCost, 0, ',', '.').').'
+                );
+            }
+        }
 
         $mutation = $this->inventory->receive(
             product: $product,
@@ -359,14 +491,16 @@ class GoodsReceiptService
             'metadata' => ['goods_receipt_id' => $receipt->id],
             'occurred_at' => now(),
         ]);
-        $this->locationPrices->setActivePrice(
-            $product,
-            $destination,
-            (string) $item->sale_price,
-            $actor,
-            'goods_receipt',
-            "Penerimaan {$receipt->number}",
-        );
+        if ($item->sale_price !== null) {
+            $this->locationPrices->setActivePrice(
+                $product,
+                $destination,
+                (string) $item->sale_price,
+                $actor,
+                'goods_receipt',
+                "Penerimaan {$receipt->number}",
+            );
+        }
     }
 
     private function postDamagedStock(GoodsReceipt $receipt, GoodsReceiptItem $item, string $damagedBase, User $actor): void

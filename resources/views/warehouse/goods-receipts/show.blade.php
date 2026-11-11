@@ -39,7 +39,14 @@
         <div class="col-lg-8">
             <x-metronic.card title="{{ $receipt->number }}">
                 <div class="row g-4 mb-5">
-                    <div class="col-md-4"><div class="text-muted">PO</div><a href="{{ route('purchasing.purchase-orders.show', $receipt->purchaseOrder) }}" class="fw-bold">{{ $receipt->purchaseOrder?->number }}</a></div>
+                    <div class="col-md-4">
+                        <div class="text-muted">PO</div>
+                        @if($receipt->purchaseOrder)
+                            <a href="{{ route('purchasing.purchase-orders.show', $receipt->purchaseOrder) }}" class="fw-bold">{{ $receipt->purchaseOrder->number }}</a>
+                        @else
+                            <span class="badge badge-light-info fw-bold">Penerimaan Langsung (Tanpa PO)</span>
+                        @endif
+                    </div>
                     <div class="col-md-4"><div class="text-muted">Supplier</div><div class="fw-bold">{{ $receipt->supplier?->name }}</div></div>
                     <div class="col-md-4"><div class="text-muted">Lokasi Penerima</div><div class="fw-bold">{{ $receipt->destinationWorkLocation?->typeLabel() ?? 'Gudang' }} - {{ $receipt->destinationName() }}</div></div>
                     <div class="col-md-4"><div class="text-muted">Tanggal Datang</div><div class="fw-bold">{{ $receipt->received_at?->format('d/m/Y') }}</div></div>
@@ -110,6 +117,7 @@
                 @endforelse
             </x-metronic.card>
 
+            @if($receipt->purchaseOrder)
             <x-metronic.card title="Status PO Setelah Receipt" class="mt-5">
                 <x-metronic.status-badge :status="$receipt->purchaseOrder->status" />
                 <div class="separator my-4"></div>
@@ -117,6 +125,7 @@
                     <div class="d-flex justify-content-between mb-2"><span>{{ $item->product_sku_snapshot }}</span><span>{{ qty($item->quantity_received) }} / {{ qty($item->quantity_ordered) }}</span></div>
                 @endforeach
             </x-metronic.card>
+            @endif
         </div>
     </div>
 @endsection
