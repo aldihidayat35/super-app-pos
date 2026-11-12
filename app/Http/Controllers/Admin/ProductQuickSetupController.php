@@ -5,14 +5,19 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BatchProductQuickSetupRequest;
 use App\Http\Requests\Admin\SaveProductQuickSetupRequest;
+use App\Models\Product;
+use App\Models\ProductBarcode;
 use App\Models\ProductCategory;
+use App\Models\ProductUnit;
 use App\Models\Unit;
 use App\Models\WorkLocation;
 use App\Services\Product\ProductQuickSetupService;
+use App\Services\Product\ProductSkuService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductQuickSetupController extends Controller
 {
@@ -107,6 +112,80 @@ class ProductQuickSetupController extends Controller
         return back()->with('notification', [
             'type' => $notificationType,
             'message' => $message,
+        ]);
+    }
+
+    public function storeProductAjax(Request $request, ProductSkuService $skuService): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user && $user->can('products.quick_setup'), 403);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'category_id' => ['required', 'exists:product_categories,id'],
+            'base_unit_id' => ['required', 'exists:units,id'],
+            'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku'],
+            'barcode' => ['nullable', 'string', 'max:100', 'unique:product_barcodes,code'],
+        ], [
+            'name.required' => 'Nama produk wajib diisi.',
+            'category_id.required' => 'Kategori produk wajib dipilih.',
+            'base_unit_id.required' => 'Satuan dasar wajib dipilih.',
+            'sku.unique' => 'SKU sudah digunakan oleh produk lain.',
+            'barcode.unique' => 'Barcode sudah digunakan oleh produk lain.',
+        ]);
+
+        $product = DB::transaction(function () use ($validated, $skuService): Product {
+            $sku = ! empty($validated['sku']) ? trim($validated['sku']) : $skuService->generate();
+
+            $product = Product::query()->create([
+                'name' => trim($validated['name']),
+                'sku' => $sku,
+                'category_id' => $validated['category_id'],
+                'base_unit_id' => $validated['base_unit_id'],
+                'status' => 'active',
+                'cost_price' => 0,
+                'minimum_price' => 0,
+                'minimum_order' => 0,
+                'minimum_stock' => 0,
+                'safety_stock' => 0,
+            ]);
+
+            ProductUnit::query()->create([
+                'product_id' => $product->id,
+                'unit_id' => $product->base_unit_id,
+                'conversion_factor' => 1,
+                'is_base' => true,
+                'is_sellable' => true,
+                'is_active' => true,
+            ]);
+
+            if (! empty($validated['barcode'])) {
+                ProductBarcode::query()->create([
+                    'product_id' => $product->id,
+                    'code' => trim($validated['barcode']),
+                    'is_primary' => true,
+                ]);
+            }
+
+            return $product;
+        });
+
+        $product->load(['baseUnit', 'category', 'barcodes']);
+        $firstBarcode = $product->barcodes->first();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Produk baru berhasil ditambahkan.',
+            'product' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'category_id' => $product->category_id,
+                'category_name' => $product->category->name,
+                'base_unit_id' => $product->base_unit_id,
+                'base_unit_name' => $product->baseUnit->name,
+                'barcode' => $firstBarcode ? $firstBarcode->code : '',
+            ],
         ]);
     }
 }

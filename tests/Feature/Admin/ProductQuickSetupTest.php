@@ -507,4 +507,119 @@ class ProductQuickSetupTest extends TestCase
         $response2->assertStatus(422);
         $response2->assertJsonValidationErrors(['barcode']);
     }
+
+    public function test_store_product_ajax_creates_new_product_and_returns_json(): void
+    {
+        $payload = [
+            'name' => 'Keripik Tempe Renyah 200g',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'barcode' => '8999888777666',
+        ];
+
+        $response = $this->actingAs($this->kepalaToko)
+            ->postJson(route('admin.products.quick-setup.store-product-ajax'), $payload);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'message' => 'Produk baru berhasil ditambahkan.',
+                'product' => [
+                    'name' => 'Keripik Tempe Renyah 200g',
+                    'category_id' => $this->category->id,
+                    'category_name' => $this->category->name,
+                    'base_unit_id' => $this->pcs->id,
+                    'base_unit_name' => $this->pcs->name,
+                    'barcode' => '8999888777666',
+                ],
+            ]);
+
+        $this->assertDatabaseHas('products', [
+            'name' => 'Keripik Tempe Renyah 200g',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'status' => 'active',
+        ]);
+
+        $this->assertDatabaseHas('product_barcodes', [
+            'code' => '8999888777666',
+            'is_primary' => true,
+        ]);
+
+        $this->assertDatabaseHas('product_units', [
+            'unit_id' => $this->pcs->id,
+            'conversion_factor' => 1,
+            'is_base' => true,
+        ]);
+    }
+
+    public function test_store_product_ajax_auto_generates_sku_when_sku_is_empty(): void
+    {
+        $payload = [
+            'name' => 'Wafer Cokelat Mini',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+        ];
+
+        $response = $this->actingAs($this->kepalaGudang)
+            ->postJson(route('admin.products.quick-setup.store-product-ajax'), $payload);
+
+        $response->assertOk();
+        $productData = $response->json('product');
+        $this->assertNotEmpty($productData['sku']);
+        $this->assertStringStartsWith('PRD', $productData['sku']);
+
+        $this->assertDatabaseHas('products', [
+            'name' => 'Wafer Cokelat Mini',
+            'sku' => $productData['sku'],
+        ]);
+    }
+
+    public function test_store_product_ajax_rejects_duplicate_barcode(): void
+    {
+        $existingProduct = Product::factory()->create(['base_unit_id' => $this->pcs->id, 'category_id' => $this->category->id]);
+        $existingProduct->barcodes()->create(['code' => '8991112223334', 'is_primary' => true]);
+
+        $payload = [
+            'name' => 'Produk Baru Barcode Sama',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+            'barcode' => '8991112223334',
+        ];
+
+        $response = $this->actingAs($this->kepalaToko)
+            ->postJson(route('admin.products.quick-setup.store-product-ajax'), $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['barcode']);
+    }
+
+    public function test_store_product_ajax_validates_required_fields(): void
+    {
+        $payload = [
+            'name' => '',
+            'category_id' => 999999,
+            'base_unit_id' => 999999,
+        ];
+
+        $response = $this->actingAs($this->kepalaToko)
+            ->postJson(route('admin.products.quick-setup.store-product-ajax'), $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['name', 'category_id', 'base_unit_id']);
+    }
+
+    public function test_store_product_ajax_unauthorized_user_is_forbidden(): void
+    {
+        $payload = [
+            'name' => 'Produk Ilegal',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+        ];
+
+        $response = $this->actingAs($this->unauthorizedUser)
+            ->postJson(route('admin.products.quick-setup.store-product-ajax'), $payload);
+
+        $response->assertForbidden();
+    }
 }
