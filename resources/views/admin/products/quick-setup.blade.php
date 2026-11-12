@@ -662,7 +662,7 @@
     </x-metronic.card>
 </div>
 
-{{-- Modal Input Cepat Produk Baru (Masal) dengan Spreadsheet & Auto-Save --}}
+{{-- Modal Input Cepat Produk Baru (Masal) Tanpa Auto-Save --}}
 <div class="modal fade" id="modal-bulk-create-product" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -673,14 +673,11 @@
                     </div>
                     <div>
                         <h4 class="modal-title fw-bolder text-gray-900 mb-0">Input Cepat Produk Baru (Masal)</h4>
-                        <div class="text-muted fs-8">Ketik Nama Produk lalu tekan <kbd class="bg-gray-200 text-gray-800 px-1 py-0.5 rounded fs-9">Enter</kbd> untuk simpan otomatis &amp; lanjut ke baris berikutnya.</div>
+                        <div class="text-muted fs-8">Ketik Nama Produk, Kategori, Satuan, dan Barcode. Tekan <kbd class="bg-gray-200 text-gray-800 px-1 py-0.5 rounded fs-9">Enter</kbd> untuk lanjut baris baru, lalu klik <strong>Simpan Semua Produk</strong>.</div>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-3">
-                    <span class="badge badge-light-success fw-bold fs-7 px-3 py-2" id="bulk-created-counter">
-                        <i class="ki-outline ki-check-circle me-1 text-success fs-6"></i> <span id="bulk-created-count">0</span> produk ditambahkan
-                    </span>
-                    <button type="button" class="btn btn-sm btn-icon btn-active-light-primary" data-bs-dismiss="modal" aria-label="Close" onclick="handleBulkModalClose()">
+                    <button type="button" class="btn btn-sm btn-icon btn-active-light-primary" data-bs-dismiss="modal" aria-label="Close">
                         <i class="ki-outline ki-cross fs-2"></i>
                     </button>
                 </div>
@@ -690,7 +687,7 @@
                 <div class="alert alert-light-primary border border-primary border-opacity-25 d-flex align-items-center gap-3 p-4 mb-4">
                     <i class="ki-outline ki-information-2 fs-2 text-primary"></i>
                     <div class="fs-8 text-gray-700">
-                        <strong>Tips Input Cepat:</strong> Baris baru otomatis menduplikasi <em>Kategori</em> dan <em>Satuan</em> dari baris sebelumnya. Cukup ketik Nama Produk (dan scan Barcode jika ada), tekan <kbd class="bg-light text-primary border border-primary border-opacity-25 px-1 rounded">Enter</kbd>, dan baris baru otomatis siap diisi!
+                        <strong>Tips Input Cepat:</strong> Baris baru otomatis menduplikasi <em>Kategori</em> dan <em>Satuan</em> dari baris sebelumnya. Anda bebas menambah atau menghapus baris, data baru akan tersimpan saat Anda menekan tombol <strong>Simpan Semua Produk</strong> di bawah.
                     </div>
                 </div>
 
@@ -699,11 +696,10 @@
                         <thead class="bg-light">
                             <tr class="fw-bolder text-gray-800 fs-8 text-uppercase">
                                 <th style="width: 45px;" class="text-center">#</th>
-                                <th style="width: 35%;">Nama Produk <span class="text-danger">*</span></th>
-                                <th style="width: 20%;">Kategori <span class="text-danger">*</span></th>
-                                <th style="width: 15%;">Satuan Dasar <span class="text-danger">*</span></th>
-                                <th style="width: 18%;">Barcode (Opsional)</th>
-                                <th style="width: 12%;" class="text-center">Status</th>
+                                <th style="width: 38%;">Nama Produk <span class="text-danger">*</span></th>
+                                <th style="width: 22%;">Kategori <span class="text-danger">*</span></th>
+                                <th style="width: 17%;">Satuan Dasar <span class="text-danger">*</span></th>
+                                <th style="width: 23%;">Barcode (Opsional)</th>
                                 <th style="width: 50px;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -715,24 +711,24 @@
 
                 <div class="mt-4 d-flex align-items-center justify-content-between">
                     <button type="button" class="btn btn-sm btn-light-primary fw-bold" onclick="addBulkRowManually()">
-                        <i class="ki-outline ki-plus fs-6 me-1"></i> Tambah Baris Kosong
+                        <i class="ki-outline ki-plus fs-6 me-1"></i> Tambah Baris Baru
                     </button>
                     <div class="text-muted fs-8">
-                        Auto-Save aktif · Data langsung tersimpan ke katalog produk saat berpindah atau tekan Enter.
+                        Tekan <kbd class="bg-light border px-1">Enter</kbd> di baris terakhir untuk langsung menambah baris berikutnya.
                     </div>
                 </div>
             </div>
 
             <div class="modal-footer bg-light py-3 px-6 d-flex align-items-center justify-content-between">
                 <div class="text-muted fs-8">
-                    Setelah selesai, tabel Quick Setup akan menampilkan produk baru untuk diatur HPP &amp; Harganya.
+                    Data akan tersimpan permanen setelah mengklik tombol Simpan.
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal" onclick="handleBulkModalClose()">
-                        Tutup
+                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">
+                        Batal
                     </button>
-                    <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="handleBulkModalClose()">
-                        <i class="ki-outline ki-check fs-6 me-1"></i> Selesai &amp; Atur di Quick Setup
+                    <button type="button" class="btn btn-sm btn-primary fw-bolder px-5" id="btn-bulk-save" onclick="saveAllBulkRows()">
+                        <i class="ki-outline ki-check fs-5 me-1"></i> Simpan Semua Produk
                     </button>
                 </div>
             </div>
@@ -1186,7 +1182,7 @@
     };
 
     // ==========================================
-    // LOGIKA MODAL INPUT PRODUK MASAL AUTO-SAVE
+    // LOGIKA MODAL INPUT PRODUK MASAL (NON-AUTOSAVE)
     // ==========================================
     @php
         $bulkCategoriesData = $categories->map(function ($c) {
@@ -1200,13 +1196,12 @@
 
     const bulkCategories = @json($bulkCategoriesData);
     const bulkUnits = @json($bulkUnitsData);
-    const storeProductAjaxUrl = "{{ route('admin.products.quick-setup.store-product-ajax') }}";
+    const bulkStoreUrl = "{{ route('admin.products.quick-setup.bulk-store') }}";
     const quickSetupIncompleteUrl = "{{ route('admin.products.quick-setup.index', ['work_location_id' => $currentLocation->id, 'completeness' => 'incomplete']) }}";
 
     let bulkRowIndex = 0;
-    let bulkCreatedCount = 0;
     const bulkTbody = document.getElementById('bulk-products-tbody');
-    const bulkCounterEl = document.getElementById('bulk-created-count');
+    const btnBulkSave = document.getElementById('btn-bulk-save');
 
     function createCategoryOptions(selectedId) {
         return bulkCategories.map(c => 
@@ -1236,7 +1231,6 @@
         const tr = document.createElement('tr');
         tr.className = 'bulk-row align-middle';
         tr.setAttribute('data-row-id', bulkRowIndex);
-        tr.setAttribute('data-status', 'draft');
 
         tr.innerHTML = `
             <td class="text-center text-muted fw-bold fs-8 bulk-row-num">${bulkTbody.children.length + 1}</td>
@@ -1255,11 +1249,8 @@
                 </select>
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm form-control-solid bulk-input-barcode" placeholder="Scan / Ketik Barcode" autocomplete="off">
+                <input type="text" class="form-control form-control-sm form-control-solid bulk-input-barcode" placeholder="Scan / Ketik Barcode (Opsional)" autocomplete="off">
                 <div class="invalid-feedback fs-9 bulk-feedback-barcode d-none"></div>
-            </td>
-            <td class="text-center">
-                <span class="badge badge-light text-muted fw-semibold bulk-status-badge">Draft</span>
             </td>
             <td class="text-center">
                 <button type="button" class="btn btn-icon btn-sm btn-light-danger bulk-btn-delete" title="Hapus Baris">
@@ -1276,7 +1267,6 @@
 
         if (btnDelete) {
             btnDelete.addEventListener('click', function() {
-                if (tr.getAttribute('data-status') === 'saved') return;
                 tr.remove();
                 renumberBulkRows();
                 if (bulkTbody.children.length === 0) {
@@ -1285,27 +1275,34 @@
             });
         }
 
-        if (inputName) {
-            inputName.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveBulkRow(tr, true);
+        function handleEnterNav(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const nextTr = tr.nextElementSibling;
+                if (nextTr) {
+                    const nextInput = nextTr.querySelector('.bulk-input-name');
+                    if (nextInput) nextInput.focus();
+                } else {
+                    window.addBulkRowManually();
                 }
-            });
+            }
+        }
 
-            inputName.addEventListener('blur', function() {
-                if (inputName.value.trim() !== '' && tr.getAttribute('data-status') === 'draft') {
-                    saveBulkRow(tr, false);
-                }
+        if (inputName) {
+            inputName.addEventListener('keydown', handleEnterNav);
+            inputName.addEventListener('input', function() {
+                inputName.classList.remove('is-invalid');
+                const fb = tr.querySelector('.bulk-feedback-name');
+                if (fb) fb.classList.add('d-none');
             });
         }
 
         if (inputBarcode) {
-            inputBarcode.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveBulkRow(tr, true);
-                }
+            inputBarcode.addEventListener('keydown', handleEnterNav);
+            inputBarcode.addEventListener('input', function() {
+                inputBarcode.classList.remove('is-invalid');
+                const fb = tr.querySelector('.bulk-feedback-barcode');
+                if (fb) fb.classList.add('d-none');
             });
         }
 
@@ -1338,146 +1335,138 @@
         });
     }
 
-    function saveBulkRow(tr, shouldAddNewRow = true) {
-        if (!tr) return;
-        const currentStatus = tr.getAttribute('data-status');
-        if (currentStatus === 'saving' || currentStatus === 'saved') {
-            if (shouldAddNewRow && currentStatus === 'saved') {
-                const nextTr = tr.nextElementSibling;
-                if (nextTr) {
-                    const nextInput = nextTr.querySelector('.bulk-input-name');
-                    if (nextInput) nextInput.focus();
-                } else {
-                    const catSel = tr.querySelector('.bulk-select-category');
-                    const unitSel = tr.querySelector('.bulk-select-unit');
-                    const newTr = window.addBulkRow(catSel ? catSel.value : null, unitSel ? unitSel.value : null);
-                    if (newTr) {
-                        const newInp = newTr.querySelector('.bulk-input-name');
-                        if (newInp) newInp.focus();
+    window.saveAllBulkRows = function() {
+        if (!bulkTbody) return;
+        const rows = Array.from(bulkTbody.querySelectorAll('tr.bulk-row'));
+        const productsToSave = [];
+        let hasValidationError = false;
+
+        rows.forEach(tr => {
+            const inpName = tr.querySelector('.bulk-input-name');
+            const inpBarcode = tr.querySelector('.bulk-input-barcode');
+            const fbName = tr.querySelector('.bulk-feedback-name');
+            const fbBarcode = tr.querySelector('.bulk-feedback-barcode');
+            if (inpName) inpName.classList.remove('is-invalid');
+            if (inpBarcode) inpBarcode.classList.remove('is-invalid');
+            if (fbName) fbName.classList.add('d-none');
+            if (fbBarcode) fbBarcode.classList.add('d-none');
+        });
+
+        rows.forEach((tr) => {
+            const inpName = tr.querySelector('.bulk-input-name');
+            const selCat = tr.querySelector('.bulk-select-category');
+            const selUnit = tr.querySelector('.bulk-select-unit');
+            const inpBarcode = tr.querySelector('.bulk-input-barcode');
+
+            const name = inpName ? inpName.value.trim() : '';
+            const category_id = selCat ? selCat.value : '';
+            const base_unit_id = selUnit ? selUnit.value : '';
+            const barcode = inpBarcode ? inpBarcode.value.trim() : '';
+
+            if (name === '' && barcode === '' && rows.length > 1) {
+                return;
+            }
+
+            if (name === '') {
+                hasValidationError = true;
+                if (inpName) {
+                    inpName.classList.add('is-invalid');
+                    const fb = tr.querySelector('.bulk-feedback-name');
+                    if (fb) {
+                        fb.textContent = 'Nama produk wajib diisi.';
+                        fb.classList.remove('d-none');
                     }
                 }
+                return;
             }
+
+            productsToSave.push({
+                name: name,
+                category_id: category_id,
+                base_unit_id: base_unit_id,
+                barcode: barcode || null
+            });
+        });
+
+        if (hasValidationError) {
+            const firstInvalid = bulkTbody.querySelector('.bulk-input-name.is-invalid');
+            if (firstInvalid) firstInvalid.focus();
             return;
         }
 
-        const inputName = tr.querySelector('.bulk-input-name');
-        const selectCat = tr.querySelector('.bulk-select-category');
-        const selectUnit = tr.querySelector('.bulk-select-unit');
-        const inputBarcode = tr.querySelector('.bulk-input-barcode');
-        const statusBadge = tr.querySelector('.bulk-status-badge');
-        const feedbackName = tr.querySelector('.bulk-feedback-name');
-        const feedbackBarcode = tr.querySelector('.bulk-feedback-barcode');
-        const btnDelete = tr.querySelector('.bulk-btn-delete');
-
-        inputName.classList.remove('is-invalid');
-        inputBarcode.classList.remove('is-invalid');
-        if (feedbackName) feedbackName.classList.add('d-none');
-        if (feedbackBarcode) feedbackBarcode.classList.add('d-none');
-
-        const name = inputName.value.trim();
-        const category_id = selectCat.value;
-        const base_unit_id = selectUnit.value;
-        const barcode = inputBarcode.value.trim();
-
-        if (name === '') {
-            if (shouldAddNewRow) {
-                inputName.classList.add('is-invalid');
-                if (feedbackName) {
-                    feedbackName.textContent = 'Nama produk wajib diisi.';
-                    feedbackName.classList.remove('d-none');
-                }
-                inputName.focus();
+        if (productsToSave.length === 0) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Daftar Masih Kosong',
+                    text: 'Silakan isi minimal satu nama produk sebelum menyimpan.',
+                    icon: 'warning',
+                    confirmButtonText: 'Mengerti'
+                });
+            } else {
+                alert('Silakan isi minimal satu nama produk sebelum menyimpan.');
             }
+            const firstInp = bulkTbody.querySelector('.bulk-input-name');
+            if (firstInp) firstInp.focus();
             return;
         }
 
-        tr.setAttribute('data-status', 'saving');
-        if (statusBadge) {
-            statusBadge.className = 'badge badge-light-primary text-primary fw-semibold bulk-status-badge';
-            statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Simpan...';
+        if (btnBulkSave) {
+            btnBulkSave.disabled = true;
+            btnBulkSave.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan ${productsToSave.length} Produk...`;
         }
 
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') 
             || '{{ csrf_token() }}';
 
-        fetch(storeProductAjaxUrl, {
+        fetch(bulkStoreUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': token
             },
-            body: JSON.stringify({
-                name: name,
-                category_id: category_id,
-                base_unit_id: base_unit_id,
-                barcode: barcode || null
-            })
+            body: JSON.stringify({ products: productsToSave })
         })
         .then(async response => {
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Gagal menyimpan produk.'));
+                throw new Error(data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Gagal menyimpan produk baru.'));
             }
             return data;
         })
         .then(res => {
-            tr.setAttribute('data-status', 'saved');
-            tr.setAttribute('data-product-id', res.product.id);
-            tr.classList.add('table-success', 'bg-opacity-10');
-
-            inputName.readOnly = true;
-            inputName.classList.remove('form-control-solid');
-            inputName.classList.add('bg-transparent', 'border-0', 'fw-bold', 'text-gray-900');
-            selectCat.disabled = true;
-            selectUnit.disabled = true;
-            inputBarcode.readOnly = true;
-            inputBarcode.classList.remove('form-control-solid');
-            inputBarcode.classList.add('bg-transparent', 'border-0', 'text-gray-700');
-
-            if (btnDelete) btnDelete.remove();
-
-            if (statusBadge) {
-                statusBadge.className = 'badge badge-light-success text-success fw-bold bulk-status-badge py-1.5 px-2';
-                statusBadge.innerHTML = `<i class="ki-outline ki-check fs-8 text-success me-0.5"></i>Tersimpan <span class="fs-9 text-muted d-block">${res.product.sku}</span>`;
-            }
-
-            bulkCreatedCount++;
-            if (bulkCounterEl) bulkCounterEl.textContent = bulkCreatedCount;
-
-            if (shouldAddNewRow || tr === bulkTbody.lastElementChild) {
-                const newTr = window.addBulkRow(category_id, base_unit_id);
-                if (newTr) {
-                    const newInp = newTr.querySelector('.bulk-input-name');
-                    if (newInp) newInp.focus();
-                }
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: res.message || `${productsToSave.length} produk baru berhasil disimpan.`,
+                    icon: 'success',
+                    showConfirmButton: false,
+                    timer: 1200
+                }).then(() => {
+                    window.location.href = quickSetupIncompleteUrl;
+                });
+            } else {
+                window.location.href = quickSetupIncompleteUrl;
             }
         })
         .catch(err => {
-            tr.setAttribute('data-status', 'error');
-            if (statusBadge) {
-                statusBadge.className = 'badge badge-light-danger text-danger fw-semibold bulk-status-badge';
-                statusBadge.innerHTML = '<i class="ki-outline ki-cross fs-8 text-danger me-0.5"></i>Gagal';
-                statusBadge.title = err.message;
+            if (btnBulkSave) {
+                btnBulkSave.disabled = false;
+                btnBulkSave.innerHTML = '<i class="ki-outline ki-check fs-5 me-1"></i> Simpan Semua Produk';
             }
 
-            if (err.message && err.message.toLowerCase().includes('barcode')) {
-                inputBarcode.classList.add('is-invalid');
-                if (feedbackBarcode) {
-                    feedbackBarcode.textContent = err.message;
-                    feedbackBarcode.classList.remove('d-none');
-                }
-                inputBarcode.focus();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Gagal Menyimpan Produk',
+                    text: err.message,
+                    icon: 'error',
+                    confirmButtonText: 'Periksa'
+                });
             } else {
-                inputName.classList.add('is-invalid');
-                if (feedbackName) {
-                    feedbackName.textContent = err.message;
-                    feedbackName.classList.remove('d-none');
-                }
-                inputName.focus();
+                alert('Gagal menyimpan produk: ' + err.message);
             }
         });
-    }
+    };
 
     const bulkModalEl = document.getElementById('modal-bulk-create-product');
     if (bulkModalEl) {
@@ -1489,24 +1478,11 @@
                     if (inp) inp.focus();
                 }
             } else {
-                const draftInp = bulkTbody ? bulkTbody.querySelector('tr[data-status="draft"] .bulk-input-name') : null;
-                if (draftInp) draftInp.focus();
+                const firstInp = bulkTbody ? bulkTbody.querySelector('.bulk-input-name') : null;
+                if (firstInp) firstInp.focus();
             }
         });
     }
-
-    window.handleBulkModalClose = function() {
-        if (bulkCreatedCount > 0) {
-            window.location.href = quickSetupIncompleteUrl;
-        } else {
-            if (bulkModalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                const modalInstance = bootstrap.Modal.getInstance(bulkModalEl);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-            }
-        }
-    };
 
 })();
 </script>

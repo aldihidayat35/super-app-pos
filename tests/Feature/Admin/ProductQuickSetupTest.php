@@ -622,4 +622,95 @@ class ProductQuickSetupTest extends TestCase
 
         $response->assertForbidden();
     }
+
+    public function test_bulk_store_products_creates_multiple_products(): void
+    {
+        $payload = [
+            'products' => [
+                [
+                    'name' => 'Kopi Kapal Mawar 100g',
+                    'category_id' => $this->category->id,
+                    'base_unit_id' => $this->pcs->id,
+                    'barcode' => '8998881112223',
+                ],
+                [
+                    'name' => 'Gula Pasir Kristal 1kg',
+                    'category_id' => $this->category->id,
+                    'base_unit_id' => $this->pcs->id,
+                    'barcode' => null,
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->kepalaToko)
+            ->postJson(route('admin.products.quick-setup.bulk-store'), $payload);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'created_count' => 2,
+            ]);
+
+        $this->assertDatabaseHas('products', [
+            'name' => 'Kopi Kapal Mawar 100g',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+        ]);
+
+        $this->assertDatabaseHas('products', [
+            'name' => 'Gula Pasir Kristal 1kg',
+            'category_id' => $this->category->id,
+            'base_unit_id' => $this->pcs->id,
+        ]);
+
+        $this->assertDatabaseHas('product_barcodes', [
+            'code' => '8998881112223',
+        ]);
+    }
+
+    public function test_bulk_store_products_validates_barcode_uniqueness(): void
+    {
+        // 1. Duplikasi barcode di dalam payload sendiri
+        $payloadInternalDuplicate = [
+            'products' => [
+                [
+                    'name' => 'Produk A',
+                    'category_id' => $this->category->id,
+                    'base_unit_id' => $this->pcs->id,
+                    'barcode' => '999888777',
+                ],
+                [
+                    'name' => 'Produk B',
+                    'category_id' => $this->category->id,
+                    'base_unit_id' => $this->pcs->id,
+                    'barcode' => '999888777',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->kepalaGudang)
+            ->postJson(route('admin.products.quick-setup.bulk-store'), $payloadInternalDuplicate);
+
+        $response->assertStatus(422);
+
+        // 2. Barcode sudah ada di database
+        $existingProduct = Product::factory()->create(['base_unit_id' => $this->pcs->id, 'category_id' => $this->category->id]);
+        $existingProduct->barcodes()->create(['code' => '777666555', 'is_primary' => true]);
+
+        $payloadDbDuplicate = [
+            'products' => [
+                [
+                    'name' => 'Produk C',
+                    'category_id' => $this->category->id,
+                    'base_unit_id' => $this->pcs->id,
+                    'barcode' => '777666555',
+                ],
+            ],
+        ];
+
+        $responseDb = $this->actingAs($this->kepalaGudang)
+            ->postJson(route('admin.products.quick-setup.bulk-store'), $payloadDbDuplicate);
+
+        $responseDb->assertStatus(422);
+    }
 }

@@ -188,4 +188,100 @@ class ProductQuickSetupController extends Controller
             ],
         ]);
     }
+
+    public function bulkStoreProducts(Request $request, ProductSkuService $skuService): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user && $user->can('products.quick_setup'), 403);
+
+        $validated = $request->validate([
+            'products' => ['required', 'array', 'min:1'],
+            'products.*.name' => ['required', 'string', 'max:255'],
+            'products.*.category_id' => ['required', 'exists:product_categories,id'],
+            'products.*.base_unit_id' => ['required', 'exists:units,id'],
+            'products.*.sku' => ['nullable', 'string', 'max:100'],
+            'products.*.barcode' => ['nullable', 'string', 'max:100'],
+        ], [
+            'products.required' => 'Minimal satu produk harus diisi.',
+            'products.*.name.required' => 'Nama produk wajib diisi.',
+            'products.*.category_id.required' => 'Kategori produk wajib dipilih.',
+            'products.*.base_unit_id.required' => 'Satuan dasar wajib dipilih.',
+        ]);
+
+        $barcodesInPayload = [];
+        foreach ($validated['products'] as $item) {
+            $code = ! empty($item['barcode']) ? trim($item['barcode']) : null;
+            if ($code !== null) {
+                if (in_array($code, $barcodesInPayload, true)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Barcode \"{$code}\" duplikat di dalam daftar input.",
+                    ], 422);
+                }
+                $barcodesInPayload[] = $code;
+
+                if (ProductBarcode::query()->where('code', $code)->exists()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Barcode \"{$code}\" sudah digunakan oleh produk lain di database.",
+                    ], 422);
+                }
+            }
+        }
+
+        $createdCount = 0;
+        $createdProducts = DB::transaction(function () use ($validated, $skuService, &$createdCount): array {
+            $results = [];
+
+            foreach ($validated['products'] as $item) {
+                $sku = ! empty($item['sku']) ? trim($item['sku']) : $skuService->generate();
+
+                $product = Product::query()->create([
+                    'name' => trim($item['name']),
+                    'sku' => $sku,
+                    'category_id' => $item['category_id'],
+                    'base_unit_id' => $item['base_unit_id'],
+                    'status' => 'active',
+                    'cost_price' => 0,
+                    'minimum_price' => 0,
+                    'minimum_order' => 0,
+                    'minimum_stock' => 0,
+                    'safety_stock' => 0,
+                ]);
+
+                ProductUnit::query()->create([
+                    'product_id' => $product->id,
+                    'unit_id' => $product->base_unit_id,
+                    'conversion_factor' => 1,
+                    'is_base' => true,
+                    'is_sellable' => true,
+                    'is_active' => true,
+                ]);
+
+                if (! empty($item['barcode'])) {
+                    ProductBarcode::query()->create([
+                        'product_id' => $product->id,
+                        'code' => trim($item['barcode']),
+                        'is_primary' => true,
+                    ]);
+                }
+
+                $results[] = [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                ];
+                $createdCount++;
+            }
+
+            return $results;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menyimpan {$createdCount} produk baru.",
+            'created_count' => $createdCount,
+            'products' => $createdProducts,
+        ]);
+    }
 }

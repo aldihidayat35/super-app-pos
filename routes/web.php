@@ -693,6 +693,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/products/quick-setup/store-product-ajax', [ProductQuickSetupController::class, 'storeProductAjax'])
             ->middleware('permission:products.quick_setup')
             ->name('products.quick-setup.store-product-ajax');
+        Route::post('/products/quick-setup/bulk-store', [ProductQuickSetupController::class, 'bulkStoreProducts'])
+            ->middleware('permission:products.quick_setup')
+            ->name('products.quick-setup.bulk-store');
         Route::post('/products/reset-all', [ProductController::class, 'resetAll'])
             ->middleware('role:super_admin')
             ->name('products.reset-all');
