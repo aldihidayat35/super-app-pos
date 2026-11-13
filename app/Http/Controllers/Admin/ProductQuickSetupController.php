@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\ArrayReportExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BatchProductQuickSetupRequest;
 use App\Http\Requests\Admin\SaveProductQuickSetupRequest;
@@ -18,6 +19,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductQuickSetupController extends Controller
 {
@@ -76,6 +81,104 @@ class ProductQuickSetupController extends Controller
             'units' => $units,
             'categories' => $categories,
             'filters' => $filters,
+        ]);
+    }
+
+    public function export(Request $request): StreamedResponse|BinaryFileResponse
+    {
+        $user = $request->user();
+        abort_unless($user && ($user->can('products.quick_setup') || $user->can('products.export')), 403);
+
+        $isUnrestricted = $user->hasUnrestrictedLocationScope();
+        if ($isUnrestricted) {
+            $locations = WorkLocation::query()->where('is_active', true)->orderBy('name')->get();
+            $permittedIds = $locations->pluck('id')->all();
+        } else {
+            $permittedIds = $user->permittedWorkLocationIds();
+            abort_if(empty($permittedIds), 403, 'Akun Anda belum memiliki penugasan lokasi kerja.');
+        }
+
+        $requestedLocationId = $request->integer('work_location_id');
+        if ($requestedLocationId) {
+            abort_unless(in_array($requestedLocationId, $permittedIds, true), 403, 'Anda tidak memiliki akses ke lokasi kerja ini.');
+            $selectedLocationId = $requestedLocationId;
+        } else {
+            $defaultLocation = $user->workLocations()->wherePivot('is_default', true)->first() ?? $user->workLocations()->first();
+            $selectedLocationId = ($defaultLocation && in_array($defaultLocation->id, $permittedIds, true))
+                ? $defaultLocation->id
+                : ($permittedIds[0] ?? null);
+        }
+
+        abort_if(! $selectedLocationId, 403, 'Lokasi kerja tidak valid.');
+
+        /** @var WorkLocation $currentLocation */
+        $currentLocation = WorkLocation::query()->findOrFail($selectedLocationId);
+
+        $filters = [
+            'completeness' => (string) $request->query('completeness', 'complete'),
+            'category_id' => $request->query('category_id'),
+            'q' => trim((string) $request->query('q', '')),
+        ];
+
+        $query = $this->quickSetupService->buildQuery($filters, $currentLocation);
+        $units = Unit::query()->where('is_active', true)->orderBy('name')->get();
+
+        $locationSlug = Str::slug($currentLocation->name);
+        $timestamp = now()->format('Ymd-His');
+        $filename = "setup-cepat-produk-{$locationSlug}-{$timestamp}";
+
+        $headings = [
+            'No',
+            'SKU',
+            'Nama Produk',
+            'Kategori',
+            'Barcode',
+            'Satuan Dasar',
+            'Lokasi Kerja',
+            'Satuan HPP Kulakan',
+            'HPP Satuan Kulakan (Rp)',
+            'HPP Modal per Pcs (Rp)',
+            'Satuan Stok Awal',
+            'Jumlah Stok Awal',
+            'Total Stok Fisik (Pcs)',
+            'Satuan Jual',
+            'Harga Jual Satuan (Rp)',
+            'Harga Jual Min per Pcs (Rp)',
+            'Margin Laba per Pcs (Rp)',
+            'Margin Persen (%)',
+            'Status Setup',
+            'Status Produk',
+        ];
+
+        if ($request->query('format') === 'xlsx') {
+            $rows = [];
+            $no = 1;
+            foreach ($query->get() as $product) {
+                $rows[] = $this->quickSetupService->formatProductForExport($product, $currentLocation, $units, $no);
+                $no++;
+            }
+
+            return Excel::download(new ArrayReportExport($rows, $headings), "{$filename}.xlsx");
+        }
+
+        return response()->streamDownload(function () use ($query, $currentLocation, $units, $headings): void {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, $headings);
+
+            $no = 1;
+            $query->chunk(200, function ($products) use ($handle, $currentLocation, $units, &$no): void {
+                foreach ($products as $product) {
+                    $row = $this->quickSetupService->formatProductForExport($product, $currentLocation, $units, $no);
+                    fputcsv($handle, array_values($row));
+                    $no++;
+                }
+            });
+
+            fclose($handle);
+        }, "{$filename}.csv", [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}.csv\"",
         ]);
     }
 

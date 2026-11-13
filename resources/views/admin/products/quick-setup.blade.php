@@ -3,6 +3,35 @@
 @section('page_title', 'Setup Operasional Cepat Produk')
 
 @section('toolbar_actions')
+    <div class="dropdown d-inline-block me-2">
+        <button type="button" class="btn btn-light-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="btn-export-quick-setup">
+            <i class="ki-outline ki-file-down me-1"></i> Export Data Setup
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm fs-7">
+            <li>
+                <a class="dropdown-item py-2" href="{{ route('admin.products.quick-setup.export', ['work_location_id' => $currentLocation->id, 'completeness' => 'complete']) }}">
+                    <i class="ki-outline ki-check-circle text-success me-2"></i> Export Data Tersimpan (Lengkap)
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item py-2" href="{{ route('admin.products.quick-setup.export', array_merge(request()->query(), ['work_location_id' => $currentLocation->id])) }}">
+                    <i class="ki-outline ki-filter text-primary me-2"></i> Export Sesuai Filter Halaman
+                </a>
+            </li>
+            <li><hr class="dropdown-divider my-1"></li>
+            <li>
+                <a class="dropdown-item py-2" href="{{ route('admin.products.quick-setup.export', ['work_location_id' => $currentLocation->id, 'completeness' => 'all']) }}">
+                    <i class="ki-outline ki-cube-2 text-gray-700 me-2"></i> Export Semua Produk di Lokasi Ini
+                </a>
+            </li>
+            <li><hr class="dropdown-divider my-1"></li>
+            <li>
+                <a class="dropdown-item py-2" href="{{ route('admin.products.quick-setup.export', array_merge(request()->query(), ['work_location_id' => $currentLocation->id, 'format' => 'xlsx'])) }}">
+                    <i class="ki-outline ki-file-sheet text-success me-2"></i> Unduh Format Excel (.xlsx)
+                </a>
+            </li>
+        </ul>
+    </div>
     <button type="button" class="btn btn-success btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modal-bulk-create-product">
         <i class="ki-outline ki-plus-square me-1"></i> Tambah Produk Masal
     </button>
@@ -35,6 +64,7 @@
                 <li><strong>Kolom Stok Awal:</strong> Pilihan satuan stok + input jumlah fisik awal + konversi total pieces (terkunci jika saldo sudah aktif).</li>
                 <li><strong>Kolom Harga Jual Minimum:</strong> Pilihan satuan jual + input harga + tombol shortcut laba + badge proteksi anti-rugi.</li>
                 <li><strong>Auto-Save Engine:</strong> Indikator status per baris (Menyimpan... &rarr; Tersimpan &rarr; Lengkap).</li>
+                <li><strong>Export Data Setup:</strong> Mengunduh data setup operasional produk ke format CSV atau Excel (.xlsx) untuk data lengkap tersimpan maupun sesuai filter aktif.</li>
             </ul>
         </x-slot:parts>
         <x-slot:impacts>
@@ -270,6 +300,11 @@
                         <span class="fw-bold me-1">Auto-Save Aktif</span>
                         <span class="d-none d-xl-inline text-muted fs-9 ms-1">· Tersimpan otomatis saat selesai mengetik</span>
                     </div>
+                    <a href="{{ route('admin.products.quick-setup.export', array_merge(request()->query(), ['work_location_id' => $currentLocation->id, 'completeness' => $filters['completeness']])) }}" 
+                       class="btn btn-sm btn-light-success fw-bold px-3 py-2 text-nowrap" 
+                       title="Unduh data setup cepat produk saat ini (CSV/Excel)">
+                        <i class="ki-outline ki-file-down fs-5 me-1"></i> Export Data
+                    </a>
                     <button type="button" class="btn btn-sm btn-success fw-bolder px-3 py-2 text-nowrap" data-bs-toggle="modal" data-bs-target="#modal-bulk-create-product">
                         <i class="ki-outline ki-plus-square fs-5 me-1"></i> Tambah Produk Masal
                     </button>

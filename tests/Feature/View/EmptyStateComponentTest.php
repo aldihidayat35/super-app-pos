@@ -32,4 +32,3 @@ class EmptyStateComponentTest extends TestCase
         $this->assertStringContainsString('d-flex flex-column align-items-center justify-content-center', $rendered);
     }
 }
-

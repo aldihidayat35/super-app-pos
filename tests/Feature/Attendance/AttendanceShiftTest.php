@@ -202,18 +202,12 @@ class AttendanceShiftTest extends TestCase
         $this->assertNotNull(AttendanceCorrection::query()->findOrFail($correction->id)->after_snapshot);
     }
 
-    public function test_cash_shift_requires_checked_in_schedule_and_allows_supervisor_override_with_reason(): void
+    public function test_cash_shift_can_be_opened_without_attendance_checkin_and_links_attendance_if_present(): void
     {
         Carbon::setTestNow('2026-07-14 08:00:00');
         $this->createSchedule('2026-07-14');
 
-        $this->actingAs($this->cashier)->post(route('retail.shifts.store'), [
-            'branch_id' => $this->branch->id,
-            'opening_cash_amount' => 100000,
-        ])->assertSessionHasErrors('shift');
-
-        app(AttendanceService::class)->checkIn($this->cashier, ['checked_at' => '2026-07-14 08:00:00']);
-
+        // Buka shift tanpa check-in absensi tetap berhasil (absensi bersifat opsional)
         $this->actingAs($this->cashier)->post(route('retail.shifts.store'), [
             'branch_id' => $this->branch->id,
             'opening_cash_amount' => 100000,
@@ -223,28 +217,26 @@ class AttendanceShiftTest extends TestCase
         $this->assertDatabaseHas('cash_shifts', [
             'cashier_user_id' => $this->cashier->id,
             'status' => CashShiftStatus::OPEN->value,
+            'attendance_id' => null,
             'attendance_override_reason' => null,
         ]);
 
-        $supervisorEmployee = Employee::query()->create([
-            'user_id' => $this->supervisor->id,
-            'work_location_id' => $this->branchLocation->id,
-            'employee_no' => 'EMP-HR-002',
-            'name' => 'Supervisor HR',
-            'position' => 'Kepala Toko',
-            'status' => 'active',
-            'is_active' => true,
-        ]);
-        $this->assertNotNull($supervisorEmployee);
         CashShift::query()->where('cashier_user_id', $this->cashier->id)->update(['status' => CashShiftStatus::CLOSED->value, 'closed_at' => now()]);
 
-        $this->actingAs($this->supervisor)->post(route('retail.shifts.store'), [
+        // Jika kasir sudah check-in, absensi otomatis terhubung ke shift
+        $attendance = app(AttendanceService::class)->checkIn($this->cashier, ['checked_at' => '2026-07-14 08:00:00']);
+
+        $this->actingAs($this->cashier)->post(route('retail.shifts.store'), [
             'branch_id' => $this->branch->id,
-            'opening_cash_amount' => 50000,
-            'attendance_override_reason' => 'Absensi supervisor belum dijadwalkan karena pembukaan darurat.',
+            'opening_cash_amount' => 100000,
+            'terminal_code' => 'POS-HR-2',
         ])->assertRedirect(route('retail.shifts.current'));
 
-        $this->assertSame('Absensi supervisor belum dijadwalkan karena pembukaan darurat.', CashShift::query()->where('cashier_user_id', $this->supervisor->id)->latest('id')->firstOrFail()->attendance_override_reason);
+        $this->assertDatabaseHas('cash_shifts', [
+            'cashier_user_id' => $this->cashier->id,
+            'status' => CashShiftStatus::OPEN->value,
+            'attendance_id' => $attendance->id,
+        ]);
     }
 
     public function test_checkout_waits_for_daily_checklist_and_head_verifies_without_changing_times(): void

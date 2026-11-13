@@ -21,6 +21,7 @@ use App\Support\Decimal;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -46,10 +47,24 @@ final class ProductQuickSetupService
      */
     public function getProducts(array $filters, WorkLocation $workLocation): LengthAwarePaginator
     {
+        $perPage = max(10, min(100, (int) ($filters['per_page'] ?? 25)));
+
+        return $this->buildQuery($filters, $workLocation)
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    /**
+     * Menyusun query produk untuk daftar dan ekspor setup cepat.
+     *
+     * @param  array{completeness?: string, category_id?: int|string, q?: string}  $filters
+     * @return Builder<Product>
+     */
+    public function buildQuery(array $filters, WorkLocation $workLocation): Builder
+    {
         $completeness = $filters['completeness'] ?? 'incomplete';
         $categoryId = filled($filters['category_id'] ?? null) ? (int) $filters['category_id'] : null;
         $search = trim((string) ($filters['q'] ?? ''));
-        $perPage = max(10, min(100, (int) ($filters['per_page'] ?? 25)));
 
         $today = now()->toDateString();
         $query = Product::query()
@@ -98,7 +113,111 @@ final class ProductQuickSetupService
                 ->where('minimum_price', '>', 0);
         }
 
-        return $query->orderBy('name')->paginate($perPage)->withQueryString();
+        return $query->orderBy('name');
+    }
+
+    /**
+     * Memformat objek produk menjadi baris data ekspor setup cepat.
+     *
+     * @param  Collection<int, Unit>  $units
+     * @return array<string, mixed>
+     */
+    public function formatProductForExport(Product $product, WorkLocation $workLocation, Collection $units, int $index = 1): array
+    {
+        $baseUnit = $product->baseUnit ?? $units->firstWhere('code', 'PCS') ?? $units->first();
+
+        $retailPriceModel = $product->prices->firstWhere('channel', 'retail')
+            ?? $product->prices->firstWhere('channel', 'pos')
+            ?? $product->prices->first();
+
+        $openingBatch = $product->stockBatches->first();
+        $hasExistingOpeningStock = (bool) $openingBatch;
+        $existingStockOnHand = $openingBatch ? (float) $openingBatch->quantity_on_hand : 0.0;
+
+        $productAttrs = (array) ($product->attributes ?? []);
+        $quickSetupAttrs = (array) ($productAttrs['quick_setup'] ?? []);
+        $locationsAttrs = (array) ($quickSetupAttrs['locations'] ?? []);
+        $qsData = $locationsAttrs[$workLocation->id] ?? ($quickSetupAttrs['hpp_unit_id'] ?? null ? $quickSetupAttrs : null);
+
+        // 1. Tentukan Satuan HPP & Nominal HPP
+        $retailCostPrice = (float) ($product->cost_price ?? 0);
+        if ($qsData && ! empty($qsData['hpp_unit_id']) && $units->contains('id', (int) $qsData['hpp_unit_id'])) {
+            $defaultHppUnit = $units->firstWhere('id', (int) $qsData['hpp_unit_id']);
+            $defaultHppFactor = match (strtoupper((string) $defaultHppUnit->code)) {
+                'PCS' => 1.0,
+                'LSN' => 12.0,
+                'GROS' => 144.0,
+                default => (float) ($product->units->firstWhere('unit_id', $defaultHppUnit->id)?->conversion_factor ?? 1.0),
+            };
+            $defaultHppAmount = isset($qsData['hpp_amount']) ? (float) $qsData['hpp_amount'] : ($retailCostPrice * $defaultHppFactor);
+        } else {
+            $defaultHppUnit = $baseUnit;
+            $defaultHppFactor = 1.0;
+            $defaultHppAmount = $retailCostPrice;
+        }
+
+        // 2. Tentukan Satuan Stok & Jumlah Stok
+        if ($qsData && ! empty($qsData['stock_unit_id']) && $units->contains('id', (int) $qsData['stock_unit_id'])) {
+            $defaultStockUnit = $units->firstWhere('id', (int) $qsData['stock_unit_id']);
+            $defaultStockFactor = match (strtoupper((string) $defaultStockUnit->code)) {
+                'PCS' => 1.0,
+                'LSN' => 12.0,
+                'GROS' => 144.0,
+                default => (float) ($product->units->firstWhere('unit_id', $defaultStockUnit->id)?->conversion_factor ?? 1.0),
+            };
+            $defaultStockQty = $hasExistingOpeningStock
+                ? ($existingStockOnHand / ($defaultStockFactor ?: 1.0))
+                : (float) ($qsData['stock_qty'] ?? 0.0);
+        } else {
+            $defaultStockUnit = $baseUnit;
+            $defaultStockFactor = 1.0;
+            $defaultStockQty = $existingStockOnHand;
+        }
+
+        // 3. Tentukan Satuan Jual & Nominal Harga Jual Minimum
+        $retailMinPrice = (float) ($product->minimum_price > 0 ? $product->minimum_price : ($retailPriceModel?->recommended_price ?? 0));
+        if ($qsData && ! empty($qsData['sell_unit_id']) && $units->contains('id', (int) $qsData['sell_unit_id'])) {
+            $defaultSellUnit = $units->firstWhere('id', (int) $qsData['sell_unit_id']);
+            $defaultSellFactor = match (strtoupper((string) $defaultSellUnit->code)) {
+                'PCS' => 1.0,
+                'LSN' => 12.0,
+                'GROS' => 144.0,
+                default => (float) ($product->units->firstWhere('unit_id', $defaultSellUnit->id)?->conversion_factor ?? 1.0),
+            };
+            $defaultSellAmount = isset($qsData['min_price_amount']) ? (float) $qsData['min_price_amount'] : ($retailMinPrice * $defaultSellFactor);
+        } else {
+            $defaultSellUnit = $baseUnit;
+            $defaultSellFactor = 1.0;
+            $defaultSellAmount = $retailMinPrice;
+        }
+
+        $marginAmount = $retailMinPrice - $retailCostPrice;
+        $marginPercent = $retailCostPrice > 0 ? round(($marginAmount / $retailCostPrice) * 100, 1) : 0.0;
+        $isComplete = $hasExistingOpeningStock && $retailMinPrice > 0 && $retailCostPrice > 0 && $retailMinPrice >= $retailCostPrice;
+        $primaryBarcode = $product->barcodes->firstWhere('is_primary', true)?->code ?? $product->barcodes->first()?->code ?? '';
+
+        return [
+            'No' => $index,
+            'SKU' => $product->sku,
+            'Nama Produk' => $product->name,
+            'Kategori' => $product->category?->name ?? 'Umum',
+            'Barcode' => $primaryBarcode,
+            'Satuan Dasar' => $baseUnit?->name ?? $baseUnit?->code ?? 'PCS',
+            'Lokasi Kerja' => $workLocation->name,
+            'Satuan HPP Kulakan' => $defaultHppUnit?->name ?? $defaultHppUnit?->code ?? 'PCS',
+            'HPP Satuan Kulakan (Rp)' => round($defaultHppAmount, 2),
+            'HPP Modal per Pcs (Rp)' => round($retailCostPrice, 2),
+            'Satuan Stok Awal' => $defaultStockUnit?->name ?? $defaultStockUnit?->code ?? 'PCS',
+            'Jumlah Stok Awal' => round($defaultStockQty, 4),
+            'Total Stok Fisik (Pcs)' => round($existingStockOnHand, 4),
+            'Satuan Jual' => $defaultSellUnit?->name ?? $defaultSellUnit?->code ?? 'PCS',
+            'Harga Jual Satuan (Rp)' => round($defaultSellAmount, 2),
+            'Harga Jual Min per Pcs (Rp)' => round($retailMinPrice, 2),
+            'Margin Laba per Pcs (Rp)' => round($marginAmount, 2),
+            'Margin Persen (%)' => $marginPercent,
+            'Status Setup' => $isComplete ? 'Lengkap' : 'Belum Lengkap',
+            'Status Produk' => $product->status->value ?? 'active',
+        ];
     }
 
     /**

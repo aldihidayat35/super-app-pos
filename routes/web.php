@@ -697,6 +697,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/products/quick-setup', [ProductQuickSetupController::class, 'index'])
             ->middleware('permission:products.quick_setup')
             ->name('products.quick-setup.index');
+        Route::get('/products/quick-setup/export', [ProductQuickSetupController::class, 'export'])
+            ->middleware('permission:products.quick_setup|products.export')
+            ->name('products.quick-setup.export');
         Route::post('/products/quick-setup/row', [ProductQuickSetupController::class, 'saveRow'])
             ->middleware('permission:products.quick_setup')
             ->name('products.quick-setup.save-row');

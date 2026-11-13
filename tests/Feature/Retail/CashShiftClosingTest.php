@@ -80,7 +80,7 @@ class CashShiftClosingTest extends TestCase
     {
         $shift = $this->openShift();
 
-        $this->actingAs($this->cashier)->get(route('retail.shifts.open'))->assertOk()->assertSee('Buka Shift Kasir')->assertSee('Kehadiran siap');
+        $this->actingAs($this->cashier)->get(route('retail.shifts.open'))->assertOk()->assertSee('Buka Shift Kasir')->assertSee('Modal Awal');
         $this->actingAs($this->cashier)->get(route('retail.shifts.current'))->assertOk()->assertSee($shift->number)->assertSee('Lanjut ke POS')->assertSee('Expected Cash');
         $this->actingAs($this->cashier)->get(route('retail.shifts.expenses', $shift))->assertOk()->assertSee('Pengeluaran Kecil');
         $this->actingAs($this->cashier)->get(route('retail.shifts.close', $shift))->assertOk()->assertSee('Tutup Shift');

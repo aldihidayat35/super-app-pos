@@ -40,15 +40,15 @@ class CashShiftService
             $branch = $this->branch((int) $data['branch_id'], $cashier);
             $attendance = null;
             $overrideBy = null;
-            $overrideReason = null;
+            $overrideReason = $data['attendance_override_reason'] ?? null;
             try {
                 $attendance = $this->attendance->activeAttendanceForCashShift($cashier, $branch->workLocation);
-            } catch (ServiceException $exception) {
-                $overrideReason = $data['attendance_override_reason'] ?? null;
-                if (! filled($overrideReason) || (! $cashier->can('attendance.approve') && ! $cashier->can('cash_shifts.approve'))) {
-                    throw $exception;
+            } catch (ServiceException) {
+                // Kehadiran bersifat opsional dan tidak memblokir pembukaan shift kasir
+                $attendance = null;
+                if (filled($overrideReason)) {
+                    $overrideBy = $cashier->id;
                 }
-                $overrideBy = $cashier->id;
             }
 
             $active = CashShift::query()
