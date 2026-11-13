@@ -14,6 +14,7 @@
                 <li><strong>Profil Dot Matrix (Epson LX-310):</strong> Menentukan ukuran kertas continuous form (Setengah Folio 9.5 x 5.5 inci atau Full Folio).</li>
                 <li><strong>Elemen Cetak:</strong> Mengaktifkan/menonaktifkan logo, barcode barang, info kasir, dan kolom tanda tangan 3 pihak.</li>
                 <li><strong>Uji Coba Cetak (Test Print):</strong> Tombol tes langsung untuk melihat hasil layout sebelum dipakai operasional kasir.</li>
+                <li><strong>Panduan Kalibrasi &amp; Solusi Miring:</strong> Petunjuk setelan browser Chrome/Edge (Margins: None) dan fisik traktor Epson LX-310 agar hasil cetak lurus sempurna.</li>
             </ul>
         </x-slot:parts>
         <x-slot:impacts>
@@ -23,6 +24,7 @@
             <ol>
                 <li>Pilih profil lebar termal dan ukuran kertas continuous form LX-310.</li>
                 <li>Atur saklar (toggle) elemen apa saja yang ingin ditampilkan.</li>
+                <li>Ikuti panduan kalibrasi cetak: atur margin dialog browser ke <strong>None</strong> dan nonaktifkan <strong>Headers and Footers</strong>.</li>
                 <li>Klik tombol <strong>Uji Coba Cetak</strong> untuk verifikasi hasil pada printer fisik.</li>
                 <li>Klik <strong>Simpan Pengaturan Printer</strong> jika sudah sesuai.</li>
             </ol>
@@ -30,7 +32,7 @@
         <x-slot:warnings>
             <div class="alert alert-warning mb-0">
                 <i class="ki-outline ki-information-2 me-1"></i>
-                Pada dialog cetak browser (Chrome/Edge), pastikan memilih <strong>Margin: None</strong> dan <strong>Hilangkan centang Headers &amp; Footers</strong> bawaan browser agar cetakan rapi dan pas.
+                <strong>Perhatian Khusus Dot Matrix (LX-310):</strong> Selalu pastikan opsi <strong>Margins = None</strong> pada jendela cetak Chrome/Edge dan tuas kertas berada di posisi <strong>Tractor Feed</strong>. Menggunakan margin default dapat menyebabkan cetakan menabrak pita gerigi dan kertas berjalan miring.
             </div>
         </x-slot:warnings>
         <x-slot:example>
@@ -239,6 +241,124 @@
                     <x-metronic.form-group name="print_invoice_footer_note" label="Catatan Kaki Faktur Penjualan (Dot Matrix LX-310)" help="Teks syarat pembayaran atau ketentuan garansi pada faktur continuous form.">
                         <textarea name="print_invoice_footer_note" rows="3" class="form-control form-control-sm @error('print_invoice_footer_note') is-invalid @enderror">{{ old('print_invoice_footer_note', $settings['print_invoice_footer_note']) }}</textarea>
                     </x-metronic.form-group>
+                </div>
+            </x-metronic.card>
+        </div>
+    </div>
+
+    {{-- Baris Panduan Kalibrasi Cetak & Mengatasi Hasil Miring --}}
+    <div class="row g-6 mt-1">
+        <div class="col-12">
+            <x-metronic.card title="Panduan Kalibrasi Cetak &amp; Solusi Hasil Miring" subtitle="Petunjuk langkah demi langkah agar cetakan Epson LX-310 dan Printer Termal lurus, presisi, dan tidak tersangkut">
+                <div class="d-flex flex-column gap-5">
+                    {{-- Banner Penjelasan --}}
+                    <div class="notice d-flex bg-light-info rounded border-info border border-dashed p-4">
+                        <i class="ki-outline ki-information-5 fs-2x text-info me-3 mt-1"></i>
+                        <div class="text-gray-700 fs-7">
+                            <strong class="text-gray-900 d-block fs-6 mb-1">Mengapa Hasil Cetak Dot Matrix Bisa Miring atau Tersangkut?</strong>
+                            Pada aplikasi berbasis web, cetakan diproses oleh mesin perayap browser. Jika pengaturan margin browser masih <em>Default</em> atau kertas traktor tidak dikunci rata, jarum cetak (print head) akan menabrak lubang gerigi continuous form di tepi kiri/kanan. Akibatnya, gesekan tersebut membuat tarikan kertas tersendat dan cetakan menjadi miring. Ikuti langkah kalibrasi di bawah ini untuk hasil 100% lurus dan presisi.
+                        </div>
+                    </div>
+
+                    <div class="row g-5">
+                        {{-- Kolom 1: Kalibrasi Browser --}}
+                        <div class="col-md-6">
+                            <div class="border border-gray-200 rounded p-5 h-100 bg-light-subtle">
+                                <div class="d-flex align-items-center gap-3 mb-4">
+                                    <div class="symbol symbol-40px symbol-circle bg-light-primary">
+                                        <span class="symbol-label"><i class="ki-outline ki-chrome text-primary fs-3"></i></span>
+                                    </div>
+                                    <div>
+                                        <h5 class="fw-bolder text-gray-900 mb-0">1. Setelan Dialog Cetak Browser (Chrome / Edge)</h5>
+                                        <span class="text-muted fs-8">Cukup diatur 1 kali di PC kasir (tersimpan otomatis)</span>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-column gap-3 text-gray-800 fs-7">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="ki-outline ki-check-circle text-success fs-5 mt-1"></i>
+                                        <div>
+                                            <strong>Margins: Pilih "None" (Tanpa Margin)</strong>
+                                            <div class="text-muted fs-8">Wajib pilih <em>None</em>. Jangan biarkan <em>Default</em> karena browser menambahkan margin 10mm yang membuat template terdorong ke arah lubang traktor kertas.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="ki-outline ki-check-circle text-success fs-5 mt-1"></i>
+                                        <div>
+                                            <strong>Headers and footers: Hilangkan Centang</strong>
+                                            <div class="text-muted fs-8">Pastikan tidak dicentang agar alamat web, tanggal, dan judul browser tidak ikut tercetak di margin atas/bawah faktur.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="ki-outline ki-check-circle text-success fs-5 mt-1"></i>
+                                        <div>
+                                            <strong>Scale (Skala): Pilih "Default" / 100%</strong>
+                                            <div class="text-muted fs-8">Jangan aktifkan <em>Fit to paper width</em> atau persenan skala custom agar ukuran font monospaced LX-310 tetap tajam dan proporsional.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="ki-outline ki-check-circle text-success fs-5 mt-1"></i>
+                                        <div>
+                                            <strong>Paper Size di Driver Windows:</strong>
+                                            <div class="text-muted fs-8">Pada printer properties Windows, pilih ukuran kertas <em>Letter</em> atau <em>US Standard Fanfold (8.5 &times; 11 in)</em> sesuai jenis kertas kasir yang dipasang.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Kolom 2: Kalibrasi Fisik Hardware Epson LX-310 --}}
+                        <div class="col-md-6">
+                            <div class="border border-gray-200 rounded p-5 h-100 bg-light-subtle">
+                                <div class="d-flex align-items-center gap-3 mb-4">
+                                    <div class="symbol symbol-40px symbol-circle bg-light-success">
+                                        <span class="symbol-label"><i class="ki-outline ki-printer text-success fs-3"></i></span>
+                                    </div>
+                                    <div>
+                                        <h5 class="fw-bolder text-gray-900 mb-0">2. Penyetelan Fisik Printer (Hardware LX-310)</h5>
+                                        <span class="text-muted fs-8">Pemasangan continuous form pada traktor gerigi</span>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-column gap-3 text-gray-800 fs-7">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="ki-outline ki-check-circle text-success fs-5 mt-1"></i>
+                                        <div>
+                                            <strong>Tuas Kertas (Paper Release Lever):</strong>
+                                            <div class="text-muted fs-8">Pastikan tuas di kanan atas bodi printer berada di posisi <strong>Tractor Feed (belakang/dorong)</strong>, bukan di posisi kertas lembaran biasa (friction feed).</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="ki-outline ki-check-circle text-success fs-5 mt-1"></i>
+                                        <div>
+                                            <strong>Kunci Traktor (Tractor Clamps):</strong>
+                                            <div class="text-muted fs-8">Pasang lubang continuous form pada pin roda kiri dan kanan secara sejajar. Pastikan kertas terbentang rata (tidak menggelembung di tengah) lalu kunci kedua tuas traktor dengan rapat.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="ki-outline ki-check-circle text-success fs-5 mt-1"></i>
+                                        <div>
+                                            <strong>Posisi Garis Awal (Top-of-Form / Tear-Off):</strong>
+                                            <div class="text-muted fs-8">Atur baris pertama berada tepat 1&ndash;1.5 cm di bawah garis perforasi sobekan. Gunakan kombinasi tombol <em>Pause</em> + <em>LF/FF</em> untuk penyesuaian mikro baris (micro-adjust).</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="ki-outline ki-check-circle text-success fs-5 mt-1"></i>
+                                        <div>
+                                            <strong>Jarak Jarum Cetak (Ribbon Gap Lever):</strong>
+                                            <div class="text-muted fs-8">Atur tuas ketebalan kertas di sisi kiri printer sesuai rangkap (posisi 1 untuk 1-ply, posisi 2 untuk 2-ply rangkap tembus).</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </x-metronic.card>
         </div>

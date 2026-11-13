@@ -22,7 +22,7 @@
             margin: 0 auto;
             padding: 15px 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            width: 820px;
+            width: 720px;
             max-width: 100%;
             min-height: 480px;
             position: relative;
@@ -101,22 +101,28 @@
         }
 
         @media print {
-            body {
-                background: #fff;
-                padding: 0;
+            html, body {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             .no-print-bar {
                 display: none !important;
             }
             .invoice-box {
-                width: 100% !important;
+                width: 185mm !important;
+                max-width: 185mm !important;
                 box-shadow: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
+                padding: 4mm 6mm !important;
+                margin: 0 auto !important;
+                page-break-inside: avoid;
             }
             @page {
-                size: 9.5in 5.5in;
-                margin: 0.25in 0.3in;
+                size: auto;
+                margin: 0mm;
             }
         }
     </style>

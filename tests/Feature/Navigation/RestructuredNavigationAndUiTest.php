@@ -177,6 +177,10 @@ class RestructuredNavigationAndUiTest extends TestCase
         $response->assertSee(route('warehouse.location-transfers.index'));
         $response->assertSee(route('warehouse.losses.index'));
         $response->assertSee(route('warehouse.stock-opnames.index'));
+        $response->assertDontSee('Batch & Exp');
+        $response->assertDontSee('Histori HPP');
+        $response->assertSee('Kartu Stok');
+        $response->assertSee('Export CSV');
     }
 
     public function test_pos_has_shift_detail_button_quick_customer_modal_and_clean_cards(): void

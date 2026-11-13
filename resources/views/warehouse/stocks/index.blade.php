@@ -34,12 +34,8 @@
     @can('opening_stocks.import')
         <a href="{{ route('warehouse.opening-stocks.import.index') }}" class="btn btn-primary"><i class="ki-outline ki-file-up me-1"></i> Import Stok</a>
     @endcan
-    <a href="{{ route('warehouse.stock-card.index') }}" class="btn btn-light"><i class="ki-outline ki-document"></i> Kartu Stok</a>
-    <a href="{{ route('warehouse.batches.index') }}" class="btn btn-light"><i class="ki-outline ki-barcode"></i> Batch & Exp</a>
-    @can('goods_receipts.view')
-        <a href="{{ route('pricing.hpp-history.index') }}" class="btn btn-light"><i class="ki-outline ki-chart-line-up"></i> Histori HPP</a>
-    @endcan
-    <a href="{{ route('warehouse.stocks.export', request()->query()) }}" class="btn btn-light-primary"><i class="ki-outline ki-file-down"></i> Export CSV</a>
+    <a href="{{ route('warehouse.stock-card.index') }}" class="btn btn-light" title="Buka buku besar / kartu stok mutasi global"><i class="ki-outline ki-document me-1"></i> Kartu Stok</a>
+    <a href="{{ route('warehouse.stocks.export', request()->query()) }}" class="btn btn-light-primary"><i class="ki-outline ki-file-down me-1"></i> Export CSV</a>
 
     @if(auth()->user()?->hasRole('super_admin'))
         <form method="POST" action="{{ route('warehouse.stocks.reset-all') }}" id="form-reset-stocks" class="d-inline" data-no-loading="true">
