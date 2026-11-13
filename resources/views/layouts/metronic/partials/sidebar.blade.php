@@ -64,11 +64,11 @@
 
 <aside id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar"
     data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true"
-    data-kt-drawer-width="280px" data-kt-drawer-direction="start"
+    data-kt-drawer-width="260px" data-kt-drawer-direction="start"
     data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle" aria-label="Navigasi utama">
 
     {{-- Header Sidebar: Profil Pengguna (Fixed / Tidak ikut scroll) --}}
-    <div class="app-sidebar-header d-flex flex-column flex-shrink-0 px-3 pt-3 pb-1" id="kt_app_sidebar_header">
+    <div class="app-sidebar-header d-flex flex-column flex-shrink-0 px-2 pt-3 pb-1" id="kt_app_sidebar_header">
         <div class="sidebar-user-card mx-1 my-1 p-3 rounded-3 bg-light-primary bg-opacity-20 border border-primary border-opacity-10 shadow-xs">
             <div class="d-flex align-items-center gap-3 sidebar-user-row">
                 {{-- Avatar --}}
@@ -112,9 +112,9 @@
 
     {{-- Body Sidebar: Menu Navigasi (Scrollable) --}}
     <div class="app-sidebar-menu overflow-hidden flex-column-fluid">
-        <div class="app-sidebar-wrapper hover-scroll-overlay-y my-2 px-3" data-kt-scroll="true"
+        <div class="app-sidebar-wrapper hover-scroll-overlay-y my-2 px-2" data-kt-scroll="true"
             data-kt-scroll-height="100%" data-kt-scroll-save-state="true">
-            <div class="menu menu-column menu-rounded menu-sub-indention fw-semibold" data-kt-menu="true">
+            <div class="menu menu-column menu-rounded menu-sub-indention fw-semibold" data-kt-menu="true" data-kt-menu-expand="false">
                 <div class="menu-item pt-1 pb-1 sidebar-menu-header">
                     <div class="menu-content">
                         <span class="menu-heading fw-bold text-uppercase fs-7 text-gray-500">Menu Utama</span>
@@ -145,18 +145,19 @@
                                 <span class="menu-title">{{ $item['label'] }}</span>
                                 <span class="menu-arrow"></span>
                             </span>
-                            <div class="menu-sub menu-sub-accordion {{ $isOpen ? 'show' : '' }}">
+                            <div class="menu-sub menu-sub-accordion sidebar-submenu-grid {{ $isOpen ? 'show' : '' }}">
                                 @foreach ($children as $child)
-                                    <div class="menu-item">
-                                        @php
-                                            $childActive = request()->routeIs(...$child['active'])
-                                                && (!isset($child['active_report']) || request()->route('report') === $child['active_report']);
-                                        @endphp
-                                        <a class="menu-link {{ $childActive ? 'active' : '' }}"
+                                    @php
+                                        $childActive = request()->routeIs(...$child['active'])
+                                            && (!isset($child['active_report']) || request()->route('report') === $child['active_report']);
+                                        $isLastOdd = $loop->last && ($loop->count % 2 !== 0);
+                                    @endphp
+                                    <div class="menu-item {{ $isLastOdd ? 'is-full-width' : '' }}">
+                                        <a class="menu-link sidebar-submenu-card {{ $childActive ? 'active' : '' }} {{ $isLastOdd ? 'is-full-width' : '' }}"
                                             href="{{ route($child['route'], $child['route_params'] ?? []) }}" title="{{ $child['label'] }}"
                                             {{ $child['route'] === 'retail.pos.index' ? 'data-no-spa' : '' }}>
-                                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                            <span class="menu-title">{{ $child['label'] }}</span>
+                                            <i class="submenu-card-icon {{ $child['icon'] ?? 'ki-outline ki-package' }}"></i>
+                                            <span class="menu-title submenu-card-title">{{ $child['label'] }}</span>
                                         </a>
                                     </div>
                                 @endforeach
@@ -218,7 +219,7 @@
     </div>
 
     {{-- Footer Sidebar: Logout + Pin/Unpin --}}
-    <div class="app-sidebar-footer d-flex flex-column flex-shrink-0 px-3 py-3" id="kt_app_sidebar_footer">
+    <div class="app-sidebar-footer d-flex flex-column flex-shrink-0 px-2 py-3" id="kt_app_sidebar_footer">
         <div class="separator separator-dashed mb-3 opacity-75 sidebar-footer-separator"></div>
         <div class="app-sidebar-footer-actions d-flex align-items-center gap-2">
             {{-- Tombol Logout --}}

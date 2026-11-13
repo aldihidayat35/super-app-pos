@@ -421,8 +421,8 @@
 /* Mobile */
 @media (max-width: 991.98px) {
     #kt_app_sidebar {
-        width: 280px !important;
-        min-width: 280px !important;
+        width: 260px !important;
+        min-width: 260px !important;
         height: calc(100dvh - var(--gt-header-height, 44px)) !important;
         max-height: calc(100dvh - var(--gt-header-height, 44px)) !important;
         overflow: hidden !important;
@@ -483,21 +483,21 @@
 @media (min-width: 992px) {
     /* Pinned layout (default) */
     body:not([data-kt-app-sidebar-minimize="on"]) {
-        --bs-app-sidebar-width: 280px;
+        --bs-app-sidebar-width: 260px;
     }
 
     body:not([data-kt-app-sidebar-minimize="on"]) #kt_app_sidebar {
-        width: 280px !important;
+        width: 260px !important;
     }
 
     body:not([data-kt-app-sidebar-minimize="on"]) .app-wrapper {
-        margin-left: 280px !important;
+        margin-left: 260px !important;
         transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     body:not([data-kt-app-sidebar-minimize="on"]) .app-sidebar-header {
-        width: 280px !important;
-        max-width: 280px !important;
+        width: 260px !important;
+        max-width: 260px !important;
         flex-shrink: 0 !important;
     }
 
@@ -512,8 +512,8 @@
     }
 
     body:not([data-kt-app-sidebar-minimize="on"]) .app-sidebar-footer {
-        width: 280px !important;
-        max-width: 280px !important;
+        width: 260px !important;
+        max-width: 260px !important;
         padding: 10px 14px 12px 14px !important;
     }
 
@@ -815,7 +815,7 @@
 
     /* Unpinned & Hovered: Flyout Expanded View */
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover {
-        width: 280px !important;
+        width: 260px !important;
         box-shadow: 4px 0 28px rgba(0, 0, 0, 0.15) !important;
         z-index: 1050;
     }
@@ -828,32 +828,32 @@
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-menu,
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-wrapper,
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-footer {
-        width: 280px !important;
-        max-width: 280px !important;
+        width: 260px !important;
+        max-width: 260px !important;
     }
 
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-header {
-        padding: 10px 12px 0 12px !important;
+        padding: 10px 10px 0 10px !important;
         flex-shrink: 0 !important;
     }
 
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-wrapper {
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
     }
 
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-user-card {
         width: auto !important;
         height: auto !important;
         max-width: none !important;
-        margin: 8px 4px !important;
-        padding: 12px !important;
+        margin: 8px 2px !important;
+        padding: 10px !important;
         display: block !important;
     }
 
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-user-row {
         justify-content: flex-start !important;
-        gap: 0.75rem !important;
+        gap: 0.6rem !important;
     }
 
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-user-avatar {
@@ -868,7 +868,7 @@
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-menu-header {
         display: block !important;
         height: auto !important;
-        padding: 8px 12px 4px 12px !important;
+        padding: 8px 10px 4px 10px !important;
         opacity: 1 !important;
         visibility: visible !important;
         pointer-events: auto !important;
@@ -887,44 +887,156 @@
         margin: 6px 0 !important;
     }
 
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item {
+    /* Target direct top-level menu items only */
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu > .menu-item {
         display: block !important;
         width: 100% !important;
         margin-bottom: 0 !important;
     }
 
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-link {
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu > .menu-item > .menu-link {
         width: 100% !important;
         max-width: none !important;
         height: auto !important;
         min-height: 40px !important;
-        padding: 9px 12px !important;
+        padding: 9px 10px !important;
         justify-content: flex-start !important;
     }
 
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-link .menu-icon {
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu > .menu-item > .menu-link .menu-icon {
         margin-right: 8px !important;
     }
 
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-link .menu-title {
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu > .menu-item > .menu-link .menu-title {
         display: flex !important;
         animation: gtFadeIn 0.2s ease;
     }
 
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-link .menu-arrow {
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu > .menu-item > .menu-link .menu-arrow {
         display: flex !important;
         animation: gtFadeIn 0.2s ease;
     }
 
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.show > .menu-sub,
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.here > .menu-sub {
+    /* Submenu Grid di Unpin Flyout (Hover): Tetap 2-Kolom Simetris & Rata Tengah */
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-sub.sidebar-submenu-grid {
+        display: none !important;
+        padding: 8px 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.menu-accordion.show > .menu-sub.sidebar-submenu-grid,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.menu-accordion.here.show > .menu-sub.sidebar-submenu-grid,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-sub.sidebar-submenu-grid.show {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-grid .menu-item {
+        display: flex !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-grid .menu-item.is-full-width,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-grid > .menu-item:last-child:nth-child(odd) {
+        grid-column: span 2 !important;
+        width: 100% !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-grid .sidebar-submenu-card,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-sub .sidebar-submenu-card.menu-link {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        background: #ffffff !important;
+        border: 1px solid #e4e6ef !important;
+        border-radius: 10px !important;
+        padding: 8px 4px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        min-height: 76px !important;
+        box-sizing: border-box !important;
+        text-decoration: none !important;
+        color: #3f4254 !important;
+    }
+
+    [data-bs-theme='dark'] body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-grid .sidebar-submenu-card,
+    [data-bs-theme='dark'] body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-sub .sidebar-submenu-card.menu-link {
+        background: #1b1b28 !important;
+        border-color: #2b2b40 !important;
+        color: #92929f !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card .submenu-card-icon {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        text-align: center !important;
+        font-size: 1.55rem !important;
+        line-height: 1 !important;
+        color: #4b5675 !important;
+        margin: 0 auto 6px auto !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card .submenu-card-title,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card .menu-title {
         display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin: 0 auto !important;
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        color: #252f4a !important;
+        flex-grow: 0 !important;
+    }
+
+    [data-bs-theme='dark'] body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card .submenu-card-title,
+    [data-bs-theme='dark'] body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card .menu-title {
+        color: #cdcdde !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card:hover {
+        border-color: rgba(var(--bs-primary-rgb, 23, 198, 83), 0.5) !important;
+        transform: translateY(-1.5px) !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important;
+        background: #ffffff !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card:hover .submenu-card-icon {
+        color: var(--bs-primary, #17c653) !important;
+        transform: scale(1.08) !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card.active,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-sub .sidebar-submenu-card.menu-link.active {
+        background: var(--bs-primary-light, #e8fff3) !important;
+        border: 1.5px solid var(--bs-primary, #17c653) !important;
+        color: var(--bs-primary, #17c653) !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card.active .submenu-card-icon {
+        color: var(--bs-primary, #17c653) !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card.active .submenu-card-title,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-card.active .menu-title {
+        color: var(--bs-primary, #17c653) !important;
+        font-weight: 700 !important;
     }
 
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-footer {
-        width: 280px !important;
-        max-width: 280px !important;
-        padding: 10px 14px 12px 14px !important;
+        width: 260px !important;
+        max-width: 260px !important;
+        padding: 10px 12px 12px 12px !important;
     }
 
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .app-sidebar-footer-actions {
@@ -1427,3 +1539,165 @@ body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-report-se
         width: 100% !important;
     }
 }
+
+/* ==========================================================================
+   Grid Card Submenu Styling (Sub-menu Cards Only)
+   ========================================================================== */
+
+/* Submenu 2-column Grid: Hidden by default, only visible when accordion is shown */
+.menu-sub.sidebar-submenu-grid {
+    display: none;
+    padding: 8px 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+/* Shown state for accordion grid */
+.menu-item.menu-accordion.show > .menu-sub.sidebar-submenu-grid,
+.menu-item.menu-accordion.here.show > .menu-sub.sidebar-submenu-grid,
+.menu-sub.sidebar-submenu-grid.show {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+}
+
+/* Ensure no default indentation from Metronic interferes with the grid */
+.menu-sub.sidebar-submenu-grid,
+.menu-sub-indention .menu-sub.sidebar-submenu-grid {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+
+.menu-sub.sidebar-submenu-grid::before {
+    display: none !important;
+}
+
+.sidebar-submenu-grid .menu-item {
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    width: 100% !important;
+}
+
+/* Odd Last Item Full Width */
+.sidebar-submenu-grid .menu-item.is-full-width,
+.sidebar-submenu-grid > .menu-item:last-child:nth-child(odd) {
+    grid-column: span 2 !important;
+    width: 100% !important;
+}
+
+/* Submenu Card Item - 100% Symmetric Centering for Pinned & Unpinned */
+.sidebar-submenu-grid .sidebar-submenu-card,
+.menu-sub .sidebar-submenu-card.menu-link {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    background: #ffffff !important;
+    border: 1px solid #e4e6ef !important;
+    border-radius: 10px !important;
+    padding: 8px 4px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: 76px !important;
+    box-sizing: border-box !important;
+    text-decoration: none !important;
+    color: #3f4254 !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+}
+
+[data-bs-theme='dark'] .sidebar-submenu-grid .sidebar-submenu-card,
+[data-bs-theme='dark'] .menu-sub .sidebar-submenu-card.menu-link {
+    background: #1b1b28 !important;
+    border-color: #2b2b40 !important;
+    color: #92929f !important;
+}
+
+.sidebar-submenu-grid .sidebar-submenu-card .submenu-card-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    text-align: center !important;
+    font-size: 1.65rem !important;
+    line-height: 1 !important;
+    color: #4b5675 !important;
+    margin: 0 auto 6px auto !important;
+    transition: color 0.2s ease, transform 0.2s ease !important;
+}
+
+[data-bs-theme='dark'] .sidebar-submenu-grid .sidebar-submenu-card .submenu-card-icon {
+    color: #92929f !important;
+}
+
+.sidebar-submenu-grid .sidebar-submenu-card .submenu-card-title,
+.sidebar-submenu-grid .sidebar-submenu-card .menu-title {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    margin: 0 auto !important;
+    font-size: 0.725rem !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+    color: #252f4a !important;
+    flex-grow: 0 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+[data-bs-theme='dark'] .sidebar-submenu-grid .sidebar-submenu-card .submenu-card-title,
+[data-bs-theme='dark'] .sidebar-submenu-grid .sidebar-submenu-card .menu-title {
+    color: #cdcdde !important;
+}
+
+/* Hover state */
+.sidebar-submenu-grid .sidebar-submenu-card:hover {
+    border-color: rgba(var(--bs-primary-rgb, 23, 198, 83), 0.5) !important;
+    transform: translateY(-1.5px) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important;
+    background: #ffffff !important;
+}
+
+.sidebar-submenu-grid .sidebar-submenu-card:hover .submenu-card-icon {
+    color: var(--bs-primary, #17c653) !important;
+    transform: scale(1.08) !important;
+}
+
+/* Active state (matching user reference image) */
+.sidebar-submenu-grid .sidebar-submenu-card.active,
+.menu-sub .sidebar-submenu-card.menu-link.active {
+    background: var(--bs-primary-light, #e8fff3) !important;
+    border: 1.5px solid var(--bs-primary, #17c653) !important;
+    box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb, 23, 198, 83), 0.15) !important;
+}
+
+[data-bs-theme='dark'] .sidebar-submenu-grid .sidebar-submenu-card.active,
+[data-bs-theme='dark'] .menu-sub .sidebar-submenu-card.menu-link.active {
+    background: rgba(var(--bs-primary-rgb, 23, 198, 83), 0.12) !important;
+    border-color: var(--bs-primary, #17c653) !important;
+}
+
+.sidebar-submenu-grid .sidebar-submenu-card.active .submenu-card-icon {
+    color: var(--bs-primary, #17c653) !important;
+}
+
+.sidebar-submenu-grid .sidebar-submenu-card.active .submenu-card-title,
+.sidebar-submenu-grid .sidebar-submenu-card.active .menu-title {
+    color: var(--bs-primary, #17c653) !important;
+    font-weight: 700 !important;
+}
+
+.sidebar-submenu-grid .sidebar-submenu-card.is-full-width {
+    width: 100% !important;
+    padding: 10px 12px !important;
+}
+
+/* Hide submenu completely in minimized (folded/unpinned) sidebar */
+body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-submenu-grid {
+    display: none !important;
+}
+
+
