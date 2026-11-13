@@ -918,21 +918,28 @@
     }
 
     /* Submenu Grid di Unpin Flyout (Hover): Tetap 2-Kolom Simetris & Rata Tengah */
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-sub.sidebar-submenu-grid {
-        display: none !important;
-        padding: 8px 0 !important;
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-sub.menu-sub-accordion {
+        display: none;
+        padding: 0 !important;
         margin: 0 !important;
         border: none !important;
         background: transparent !important;
+        overflow: hidden !important;
     }
 
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.menu-accordion.show > .menu-sub.sidebar-submenu-grid,
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.menu-accordion.here.show > .menu-sub.sidebar-submenu-grid,
-    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-sub.sidebar-submenu-grid.show {
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.menu-accordion.show > .menu-sub.menu-sub-accordion,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-item.menu-accordion.here.show > .menu-sub.menu-sub-accordion,
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .menu-sub.menu-sub-accordion.show {
+        display: block !important;
+    }
+
+    body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-grid {
         display: grid !important;
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 8px !important;
+        padding: 6px 2px 8px 2px !important;
         width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-submenu-grid .menu-item {
@@ -1544,33 +1551,50 @@ body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-report-se
    Grid Card Submenu Styling (Sub-menu Cards Only)
    ========================================================================== */
 
-/* Submenu 2-column Grid: Hidden by default, only visible when accordion is shown */
-.menu-sub.sidebar-submenu-grid {
+/* Submenu Accordion Container: Silky Smooth Slide */
+.app-sidebar .menu-sub.menu-sub-accordion {
     display: none;
-    padding: 8px 0 !important;
+    padding: 0 !important;
     margin: 0 !important;
     border: none !important;
     background: transparent !important;
+    overflow: hidden;
 }
 
-/* Shown state for accordion grid */
-.menu-item.menu-accordion.show > .menu-sub.sidebar-submenu-grid,
-.menu-item.menu-accordion.here.show > .menu-sub.sidebar-submenu-grid,
-.menu-sub.sidebar-submenu-grid.show {
+.app-sidebar .menu-item.menu-accordion.show > .menu-sub.menu-sub-accordion,
+.app-sidebar .menu-item.menu-accordion.here.show > .menu-sub.menu-sub-accordion,
+.app-sidebar .menu-sub.menu-sub-accordion.show {
+    display: block !important;
+}
+
+/* Submenu 2-column Grid: Always 2 columns so no reflow occurs during slide animations */
+.sidebar-submenu-grid {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
+    padding: 6px 2px 8px 2px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 /* Ensure no default indentation from Metronic interferes with the grid */
-.menu-sub.sidebar-submenu-grid,
-.menu-sub-indention .menu-sub.sidebar-submenu-grid {
+.app-sidebar .menu-sub-indention .menu-sub.menu-sub-accordion {
     padding-left: 0 !important;
     margin-left: 0 !important;
 }
 
-.menu-sub.sidebar-submenu-grid::before {
+.app-sidebar .menu-sub.menu-sub-accordion::before {
     display: none !important;
+}
+
+/* Smooth rotating chevron arrow */
+.app-sidebar .menu-link .menu-arrow {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.app-sidebar .menu-item.menu-accordion.show > .menu-link .menu-arrow {
+    transform: rotate(90deg) !important;
 }
 
 .sidebar-submenu-grid .menu-item {
@@ -1696,6 +1720,7 @@ body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:hover .sidebar-report-se
 }
 
 /* Hide submenu completely in minimized (folded/unpinned) sidebar */
+body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .menu-sub-accordion,
 body[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar:not(:hover) .sidebar-submenu-grid {
     display: none !important;
 }

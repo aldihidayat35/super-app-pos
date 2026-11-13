@@ -145,22 +145,24 @@
                                 <span class="menu-title">{{ $item['label'] }}</span>
                                 <span class="menu-arrow"></span>
                             </span>
-                            <div class="menu-sub menu-sub-accordion sidebar-submenu-grid {{ $isOpen ? 'show' : '' }}">
-                                @foreach ($children as $child)
-                                    @php
-                                        $childActive = request()->routeIs(...$child['active'])
-                                            && (!isset($child['active_report']) || request()->route('report') === $child['active_report']);
-                                        $isLastOdd = $loop->last && ($loop->count % 2 !== 0);
-                                    @endphp
-                                    <div class="menu-item {{ $isLastOdd ? 'is-full-width' : '' }}">
-                                        <a class="menu-link sidebar-submenu-card {{ $childActive ? 'active' : '' }} {{ $isLastOdd ? 'is-full-width' : '' }}"
-                                            href="{{ route($child['route'], $child['route_params'] ?? []) }}" title="{{ $child['label'] }}"
-                                            {{ $child['route'] === 'retail.pos.index' ? 'data-no-spa' : '' }}>
-                                            <i class="submenu-card-icon {{ $child['icon'] ?? 'ki-outline ki-package' }}"></i>
-                                            <span class="menu-title submenu-card-title">{{ $child['label'] }}</span>
-                                        </a>
-                                    </div>
-                                @endforeach
+                            <div class="menu-sub menu-sub-accordion {{ $isOpen ? 'show' : '' }}">
+                                <div class="sidebar-submenu-grid">
+                                    @foreach ($children as $child)
+                                        @php
+                                            $childActive = request()->routeIs(...$child['active'])
+                                                && (!isset($child['active_report']) || request()->route('report') === $child['active_report']);
+                                            $isLastOdd = $loop->last && ($loop->count % 2 !== 0);
+                                        @endphp
+                                        <div class="menu-item {{ $isLastOdd ? 'is-full-width' : '' }}">
+                                            <a class="menu-link sidebar-submenu-card {{ $childActive ? 'active' : '' }} {{ $isLastOdd ? 'is-full-width' : '' }}"
+                                                href="{{ route($child['route'], $child['route_params'] ?? []) }}" title="{{ $child['label'] }}"
+                                                {{ $child['route'] === 'retail.pos.index' ? 'data-no-spa' : '' }}>
+                                                <i class="submenu-card-icon {{ $child['icon'] ?? 'ki-outline ki-package' }}"></i>
+                                                <span class="menu-title submenu-card-title">{{ $child['label'] }}</span>
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     @else
