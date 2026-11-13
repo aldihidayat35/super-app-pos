@@ -1,82 +1,143 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Konfigurasi Umum Sistem - ' . config('app.name'))
-@section('page_title', 'Konfigurasi Umum')
+@section('title', 'Pengaturan Umum Sistem - ' . config('app.name'))
+@section('page_title', 'Pengaturan Umum')
 
 @section('page_guide')
     <x-metronic.page-guide id="admin-settings-general" title="Panduan Konfigurasi Umum Sistem">
-        <x-slot:function><p>Form mengelola identitas perusahaan dan preferensi sistem seperti mata uang, zona waktu, dan tax rate default.</p></x-slot:function>
-        <x-slot:parts><ul><li><strong>Nama Perusahaan:</strong> identitas legal bisnis (wajib).</li><li><strong>Alamat/Telepon/Email:</strong> kontak perusahaan.</li><li><strong>Logo:</strong> gambar logo perusahaan (max 2MB).</li><li><strong>Setting Tambahan:</strong> mata uang, zona waktu, tax rate, dll.</li></ul></x-slot:parts>
-        <x-slot:impacts><p>Perubahan identitas mempengaruhi header invoice, report, dan branding sistem.</p></x-slot:impacts>
-        <x-slot:operation><ol><li>Periksa identitas perusahaan.</li><li>Ubah preferensi sistem.</li><li>Simpan perubahan.</li></ol></x-slot:operation>
-        <x-slot:warnings><div class="alert alert-warning mb-0"><ul><li>Perubahan mata uang default tidak mengubah transaksi yang sudah ada.</li></ul></div></x-slot:warnings>
-        <x-slot:example><p>PT SuperApp POS Indonesia, Jakarta, mata uang IDR, timezone WIB, tax 10%.</p></x-slot:example>
+        <x-slot:function>
+            <p>Halaman terpadu untuk mengelola seluruh pengaturan utama sistem: identitas perusahaan dan preferensi, konfigurasi printer dan struk/faktur, format nomor dokumen, izin koreksi stok langsung, serta koneksi integrasi WhatsApp dalam tab horizontal tanpa berpindah halaman.</p>
+        </x-slot:function>
+        <x-slot:parts>
+            <ul>
+                <li><strong>Identitas &amp; Preferensi:</strong> Nama perusahaan, logo, kontak, zona waktu, batas upload, dan proteksi margin.</li>
+                <li><strong>Pengaturan Printer:</strong> Profil termal POS 80mm/58mm, ukuran kertas continuous form Epson LX-310, dan kustomisasi cetak.</li>
+                <li><strong>Nomor Dokumen:</strong> Format penomoran otomatis dokumen PO, SO, GR, Invoice, Transfer, Retur, dll.</li>
+                <li><strong>Akses Koreksi Stok:</strong> Pengendalian window waktu pembukaan akses koreksi stok bagi kepala cabang/gudang.</li>
+                <li><strong>Koneksi WhatsApp:</strong> Integrasi gateway notifikasi WhatsApp perusahaan.</li>
+            </ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Pengaturan ini memengaruhi branding, cetakan fisik kasir dan gudang, validasi audit nomor urut transaksi, serta notifikasi resmi ke pelanggan.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol>
+                <li>Pilih tab horizontal yang ingin dikonfigurasi.</li>
+                <li>Sesuaikan nilai parameter sesuai kebutuhan operasional.</li>
+                <li>Klik tombol Simpan pada masing-masing tab. Halaman akan mempertahankan tab aktif.</li>
+            </ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0">
+                <ul>
+                    <li>Perubahan format nomor dokumen hanya berlaku untuk dokumen baru ke depannya.</li>
+                    <li>Aktivasi akses koreksi stok dicatat sebagai audit keamanan berisiko tinggi.</li>
+                </ul>
+            </div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>PT SuperApp POS Indonesia, printer termal 80mm, prefix invoice INV/{year}/{sequence}, integrasi WA terhubung.</p>
+        </x-slot:example>
     </x-metronic.page-guide>
 @endsection
 
 @section('content')
-    <form method="POST" action="{{ route('admin.settings.general.update') }}" enctype="multipart/form-data" novalidate>
-        @csrf
-        @method('PUT')
-        <div class="row g-6">
-            <div class="col-lg-6">
-                <x-metronic.card title="Identitas Perusahaan">
-                    <x-metronic.form-group name="company_name" label="Nama Perusahaan" required>
-                        <input name="company_name" value="{{ old('company_name', $settings['company_name']) }}" class="form-control @error('company_name') is-invalid @enderror" required>
-                    </x-metronic.form-group>
-                    <x-metronic.form-group name="company_address" label="Alamat Perusahaan">
-                        <textarea name="company_address" rows="3" class="form-control @error('company_address') is-invalid @enderror">{{ old('company_address', $settings['company_address']) }}</textarea>
-                    </x-metronic.form-group>
-                    <x-metronic.form-group name="company_phone" label="Telepon Perusahaan">
-                        <input name="company_phone" value="{{ old('company_phone', $settings['company_phone']) }}" class="form-control @error('company_phone') is-invalid @enderror">
-                    </x-metronic.form-group>
-                    <x-metronic.form-group name="company_email" label="Email Perusahaan">
-                        <input type="email" name="company_email" value="{{ old('company_email', $settings['company_email']) }}" class="form-control @error('company_email') is-invalid @enderror">
-                    </x-metronic.form-group>
-                    <x-metronic.form-group name="logo" label="Logo" help="Format gambar, maksimal 2 MB.">
-                        <input type="file" name="logo" class="form-control @error('logo') is-invalid @enderror" accept="image/*">
-                    </x-metronic.form-group>
-                </x-metronic.card>
-            </div>
-            <div class="col-lg-6">
-                <x-metronic.card title="Preferensi Sistem">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <x-metronic.form-group name="timezone" label="Timezone" required>
-                                <input name="timezone" value="{{ old('timezone', $settings['timezone']) }}" class="form-control @error('timezone') is-invalid @enderror" required>
-                            </x-metronic.form-group>
-                        </div>
-                        <div class="col-md-3">
-                            <x-metronic.form-group name="locale" label="Locale" required>
-                                <input name="locale" value="{{ old('locale', $settings['locale']) }}" class="form-control @error('locale') is-invalid @enderror" required>
-                            </x-metronic.form-group>
-                        </div>
-                        <div class="col-md-3">
-                            <x-metronic.form-group name="currency" label="Mata Uang" required>
-                                <input name="currency" value="{{ old('currency', $settings['currency']) }}" class="form-control @error('currency') is-invalid @enderror" required>
-                            </x-metronic.form-group>
-                        </div>
-                    </div>
-                    <x-metronic.form-group name="upload_limit_mb" label="Batas Upload (MB)" required>
-                        <input type="number" min="1" max="100" name="upload_limit_mb" value="{{ old('upload_limit_mb', $settings['upload_limit_mb']) }}" class="form-control @error('upload_limit_mb') is-invalid @enderror" required>
-                    </x-metronic.form-group>
-                    <x-metronic.form-group name="default_minimum_margin_percent" label="Default Margin Minimum (%)" required>
-                        <input type="number" step="0.01" min="0" max="100" name="default_minimum_margin_percent" value="{{ old('default_minimum_margin_percent', $settings['default_minimum_margin_percent']) }}" class="form-control @error('default_minimum_margin_percent') is-invalid @enderror" required>
-                    </x-metronic.form-group>
-                    <x-metronic.form-group name="overpricing_tolerance_percent" label="Toleransi Overpricing (%)" required>
-                        <input type="number" step="0.01" min="0" max="100" name="overpricing_tolerance_percent" value="{{ old('overpricing_tolerance_percent', $settings['overpricing_tolerance_percent']) }}" class="form-control @error('overpricing_tolerance_percent') is-invalid @enderror" required>
-                    </x-metronic.form-group>
-                    <x-metronic.form-group name="invoice_template" label="Template Invoice" required>
-                        <input name="invoice_template" value="{{ old('invoice_template', $settings['invoice_template']) }}" class="form-control @error('invoice_template') is-invalid @enderror" required>
-                    </x-metronic.form-group>
-                    <x-metronic.form-group name="receipt_template" label="Template Struk" required>
-                        <input name="receipt_template" value="{{ old('receipt_template', $settings['receipt_template']) }}" class="form-control @error('receipt_template') is-invalid @enderror" required>
-                    </x-metronic.form-group>
-                </x-metronic.card>
-            </div>
+    {{-- NAVIGASI TAB HORIZONTAL TERPUSAT --}}
+    <div class="card card-flush shadow-xs border border-gray-200 mb-6">
+        <div class="card-body py-3">
+            <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x fs-6 border-transparent" id="settingsTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active fw-bold d-flex align-items-center py-3" data-bs-toggle="tab" href="#tab_general" role="tab">
+                        <i class="ki-outline ki-setting-2 fs-4 me-2"></i> Identitas &amp; Preferensi
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bold d-flex align-items-center py-3" data-bs-toggle="tab" href="#tab_printer" role="tab">
+                        <i class="ki-outline ki-printer fs-4 me-2"></i> Pengaturan Printer
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bold d-flex align-items-center py-3" data-bs-toggle="tab" href="#tab_docnum" role="tab">
+                        <i class="ki-outline ki-document fs-4 me-2"></i> Nomor Dokumen
+                    </a>
+                </li>
+                @can('stock_direct_adjustments.manage_access')
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold d-flex align-items-center py-3" data-bs-toggle="tab" href="#tab_stock_adjustment" role="tab">
+                            <i class="ki-outline ki-key fs-4 me-2"></i> Akses Koreksi Stok
+                        </a>
+                    </li>
+                @endcan
+                @can('whatsapp_connection.view')
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold d-flex align-items-center py-3" data-bs-toggle="tab" href="#tab_whatsapp" role="tab">
+                            <i class="ki-outline ki-whatsapp fs-4 me-2"></i> Pengaturan WhatsApp
+                        </a>
+                    </li>
+                @endcan
+            </ul>
         </div>
-        <div class="d-flex justify-content-end mt-6">
-            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+    </div>
+
+    {{-- KONTEN MASING-MASING TAB --}}
+    <div class="tab-content" id="settingsTabContent">
+        <div class="tab-pane fade show active" id="tab_general" role="tabpanel">
+            @include('admin.settings.partials._tab_general')
         </div>
-    </form>
+
+        <div class="tab-pane fade" id="tab_printer" role="tabpanel">
+            @include('admin.settings.partials._tab_printer')
+        </div>
+
+        <div class="tab-pane fade" id="tab_docnum" role="tabpanel">
+            @include('admin.settings.partials._tab_document_numbers')
+        </div>
+
+        @can('stock_direct_adjustments.manage_access')
+            <div class="tab-pane fade" id="tab_stock_adjustment" role="tabpanel">
+                @include('admin.settings.partials._tab_stock_adjustment')
+            </div>
+        @endcan
+
+        @can('whatsapp_connection.view')
+            <div class="tab-pane fade" id="tab_whatsapp" role="tabpanel">
+                @include('admin.settings.partials._tab_whatsapp')
+            </div>
+        @endcan
+    </div>
 @endsection
+
+@push('scripts')
+<script>
+    $(function() {
+        // Handle URL Hash navigation on load
+        var hash = window.location.hash;
+        if (hash) {
+            var triggerEl = document.querySelector('#settingsTabs a[href="' + hash + '"]');
+            if (triggerEl) {
+                var tab = new bootstrap.Tab(triggerEl);
+                tab.show();
+            }
+        }
+
+        // Sync URL Hash on tab switch without scrolling
+        $('#settingsTabs a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+            var target = $(e.target).attr('href');
+            if (history.replaceState) {
+                history.replaceState(null, null, target);
+            } else {
+                location.hash = target;
+            }
+        });
+    });
+
+    function openTestPrint(type) {
+        var url = "{{ url('/admin/settings/printer/test') }}/" + type;
+        var width = type === 'thermal' ? 420 : 850;
+        var height = 650;
+        var left = (screen.width - width) / 2;
+        var top = (screen.height - height) / 2;
+        window.open(url, 'TestPrintWindow', 'width=' + width + ',height=' + height + ',top=' + top + ',left=' + left + ',scrollbars=yes');
+    }
+</script>
+@endpush

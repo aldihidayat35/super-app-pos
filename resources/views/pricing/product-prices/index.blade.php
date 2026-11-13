@@ -1,48 +1,47 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Harga Produk per Ring & Lokasi - ' . config('app.name'))
-@section('page_title', 'Harga Produk per Ring & Lokasi')
+@section('title', 'Harga Produk - ' . config('app.name'))
+@section('page_title', 'Harga Produk')
 
 @section('page_guide')
     <x-metronic.page-guide
         id="product-prices"
-        title="Panduan Modul Setting Harga Produk"
-        description="Atur harga jual produk per lokasi untuk 3 ring harga (Retail, B2B, POS) dengan rincian HPP bertingkat tanpa proses approval.">
+        title="Panduan Modul Setting Harga Jual Produk"
+        description="Atur harga jual minimum produk per lokasi secara cepat tanpa approval. Dilengkapi kalkulator margin real-time dan proteksi anti-rugi.">
         <x-slot:function>
-            Mengatur dan memperbarui harga produk aktif langsung per lokasi penugasan atau global untuk berbagai channel penjualan secara independen per produk.
+            Mengatur dan memperbarui harga jual produk aktif langsung per lokasi penugasan. Harga jual minimum disinkronkan ke seluruh channel kasir dan penjualan.
         </x-slot:function>
         <x-slot:workflow>
-            1. Pilih lokasi kerja (Super Admin bebas memilih; role lain terkunci ke lokasi penugasan).<br>
-            2. Periksa informasi produk dan rincian HPP (termasuk tingkatan HPP bertingkat bila ada).<br>
-            3. Masukkan nominal harga pada 3 Ring Harga (Retail, B2B, POS).<br>
-            4. Atur masa berlaku (default Unlimited tanpa batas waktu).<br>
-            5. Klik tombol "Simpan" pada baris produk bersangkutan untuk menyimpan langsung.
+            1. Pilih lokasi penugasan (Super Admin bebas memilih; pengguna lain terkunci pada lokasi kerja masing-masing).<br>
+            2. Periksa harga aktif sebelumnya dan HPP acuan pada daftar produk.<br>
+            3. Masukkan nominal harga baru pada kolom Update Harga (margin/laba terhitung otomatis).<br>
+            4. Klik tombol "Update" pada baris produk yang ingin disimpan, atau klik "Simpan Semua Perubahan" untuk menyimpan sekaligus.
         </x-slot:workflow>
         <x-slot:parts>
-            - <strong>Pilihan Lokasi</strong>: Membatasi harga hanya berlaku pada lokasi kerja aktif.<br>
-            - <strong>Rincian HPP</strong>: Menampilkan lapisan biaya stok per produk agar penetapan harga tetap menghasilkan laba.<br>
-            - <strong>3 Ring Harga</strong>: Ring Retail, Ring B2B, dan Ring POS.<br>
-            - <strong>Masa Berlaku</strong>: Periode aktif harga (default tanpa batas waktu).<br>
-            - <strong>Audit Log</strong>: Setiap perubahan harga otomatis dicatat lengkap bersama akun pengubah dan waktu transaksi.
+            - <strong>Pilihan Lokasi</strong>: Membatasi harga berlaku pada lokasi kerja aktif.<br>
+            - <strong>Harga Sebelumnya</strong>: Nominal harga minimum yang aktif berlaku saat ini.<br>
+            - <strong>HPP Acuan</strong>: Nilai modal produk untuk panduan batas bawah anti-rugi.<br>
+            - <strong>Kolom Update Harga</strong>: Input nominal harga baru dengan kalkulator margin langsung.<br>
+            - <strong>Simpan Masal</strong>: Tombol untuk menyimpan seluruh baris yang diubah secara bersamaan.
         </x-slot:parts>
         <x-slot:impacts>
-            Perubahan harga langsung berlaku seketika (tanpa antrian approval) pada POS, Retail, atau B2B sesuai lokasi kerja yang dipilih.
+            Harga langsung aktif di kasir POS dan sistem penjualan tanpa menunggu proses approval. Setiap perubahan otomatis tercatat di Histori Harga.
         </x-slot:impacts>
         <x-slot:operation>
-            Cukup ubah nominal pada kolom ring harga yang diinginkan lalu tekan tombol <em>Simpan</em> di sisi kanan baris produk.
+            Ketik nominal harga baru, lalu klik tombol Update per baris atau klik tombol Simpan Semua Perubahan di atas tabel.
         </x-slot:operation>
         <x-slot:warnings>
-            Pastikan harga jual berada di atas HPP untuk menjaga margin usaha. Pengguna yang menyimpan harga bertanggung jawab penuh atas nilai harga yang diinput.
+            Pastikan harga jual berada di atas HPP modal. Sistem akan memberi peringatan jika harga diatur di bawah modal.
         </x-slot:warnings>
         <x-slot:example>
-            Produk Tumbler memiliki HPP Tingkat 1 Rp10.000 dan Tingkat 2 Rp12.000. Pengguna mengisi Ring Retail Rp16.000, Ring POS Rp16.000, dan Ring B2B Rp14.000 lalu menekan Simpan.
+            Produk Sabun memiliki HPP Rp8.000 dan Harga Sebelumnya Rp10.000. Pengguna mengetik Rp11.000 pada kolom update harga (terlihat estimasi laba Rp3.000) lalu menekan tombol Update.
         </x-slot:example>
     </x-metronic.page-guide>
 @endsection
 
 @section('toolbar_actions')
     <a href="{{ route('pricing.history.index') }}" class="btn btn-sm btn-light-info me-2">
-        <i class="ki-outline ki-time fs-5 me-1"></i> Riwayat Audit Harga
+        <i class="ki-outline ki-time fs-5 me-1"></i> Riwayat Histori Harga
     </a>
     <button type="button" class="btn btn-sm btn-light-primary me-2" data-bs-toggle="collapse" data-bs-target="#bulkPriceCollapse" aria-expanded="false" aria-controls="bulkPriceCollapse">
         <i class="ki-outline ki-element-plus fs-5 me-1"></i> Atur Banyak Produk Sekaligus
@@ -54,42 +53,15 @@
 
 @push('styles')
 <style>
-    /* Styling Ring Prices Table */
-    .table-pricing th { vertical-align: middle; }
-    .table-pricing td { vertical-align: middle; }
-    .ring-price-cell { min-width: 155px; max-width: 195px; }
-    .ring-input-wrap {
-        display: flex;
-        align-items: center;
-        gap: 3px;
-        margin-bottom: 2px;
-    }
-    .ring-input-wrap:last-child {
-        margin-bottom: 0;
-    }
-    .ring-lbl {
-        font-size: 10px;
+    .table-pricing th, .table-pricing td { vertical-align: middle; }
+    .price-input-box {
         font-weight: 700;
-        width: 32px;
-        text-align: right;
-        flex-shrink: 0;
-        user-select: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .ring-input-box {
-        height: 25px;
-        font-size: 11px;
-        padding: 1px 6px;
-    }
-    .ring-input-box.is-recommended {
-        height: 27px;
-        font-weight: 700;
-        background-color: #fff;
+    .price-input-box.is-changed {
         border-color: var(--bs-primary);
-        box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), 0.15);
-    }
-    .ring-input-box.is-recommended:focus {
-        border-color: var(--bs-primary);
-        box-shadow: 0 0 0 0.15rem rgba(var(--bs-primary-rgb), 0.2);
+        background-color: rgba(var(--bs-primary-rgb), 0.04);
+        box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), 0.2);
     }
     .row-saved-flash {
         animation: rowFlash 1.5s ease-out;
@@ -98,12 +70,9 @@
         0% { background-color: rgba(40, 167, 69, 0.25); }
         100% { background-color: transparent; }
     }
-    .w-fit { width: fit-content; }
 
-    /* Modern Product Picker (Multi-Select Dropdown with Search for Bulk Drawer) */
-    :root {
-        --pp-primary-rgb: var(--bs-primary-rgb, 13, 110, 253);
-    }
+    /* Product Picker Styling for Drawer */
+    :root { --pp-primary-rgb: var(--bs-primary-rgb, 13, 110, 253); }
     .pp-picker-container { position: relative; width: 100%; z-index: 1050; }
     .pp-trigger {
         position: relative; width: 100%; min-height: 44px;
@@ -113,30 +82,20 @@
         cursor: text; transition: border-color .2s, box-shadow .2s, background .15s;
     }
     .pp-trigger:hover { border-color: var(--bs-gray-400); background: #fff; }
-    .pp-trigger:focus-within, .pp-trigger.open {
-        border-color: var(--bs-primary); background: #fff;
-        box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .15);
-    }
     .pp-arrow {
         position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
-        color: var(--bs-gray-500); transition: transform .2s, color .2s;
-        pointer-events: none; z-index: 2;
+        color: var(--bs-gray-500); pointer-events: none;
     }
-    .pp-trigger.open .pp-arrow { transform: translateY(-50%) rotate(180deg); color: var(--bs-primary); }
     .pp-chip {
         display: inline-flex; align-items: center; gap: .25rem;
         background: rgba(var(--bs-primary-rgb), .12); color: var(--bs-primary);
         border: 1px solid rgba(var(--bs-primary-rgb), .25);
         border-radius: .375rem; padding: .2rem .4rem .2rem .6rem;
-        font-size: .8rem; font-weight: 500; white-space: nowrap; line-height: 1.4;
+        font-size: .8rem; font-weight: 500;
     }
-    .pp-chip-remove {
-        background: none; border: none; color: inherit; cursor: pointer;
-        font-size: .9rem; line-height: 1; padding: 0 1px; opacity: .6;
-    }
-    .pp-chip-remove:hover { opacity: 1; color: var(--bs-danger); }
+    .pp-chip-remove { background: none; border: none; color: inherit; cursor: pointer; font-size: .9rem; opacity: .6; }
     .pp-native-select { position: absolute; clip: rect(0,0,0,0); pointer-events: none; }
-    .pp-placeholder { color: var(--bs-gray-400); font-size: .88rem; pointer-events: none; user-select: none; flex: 1; }
+    .pp-placeholder { color: var(--bs-gray-400); font-size: .88rem; pointer-events: none; }
     .pp-dropdown {
         position: absolute; top: calc(100% + 6px); left: 0; right: 0;
         background: #fff; border: 1px solid var(--bs-gray-300);
@@ -144,102 +103,83 @@
         z-index: 1060; display: none; overflow: hidden;
     }
     .pp-dropdown.show { display: block; }
-    .pp-dropdown-header { padding: .6rem .75rem; border-bottom: 1px solid var(--bs-gray-200); position: sticky; top: 0; background: #fff; z-index: 1; }
-    .pp-dropdown-search {
-        width: 100%; border: 1px solid var(--bs-gray-300); border-radius: .4rem;
-        padding: .5rem .75rem; font-size: .88rem; outline: none;
-    }
+    .pp-dropdown-header { padding: .6rem .75rem; border-bottom: 1px solid var(--bs-gray-200); position: sticky; top: 0; background: #fff; }
+    .pp-dropdown-search { width: 100%; border: 1px solid var(--bs-gray-300); border-radius: .4rem; padding: .5rem .75rem; font-size: .88rem; outline: none; }
     .pp-list-wrap { max-height: 280px; overflow-y: auto; }
-    .pp-item {
-        display: flex; align-items: center; gap: .6rem;
-        padding: .5rem .75rem; cursor: pointer; border-bottom: 1px solid var(--bs-gray-100);
-    }
+    .pp-item { display: flex; align-items: center; gap: .6rem; padding: .5rem .75rem; cursor: pointer; border-bottom: 1px solid var(--bs-gray-100); }
     .pp-item:hover { background: var(--bs-gray-50); }
     .pp-item.selected { background: rgba(var(--bs-primary-rgb), .06); }
     .pp-item input[type="checkbox"] { accent-color: var(--bs-primary); width: 16px; height: 16px; }
     .pp-item-info { flex: 1; min-width: 0; }
     .pp-item-sku { font-size: .72rem; color: var(--bs-gray-500); font-family: monospace; }
     .pp-item-name { font-size: .85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .pp-footer {
-        padding: .5rem .75rem; border-top: 1px solid var(--bs-gray-200);
-        display: flex; align-items: center; justify-content: space-between;
-        font-size: .75rem; color: var(--bs-gray-500); background: var(--bs-gray-50);
-    }
-    .pp-footer-btn {
-        background: none; border: 1px solid var(--bs-gray-300); border-radius: .35rem;
-        padding: .2rem .5rem; font-size: .72rem; cursor: pointer; color: var(--bs-gray-600);
-    }
-    .pp-counter {
-        display: inline-flex; align-items: center; gap: .4rem;
-        border: 1px solid var(--bs-gray-200); border-radius: .5rem;
-        background: var(--bs-gray-100); padding: .25rem .6rem; font-size: .75rem;
-        color: var(--bs-gray-500); margin-top: .4rem;
-    }
+    .pp-footer { padding: .5rem .75rem; border-top: 1px solid var(--bs-gray-200); display: flex; align-items: center; justify-content: space-between; font-size: .75rem; color: var(--bs-gray-500); background: var(--bs-gray-50); }
+    .pp-footer-btn { background: none; border: 1px solid var(--bs-gray-300); border-radius: .35rem; padding: .2rem .5rem; font-size: .72rem; cursor: pointer; }
+    .pp-counter { display: inline-flex; align-items: center; gap: .4rem; border: 1px solid var(--bs-gray-200); border-radius: .5rem; background: var(--bs-gray-100); padding: .25rem .6rem; font-size: .75rem; color: var(--bs-gray-500); margin-top: .4rem; }
     .pp-counter.has-items { background: rgba(var(--bs-primary-rgb), .08); color: var(--bs-primary); border-color: rgba(var(--bs-primary-rgb), .2); }
-    .pp-counter-dot {
-        background: var(--bs-gray-300); border-radius: 1rem;
-        color: #fff; font-size: .68rem; font-weight: 700;
-        min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
-    }
+    .pp-counter-dot { background: var(--bs-gray-300); border-radius: 1rem; color: #fff; font-size: .68rem; font-weight: 700; min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
     .pp-counter.has-items .pp-counter-dot { background: var(--bs-primary); }
 </style>
 @endpush
 
 @section('content')
-    <!-- 1. Collapsible Bulk Price Assignment (Preserved & Enhanced) -->
+    {{-- Card Menu Navigasi Internal Modul Harga & Margin --}}
+    <div class="row row-cols-1 row-cols-sm-2 g-4 mb-6">
+        <div class="col">
+            <a href="{{ route('pricing.product-prices.index') }}" class="card card-flush h-100 border border-primary border-opacity-50 bg-light-primary text-decoration-none shadow-xs">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="symbol symbol-40px symbol-circle bg-primary me-3 flex-shrink-0">
+                        <span class="symbol-label"><i class="ki-outline ki-price-tag fs-2 text-white"></i></span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fs-7 fw-bold text-gray-900 text-truncate">Harga Produk</div>
+                        <div class="text-muted fs-8 text-truncate">Kelola harga jual &amp; batas minimum</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('pricing.history.index') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 bg-body text-decoration-none shadow-xs">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="symbol symbol-40px symbol-circle bg-light-info me-3 flex-shrink-0">
+                        <span class="symbol-label"><i class="ki-outline ki-time fs-2 text-info"></i></span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fs-7 fw-bold text-gray-900 text-truncate">Histori Perubahan Harga</div>
+                        <div class="text-muted fs-8 text-truncate">Riwayat dan log perubahan harga produk</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 0. Collapsible Bulk Assignment Drawer (Preserved for compatibility & advanced bulk workflows) -->
     <div class="collapse mb-6" id="bulkPriceCollapse">
-        <x-metronic.card title="Input Ring Harga Masal (Banyak Produk Sekaligus)">
+        <x-metronic.card title="Input Harga Masal (Banyak Produk Sekaligus)">
             <form method="POST" action="{{ route('pricing.product-prices.store') }}" class="row g-3 align-items-start" id="product-price-form">
                 @csrf
                 <div class="col-md-4">
                     <div class="fv-row mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label for="product_ids" class="form-label required mb-0">Pilih Produk</label>
-                            <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-bs-toggle="modal" data-bs-target="#visualCatalogModal" title="Pilih dari Katalog Visual">
-                                <i class="ki-outline ki-element-11"></i> Katalog Visual
-                            </button>
-                        </div>
+                        <label for="product_ids" class="form-label required mb-2">Pilih Produk</label>
                         <div class="pp-picker-container w-100" data-product-picker="true">
-                            <select id="product_ids" name="product_ids[]"
-                                class="pp-native-select @error('product_ids') is-invalid @enderror"
-                                data-control="native"
-                                multiple required>
+                            <select id="product_ids" name="product_ids[]" class="pp-native-select" data-control="native" multiple required>
                                 @foreach($allProducts as $p)
-                                    <option value="{{ $p->id }}"
-                                        data-sku="{{ $p->sku }}"
-                                        data-name="{{ $p->name }}"
-                                        data-category="{{ $p->category?->name ?? '' }}"
-                                        data-image="{{ $p->main_image_url }}"
-                                        @selected(in_array((string) $p->id, array_map('strval', old('product_ids', [])), true))>
-                                        {{ $p->sku }} — {{ $p->name }}
-                                    </option>
+                                    <option value="{{ $p->id }}" data-sku="{{ $p->sku }}" data-name="{{ $p->name }}" data-category="{{ $p->category?->name ?? '' }}">{{ $p->sku }} — {{ $p->name }}</option>
                                 @endforeach
                             </select>
-
                             <div class="pp-trigger">
-                                <span class="pp-placeholder">Cari dan pilih produk...</span>
+                                <span class="pp-placeholder">Belum ada produk dipilih</span>
                                 <span class="pp-arrow"><i class="ki-outline ki-square-down fs-6"></i></span>
                             </div>
-
                             <div class="pp-dropdown">
-                                <div class="pp-dropdown-header">
-                                    <input type="text" class="pp-dropdown-search" placeholder="Cari berdasarkan SKU, nama, atau kategori...">
-                                </div>
-                                <div class="pp-list-wrap">
-                                    <div class="pp-list-inner"></div>
-                                </div>
+                                <div class="pp-dropdown-header"><input type="text" class="pp-dropdown-search" placeholder="Cari berdasarkan SKU atau nama..."></div>
+                                <div class="pp-list-wrap"><div class="pp-list-inner"></div></div>
                                 <div class="pp-footer"></div>
                             </div>
-
-                            <div class="pp-counter">
-                                <span class="pp-counter-dot">0</span>
-                                <span>Belum ada produk dipilih</span>
-                            </div>
+                            <div class="pp-counter"><span class="pp-counter-dot">0</span><span>Belum ada produk dipilih</span></div>
                         </div>
-                        @error('product_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                 </div>
-
                 <div class="col-md-2">
                     <x-metronic.form-group name="channel" label="Channel" required>
                         <select name="channel" class="form-select">
@@ -260,50 +200,41 @@
                         </select>
                     </x-metronic.form-group>
                 </div>
-
                 <div class="col-md-4">
                     <x-metronic.form-group name="branch_id" label="Cabang" help="Kosongkan untuk memberlakukan harga pada semua cabang.">
                         <select name="branch_id" class="form-select" data-control="select2" data-placeholder="Pilih cabang" data-allow-clear="true" @disabled(! $isSuperAdmin)>
                             <option value=""></option>
                             @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}" @selected((string) old('branch_id', ! $isSuperAdmin ? ($currentLocation ? \App\Models\Branch::where('work_location_id', $currentLocation->id)->value('id') : '') : '') === (string) $branch->id)>{{ $branch->code }} — {{ $branch->name }}</option>
+                                <option value="{{ $branch->id }}">{{ $branch->code }} — {{ $branch->name }}</option>
                             @endforeach
                         </select>
                     </x-metronic.form-group>
                 </div>
-
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <x-metronic.form-group name="recommended_price" label="Harga Jual" required>
                         <input type="number" step="any" min="0" name="recommended_price" class="form-control" placeholder="0" required>
                     </x-metronic.form-group>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <x-metronic.form-group name="starts_at" label="Mulai Berlaku">
                         <input type="date" name="starts_at" value="{{ now()->toDateString() }}" class="form-control">
                     </x-metronic.form-group>
                 </div>
-                <div class="col-md-3">
-                    <x-metronic.form-group name="ends_at" label="Selesai (Kosong = Unlimited)">
-                        <input type="date" name="ends_at" class="form-control" placeholder="Unlimited">
-                    </x-metronic.form-group>
-                </div>
-                <div class="col-md-3">
-                    <x-metronic.form-group name="notes" label="Catatan / Alasan">
+                <div class="col-md-4">
+                    <x-metronic.form-group name="notes" label="Catatan">
                         <input type="text" name="notes" class="form-control" placeholder="Update harga masal">
                     </x-metronic.form-group>
                 </div>
-
                 <div class="col-md-12 text-end">
-                    <button type="submit" class="btn btn-primary" id="save-product-prices" disabled @cannot('prices.update') data-permission-disabled="true" @endcannot>
-                        <span class="indicator-label"><i class="ki-outline ki-check fs-5 me-1"></i> Simpan Harga Masal</span>
-                        <span class="indicator-progress">Menyimpan... <span class="spinner-border spinner-border-sm ms-2"></span></span>
+                    <button type="submit" class="btn btn-primary" id="save-product-prices" disabled>
+                        <i class="ki-outline ki-check fs-5 me-1"></i> Simpan Harga Masal
                     </button>
                 </div>
             </form>
         </x-metronic.card>
     </div>
 
-    <!-- 2. Main Filter Card: Hak Akses & Pilihan Lokasi -->
+    <!-- 1. Filter Lokasi & Pencarian Produk -->
     <x-metronic.card class="mb-6">
         <form method="GET" action="{{ route('pricing.product-prices.index') }}" class="row g-3 align-items-center" id="filter-form">
             <!-- Pilihan Lokasi -->
@@ -382,20 +313,36 @@
         </form>
     </x-metronic.card>
 
-    <!-- 3. Daftar Produk & Setting 4 Ring Harga (Tabel Per Baris) -->
-    <x-metronic.card title="Daftar Harga Produk per Ring">
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <div class="text-muted fs-7">
-                Menampilkan <strong>{{ $products->total() }}</strong> produk aktif.
-                @if($currentLocation)
-                    Harga saat ini diset untuk lokasi: <span class="badge badge-light-primary fw-bold">{{ $currentLocation->name }}</span>
-                @else
-                    Harga saat ini diset untuk: <span class="badge badge-light-secondary fw-bold">Semua Lokasi (Global)</span>
-                @endif
+    <!-- 2. Tabel Harga Produk Sederhana -->
+    <x-metronic.card>
+        <!-- Header Toolbar Tabel: Info & Tombol Simpan Masal -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 pb-3 border-bottom border-gray-200">
+            <div>
+                <h3 class="card-title fw-bolder text-gray-800 fs-4 mb-1">Daftar Harga Produk & Jual Minimum</h3>
+                <div class="text-muted fs-7">
+                    Menampilkan <strong>{{ $products->total() }}</strong> produk aktif.
+                    @if($currentLocation)
+                        Lokasi: <span class="badge badge-light-primary fw-bold">{{ $currentLocation->name }}</span>
+                    @else
+                        Lokasi: <span class="badge badge-light-secondary fw-bold">Semua Lokasi (Global)</span>
+                    @endif
+                </div>
             </div>
+
             <div class="d-flex align-items-center gap-2">
-                <span class="badge badge-light-info fs-8"><i class="ki-outline ki-shield-tick fs-7 me-1"></i> Tanpa Approval (Langsung Aktif)</span>
-                <span class="badge badge-light-success fs-8"><i class="ki-outline ki-document fs-7 me-1"></i> Otomatis Tercatat di Audit Log</span>
+                <span class="badge badge-light-warning fw-bold fs-7 d-none" id="pending-changes-badge">
+                    <i class="ki-outline ki-information fs-6 me-1 text-warning"></i>
+                    <span id="pending-count">0</span> perubahan belum disimpan
+                </span>
+
+                <button type="button" class="btn btn-sm btn-primary" id="btn-batch-save" disabled>
+                    <span class="indicator-label">
+                        <i class="ki-outline ki-check-circle fs-5 me-1"></i> Simpan Semua Perubahan (<span id="batch-count-btn">0</span>)
+                    </span>
+                    <span class="indicator-progress">
+                        Menyimpan... <span class="spinner-border spinner-border-sm ms-2"></span>
+                    </span>
+                </button>
             </div>
         </div>
 
@@ -404,60 +351,41 @@
                 <thead>
                     <tr class="fw-bold text-gray-600 text-uppercase fs-7 bg-light border-bottom border-gray-200">
                         <th class="ps-4 min-w-280px">Informasi Produk</th>
-                        <th class="text-center min-w-160px" style="background-color: rgba(var(--bs-primary-rgb), 0.03);">
-                            <span class="text-primary fw-bolder">Ring Retail</span>
-                            <div class="text-muted fs-9 fw-normal">Min · Acuan · Max</div>
-                        </th>
-                        <th class="text-center min-w-160px">
-                            <span class="text-dark fw-bolder">Ring B2B</span>
-                            <div class="text-muted fs-9 fw-normal">Min · Acuan · Max</div>
-                        </th>
-                        <th class="text-center min-w-160px" style="background-color: rgba(var(--bs-success-rgb), 0.03);">
-                            <span class="text-success fw-bolder">Ring POS</span>
-                            <div class="text-muted fs-9 fw-normal">Min · Acuan · Max</div>
-                        </th>
-                        <th class="text-center min-w-130px">
-                            <span class="fw-bolder">Masa Berlaku</span>
-                            <div class="text-muted fs-9 fw-normal">Default: Unlimited</div>
-                        </th>
-                        <th class="text-end pe-4 min-w-100px">Aksi</th>
+                        <th class="min-w-180px text-center">Harga Sebelumnya & HPP</th>
+                        <th class="min-w-220px">Kolom Update Harga</th>
+                        <th class="text-end pe-4 min-w-180px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                 @forelse($products as $product)
-                    @php($row = $itemsData[$product->id] ?? null)
+                    @php
+                        $row = $itemsData[$product->id] ?? null;
+                        $currentPrice = $row['current_price'] ?? null;
+                        $effectiveHpp = $row['effective_hpp'] ?? '0.00';
+                        $filledCount = (int) ($row['filled_rings_count'] ?? 0);
+                    @endphp
                     <tr id="product-row-{{ $product->id }}" class="product-price-row" data-product-id="{{ $product->id }}">
-                        <!-- Kolom Informasi Produk -->
+                        <!-- 1. Kolom Informasi Produk -->
                         <td class="ps-4">
                             <div class="d-flex align-items-start">
-                                <div class="symbol symbol-40px me-3 flex-shrink-0 mt-1">
+                                <div class="symbol symbol-45px me-3 flex-shrink-0 mt-1">
                                     <x-metronic.image-preview url="{{ $product->main_image_url }}" title="{{ $product->name }}" />
                                 </div>
                                 <div class="d-flex flex-column min-w-0">
-                                    <a href="{{ route('admin.products.show', $product) }}" class="text-gray-900 fw-bold text-hover-primary fs-6 mb-1 text-truncate" title="{{ $product->name }}">
+                                    <a href="{{ route('admin.products.show', $product) }}" class="text-gray-900 fw-bolder text-hover-primary fs-6 mb-1 text-truncate" title="{{ $product->name }}">
                                         {{ $product->name }}
                                     </a>
                                     <div class="d-flex align-items-center gap-1 flex-wrap fs-8 text-muted mb-1">
                                         <span class="badge badge-light-dark font-monospace py-0 px-2 fs-9">{{ $product->sku }}</span>
                                         @if($product->category)
-                                             <span class="badge badge-light-secondary py-0 px-2 fs-9">{{ $product->category->name }}</span>
+                                            <span class="badge badge-light-secondary py-0 px-2 fs-9">{{ $product->category->name }}</span>
                                         @endif
                                         @if($product->baseUnit)
-                                            <span class="text-gray-500 fs-9">Satuan: {{ $product->baseUnit->symbol }}</span>
-                                        @endif
-                                        @php($filledCount = (int) ($row['filled_rings_count'] ?? 0))
-                                        @if($filledCount === 0)
-                                            <span class="badge badge-light-danger py-0 px-2 fs-9 fw-semibold" title="Belum memiliki harga ring aktif"><i class="ki-outline ki-cross-circle fs-9 me-1"></i>0/3 Ring</span>
-                                        @elseif($filledCount === 1)
-                                            <span class="badge badge-light-warning py-0 px-2 fs-9 fw-semibold" title="Baru 1 dari 3 ring terisi"><i class="ki-outline ki-information fs-9 me-1"></i>1/3 Ring</span>
-                                        @elseif($filledCount === 2)
-                                            <span class="badge badge-light-info py-0 px-2 fs-9 fw-semibold" title="2 dari 3 ring terisi"><i class="ki-outline ki-information fs-9 me-1"></i>2/3 Ring</span>
-                                        @else
-                                            <span class="badge badge-light-success py-0 px-2 fs-9 fw-bold" title="Ketiga ring harga sudah terisi lengkap"><i class="ki-outline ki-check-circle fs-9 me-1"></i>3/3 Ring Lengkap</span>
+                                            <span class="text-gray-500 fs-9">Satuan: <strong>{{ $product->baseUnit->symbol }}</strong></span>
                                         @endif
                                     </div>
 
-                                    <!-- Tepat di bawah nama produk: Rincian HPP (termasuk HPP Bertingkat) -->
+                                    <!-- Informasi Rincian HPP (termasuk HPP Bertingkat & HPP Dirahasiakan) -->
                                     @if(! ($row['hpp']['can_view'] ?? false))
                                         <div class="mt-1">
                                             <span class="badge badge-light-secondary fs-9"><i class="ki-outline ki-lock fs-9 me-1"></i> HPP Dirahasiakan</span>
@@ -497,168 +425,69 @@
                             </div>
                         </td>
 
-                        <!-- Ring 1: Retail -->
-                        <td class="text-center" style="background-color: rgba(var(--bs-primary-rgb), 0.02);">
-                            <div class="ring-price-cell mx-auto" data-ring="ring_retail">
-                                <div class="ring-input-wrap" title="Batas Minimum Ring Retail">
-                                    <span class="ring-lbl text-muted">Min</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box price-input-min"
-                                            name="prices[ring_retail][min]"
-                                            value="{{ $row['prices']['ring_retail']['min'] ?? '' }}"
-                                            placeholder="{{ $row['prices']['ring_retail']['recommended'] ?? '0' }}"
-                                            aria-label="Ring Retail Min">
-                                    </div>
-                                </div>
-                                <div class="ring-input-wrap bg-light-primary rounded p-1" title="Harga Acuan/Rekomendasi Ring Retail (Muncul Otomatis di Kasir/Order)">
-                                    <span class="ring-lbl text-primary">Acuan</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-8 text-primary fw-bold">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box is-recommended price-input-rec"
-                                            name="prices[ring_retail][recommended]"
-                                            value="{{ $row['prices']['ring_retail']['recommended'] ?? '' }}"
-                                            placeholder="0"
-                                            aria-label="Ring Retail Rekomendasi">
-                                    </div>
-                                </div>
-                                <div class="ring-input-wrap" title="Batas Maksimum Ring Retail">
-                                    <span class="ring-lbl text-muted">Max</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box price-input-max"
-                                            name="prices[ring_retail][max]"
-                                            value="{{ $row['prices']['ring_retail']['max'] ?? '' }}"
-                                            placeholder="{{ $row['prices']['ring_retail']['recommended'] ?? '0' }}"
-                                            aria-label="Ring Retail Max">
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-
-                        <!-- Ring 2: B2B -->
+                        <!-- 2. Kolom Harga Sebelumnya & HPP Acuan -->
                         <td class="text-center">
-                            <div class="ring-price-cell mx-auto" data-ring="ring_b2b">
-                                <div class="ring-input-wrap" title="Batas Minimum Ring B2B">
-                                    <span class="ring-lbl text-muted">Min</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box price-input-min"
-                                            name="prices[ring_b2b][min]"
-                                            value="{{ $row['prices']['ring_b2b']['min'] ?? '' }}"
-                                            placeholder="{{ $row['prices']['ring_b2b']['recommended'] ?? '0' }}"
-                                            aria-label="Ring B2B Min">
+                            <div class="d-flex flex-column align-items-center justify-content-center">
+                                @if($currentPrice !== null)
+                                    <div class="fw-bolder fs-5 text-gray-900 previous-price-label" id="prev-price-{{ $product->id }}">
+                                        Rp {{ number_format((float) $currentPrice, 0, ',', '.') }}
                                     </div>
+                                    <span class="badge badge-light-success fs-9 mt-1"><i class="ki-outline ki-check-circle fs-9 me-1"></i>Harga Aktif</span>
+                                @else
+                                    <span class="badge badge-light-secondary fs-8 previous-price-label" id="prev-price-{{ $product->id }}">
+                                        <i class="ki-outline ki-minus fs-8 me-1"></i>Belum Diset
+                                    </span>
+                                @endif
+
+                                @if(($row['hpp']['can_view'] ?? false) && (float) $effectiveHpp > 0)
+                                    <div class="mt-2 text-muted fs-9">
+                                        Acuan Modal: <span class="fw-bold text-gray-800">Rp {{ number_format((float) $effectiveHpp, 0, ',', '.') }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </td>
+
+                        <!-- 3. Kolom Update Harga Baru -->
+                        <td>
+                            <div class="d-flex flex-column">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text fw-bold text-primary bg-light-primary">Rp</span>
+                                    <input type="number" step="any" min="0"
+                                        class="form-control form-control-sm text-end fs-6 price-input-box row-price-input"
+                                        data-product-id="{{ $product->id }}"
+                                        data-current-price="{{ $currentPrice ?? '' }}"
+                                        data-hpp="{{ $effectiveHpp }}"
+                                        placeholder="{{ $currentPrice ? (float) $currentPrice : 'Masukkan harga baru' }}"
+                                        aria-label="Harga Jual Baru">
                                 </div>
-                                <div class="ring-input-wrap bg-light-primary rounded p-1" title="Harga Acuan/Rekomendasi Ring B2B">
-                                    <span class="ring-lbl text-primary">Acuan</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-8 text-primary fw-bold">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box is-recommended price-input-rec"
-                                            name="prices[ring_b2b][recommended]"
-                                            value="{{ $row['prices']['ring_b2b']['recommended'] ?? '' }}"
-                                            placeholder="0"
-                                            aria-label="Ring B2B Rekomendasi">
-                                    </div>
-                                </div>
-                                <div class="ring-input-wrap" title="Batas Maksimum Ring B2B">
-                                    <span class="ring-lbl text-muted">Max</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box price-input-max"
-                                            name="prices[ring_b2b][max]"
-                                            value="{{ $row['prices']['ring_b2b']['max'] ?? '' }}"
-                                            placeholder="{{ $row['prices']['ring_b2b']['recommended'] ?? '0' }}"
-                                            aria-label="Ring B2B Max">
-                                    </div>
+                                <div class="margin-indicator mt-1 fs-9 text-muted" id="margin-indicator-{{ $product->id }}">
+                                    <span class="text-gray-400">Ketik harga baru untuk estimasi margin</span>
                                 </div>
                             </div>
                         </td>
 
-                        <!-- Ring 3: POS -->
-                        <td class="text-center" style="background-color: rgba(var(--bs-success-rgb), 0.02);">
-                            <div class="ring-price-cell mx-auto" data-ring="ring_pos">
-                                <div class="ring-input-wrap" title="Batas Minimum Ring POS">
-                                    <span class="ring-lbl text-muted">Min</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box price-input-min"
-                                            name="prices[ring_pos][min]"
-                                            value="{{ $row['prices']['ring_pos']['min'] ?? '' }}"
-                                            placeholder="{{ $row['prices']['ring_pos']['recommended'] ?? '0' }}"
-                                            aria-label="Ring POS Min">
-                                    </div>
-                                </div>
-                                <div class="ring-input-wrap bg-light-success rounded p-1" title="Harga Acuan/Rekomendasi Ring POS (Otomatis Masuk Keranjang Kasir)">
-                                    <span class="ring-lbl text-success">Acuan</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-8 text-success fw-bold">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box is-recommended price-input-rec"
-                                            name="prices[ring_pos][recommended]"
-                                            value="{{ $row['prices']['ring_pos']['recommended'] ?? '' }}"
-                                            placeholder="0"
-                                            aria-label="Ring POS Rekomendasi">
-                                    </div>
-                                </div>
-                                <div class="ring-input-wrap" title="Batas Maksimum Ring POS">
-                                    <span class="ring-lbl text-muted">Max</span>
-                                    <div class="input-group input-group-sm flex-grow-1">
-                                        <span class="input-group-text py-0 px-1 fs-9 text-muted">Rp</span>
-                                        <input type="number" step="any" min="0" class="form-control form-control-sm text-end ring-input-box price-input-max"
-                                            name="prices[ring_pos][max]"
-                                            value="{{ $row['prices']['ring_pos']['max'] ?? '' }}"
-                                            placeholder="{{ $row['prices']['ring_pos']['recommended'] ?? '0' }}"
-                                            aria-label="Ring POS Max">
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-
-                        <!-- Masa Berlaku: Default Unlimited -->
-                        <td class="text-center">
-                            <div class="d-flex flex-column align-items-center gap-1">
-                                <div class="form-check form-check-custom form-check-solid form-check-sm">
-                                    <input class="form-check-input unlimited-toggle" type="checkbox"
-                                        id="unlimited_{{ $product->id }}"
-                                        name="unlimited"
-                                        value="1"
-                                        @checked($row['is_unlimited'] ?? true)
-                                        data-product-id="{{ $product->id }}">
-                                    <label class="form-check-label fs-8 fw-semibold text-gray-700 cursor-pointer" for="unlimited_{{ $product->id }}">
-                                        Unlimited
-                                    </label>
-                                </div>
-                                <div id="dates-container-{{ $product->id }}" class="date-range-container d-flex flex-column gap-1 {{ ($row['is_unlimited'] ?? true) ? 'd-none' : '' }}" style="width: 120px;">
-                                    <input type="date" name="starts_at" value="{{ $row['starts_at'] ?? now()->toDateString() }}" class="form-control form-control-sm fs-9 py-1 px-1" title="Mulai Berlaku">
-                                    <input type="date" name="ends_at" value="{{ $row['ends_at'] ?? '' }}" class="form-control form-control-sm fs-9 py-1 px-1" placeholder="Selesai" title="Tanggal Selesai">
-                                </div>
-                            </div>
-                        </td>
-
-                        <!-- Tombol Aksi: Simpan Langsung Per Item -->
+                        <!-- 4. Kolom Aksi -->
                         <td class="text-end pe-4">
-                            <div class="d-flex align-items-center justify-content-end gap-1">
-                                <button type="button" class="btn btn-sm btn-primary px-3 py-2 btn-save-row" data-product-id="{{ $product->id }}" title="Simpan perubahan harga untuk produk ini">
-                                    <span class="indicator-label"><i class="ki-outline ki-check fs-6 me-1"></i> Simpan</span>
+                            <div class="d-flex justify-content-end align-items-center gap-1">
+                                <button type="button" class="btn btn-sm btn-primary py-1 px-3 btn-save-row" data-product-id="{{ $product->id }}" title="Simpan perubahan harga untuk produk ini">
+                                    <span class="indicator-label"><i class="ki-outline ki-check fs-6 me-1"></i> Update</span>
                                     <span class="indicator-progress"><span class="spinner-border spinner-border-sm"></span></span>
                                 </button>
-                                <a href="{{ route('pricing.history.index', ['product_id' => $product->id]) }}" class="btn btn-sm btn-light-info px-2 py-2" title="Lihat riwayat audit harga produk ini">
-                                    <i class="ki-outline ki-time fs-6"></i>
-                                </a>
+                                <button type="button" class="btn btn-sm btn-icon btn-light-danger btn-reset-row d-none" data-product-id="{{ $product->id }}" title="Batalkan perubahan">
+                                    <i class="ki-outline ki-cross fs-6"></i>
+                                </button>
                                 @if(!empty($row['price_model']))
-                                    <a href="{{ route('pricing.product-prices.edit', $row['price_model']) }}" class="btn btn-sm btn-light-secondary px-2 py-2" title="Kelola detail & histori">
-                                        <i class="ki-outline ki-setting-2 fs-6"></i>
-                                    </a>
+                                    <a href="{{ route('pricing.product-prices.edit', $row['price_model']) }}" class="btn btn-sm btn-light-info py-1 px-2" title="Kelola rincian harga"><i class="ki-outline ki-setting-2 fs-6 me-1"></i> Kelola</a>
                                 @endif
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7">
+                        <td colspan="4" class="text-center py-8">
                             <x-metronic.empty-state
                                 title="Tidak ada produk ditemukan"
-                                description="Ubah kata kunci pencarian atau pilih kategori lain." />
+                                description="Ubah kriteria pencarian atau pilih lokasi penugasan lain." />
                         </td>
                     </tr>
                 @endforelse
@@ -670,18 +499,6 @@
             {{ $products->links() }}
         </div>
     </x-metronic.card>
-
-    <!-- Visual Catalog Modals for Bulk Picker -->
-    <x-metronic.visual-catalog-modal 
-        id="visualCatalogModal" 
-        sourceSelector="select#product_ids option"
-        on-select="handleCatalogSelect" 
-    />
-    <x-metronic.visual-catalog-modal 
-        id="visualCatalogModalFilter" 
-        sourceSelector="select#product_ids option"
-        on-select="handleCatalogFilterSelect" 
-    />
 @endsection
 
 @push('scripts')
@@ -690,70 +507,144 @@
     'use strict';
 
     document.addEventListener('DOMContentLoaded', function () {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        const saveItemUrl = "{{ route('pricing.product-prices.save-item') }}";
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+        const saveItemUrl = '{{ route("pricing.product-prices.save-item") }}';
+        const batchSaveUrl = '{{ route("pricing.product-prices.batch-save") }}';
         const selectedLocationId = @json($selectedLocationId);
 
-        // ── 1. Toggle Unlimited Checkbox ──
-        document.querySelectorAll('.unlimited-toggle').forEach(function (toggle) {
-            toggle.addEventListener('change', function () {
-                const productId = this.dataset.productId;
-                const container = document.getElementById('dates-container-' + productId);
-                if (container) {
-                    if (this.checked) {
-                        container.classList.add('d-none');
-                    } else {
-                        container.classList.remove('d-none');
+        const pendingChanges = new Map();
+
+        const pendingBadge = document.getElementById('pending-changes-badge');
+        const pendingCountEl = document.getElementById('pending-count');
+        const btnBatchSave = document.getElementById('btn-batch-save');
+        const batchCountBtn = document.getElementById('batch-count-btn');
+
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount);
+        }
+
+        function updatePendingUI() {
+            const count = pendingChanges.size;
+            if (pendingCountEl) pendingCountEl.textContent = count;
+            if (batchCountBtn) batchCountBtn.textContent = count;
+
+            if (count > 0) {
+                pendingBadge?.classList.remove('d-none');
+                if (btnBatchSave) btnBatchSave.disabled = false;
+            } else {
+                pendingBadge?.classList.add('d-none');
+                if (btnBatchSave) btnBatchSave.disabled = true;
+            }
+        }
+
+        // 1. Real-time Margin Calculation & Pending State on Input (TANPA AUTO SAVE)
+        document.querySelectorAll('.row-price-input').forEach(function (input) {
+            const productId = input.dataset.productId;
+            const hpp = parseFloat(input.dataset.hpp) || 0;
+            const currentPrice = parseFloat(input.dataset.currentPrice) || null;
+            const marginIndicator = document.getElementById('margin-indicator-' + productId);
+            const row = document.getElementById('product-row-' + productId);
+            const resetBtn = row?.querySelector('.btn-reset-row');
+
+            input.addEventListener('input', function () {
+                const rawVal = this.value.trim();
+                const numVal = parseFloat(rawVal);
+
+                if (rawVal === '' || isNaN(numVal) || numVal <= 0) {
+                    this.classList.remove('is-changed');
+                    resetBtn?.classList.add('d-none');
+                    pendingChanges.delete(productId);
+                    if (marginIndicator) {
+                        marginIndicator.innerHTML = '<span class="text-gray-400">Ketik harga baru untuk estimasi margin</span>';
                     }
+                    updatePendingUI();
+                    return;
+                }
+
+                // Kalkulasi Laba / Rugi vs HPP
+                if (hpp > 0) {
+                    const margin = numVal - hpp;
+                    const pct = (margin / hpp) * 100;
+                    if (margin > 0) {
+                        marginIndicator.innerHTML = `<span class="text-success fw-bold"><i class="ki-outline ki-arrow-up fs-9 text-success"></i> Laba: Rp ${formatRupiah(margin)} (+${pct.toFixed(1)}%)</span>`;
+                    } else if (margin < 0) {
+                        marginIndicator.innerHTML = `<span class="text-danger fw-bold"><i class="ki-outline ki-cross fs-9 text-danger"></i> Di bawah modal! Rugi Rp ${formatRupiah(Math.abs(margin))}</span>`;
+                    } else {
+                        marginIndicator.innerHTML = `<span class="text-warning fw-bold">Impas (Sesuai HPP)</span>`;
+                    }
+                } else {
+                    marginIndicator.innerHTML = `<span class="text-primary fw-semibold">Harga baru: Rp ${formatRupiah(numVal)}</span>`;
+                }
+
+                // Check if changed vs current
+                const isChanged = (currentPrice === null) || (Math.abs(numVal - currentPrice) >= 0.01);
+                if (isChanged) {
+                    this.classList.add('is-changed');
+                    resetBtn?.classList.remove('d-none');
+                    pendingChanges.set(productId, { price: numVal, row: row });
+                } else {
+                    this.classList.remove('is-changed');
+                    resetBtn?.classList.add('d-none');
+                    pendingChanges.delete(productId);
+                }
+
+                updatePendingUI();
+            });
+
+            // Enter key trigger single row save
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    row?.querySelector('.btn-save-row')?.click();
                 }
             });
         });
 
-        // ── 2. Save Row Button Click (AJAX per-item save) ──
+        // 2. Tombol Reset per baris
+        document.querySelectorAll('.btn-reset-row').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const productId = this.dataset.productId;
+                const row = document.getElementById('product-row-' + productId);
+                const input = row?.querySelector('.row-price-input');
+                if (input) {
+                    input.value = '';
+                    input.classList.remove('is-changed');
+                    this.classList.add('d-none');
+                    const marginIndicator = document.getElementById('margin-indicator-' + productId);
+                    if (marginIndicator) {
+                        marginIndicator.innerHTML = '<span class="text-gray-400">Ketik harga baru untuk estimasi margin</span>';
+                    }
+                    pendingChanges.delete(productId);
+                    updatePendingUI();
+                }
+            });
+        });
+
+        // 3. Tombol Update per baris (Manual Single Save)
         document.querySelectorAll('.btn-save-row').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 const productId = this.dataset.productId;
                 const row = document.getElementById('product-row-' + productId);
-                if (!row) return;
+                const input = row?.querySelector('.row-price-input');
+                if (!input || !row) return;
 
-                const ringKeys = ['ring_retail', 'ring_b2b', 'ring_pos'];
-                const pricesPayload = {};
+                const val = input.value.trim();
+                if (val === '' || isNaN(parseFloat(val)) || parseFloat(val) <= 0) {
+                    input.classList.add('is-invalid');
+                    input.focus();
+                    return;
+                }
 
-                ringKeys.forEach(function (rKey) {
-                    const minEl = row.querySelector(`input[name="prices[${rKey}][min]"]`);
-                    const recEl = row.querySelector(`input[name="prices[${rKey}][recommended]"]`);
-                    const maxEl = row.querySelector(`input[name="prices[${rKey}][max]"]`);
-
-                    const minVal = minEl ? minEl.value.trim() : '';
-                    const recVal = recEl ? recEl.value.trim() : '';
-                    const maxVal = maxEl ? maxEl.value.trim() : '';
-
-                    if (minVal !== '' || recVal !== '' || maxVal !== '') {
-                        pricesPayload[rKey] = {
-                            min: minVal !== '' ? minVal : null,
-                            recommended: recVal !== '' ? recVal : null,
-                            max: maxVal !== '' ? maxVal : null,
-                        };
-                    }
-                });
-
-                const unlimitedInput  = row.querySelector('input[name="unlimited"]');
-                const startsAtInput   = row.querySelector('input[name="starts_at"]');
-                const endsAtInput     = row.querySelector('input[name="ends_at"]');
+                btn.setAttribute('data-kt-indicator', 'on');
+                btn.disabled = true;
 
                 const payload = {
                     _token: csrfToken,
                     product_id: productId,
                     work_location_id: selectedLocationId,
-                    prices: pricesPayload,
-                    unlimited: unlimitedInput ? (unlimitedInput.checked ? 1 : 0) : 1,
-                    starts_at: startsAtInput ? startsAtInput.value : null,
-                    ends_at: (unlimitedInput && unlimitedInput.checked) ? null : (endsAtInput ? endsAtInput.value : null),
+                    price: val,
+                    unlimited: true,
                 };
-
-                // Indicator on
-                btn.setAttribute('data-kt-indicator', 'on');
-                btn.disabled = true;
 
                 fetch(saveItemUrl, {
                     method: 'POST',
@@ -774,44 +665,33 @@
                     btn.disabled = false;
 
                     if (result.ok && result.data.success) {
-                        // Flash animation
                         row.classList.remove('row-saved-flash');
-                        void row.offsetWidth; // Trigger reflow
+                        void row.offsetWidth;
                         row.classList.add('row-saved-flash');
 
-                        const isWarning = Boolean(result.data.has_warning);
-                        const alertIcon = isWarning ? 'warning' : 'success';
-                        const alertTitle = isWarning ? 'Disimpan dengan Peringatan' : 'Berhasil Disimpan';
+                        const prevPriceEl = document.getElementById('prev-price-' + productId);
+                        if (prevPriceEl) {
+                            prevPriceEl.textContent = 'Rp ' + formatRupiah(parseFloat(val));
+                            prevPriceEl.className = 'fw-bolder fs-5 text-gray-900 previous-price-label';
+                        }
 
-                        if (typeof toastr !== 'undefined') {
-                            if (isWarning) {
-                                toastr.warning(result.data.message || 'Harga berhasil disimpan dengan catatan.');
-                            } else {
-                                toastr.success(result.data.message || 'Harga berhasil disimpan.');
-                            }
-                        } else if (typeof Swal !== 'undefined') {
-                            Swal.fire({
-                                icon: alertIcon,
-                                title: alertTitle,
-                                text: result.data.message || 'Harga berhasil disimpan.',
-                                timer: isWarning ? 4000 : 1500,
-                                showConfirmButton: isWarning,
-                            });
+                        input.dataset.currentPrice = val;
+                        input.placeholder = formatRupiah(parseFloat(val));
+                        input.value = '';
+                        input.classList.remove('is-changed');
+                        row.querySelector('.btn-reset-row')?.classList.add('d-none');
+                        const marginIndicator = document.getElementById('margin-indicator-' + productId);
+                        if (marginIndicator) {
+                            marginIndicator.innerHTML = '<span class="text-success fs-9"><i class="ki-outline ki-check-circle fs-9 text-success"></i> Berhasil disimpan</span>';
                         }
+
+                        pendingChanges.delete(productId);
+                        updatePendingUI();
                     } else {
-                        let errMsg = (result.data && result.data.message) ? result.data.message : 'Gagal menyimpan harga.';
-                        if (result.data && result.data.errors) {
-                            const firstKey = Object.keys(result.data.errors)[0];
-                            if (firstKey && result.data.errors[firstKey][0]) {
-                                errMsg = result.data.errors[firstKey][0];
-                            }
-                        }
-                        if (typeof toastr !== 'undefined') {
-                            toastr.error(errMsg);
-                        } else if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'error', title: 'Terjadi Kesalahan', text: errMsg });
-                        } else {
-                            alert(errMsg);
+                        const errMsg = (result.data && result.data.message) ? result.data.message : 'Gagal menyimpan harga.';
+                        const marginIndicator = document.getElementById('margin-indicator-' + productId);
+                        if (marginIndicator) {
+                            marginIndicator.innerHTML = '<span class="text-danger fs-9 fw-bold"><i class="ki-outline ki-cross-circle fs-9 text-danger"></i> ' + errMsg + '</span>';
                         }
                     }
                 })
@@ -819,46 +699,98 @@
                     btn.removeAttribute('data-kt-indicator');
                     btn.disabled = false;
                     console.error('Save error:', err);
-                    if (typeof toastr !== 'undefined') {
-                        toastr.error('Terjadi kesalahan jaringan.');
+                });
+            });
+        });
+
+        // 4. Tombol Simpan Masal (Batch Save)
+        if (btnBatchSave) {
+            btnBatchSave.addEventListener('click', function () {
+                if (pendingChanges.size === 0) return;
+
+                const items = [];
+                pendingChanges.forEach(function (data, prodId) {
+                    items.push({
+                        product_id: parseInt(prodId, 10),
+                        price: data.price,
+                    });
+                });
+
+                btnBatchSave.setAttribute('data-kt-indicator', 'on');
+                btnBatchSave.disabled = true;
+
+                const payload = {
+                    _token: csrfToken,
+                    work_location_id: selectedLocationId,
+                    items: items,
+                };
+
+                fetch(batchSaveUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        return { ok: res.ok, status: res.status, data: data };
+                    });
+                })
+                .then(function (result) {
+                    btnBatchSave.removeAttribute('data-kt-indicator');
+                    btnBatchSave.disabled = false;
+
+                    if (result.ok && result.data.success) {
+                        items.forEach(function (item) {
+                            const pId = item.product_id.toString();
+                            const pData = pendingChanges.get(pId);
+                            const row = pData?.row || document.getElementById('product-row-' + pId);
+                            if (row) {
+                                row.classList.remove('row-saved-flash');
+                                void row.offsetWidth;
+                                row.classList.add('row-saved-flash');
+
+                                const prevPriceEl = document.getElementById('prev-price-' + pId);
+                                if (prevPriceEl) {
+                                    prevPriceEl.textContent = 'Rp ' + formatRupiah(item.price);
+                                    prevPriceEl.className = 'fw-bolder fs-5 text-gray-900 previous-price-label';
+                                }
+
+                                const input = row.querySelector('.row-price-input');
+                                if (input) {
+                                    input.dataset.currentPrice = item.price;
+                                    input.placeholder = formatRupiah(item.price);
+                                    input.value = '';
+                                    input.classList.remove('is-changed');
+                                }
+
+                                row.querySelector('.btn-reset-row')?.classList.add('d-none');
+                                const marginIndicator = document.getElementById('margin-indicator-' + pId);
+                                if (marginIndicator) {
+                                    marginIndicator.innerHTML = '<span class="text-success fs-9"><i class="ki-outline ki-check-circle fs-9 text-success"></i> Tersimpan</span>';
+                                }
+                            }
+                        });
+
+                        pendingChanges.clear();
+                        updatePendingUI();
                     } else {
-                        alert('Terjadi kesalahan jaringan.');
+                        const errMsg = (result.data && result.data.message) ? result.data.message : 'Gagal menyimpan harga masal.';
+                        console.error('Batch save error:', errMsg);
                     }
+                })
+                .catch(function (err) {
+                    btnBatchSave.removeAttribute('data-kt-indicator');
+                    btnBatchSave.disabled = false;
+                    console.error('Batch save error:', err);
                 });
             });
-        });
+        }
 
-        // ── 3. Pressing Enter inside table price inputs saves the row without submitting top filter form ──
-        document.querySelectorAll('.product-price-row').forEach(function (row) {
-            row.querySelectorAll('.ring-input-box, input[type="date"]').forEach(function (input) {
-                input.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        row.querySelector('.btn-save-row')?.click();
-                    }
-                });
-            });
-
-            // Auto placeholder synchronization: Saat mengetik Rekomendasi/Acuan, update placeholder Min & Max bila kosong
-            row.querySelectorAll('.price-input-rec').forEach(function (recInput) {
-                const ringWrap = recInput.closest('.ring-price-cell');
-                if (!ringWrap) return;
-                const minInput = ringWrap.querySelector('.price-input-min');
-                const maxInput = ringWrap.querySelector('.price-input-max');
-
-                recInput.addEventListener('input', function () {
-                    const val = this.value.trim();
-                    if (minInput && !minInput.value) {
-                        minInput.placeholder = val ? val : '0';
-                    }
-                    if (maxInput && !maxInput.value) {
-                        maxInput.placeholder = val ? val : '0';
-                    }
-                });
-            });
-        });
-
-        // ── 4. Bulk Picker Initialization (Preserved for tests & drawer) ──
+        // 5. Product Picker Initialization for Drawer (Compatibility)
         const wrapper = document.querySelector('[data-product-picker="true"]');
         if (wrapper) {
             const native  = wrapper.querySelector('.pp-native-select');
@@ -876,7 +808,7 @@
                     allProducts.push({
                         id: opt.value,
                         sku: opt.dataset.sku || '',
-                        name: opt.dataset.name || opt.textContent.replace(opt.dataset.sku, '').replace(/^[\s—]+/,''),
+                        name: opt.dataset.name || opt.textContent,
                         category: opt.dataset.category || '',
                     });
                 });
@@ -890,7 +822,7 @@
                             <input type="checkbox" ${isSelected ? 'checked' : ''} value="${p.id}" aria-label="${p.sku}">
                             <div class="pp-item-info">
                                 <div class="pp-item-sku">${escapeHtml(p.sku)}</div>
-                                <div class="pp-item-name">${escapeHtml(p.name)}${p.category ? ` <span class="text-muted fs-8">(${escapeHtml(p.category)})</span>` : ''}</div>
+                                <div class="pp-item-name">${escapeHtml(p.name)}</div>
                             </div>
                         </div>`;
                     });
@@ -971,7 +903,7 @@
                     counter.classList.toggle('has-items', sel > 0);
                     counter.innerHTML = `<span class="pp-counter-dot">${sel}</span><span>${sel === 0 ? 'Belum ada produk dipilih' : sel + ' produk terpilih'}</span>`;
                     const submitButton = document.getElementById('save-product-prices');
-                    if (submitButton && !submitButton.dataset.permissionDisabled) submitButton.disabled = sel === 0;
+                    if (submitButton) submitButton.disabled = sel === 0;
                 }
 
                 buildList(allProducts);
@@ -1025,26 +957,6 @@
             }
         }
     });
-
-    window.handleCatalogSelect = function(product) {
-        const select = document.getElementById('product_ids');
-        if (select) {
-            const option = select.querySelector(`option[value="${product.id}"]`);
-            if (option) {
-                option.selected = true;
-                select.dispatchEvent(new Event('change'));
-                toastr && toastr.success(product.name + ' ditambahkan.');
-            }
-        }
-    };
-
-    window.handleCatalogFilterSelect = function(product) {
-        const filterInput = document.querySelector('input[name="q"]');
-        if (filterInput) {
-            filterInput.value = product.name;
-            filterInput.closest('form').submit();
-        }
-    };
 })();
 </script>
 @endpush

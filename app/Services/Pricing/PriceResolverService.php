@@ -80,7 +80,7 @@ class PriceResolverService
         $discountedUnit = $this->applyDiscount($selectedUnit, $discountPercent);
 
         $belowMinimum = Decimal::compare($discountedUnit, $minimumUnit, 2) < 0;
-        $overpricing = Decimal::compare($selectedUnit, $maximumUnit, 2) > 0;
+        $overpricing = $channel !== 'pos' && Decimal::compare($selectedUnit, $maximumUnit, 2) > 0;
         $discountTooHigh = Decimal::compare($discountPercent, (string) $rule->max_discount_percent, 2) > 0;
         $approvalRequired = $belowMinimum || $overpricing || $discountTooHigh;
 

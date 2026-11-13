@@ -96,7 +96,23 @@ class PosService
             $allocationPlan = $this->planAllocations($calculated['items'], $branch, $emergencyPurchase);
             $approvalItems = collect($calculated['items'])->filter(fn (array $item): bool => $item['price']['approval_required'] === true);
             if ($approvalItems->isNotEmpty()) {
-                $messages = $approvalItems->map(fn (array $item): string => $item['product']->name.' ('.implode(', ', $item['price']['approval_reasons']).')');
+                $messages = $approvalItems->map(function (array $item): string {
+                    $reasons = $item['price']['approval_reasons'] ?? [];
+                    $formattedReasons = array_map(function ($r) use ($item) {
+                        if ($r === 'below_minimum') {
+                            $minRupiah = CurrencyFormatter::rupiah($item['price']['minimum_price']);
+
+                            return "di bawah harga minimum {$minRupiah}";
+                        }
+                        if ($r === 'discount_exceeds_cap') {
+                            return 'diskon melebihi batas maksimum';
+                        }
+
+                        return $r;
+                    }, $reasons);
+
+                    return $item['product']->name.' ('.implode(', ', $formattedReasons).')';
+                });
                 throw ServiceException::validation('Harga/diskon membutuhkan approval dan belum dapat di-checkout: '.$messages->implode('; ').'.');
             }
 

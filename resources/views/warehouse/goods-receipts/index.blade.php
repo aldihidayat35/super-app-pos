@@ -36,6 +36,8 @@
 @endsection
 
 @section('content')
+    <x-warehouse.active-location-card />
+
     <x-metronic.card>
         <form method="GET" class="row g-3 mb-6">
             <div class="col-md-3"><select name="supplier_id" class="form-select form-select-solid"><option value="">Semua supplier</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->id }}" @selected(($filters['supplier_id'] ?? '') == $supplier->id)>{{ $supplier->name }}</option>@endforeach</select></div>

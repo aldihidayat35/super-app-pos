@@ -317,25 +317,41 @@ class PosCatalogService
     {
         $selected = (string) $pricing['discounted_price'];
         $minimum = (string) $pricing['minimum_price'];
-        $maximum = (string) $pricing['maximum_price'];
-        if (in_array('below_minimum', $pricing['approval_reasons'], true)) {
-            return ['code' => 'below', 'label' => 'Di bawah batas', 'message' => CurrencyFormatter::rupiah(Decimal::sub($minimum, $selected, 2)).' di bawah batas minimum. Membutuhkan approval harga.'];
+
+        $isBelowMinimum = Decimal::compare($selected, $minimum, 2) < 0
+            || in_array('below_minimum', $pricing['approval_reasons'], true);
+
+        if ($isBelowMinimum) {
+            $shortage = Decimal::sub($minimum, $selected, 2);
+
+            return [
+                'code' => 'below',
+                'label' => 'Di bawah minimum',
+                'message' => 'Harga jual ('.CurrencyFormatter::rupiah($selected).') di bawah harga minimum barang ('.CurrencyFormatter::rupiah($minimum).', kurang '.CurrencyFormatter::rupiah($shortage).'). Membutuhkan approval.',
+            ];
         }
-        if (in_array('overpricing', $pricing['approval_reasons'], true)) {
-            return ['code' => 'above', 'label' => 'Di atas batas', 'message' => CurrencyFormatter::rupiah(Decimal::sub((string) $pricing['selected_price'], $maximum, 2)).' di atas batas maksimum. Membutuhkan approval harga.'];
+
+        if (in_array('discount_exceeds_cap', $pricing['approval_reasons'], true)) {
+            return [
+                'code' => 'approval',
+                'label' => 'Diskon melebihi batas',
+                'message' => 'Diskon melanggar batas maksimum diskon yang diizinkan.',
+            ];
         }
+
         if ($pricing['approval_required'] === true) {
-            return ['code' => 'approval', 'label' => 'Membutuhkan approval', 'message' => 'Diskon atau harga melanggar kebijakan yang aktif.'];
+            return [
+                'code' => 'approval',
+                'label' => 'Membutuhkan approval',
+                'message' => 'Harga jual membutuhkan persetujuan supervisor.',
+            ];
         }
 
-        $distanceToMinimum = Decimal::sub($selected, $minimum, 2);
-        $safeWidth = Decimal::sub($maximum, $minimum, 2);
-        $nearThreshold = Decimal::mul($safeWidth, '0.10', 2, 2, 2);
-        if (Decimal::compare($distanceToMinimum, $nearThreshold, 2) <= 0 || Decimal::compare(Decimal::sub($maximum, $selected, 2), $nearThreshold, 2) <= 0) {
-            return ['code' => 'near', 'label' => 'Mendekati batas', 'message' => 'Harga masih di dalam pagar, tetapi dekat dengan salah satu batas.'];
-        }
-
-        return ['code' => 'safe', 'label' => 'Aman', 'message' => 'Harga berada di dalam pagar yang diizinkan.'];
+        return [
+            'code' => 'safe',
+            'label' => 'Aman',
+            'message' => 'Harga memenuhi batas minimum barang (Min. '.CurrencyFormatter::rupiah($minimum).').',
+        ];
     }
 
     private function customer(mixed $customerId): ?Customer

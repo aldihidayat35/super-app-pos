@@ -127,8 +127,10 @@ i.ki-duotone::before {
 }
 
 /* Navigasi dan arah. */
-i.ki-arrow-up { --ki-mask: var(--ki-svg-arrow-up); }
+i.ki-arrow-up,
+i.ki-arrow-up-refraction { --ki-mask: var(--ki-svg-arrow-up); }
 i.ki-arrow-down,
+i.ki-arrow-down-refraction,
 i.ki-down,
 i.ki-square-down { --ki-mask: var(--ki-svg-arrow-down); }
 i.ki-arrow-left,
@@ -161,7 +163,8 @@ i.ki-chart-simple,
 i.ki-chart-pie-4,
 i.ki-graph,
 i.ki-graph-up,
-i.ki-pulse { --ki-mask: var(--ki-svg-chart); }
+i.ki-pulse,
+i.ki-data { --ki-mask: var(--ki-svg-chart); }
 i.ki-user,
 i.ki-user-tick,
 i.ki-security-user,
@@ -169,9 +172,11 @@ i.ki-profile,
 i.ki-profile-circle,
 i.ki-profile-user { --ki-mask: var(--ki-svg-user); }
 i.ki-people { --ki-mask: var(--ki-svg-users); }
-i.ki-setting-2 { --ki-mask: var(--ki-svg-settings); }
+i.ki-setting-2,
+i.ki-setting-4 { --ki-mask: var(--ki-svg-settings); }
 i.ki-box,
 i.ki-cube-2,
+i.ki-cube-3,
 i.ki-parcel,
 i.ki-package,
 i.ki-element-11,
@@ -202,6 +207,7 @@ i.ki-document,
 i.ki-bill,
 i.ki-file,
 i.ki-file-pdf,
+i.ki-file-sheet,
 i.ki-input,
 i.ki-note,
 i.ki-notepad,
@@ -216,6 +222,7 @@ i.ki-plus-square { --ki-mask: var(--ki-svg-plus); }
 i.ki-minus-square { --ki-mask: var(--ki-svg-minus); }
 i.ki-close,
 i.ki-close-circle,
+i.ki-close-square,
 i.ki-cross,
 i.ki-cross-circle,
 i.ki-cross-square { --ki-mask: var(--ki-svg-close); }
@@ -240,7 +247,9 @@ i.ki-eye { --ki-mask: var(--ki-svg-eye); }
 i.ki-printer { --ki-mask: var(--ki-svg-printer); }
 i.ki-file-down,
 i.ki-cloud-download { --ki-mask: var(--ki-svg-download); }
-i.ki-file-up { --ki-mask: var(--ki-svg-upload); }
+i.ki-file-up,
+i.ki-cloud-upload,
+i.ki-exit-up { --ki-mask: var(--ki-svg-upload); }
 i.ki-copy { --ki-mask: var(--ki-svg-copy); }
 i.ki-folder { --ki-mask: var(--ki-svg-folder); }
 i.ki-lock,

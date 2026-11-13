@@ -4,6 +4,8 @@
 @section('page_title', 'Pengiriman B2B')
 
 @section('content')
+    <x-warehouse.active-location-card />
+
     <x-metronic.page-title title="Daftar Pengiriman" description="Queue pengiriman, status POD, dan tracking.">
         <a href="{{ route('shipments.create') }}" class="btn btn-primary">Buat Shipment</a>
     </x-metronic.page-title>

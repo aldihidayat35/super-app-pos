@@ -52,6 +52,77 @@
 @endsection
 
 @section('content')
+    <x-warehouse.active-location-card />
+
+    {{-- Grid 5 Menu Aksi Saldo Stok --}}
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-xl-5 g-4 mb-6">
+        <div class="col">
+            <a href="{{ route('warehouse.opening-stocks.import.index') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="symbol symbol-40px symbol-circle bg-light-primary me-3 flex-shrink-0">
+                        <span class="symbol-label"><i class="ki-outline ki-file-up fs-2 text-primary"></i></span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fs-7 fw-bold text-gray-900 text-truncate">Impor Produk</div>
+                        <div class="text-muted fs-8 text-truncate">Saldo awal stok</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('warehouse.stock-transfers.index') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="symbol symbol-40px symbol-circle bg-light-info me-3 flex-shrink-0">
+                        <span class="symbol-label"><i class="ki-outline ki-arrow-right-left fs-2 text-info"></i></span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fs-7 fw-bold text-gray-900 text-truncate">Transfer Cabang</div>
+                        <div class="text-muted fs-8 text-truncate">Mutasi antar lokasi</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('warehouse.location-transfers.index') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="symbol symbol-40px symbol-circle bg-light-success me-3 flex-shrink-0">
+                        <span class="symbol-label"><i class="ki-outline ki-element-plus fs-2 text-success"></i></span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fs-7 fw-bold text-gray-900 text-truncate">Pindah Rak Internal</div>
+                        <div class="text-muted fs-8 text-truncate">Atur rak &amp; bin</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('warehouse.losses.index') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="symbol symbol-40px symbol-circle bg-light-danger me-3 flex-shrink-0">
+                        <span class="symbol-label"><i class="ki-outline ki-cross-circle fs-2 text-danger"></i></span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fs-7 fw-bold text-gray-900 text-truncate">Barang Loss/Rusak</div>
+                        <div class="text-muted fs-8 text-truncate">Catat barang rusak</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('warehouse.stock-opnames.index') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="symbol symbol-40px symbol-circle bg-light-warning me-3 flex-shrink-0">
+                        <span class="symbol-label"><i class="ki-outline ki-clipboard fs-2 text-warning"></i></span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fs-7 fw-bold text-gray-900 text-truncate">Stok Opname</div>
+                        <div class="text-muted fs-8 text-truncate">Penghitungan fisik</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <x-metronic.card>
         <form method="GET" class="row g-3 mb-5">
             <div class="col-md-3"><select name="product_id" class="form-select form-select-solid"><option value="">Semua produk</option>@foreach ($products as $product)<option value="{{ $product->id }}" @selected(($filters['product_id'] ?? '') == $product->id)>{{ $product->sku }} — {{ $product->name }}</option>@endforeach</select></div>

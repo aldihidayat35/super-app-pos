@@ -29,7 +29,9 @@ class SidebarNavigationTest extends TestCase
         $sidebar = $this->renderSidebar();
 
         $this->assertStringContainsString('Gudang &amp; Stok', $sidebar);
-        $this->assertStringContainsString('Transfer Antar Cabang', $sidebar);
+        $this->assertStringContainsString('Saldo Stok', $sidebar);
+        $this->assertStringContainsString('Penerimaan Barang', $sidebar);
+        $this->assertStringContainsString('Retur', $sidebar);
         $this->assertStringContainsString('Laporan Gudang', $sidebar);
         $this->assertStringNotContainsString('Toko Internal', $sidebar);
     }

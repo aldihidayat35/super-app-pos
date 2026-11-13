@@ -42,8 +42,9 @@
                     <button type="button" id="open-holds" class="btn btn-light-warning"><i
                             class="ki-outline ki-time fs-5 me-1"></i>Hold (<span id="hold-count">{{ $holdCount }}</span>)
                         <kbd>F6</kbd></button>
-                    <a href="{{ route('retail.shifts.current') }}" class="btn btn-icon btn-light" title="Detail shift"
-                        aria-label="Detail shift"><i class="ki-outline ki-information-2 fs-5"></i></a>
+                    <a href="{{ route('retail.shifts.current') }}" class="btn btn-light-info fw-bold d-inline-flex align-items-center" id="btn-shift-detail" title="Detail shift aktif dan rekap kasir">
+                        <i class="ki-outline ki-time fs-4 me-1"></i>Shift Aktif / Detail Shift
+                    </a>
                 </div>
             </header>
 
@@ -103,26 +104,33 @@
                                         class="text-muted fs-7">0 item</span>
                                 </div>
                                 <div class="pos-customer-wrap">
-                                    <label for="customer_id" class="text-muted fs-8 d-block">PELANGGAN <kbd>F4</kbd></label>
-                                    <select id="customer_id" class="form-select form-select-sm"
-                                        data-placeholder="Pelanggan Umum" data-allow-clear="true">
-                                        <option value="">Pelanggan Umum</option>
-                                        @foreach ($customers as $customer)
-                                            @php
-                                                $creditLimit = (float) ($customer->credit_limit ?? 0);
-                                                $receivableBalance = (float) ($customer->receivable_balance ?? 0);
-                                                $availableCredit = max(0, $creditLimit - $receivableBalance);
-                                                $minOrder = (float) ($customer->minimum_order ?? 0);
-                                            @endphp
-                                            <option value="{{ $customer->id }}"
-                                                data-payment-terms="{{ (int) ($customer->payment_term_days ?? 0) }}"
-                                                data-credit-limit="{{ $creditLimit }}"
-                                                data-receivable-balance="{{ $receivableBalance }}"
-                                                data-available-credit="{{ $availableCredit }}"
-                                                data-minimum-order="{{ $minOrder }}"
-                                            >{{ $customer->business_name }}</option>
-                                        @endforeach
-                                    </select>
+                                    <label for="customer_id" class="text-muted fs-8 mb-1 d-block">PELANGGAN <kbd>F4</kbd></label>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <div class="flex-grow-1 min-w-0">
+                                            <select id="customer_id" class="form-select form-select-sm"
+                                                data-placeholder="Pelanggan Umum" data-allow-clear="true">
+                                                <option value="">Pelanggan Umum</option>
+                                                @foreach ($customers as $customer)
+                                                    @php
+                                                        $creditLimit = (float) ($customer->credit_limit ?? 0);
+                                                        $receivableBalance = (float) ($customer->receivable_balance ?? 0);
+                                                        $availableCredit = max(0, $creditLimit - $receivableBalance);
+                                                        $minOrder = (float) ($customer->minimum_order ?? 0);
+                                                    @endphp
+                                                    <option value="{{ $customer->id }}"
+                                                        data-payment-terms="{{ (int) ($customer->payment_term_days ?? 0) }}"
+                                                        data-credit-limit="{{ $creditLimit }}"
+                                                        data-receivable-balance="{{ $receivableBalance }}"
+                                                        data-available-credit="{{ $availableCredit }}"
+                                                        data-minimum-order="{{ $minOrder }}"
+                                                    >{{ $customer->business_name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <button type="button" class="btn btn-icon btn-sm btn-light-primary flex-shrink-0" id="btn-quick-customer" data-bs-toggle="modal" data-bs-target="#modal-quick-customer" title="Tambah Pelanggan Baru" aria-label="Tambah Pelanggan Baru">
+                                            <i class="ki-outline ki-plus fs-4"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div id="customer-info-strip" class="d-none bg-light-primary border border-primary border-dashed rounded p-2 mt-3">
@@ -268,6 +276,63 @@
                             <a id="success-detail" class="btn btn-light">Lihat Detail</a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal Tambah Pelanggan Cepat --}}
+        <div class="modal fade" id="modal-quick-customer" tabindex="-1" aria-labelledby="modal-quick-customer-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form id="form-quick-customer" novalidate>
+                        <div class="modal-header">
+                            <h3 class="modal-title fs-5 fw-bold" id="modal-quick-customer-title">
+                                <i class="ki-outline ki-user fs-3 text-primary me-2"></i>Tambah Pelanggan Cepat
+                            </h3>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-6">
+                            <div class="alert alert-light-primary border-primary border border-dashed p-3 mb-4 fs-8 text-gray-700">
+                                Pelanggan yang ditambahkan akan otomatis berstatus <strong>Aktif</strong> dan langsung terpilih pada transaksi kasir saat ini.
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label required fs-7 fw-bold">Tipe Pelanggan</label>
+                                <select name="type" id="qc-type" class="form-select form-select-solid form-select-sm" required>
+                                    <option value="general">Umum / Retail</option>
+                                    <option value="retail_credit">Retail Kredit</option>
+                                    <option value="b2b">Mitra B2B</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label required fs-7 fw-bold">Nama Usaha / Nama Pelanggan</label>
+                                <input type="text" name="name" id="qc-name" class="form-control form-control-solid form-control-sm" placeholder="Contoh: Toko Berkah / Budi Santoso" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fs-7 fw-semibold">Nomor WhatsApp</label>
+                                <input type="text" name="whatsapp_number" id="qc-whatsapp" class="form-control form-control-solid form-control-sm" placeholder="08xxxxxxxxxx">
+                            </div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-6">
+                                    <label class="form-label fs-7 fw-semibold">Minimum Order (Rp)</label>
+                                    <input type="number" step="1000" min="0" name="minimum_order" id="qc-min-order" class="form-control form-control-solid form-control-sm" value="0">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fs-7 fw-semibold">Tempo Piutang (Hari)</label>
+                                    <input type="number" min="0" max="365" name="payment_term_days" id="qc-payment-terms" class="form-control form-control-solid form-control-sm" value="0">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label fs-7 fw-semibold">Maksimal Kredit / Limit (Rp)</label>
+                                <input type="number" step="10000" min="0" name="credit_limit" id="qc-credit-limit" class="form-control form-control-solid form-control-sm" value="0">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-sm btn-primary fw-bold" id="btn-submit-quick-customer">
+                                <i class="ki-outline ki-check fs-6 me-1"></i> Simpan &amp; Pilih Pelanggan
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -495,80 +560,6 @@
         .pos-product-meta {
             min-width: 0;
             overflow: hidden;
-        }
-
-        .pos-ring-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 2px;
-        }
-
-        .pos-ring-card {
-            background: var(--bs-light);
-            border: 1px solid var(--bs-gray-200);
-            border-radius: 4px;
-            padding: 1px 4px;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-            overflow: hidden;
-            line-height: 1.1;
-            transition: all 0.15s ease;
-        }
-
-        .pos-ring-card.is-active {
-            background: rgba(var(--bs-primary-rgb), 0.08);
-            border-color: rgba(var(--bs-primary-rgb), 0.35);
-        }
-
-        .pos-ring-label {
-            font-size: 8px;
-            color: var(--bs-gray-600);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
-        }
-
-        .pos-ring-card.is-active .pos-ring-label {
-            color: var(--bs-primary);
-            font-weight: 700;
-        }
-
-        .pos-ring-val {
-            font-size: 9.5px;
-            font-weight: 700;
-            color: var(--bs-gray-800);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .pos-ring-card.is-active .pos-ring-val {
-            color: var(--bs-primary);
-        }
-
-        .pos-ring-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px 6px;
-        }
-
-        .pos-ring {
-            font-size: 10px;
-            white-space: nowrap;
-            color: var(--bs-gray-700);
-            background: var(--bs-light);
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .pos-ring.is-selected {
-            color: var(--bs-primary);
-            background: rgba(var(--bs-primary-rgb), 0.08);
-            font-weight: 700;
         }
 
         .pos-cart-scroll {
@@ -838,7 +829,7 @@
         }
 
         .pos-customer-wrap {
-            width: 165px;
+            width: 220px;
             max-width: 100%;
         }
 
@@ -1242,22 +1233,7 @@
                     products.forEach(product => {
                         const image = imageMarkup(product.image_url, 'pos-product-image', 'fs-2x');
                         const stockClass = Number(product.stock) <= 0 ? 'danger' : (product.stock_low ? 'warning' : 'success');
-                        const rings = (product.pricing.rings || [{
-                                label: product.pricing.ring || 'Harga POS',
-                                price: product.pricing.recommended_price,
-                                selected: true
-                            }]);
-                        const selectedRing = rings.find(r => r.selected) || rings[0] || { label: 'Harga POS', price: product.pricing.recommended_price };
-                        const validRings = rings.filter(r => Number(r.price) > 0);
-                        const ringsGrid = validRings.length > 0 ? `
-                            <div class="pos-ring-grid mb-2">
-                                ${validRings.map(r => `
-                                    <div class="pos-ring-card ${r.selected ? 'is-active' : ''}" title="${escapeHtml(r.label)}: ${money(r.price)}">
-                                        <span class="pos-ring-label">${escapeHtml(r.label)}</span>
-                                        <span class="pos-ring-val">${money(r.price)}</span>
-                                    </div>
-                                `).join('')}
-                            </div>` : '';
+                        const displayPrice = (product.pricing && (product.pricing.selected_price || product.pricing.recommended_price)) ? (product.pricing.selected_price || product.pricing.recommended_price) : 0;
                         const isOutOfStock = Number(product.stock) <= 0;
                         const card = document.createElement('article');
                         card.className = `pos-product-card ${isOutOfStock ? 'is-out-of-stock' : ''}`;
@@ -1280,10 +1256,8 @@
                                 </div>
                                 <div class="mt-auto pt-1.5 border-top border-gray-200">
                                     <div class="d-flex align-items-baseline justify-content-between mb-1">
-                                        <span class="fs-6 fw-bolder text-primary text-nowrap">${money(selectedRing.price)}</span>
-                                        <span class="badge badge-light-primary fw-semibold fs-9 px-1.5 py-0.5 rounded">${escapeHtml(selectedRing.label || 'POS')}</span>
+                                        <span class="fs-6 fw-bolder text-primary text-nowrap">${money(displayPrice)}</span>
                                     </div>
-                                    ${ringsGrid}
                                     <button type="button" class="btn btn-sm ${isOutOfStock ? 'btn-light-secondary text-muted' : 'btn-light-primary text-primary'} w-100 fw-bold py-1 px-2 fs-8 mt-1 add-product" ${isOutOfStock ? 'disabled' : ''}>
                                         <i class="ki-outline ${isOutOfStock ? 'ki-cross-circle' : 'ki-plus'} fs-7 me-1"></i> ${isOutOfStock ? 'Habis' : 'Tambah'}
                                     </button>
@@ -1470,12 +1444,11 @@
                         <div class="pos-cart-guidance-pill d-flex flex-wrap align-items-center justify-content-between gap-2">
                             <div class="d-flex align-items-center gap-2 min-w-0">
                                 <i class="ki-outline ${statusIcon} fs-5 text-${statusColor}"></i>
-                                <span class="fs-8 fw-semibold text-gray-800 text-truncate" title="${escapeHtml(pricing.ring || '-')}">${escapeHtml(pricing.ring || '-')}</span>
-                                <span class="fs-9 text-muted text-nowrap">Batas ${money(pricing.minimum_price)} – ${money(pricing.maximum_price)}</span>
+                                <span class="fs-8 fw-semibold text-gray-800"><i class="ki-outline ki-shield-check fs-7 text-primary me-1"></i>Min: <span class="text-gray-900 fw-bold">${money(pricing.minimum_price)}</span></span>
                             </div>
                             <span class="badge badge-light-${statusColor} fw-semibold fs-9">${escapeHtml(pricing.status_label || 'Memuat')}</span>
                         </div>
-                        ${pricing.status_message ? `<div class="fs-9 ${pricing.approval_required ? 'text-danger fw-semibold' : 'text-muted'} mt-1 px-1 d-flex align-items-center gap-1"><i class="ki-outline ki-information-2 fs-7"></i><span>${escapeHtml(pricing.status_message)}</span></div>` : ''}
+                        ${pricing.status_message ? `<div class="fs-9 ${statusClass === 'below' || pricing.approval_required ? 'text-danger fw-semibold' : 'text-muted'} mt-1 px-1 d-flex align-items-center gap-1"><i class="ki-outline ${statusClass === 'below' || pricing.approval_required ? 'ki-cross-circle text-danger' : 'ki-information-2 text-muted'} fs-7"></i><span>${escapeHtml(pricing.status_message)}</span></div>` : ''}
                         ${item.error ? `<div class="alert alert-danger py-1 px-2 fs-9 mt-1 mb-0">${escapeHtml(item.error)}</div>` : ''}
                     </div>
                 </div>`;
@@ -1560,8 +1533,13 @@
                     cart.forEach(item => {
                         if (item.loading || item.error) issues.push(`${item.name}: harga belum siap`);
                         if (!item.stock_sufficient) issues.push(`${item.name}: gabungan stok reguler dan darurat tidak cukup`);
-                        if (item.pricing?.approval_required) issues.push(
-                        `${item.name}: membutuhkan approval harga`);
+                        if (item.pricing?.approval_required) {
+                            if (item.pricing?.approval_reasons?.includes('below_minimum') || (Number(item.pricing?.discounted_price || item.selected_price) < Number(item.pricing?.minimum_price))) {
+                                issues.push(`${item.name}: harga (${money(item.pricing?.discounted_price || item.selected_price)}) di bawah harga minimum barang (${money(item.pricing?.minimum_price)})`);
+                            } else {
+                                issues.push(`${item.name}: membutuhkan approval harga / diskon`);
+                            }
+                        }
                     });
                     const requiredByProduct = new Map();
                     cart.forEach(item => requiredByProduct.set(item.product_id, (requiredByProduct.get(item.product_id) ||
@@ -2084,6 +2062,92 @@
                 customerSelect.addEventListener('change', onCustomerChange);
                 if (window.jQuery) {
                     window.jQuery(customerSelect).on('change select2:select select2:clear', onCustomerChange);
+                }
+
+                // Handle Quick Customer Modal Form
+                const qcForm = document.getElementById('form-quick-customer');
+                if (qcForm) {
+                    qcForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const submitBtn = document.getElementById('btn-submit-quick-customer');
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+
+                        const payload = {
+                            type: document.getElementById('qc-type').value,
+                            name: document.getElementById('qc-name').value,
+                            whatsapp_number: document.getElementById('qc-whatsapp').value,
+                            minimum_order: document.getElementById('qc-min-order').value,
+                            payment_term_days: document.getElementById('qc-payment-terms').value,
+                            credit_limit: document.getElementById('qc-credit-limit').value,
+                        };
+
+                        try {
+                            const resp = await fetch('{{ route('retail.pos.quick-customer') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify(payload)
+                            });
+
+                            const data = await resp.json();
+                            if (!resp.ok) {
+                                throw new Error(data.message || (data.errors ? Object.values(data.errors).flat().join('<br>') : 'Gagal menyimpan pelanggan.'));
+                            }
+
+                            const c = data.customer;
+                            const opt = document.createElement('option');
+                            opt.value = c.id;
+                            opt.textContent = c.business_name;
+                            opt.setAttribute('data-payment-terms', c.payment_terms);
+                            opt.setAttribute('data-credit-limit', c.credit_limit);
+                            opt.setAttribute('data-receivable-balance', c.receivable_balance);
+                            opt.setAttribute('data-available-credit', c.available_credit);
+                            opt.setAttribute('data-minimum-order', c.minimum_order);
+                            opt.selected = true;
+
+                            customerSelect.appendChild(opt);
+                            customerSelect.value = c.id;
+
+                            if (window.jQuery) {
+                                window.jQuery(customerSelect).trigger('change');
+                            } else {
+                                onCustomerChange();
+                            }
+
+                            const qcModalEl = document.getElementById('modal-quick-customer');
+                            const qcModal = bootstrap.Modal.getInstance(qcModalEl);
+                            if (qcModal) qcModal.hide();
+                            qcForm.reset();
+
+                            if (window.Swal) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Pelanggan Berhasil Dibuat',
+                                    text: `${c.business_name} telah dipilih sebagai pelanggan transaksi aktif.`,
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            }
+                        } catch (err) {
+                            if (window.Swal) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal Menambah Pelanggan',
+                                    html: err.message,
+                                    confirmButtonText: 'Tutup'
+                                });
+                            } else {
+                                alert(err.message);
+                            }
+                        } finally {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="ki-outline ki-check fs-6 me-1"></i> Simpan &amp; Pilih Pelanggan';
+                        }
+                    });
                 }
                 document.getElementById('load-more-products').addEventListener('click', () => {
                     if (hasMoreProducts) {

@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\BranchController;
+use App\Http\Controllers\Admin\BusinessRelationController;
 use App\Http\Controllers\Admin\CustomerAccessController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\CustomerSettingsController;
 use App\Http\Controllers\Admin\DocumentSequenceController;
+use App\Http\Controllers\Admin\OperationalLocationController;
 use App\Http\Controllers\Admin\PartyImportController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\PrinterSettingController;
@@ -66,6 +68,7 @@ use App\Http\Controllers\Notifications\NotificationScheduleController;
 use App\Http\Controllers\Notifications\NotificationTemplateController;
 use App\Http\Controllers\Notifications\SecureDailyReportController;
 use App\Http\Controllers\Notifications\WhatsappConnectionController;
+use App\Http\Controllers\Organization\WorkLocationSwitchController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Pricing\HppHistoryController;
 use App\Http\Controllers\Pricing\MarginSimulatorController;
@@ -299,6 +302,8 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])
         ->middleware('password.confirm')
         ->name('profile.password.update');
+
+    Route::post('/work-locations/switch', [WorkLocationSwitchController::class, 'switch'])->name('work-locations.switch');
 
     Route::prefix('sales')->name('sales.')->group(function (): void {
         Route::get('/dashboard', SalesDashboardController::class)->middleware('permission:sales.dashboard.view')->name('dashboard');
@@ -559,6 +564,14 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
             Route::delete('/', [WhatsappConnectionController::class, 'disconnect'])->middleware('permission:whatsapp_connection.manage')->name('disconnect');
             Route::post('/uji', [WhatsappConnectionController::class, 'test'])->middleware('permission:whatsapp_connection.manage')->name('test');
         });
+
+        Route::get('/operational-locations', [OperationalLocationController::class, 'index'])
+            ->middleware('permission:admin.warehouses.view|admin.branches.view')
+            ->name('operational-locations.index');
+
+        Route::get('/relasi-bisnis', [BusinessRelationController::class, 'index'])
+            ->middleware('permission:suppliers.view|customers.view')
+            ->name('business-relations.index');
 
         Route::resource('warehouses', WarehouseController::class)
             ->except(['destroy'])
@@ -1191,6 +1204,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/product-prices/save-item', [ProductPriceController::class, 'saveItem'])
             ->middleware('permission:prices.update')
             ->name('product-prices.save-item');
+        Route::post('/product-prices/batch-save', [ProductPriceController::class, 'batchSave'])
+            ->middleware('permission:prices.update')
+            ->name('product-prices.batch-save');
         Route::get('/product-prices/{productPrice}/edit', [ProductPriceController::class, 'edit'])
             ->middleware('permission:prices.update')
             ->name('product-prices.edit');
@@ -1487,6 +1503,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/pos', [PosController::class, 'index'])
             ->middleware('permission:pos.view')
             ->name('pos.index');
+        Route::post('/pos/quick-customer', [PosController::class, 'storeQuickCustomer'])
+            ->middleware('permission:pos.create')
+            ->name('pos.quick-customer');
         Route::get('/pos/products', [PosController::class, 'products'])
             ->middleware('permission:pos.view')
             ->name('pos.products');

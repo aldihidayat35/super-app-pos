@@ -4,6 +4,7 @@ namespace App\Services\Product;
 
 use App\Enums\ProductPriceStatus;
 use App\Models\Branch;
+use App\Models\PriceHistory;
 use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\ProductCostHistory;
@@ -163,6 +164,7 @@ final class ProductQuickSetupService
      *     stock_qty: string|numeric,
      *     sell_unit_id?: int|null,
      *     min_price_amount?: string|numeric|null,
+     *     retail_min_price?: string|numeric|null,
      *     prices?: array<string, mixed>|null,
      *     unlimited?: bool|string|int,
      *     starts_at?: string|null,
@@ -220,6 +222,8 @@ final class ProductQuickSetupService
             $rawSellAmount = '0.00';
             if (array_key_exists('min_price_amount', $data) && $data['min_price_amount'] !== null && $data['min_price_amount'] !== '') {
                 $rawSellAmount = Decimal::normalize((string) $data['min_price_amount'], 2);
+            } elseif (array_key_exists('retail_min_price', $data) && $data['retail_min_price'] !== null && $data['retail_min_price'] !== '') {
+                $rawSellAmount = Decimal::normalize((string) $data['retail_min_price'], 2);
             } elseif (! empty($data['prices'])) {
                 $rawPrice = $data['prices']['ring_retail']['recommended']
                     ?? $data['prices']['ring_retail']['min']
@@ -322,8 +326,16 @@ final class ProductQuickSetupService
             $branchId = Branch::query()->where('work_location_id', $workLocation->id)->value('id');
 
             if (Decimal::compare($retailMinPrice, '0.00', 2) > 0) {
+                $primaryExistingPrice = ProductPrice::query()
+                    ->where('product_id', $product->id)
+                    ->where('work_location_id', $workLocation->id)
+                    ->where('channel', 'retail')
+                    ->first();
+                $oldPrice = $primaryExistingPrice?->recommended_price;
+
+                $firstPriceRecord = null;
                 foreach (self::CHANNELS as $channel => $ringLabel) {
-                    ProductPrice::query()->updateOrCreate(
+                    $priceRecord = ProductPrice::query()->updateOrCreate(
                         [
                             'product_id' => $product->id,
                             'work_location_id' => $workLocation->id,
@@ -343,6 +355,33 @@ final class ProductQuickSetupService
                             'notes' => $data['notes'] ?? 'Setup harga jual minimum anti-rugi',
                         ]
                     );
+
+                    if ($channel === 'retail') {
+                        $firstPriceRecord = $priceRecord;
+                    }
+                }
+
+                $isPriceChanged = $oldPrice === null
+                    || Decimal::compare((string) $oldPrice, (string) $retailMinPrice, 2) !== 0;
+
+                if ($isPriceChanged) {
+                    PriceHistory::query()->create([
+                        'priceable_type' => ProductPrice::class,
+                        'priceable_id' => $firstPriceRecord->id,
+                        'product_id' => $product->id,
+                        'branch_id' => $branchId,
+                        'work_location_id' => $workLocation->id,
+                        'channel' => 'retail',
+                        'price_ring' => 'Ring Retail',
+                        'old_price' => $oldPrice,
+                        'new_price' => $retailMinPrice,
+                        'hpp_snapshot' => $retailCostPrice,
+                        'minimum_price_snapshot' => $retailMinPrice,
+                        'changed_by' => $actor->id,
+                        'source' => 'quick_setup',
+                        'reason' => $data['notes'] ?? 'Setup cepat harga jual minimum',
+                        'effective_at' => now()->toDateString(),
+                    ]);
                 }
             }
 

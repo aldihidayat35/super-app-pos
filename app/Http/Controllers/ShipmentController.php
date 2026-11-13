@@ -19,10 +19,15 @@ class ShipmentController extends Controller
     {
         $this->authorize('viewAny', Shipment::class);
 
+        $activeId = (int) $request->session()->get('work_location.id', 0);
+        $permittedIds = $request->user()?->permittedWorkLocationIds() ?? [];
+        $filterLocationId = ($activeId > 0 && in_array($activeId, $permittedIds, true)) ? $activeId : null;
+
         return view('shipments.index', [
             'statuses' => ShipmentStatus::options(),
             'shipments' => Shipment::query()
                 ->with(['order', 'customer'])
+                ->when($filterLocationId > 0, fn ($query) => $query->where('origin_work_location_id', $filterLocationId))
                 ->when($request->filled('customer_id'), fn ($query) => $query->where('customer_id', $request->integer('customer_id')))
                 ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
                 ->when($request->filled('q'), function ($query) use ($request): void {

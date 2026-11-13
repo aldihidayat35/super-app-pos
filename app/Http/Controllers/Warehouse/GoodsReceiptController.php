@@ -182,6 +182,10 @@ class GoodsReceiptController extends Controller
             ->with(['purchaseOrder', 'supplier', 'warehouse', 'destinationWorkLocation', 'receiver', 'items'])
             ->where(function ($query) use ($request): void {
                 $locationIds = $request->user()?->permittedWorkLocationIds() ?? [];
+                $activeId = (int) $request->session()->get('work_location.id', 0);
+                if ($activeId > 0 && in_array($activeId, $locationIds, true)) {
+                    $locationIds = [$activeId];
+                }
                 $query->whereIn('destination_work_location_id', $locationIds)
                     ->orWhere(fn ($legacy) => $legacy->whereNull('destination_work_location_id')
                         ->whereHas('warehouse', fn ($warehouse) => $warehouse->whereIn('work_location_id', $locationIds)));

@@ -164,7 +164,8 @@
                         </div>
                     @else
                         <div class="menu-item">
-                            <a class="menu-link {{ $isOpen ? 'active' : '' }}" href="{{ route($item['route'], $item['route_params'] ?? []) }}" title="{{ $item['label'] }}">
+                            <a class="menu-link {{ $isOpen ? 'active' : '' }}" href="{{ route($item['route'], $item['route_params'] ?? []) }}" title="{{ $item['label'] }}"
+                                {{ ($item['route'] ?? null) === 'retail.pos.index' ? 'data-no-spa' : '' }}>
                                 <span class="menu-icon">
                                     <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
                                 </span>

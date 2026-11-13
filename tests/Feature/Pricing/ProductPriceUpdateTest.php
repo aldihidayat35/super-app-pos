@@ -698,11 +698,8 @@ class ProductPriceUpdateTest extends TestCase
         $this->assertTrue($indexB < $indexC, 'Produk B (1 ring) harus berada sebelum Produk C (2 ring).');
         $this->assertTrue($indexC < $indexD, 'Produk C (2 ring) harus berada sebelum Produk D (3 ring).');
 
-        // Check badges and table contents
-        $res->assertSee('0/3 Ring');
-        $res->assertSee('1/3 Ring');
-        $res->assertSee('2/3 Ring');
-        $res->assertSee('3/3 Ring Lengkap');
+        // Ring completeness badge has been removed per simplified single price design
+        $res->assertDontSee('0/3 Ring');
 
         // Ring 4 table header must not appear
         $res->assertDontSee('<th class="text-center min-w-160px"><span class="text-dark fw-bolder">Ring 4</span>', false);

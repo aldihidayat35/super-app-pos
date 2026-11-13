@@ -48,13 +48,43 @@
     @csrf
     @if(($method ?? 'POST') !== 'POST') @method($method) @endif
 
-    @if($selectedPo)
-        <input type="hidden" name="purchase_order_id" value="{{ $selectedPo->id }}">
-    @endif
-
     {{-- 1. HEADER INFORMASI PENERIMAAN --}}
     <x-metronic.card title="Informasi Penerimaan Supplier" class="mb-5 shadow-xs border border-gray-200">
         <div class="row g-4">
+            {{-- Mode Penerimaan & Referensi PO Historis --}}
+            <div class="col-12 mb-2">
+                <div class="p-3 bg-light-primary rounded border border-primary border-dashed d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="ki-outline ki-shield-tick fs-2 text-primary"></i>
+                        <div>
+                            <div class="fw-bold fs-7 text-gray-900">Alur Penerimaan Fleksibel</div>
+                            <div class="text-muted fs-8">Mendukung penerimaan barang langsung (Direct Receipt) tanpa PO, atau memilih referensi PO historis jika tersedia.</div>
+                        </div>
+                    </div>
+                    <div class="w-100 w-md-350px">
+                        @if($isEdit && $receipt->status->isPosted())
+                            <span class="badge badge-light-primary fs-7">
+                                {{ $receipt->purchaseOrder ? 'PO #' . $receipt->purchaseOrder->number : 'Penerimaan Langsung (Tanpa PO)' }}
+                            </span>
+                            @if($receipt->purchase_order_id)
+                                <input type="hidden" name="purchase_order_id" value="{{ $receipt->purchase_order_id }}">
+                            @endif
+                        @else
+                            <select name="purchase_order_id" id="select-purchase-order" class="form-select form-select-sm form-select-solid fw-semibold fs-7 select2-enable">
+                                <option value="">-- Penerimaan Langsung (Tanpa PO) --</option>
+                                @foreach($purchaseOrders ?? [] as $po)
+                                    <option value="{{ $po->id }}"
+                                        data-supplier-id="{{ $po->supplier_id }}"
+                                        data-location-id="{{ $po->destination_work_location_id ?? $po->work_location_id }}"
+                                        @selected((int) old('purchase_order_id', $selectedPo?->id ?? $receipt->purchase_order_id) === $po->id)>
+                                        PO #{{ $po->number }} - {{ $po->supplier?->name }} ({{ optional($po->created_at)->format('d/m/Y') }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        @endif
+                    </div>
+                </div>
+            </div>
             {{-- Lokasi Penerimaan --}}
             <div class="col-md-3">
                 <label class="form-label required fw-bold fs-7">Lokasi Penerima</label>
@@ -910,6 +940,23 @@
 
         const addCostInput = document.getElementById('input-additional-cost');
         if (addCostInput) addCostInput.addEventListener('input', recalculateAll);
+
+        const poSelect = document.getElementById('select-purchase-order');
+        if (poSelect) {
+            poSelect.addEventListener('change', function() {
+                const opt = this.options[this.selectedIndex];
+                if (opt && opt.value) {
+                    const supId = opt.getAttribute('data-supplier-id');
+                    const locId = opt.getAttribute('data-location-id');
+                    if (supId) {
+                        $('#select-supplier').val(supId).trigger('change');
+                    }
+                    if (locId) {
+                        $('#select-destination-location').val(locId).trigger('change');
+                    }
+                }
+            });
+        }
     });
 
 })();

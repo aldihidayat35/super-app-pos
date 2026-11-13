@@ -40,6 +40,29 @@ class ResolveWorkLocation
             }
         }
 
+        if ($type === null && $locationId === null && $user) {
+            $defaultLoc = $user->workLocations()
+                ->wherePivot('is_default', true)
+                ->wherePivot('is_active', true)
+                ->where('work_locations.is_active', true)
+                ->first()
+                ?? $user->workLocations()
+                    ->wherePivot('is_active', true)
+                    ->where('work_locations.is_active', true)
+                    ->first();
+
+            if (! $defaultLoc && $user->hasUnrestrictedLocationScope()) {
+                $defaultLoc = WorkLocation::query()->where('is_active', true)->orderBy('type')->orderBy('name')->first();
+            }
+
+            if ($defaultLoc && in_array($defaultLoc->type, self::ALLOWED_TYPES, true)) {
+                $type = $defaultLoc->type;
+                $locationId = $defaultLoc->id;
+                $request->session()->put('work_location.type', $type);
+                $request->session()->put('work_location.id', $locationId);
+            }
+        }
+
         app()->instance(WorkLocationContext::class, new WorkLocationContext($type, $locationId));
 
         return $next($request);

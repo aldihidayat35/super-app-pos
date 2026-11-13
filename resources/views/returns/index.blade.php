@@ -1,8 +1,11 @@
-@section('title', 'Daftar Retur - ' . config('app.name'))
-@section('page_title', 'Daftar Retur')
 @extends('layouts.metronic.app')
 
+@section('title', 'Daftar Retur - ' . config('app.name'))
+@section('page_title', 'Daftar Retur')
+
 @section('content')
+    <x-warehouse.active-location-card />
+
     <x-metronic.page-title title="Daftar Retur" description="Pantau retur supplier, cabang, POS, dan B2B.">
         <x-slot:actions>
             <x-metronic.permission-button permission="returns.create" :href="route('returns.create')" icon="ki-outline ki-plus">Ajukan Retur</x-metronic.permission-button>

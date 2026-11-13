@@ -64,12 +64,13 @@ class StockController extends Controller
     private function query(Request $request): mixed
     {
         $status = $request->query('status');
+        $locationId = $request->integer('work_location_id') ?: (int) $request->session()->get('work_location.id', 0);
 
         return Stock::query()
             ->with(['product.category', 'workLocation', 'warehouseLocation'])
             ->whereIn('work_location_id', $request->user()?->permittedWorkLocationIds() ?? [])
             ->when($request->integer('product_id') > 0, fn ($query) => $query->where('product_id', $request->integer('product_id')))
-            ->when($request->integer('work_location_id') > 0, fn ($query) => $query->where('work_location_id', $request->integer('work_location_id')))
+            ->when($locationId > 0 && in_array($locationId, $request->user()?->permittedWorkLocationIds() ?? [], true), fn ($query) => $query->where('work_location_id', $locationId))
             ->when($request->integer('warehouse_location_id') > 0, fn ($query) => $query->where('warehouse_location_id', $request->integer('warehouse_location_id')))
             ->when($status === 'critical', fn ($query) => $query->whereHas('product', fn ($inner) => $inner->whereRaw('(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged) <= products.minimum_stock')))
             ->when($status === 'empty', fn ($query) => $query->where('quantity_on_hand', '<=', 0))

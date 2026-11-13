@@ -30,6 +30,11 @@
 @endsection
 
 @section('toolbar_actions')
+    @canany(['admin.roles.view', 'admin.permissions.view'])
+        <a href="{{ route('admin.roles.index') }}" class="btn btn-light-primary">
+            <i class="ki-outline ki-shield-tick fs-4 me-1"></i> Kelola Role &amp; Permission
+        </a>
+    @endcanany
     <x-metronic.permission-button permission="admin.users.export" :href="route('admin.users.export', request()->query())" variant="light" icon="ki-outline ki-file-down">
         Export
     </x-metronic.permission-button>

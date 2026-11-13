@@ -28,10 +28,14 @@ class WarehouseLocationController extends Controller
         $warehouses = $this->warehouses($request);
         $branches = $this->branches($request);
         $permittedLocationIds = $request->user()?->permittedWorkLocationIds() ?? [];
+        $activeLocationId = (int) $request->session()->get('work_location.id', 0);
+        $effectiveLocationIds = ($activeLocationId > 0 && in_array($activeLocationId, $permittedLocationIds, true) && $warehouseId === 0 && $branchId === 0 && empty($ownerType))
+            ? [$activeLocationId]
+            : $permittedLocationIds;
 
         $locations = WarehouseLocation::query()
             ->with(['warehouse.workLocation', 'branch.workLocation', 'parent'])
-            ->forWorkLocationIds($permittedLocationIds)
+            ->forWorkLocationIds($effectiveLocationIds)
             ->when($ownerType === 'warehouse', fn ($query) => $query->whereNotNull('warehouse_id'))
             ->when($ownerType === 'branch', fn ($query) => $query->whereNotNull('branch_id'))
             ->when($warehouseId > 0, fn ($query) => $query->where('warehouse_id', $warehouseId))

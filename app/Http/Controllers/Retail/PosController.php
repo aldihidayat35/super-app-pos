@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Retail;
 
+use App\Enums\CreditLimitStatus;
+use App\Enums\CustomerStatus;
+use App\Enums\CustomerType;
 use App\Enums\PaymentMethod;
 use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
@@ -10,11 +13,13 @@ use App\Http\Requests\Retail\QuotePosItemRequest;
 use App\Http\Requests\Retail\StorePosHoldRequest;
 use App\Http\Requests\Retail\StorePosSaleRequest;
 use App\Models\CashShift;
+use App\Models\CreditLimit;
 use App\Models\Customer;
 use App\Models\EmergencyPurchase;
 use App\Models\PosHold;
 use App\Models\ProductBrand;
 use App\Models\ProductCategory;
+use App\Services\Organization\DocumentNumberService;
 use App\Services\Retail\PosCatalogService;
 use App\Services\Retail\PosService;
 use App\Support\Decimal;
@@ -23,6 +28,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PosController extends Controller
@@ -256,6 +262,76 @@ class PosController extends Controller
         }
 
         return $shift;
+    }
+
+    public function storeQuickCustomer(Request $request, DocumentNumberService $numbers): JsonResponse
+    {
+        abort_unless($request->user()->can('pos.create'), 403);
+
+        $validated = $request->validate([
+            'type' => ['required', 'string', 'in:general,retail_credit,b2b'],
+            'name' => ['required', 'string', 'max:255'],
+            'whatsapp_number' => ['nullable', 'string', 'max:50'],
+            'minimum_order' => ['nullable', 'numeric', 'min:0'],
+            'payment_term_days' => ['nullable', 'integer', 'min:0'],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $type = CustomerType::from($validated['type']);
+        $businessName = trim($validated['name']);
+        $creditLimit = (float) ($validated['credit_limit'] ?? 0);
+        $paymentTerms = (int) ($validated['payment_term_days'] ?? 0);
+        $minimumOrder = (float) ($validated['minimum_order'] ?? 0);
+        $phone = $validated['whatsapp_number'] ?? null;
+
+        $customer = DB::transaction(function () use ($numbers, $type, $businessName, $phone, $creditLimit, $paymentTerms, $minimumOrder): Customer {
+            do {
+                $code = $numbers->nextCustomerCode($type);
+            } while (Customer::withTrashed()->where('code', $code)->exists());
+
+            $cust = Customer::query()->create([
+                'type' => $type,
+                'code' => $code,
+                'business_name' => $businessName,
+                'owner_name' => $businessName,
+                'whatsapp_number' => $phone,
+                'minimum_order' => $minimumOrder,
+                'payment_term_days' => $paymentTerms,
+                'credit_limit' => $creditLimit,
+                'receivable_balance' => 0,
+                'verification_status' => CustomerStatus::ACTIVE,
+                'account_status' => CustomerStatus::ACTIVE,
+                'price_category' => 'retail',
+                'is_active' => true,
+            ]);
+
+            CreditLimit::query()->create([
+                'customer_id' => $cust->id,
+                'credit_limit' => $creditLimit,
+                'payment_term_days' => $paymentTerms,
+                'current_balance' => 0,
+                'status' => CreditLimitStatus::ACTIVE,
+                'effective_from' => now()->toDateString(),
+            ]);
+
+            return $cust;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pelanggan berhasil ditambahkan.',
+            'customer' => [
+                'id' => $customer->id,
+                'name' => $customer->business_name,
+                'business_name' => $customer->business_name,
+                'phone' => $customer->whatsapp_number ?: '',
+                'payment_terms' => (int) $customer->payment_term_days,
+                'credit_limit' => (float) $customer->credit_limit,
+                'receivable_balance' => (float) $customer->receivable_balance,
+                'available_credit' => max(0, (float) ($customer->credit_limit - $customer->receivable_balance)),
+                'minimum_order' => (float) $customer->minimum_order,
+            ],
+        ]);
     }
 
     private function serviceError(ServiceException $exception, string $key): JsonResponse

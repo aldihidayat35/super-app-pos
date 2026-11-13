@@ -35,6 +35,8 @@
 @endsection
 
 @section('content')
+    <x-warehouse.active-location-card />
+
     <x-metronic.card>
         <form method="GET" class="row g-3 mb-5">
             <div class="col-md-3">

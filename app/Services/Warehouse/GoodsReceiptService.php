@@ -432,8 +432,9 @@ class GoodsReceiptService
             metadata: ['goods_receipt_item_id' => $item->id],
         );
 
-        // TIDAK lagi update products.cost_price dengan moving average;
-        // products.cost_price hanya jadi fallback kompatibilitas, tidak diupdate di sini.
+        // Update products.cost_price sebagai fallback HPP terakhir
+        $product->forceFill(['cost_price' => $actualUnitCost])->save();
+
         $item->forceFill([
             'landed_cost_allocated' => $landedCost,
             'actual_unit_cost' => $actualUnitCost,

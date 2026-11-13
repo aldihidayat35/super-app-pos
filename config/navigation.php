@@ -1,6 +1,7 @@
 <?php
 
 return [
+    // 1. Dashboard
     [
         'label' => 'Dashboard',
         'icon' => 'ki-outline ki-home-2',
@@ -8,209 +9,66 @@ return [
         'active' => ['dashboard'],
         'permission' => 'dashboard.view',
     ],
+
+    // 2. Shortcut Kasir POS (Tepat di bawah Dashboard)
     [
-        'label' => 'Dashboard Owner',
-        'icon' => 'ki-outline ki-chart-line-up',
-        'route' => 'owner.dashboard',
-        'active' => ['owner.dashboard'],
-        'permission' => 'reports.view',
+        'label' => 'Kasir POS',
+        'icon' => 'ki-outline ki-calculator',
+        'route' => 'retail.pos.index',
+        'active' => ['retail.pos.*'],
+        'permission' => 'pos.view',
+        'access' => 'retail.location',
     ],
 
-    [
-        'label' => 'Target & Bonus',
-        'icon' => 'ki-outline ki-award',
-        'route' => 'staff-bonuses.index',
-        'active' => ['staff-bonuses.*'],
-        'permission' => 'staff_bonuses.view_own|staff_bonuses.view_team|staff_bonuses.view_all',
-    ],
-    [
-        'label' => 'Administrasi',
-        'icon' => 'ki-outline ki-security-user',
-        'children' => [
-            [
-                'label' => 'Pengguna',
-                'route' => 'admin.users.index',
-                'active' => ['admin.users.*'],
-                'permission' => 'admin.users.view',
-            ],
-            [
-                'label' => 'Role',
-                'route' => 'admin.roles.index',
-                'active' => ['admin.roles.*'],
-                'permission' => 'admin.roles.view',
-            ],
-            [
-                'label' => 'Permission',
-                'route' => 'admin.permissions.index',
-                'active' => ['admin.permissions.*'],
-                'permission' => 'admin.permissions.view',
-            ],
-        ],
-    ],
+    // 3. Administrasi Sistem (Hanya 3 submenu)
     [
         'label' => 'Administrasi Sistem',
         'icon' => 'ki-outline ki-setting-2',
         'children' => [
             [
-                'label' => 'Gudang',
-                'route' => 'admin.warehouses.index',
-                'active' => ['admin.warehouses.*'],
-                'permission' => 'admin.warehouses.view',
+                'label' => 'Pengguna',
+                'route' => 'admin.users.index',
+                'active' => ['admin.users.*', 'admin.roles.*', 'admin.permissions.*'],
+                'permission' => 'admin.users.view',
             ],
             [
-                'label' => 'Cabang/Toko',
-                'route' => 'admin.branches.index',
-                'active' => ['admin.branches.*'],
-                'permission' => 'admin.branches.view',
+                'label' => 'Lokasi Operasional',
+                'route' => 'admin.operational-locations.index',
+                'active' => ['admin.operational-locations.*', 'admin.warehouses.*', 'admin.branches.*'],
+                'permission' => 'admin.warehouses.view|admin.branches.view',
             ],
             [
                 'label' => 'Pengaturan Umum',
                 'route' => 'admin.settings.general.edit',
-                'active' => ['admin.settings.general.*'],
-                'permission' => 'admin.settings.view',
-            ],
-            [
-                'label' => 'Pengaturan Printer',
-                'route' => 'admin.settings.printer.edit',
-                'active' => ['admin.settings.printer.*'],
-                'permission' => 'admin.settings.view',
-            ],
-            [
-                'label' => 'Nomor Dokumen',
-                'route' => 'admin.settings.document-numbers.index',
-                'active' => ['admin.settings.document-numbers.*'],
-                'permission' => 'admin.settings.view',
-            ],
-            [
-                'label' => 'Akses Koreksi Stok',
-                'route' => 'admin.settings.stock-adjustment-access.index',
-                'active' => ['admin.settings.stock-adjustment-access.*'],
-                'permission' => 'stock_direct_adjustments.manage_access',
-            ],
-            [
-                'label' => 'Koneksi WhatsApp',
-                'route' => 'admin.whatsapp.index',
-                'active' => ['admin.whatsapp.*'],
-                'permission' => 'whatsapp_connection.view',
-            ],
-            [
-                'label' => 'Kesehatan Sistem',
-                'route' => 'admin.system.health',
-                'active' => ['admin.system.health', 'system.health'],
-                'permission' => 'system.health.view',
-            ],
-            [
-                'label' => 'Backup',
-                'route' => 'admin.system.backups.index',
-                'active' => ['admin.system.backups.*'],
-                'permission' => 'system.operations.view',
-            ],
-            [
-                'label' => 'Log & Queue',
-                'route' => 'admin.system.logs.index',
-                'active' => ['admin.system.logs.*'],
-                'permission' => 'system.operations.view',
-            ],
-            [
-                'label' => 'Maintenance & Go-Live',
-                'route' => 'admin.system.maintenance.index',
-                'active' => ['admin.system.maintenance.*'],
-                'permission' => 'system.operations.view',
+                'active' => ['admin.settings.*', 'admin.whatsapp.*'],
+                'permission' => 'admin.settings.view|whatsapp_connection.view|stock_direct_adjustments.manage_access',
             ],
         ],
     ],
+
+    // 4. Master Produk (Single direct menu tanpa dropdown)
     [
         'label' => 'Master Produk',
         'icon' => 'ki-outline ki-parcel',
-        'children' => [
-            [
-                'label' => 'Kategori Produk',
-                'route' => 'admin.product-categories.index',
-                'active' => ['admin.product-categories.*'],
-                'permission' => 'products.view',
-            ],
-            [
-                'label' => 'Merek Produk',
-                'route' => 'admin.product-brands.index',
-                'active' => ['admin.product-brands.*'],
-                'permission' => 'products.view',
-            ],
-            [
-                'label' => 'Satuan',
-                'route' => 'admin.units.index',
-                'active' => ['admin.units.*'],
-                'permission' => 'products.view',
-            ],
-            [
-                'label' => 'Produk',
-                'route' => 'admin.products.index',
-                'active' => ['admin.products.*'],
-                'permission' => 'products.view',
-            ],
-            [
-                'label' => 'Cetak Barcode/QR',
-                'route' => 'admin.products.barcodes.index',
-                'active' => ['admin.products.barcodes.*'],
-                'permission' => 'products.print_barcode',
-            ],
-            [
-                'label' => 'Import Produk',
-                'route' => 'admin.products.import.index',
-                'active' => ['admin.products.import.*'],
-                'permission' => 'products.import',
-            ],
-            [
-                'label' => 'Setup Operasional Cepat',
-                'route' => 'admin.products.quick-setup.index',
-                'active' => ['admin.products.quick-setup.*'],
-                'permission' => 'products.quick_setup',
-            ],
-        ],
+        'route' => 'admin.products.index',
+        'active' => ['admin.products.*', 'admin.product-categories.*', 'admin.product-brands.*', 'admin.units.*'],
+        'permission' => 'products.view',
     ],
+
+    // 5. Relasi Bisnis (Single direct menu tanpa dropdown)
     [
         'label' => 'Relasi Bisnis',
         'icon' => 'ki-outline ki-people',
-        'children' => [
-            [
-                'label' => 'Supplier',
-                'route' => 'admin.suppliers.index',
-                'active' => ['admin.suppliers.*'],
-                'permission' => 'suppliers.view',
-            ],
-            [
-                'label' => 'Pelanggan & B2B',
-                'route' => 'admin.customers.index',
-                'active' => ['admin.customers.*'],
-                'permission' => 'customers.view',
-            ],
-        ],
+        'route' => 'admin.business-relations.index',
+        'active' => ['admin.business-relations.*', 'admin.suppliers.*', 'admin.customers.*'],
+        'permission' => 'suppliers.view|customers.view',
     ],
-    [
-        'label' => 'Sales',
-        'icon' => 'ki-outline ki-chart-line-up-2',
-        'active' => ['sales.*'],
-        'children' => [
-            ['label' => 'Dashboard', 'route' => 'sales.dashboard', 'active' => ['sales.dashboard'], 'permission' => 'sales.dashboard.view'],
-            ['label' => 'Customer Saya', 'route' => 'sales.customers.index', 'active' => ['sales.customers.*'], 'permission' => 'sales.customers.view_own'],
-            ['label' => 'Buat Order', 'route' => 'sales.orders.create', 'active' => ['sales.orders.create'], 'permission' => 'sales.orders.create'],
-            ['label' => 'Order Saya', 'route' => 'sales.orders.index', 'active' => ['sales.orders.index', 'sales.orders.show'], 'permission' => 'sales.orders.view_own'],
-            ['label' => 'Cek Stok', 'route' => 'sales.stocks.index', 'active' => ['sales.stocks.*'], 'permission' => 'sales.stock.view'],
-            ['label' => 'Target & Bonus', 'route' => 'sales.targets.index', 'active' => ['sales.targets.*'], 'permission' => 'sales.targets.view_own'],
-            ['label' => 'Performance Sales', 'route' => 'sales.performance', 'active' => ['sales.performance'], 'permission' => 'sales.performance.view'],
-            ['label' => 'Target Sales', 'route' => 'sales.admin.targets.index', 'active' => ['sales.admin.targets.*'], 'permission' => 'sales.targets.manage'],
-            ['label' => 'Assignment Customer', 'route' => 'sales.assignments.index', 'active' => ['sales.assignments.*'], 'permission' => 'sales.customers.assign'],
-        ],
-    ],
+
+    // 6. Gudang & Stok (Tepat 5 submenu)
     [
         'label' => 'Gudang & Stok',
         'icon' => 'ki-outline ki-delivery-3',
         'children' => [
-            [
-                'label' => 'Dashboard Gudang',
-                'route' => 'warehouse.dashboard',
-                'active' => ['warehouse.dashboard'],
-                'permission' => 'stock.view',
-            ],
             [
                 'label' => 'Zona, Rak, dan Bin',
                 'route' => 'warehouse.locations.index',
@@ -224,83 +82,31 @@ return [
                 'permission' => 'stock.view',
             ],
             [
-                'label' => 'Import Stok Produk',
-                'route' => 'warehouse.opening-stocks.import.index',
-                'active' => ['warehouse.opening-stocks.import.*', 'warehouse.stocks.import.*'],
-                'permission' => 'opening_stocks.import',
-            ],
-            [
                 'label' => 'Penerimaan Barang',
                 'route' => 'warehouse.goods-receipts.index',
                 'active' => ['warehouse.goods-receipts.*'],
                 'permission' => 'goods_receipts.view',
             ],
             [
-                'label' => 'Order B2B Gudang',
-                'route' => 'warehouse.b2b-orders.index',
-                'active' => ['warehouse.b2b-orders.*', 'warehouse.reservations.*'],
-                'permission' => 'b2b_orders.view',
-            ],
-            [
-                'label' => 'Pengiriman B2B',
+                'label' => 'Pengiriman Barang',
                 'route' => 'shipments.index',
                 'active' => ['shipments.*'],
                 'permission' => 'shipments.view',
             ],
             [
-                'label' => 'Transfer Antar Cabang',
-                'route' => 'warehouse.stock-transfers.index',
-                'active' => ['warehouse.stock-transfers.*', 'retail.stock-transfers.*'],
-                'permission' => 'stock_transfers.view',
-            ],
-            [
-                'label' => 'Pindah Rak Internal',
-                'route' => 'warehouse.location-transfers.index',
-                'active' => ['warehouse.location-transfers.*'],
-                'permission' => 'stock.view',
-            ],
-            [
-                'label' => 'Stok Opname',
-                'route' => 'warehouse.stock-opnames.index',
-                'active' => ['warehouse.stock-opnames.*', 'warehouse.stock-adjustments.*', 'warehouse.opening-stocks.*'],
-                'permission' => 'stock_adjustments.view',
-            ],
-            [
-                'label' => 'Barang Rusak & Loss',
-                'route' => 'warehouse.losses.index',
-                'active' => ['warehouse.losses.*'],
-                'permission' => 'losses.view',
+                'label' => 'Retur',
+                'route' => 'returns.index',
+                'active' => ['returns.*'],
+                'permission' => 'returns.view',
             ],
         ],
     ],
-    [
-        'label' => 'Pembelian',
-        'icon' => 'ki-outline ki-purchase',
-        'children' => [
-            [
-                'label' => 'Pengajuan Belanja (Internal)',
-                'route' => 'purchasing.requests.index',
-                'active' => ['purchasing.requests.*'],
-                'permission' => 'purchase_orders.view',
-            ],
-            [
-                'label' => 'Pesanan ke Supplier (PO)',
-                'route' => 'purchasing.purchase-orders.index',
-                'active' => ['purchasing.purchase-orders.*'],
-                'permission' => 'purchase_orders.view',
-            ],
-        ],
-    ],
+
+    // 7. Harga & Margin
     [
         'label' => 'Harga & Margin',
         'icon' => 'ki-outline ki-price-tag',
         'children' => [
-            [
-                'label' => 'Aturan Harga',
-                'route' => 'pricing.rules.index',
-                'active' => ['pricing.rules.*'],
-                'permission' => 'prices.view',
-            ],
             [
                 'label' => 'Harga Produk',
                 'route' => 'pricing.product-prices.index',
@@ -315,29 +121,13 @@ return [
             ],
         ],
     ],
-    [
-        'label' => 'Retur',
-        'icon' => 'ki-outline ki-arrow-left-right',
-        'children' => [
-            [
-                'label' => 'Daftar Retur',
-                'route' => 'returns.index',
-                'active' => ['returns.*'],
-                'permission' => 'returns.view',
-            ],
-        ],
-    ],
+
+    // 8. Toko Internal (Tepat 4 submenu)
     [
         'label' => 'Toko Internal',
         'icon' => 'ki-outline ki-shop',
         'access' => 'retail.location',
         'children' => [
-            [
-                'label' => 'Dashboard Cabang',
-                'route' => 'retail.dashboard',
-                'active' => ['retail.dashboard'],
-                'permission' => 'cash_shifts.view',
-            ],
             [
                 'label' => 'Kasir POS',
                 'route' => 'retail.pos.index',
@@ -351,25 +141,21 @@ return [
                 'permission' => 'pos.view',
             ],
             [
-                'label' => 'Shift Kasir',
-                'route' => 'retail.shifts.current',
-                'active' => ['retail.shifts.*'],
-                'permission' => 'cash_shifts.view',
-            ],
-            [
                 'label' => 'Etalase Produk',
                 'route' => 'retail.storefront.index',
                 'active' => ['retail.storefront.*', 'retail.product-requests.*'],
                 'permission' => 'retail.catalog.view',
             ],
             [
-                'label' => 'Pembelian Darurat',
+                'label' => 'Daftar Pembelian Darurat',
                 'route' => 'retail.emergency.index',
                 'active' => ['retail.emergency.*'],
                 'permission' => 'emergency_purchases.view',
             ],
         ],
     ],
+
+    // 9. Kehadiran
     [
         'label' => 'Kehadiran',
         'icon' => 'ki-outline ki-calendar-tick',
@@ -412,6 +198,8 @@ return [
             ],
         ],
     ],
+
+    // 10. Kontrol & Audit (Memuat approval, audit, dan kontrol teknis)
     [
         'label' => 'Kontrol & Audit',
         'icon' => 'ki-outline ki-shield-tick',
@@ -441,104 +229,40 @@ return [
                 'permission' => 'audit.view',
             ],
             [
-                'label' => 'Channel Notifikasi',
-                'route' => 'admin.notifications.channels.index',
-                'active' => ['admin.notifications.channels.*'],
-                'permission' => 'notifications.view',
+                'label' => 'Kesehatan Sistem',
+                'route' => 'admin.system.health',
+                'active' => ['admin.system.health', 'system.health'],
+                'permission' => 'system.health.view',
             ],
             [
-                'label' => 'Aktif/Nonaktif Notifikasi',
-                'route' => 'admin.notifications.business-settings.index',
-                'active' => ['admin.notifications.business-settings.*'],
-                'permission' => 'notifications.view',
+                'label' => 'Backup',
+                'route' => 'admin.system.backups.index',
+                'active' => ['admin.system.backups.*'],
+                'permission' => 'system.operations.view',
             ],
             [
-                'label' => 'Template Pesan',
-                'route' => 'admin.notifications.templates.index',
-                'active' => ['admin.notifications.templates.*'],
-                'permission' => 'notifications.view',
+                'label' => 'Log QW',
+                'route' => 'admin.system.logs.index',
+                'active' => ['admin.system.logs.*'],
+                'permission' => 'system.operations.view',
             ],
             [
-                'label' => 'Jadwal Notifikasi',
-                'route' => 'admin.notifications.schedules.index',
-                'active' => ['admin.notifications.schedules.*'],
-                'permission' => 'notifications.view',
+                'label' => 'Maintenance',
+                'route' => 'admin.system.maintenance.index',
+                'active' => ['admin.system.maintenance.*'],
+                'permission' => 'system.operations.view',
             ],
             [
-                'label' => 'Penerima Notifikasi',
-                'route' => 'admin.notifications.recipients.index',
-                'active' => ['admin.notifications.recipients.*'],
-                'permission' => 'notifications.view',
-            ],
-            [
-                'label' => 'Log Pengiriman',
-                'route' => 'admin.notifications.logs.index',
-                'active' => ['admin.notifications.logs.*'],
-                'permission' => 'notifications.view',
-            ],
-            [
-                'label' => 'Aturan Alert',
-                'route' => 'admin.notifications.alerts.index',
-                'active' => ['admin.notifications.alerts.*'],
-                'permission' => 'notifications.view',
+                'label' => 'Go Live',
+                'route' => 'admin.system.maintenance.index',
+                'route_params' => ['section' => 'golive'],
+                'active' => ['admin.system.maintenance.*'],
+                'permission' => 'system.operations.view',
             ],
         ],
     ],
-    [
-        'label' => 'Invoice & Pembayaran',
-        'icon' => 'ki-outline ki-bill',
-        'children' => [
-            [
-                'label' => 'Dashboard Piutang',
-                'route' => 'receivables.dashboard',
-                'active' => ['receivables.dashboard'],
-                'permission' => 'receivables.view',
-            ],
-            [
-                'label' => 'Daftar Piutang',
-                'route' => 'receivables.index',
-                'active' => ['receivables.index', 'receivables.customers.*', 'receivables.adjustments'],
-                'permission' => 'receivables.view',
-            ],
-            [
-                'label' => 'Invoice',
-                'route' => 'invoices.index',
-                'active' => ['invoices.*'],
-                'permission' => 'invoices.view',
-            ],
-            [
-                'label' => 'Pembayaran Piutang',
-                'route' => 'receivables.payments.create',
-                'active' => ['receivables.payments.*', 'payments.*'],
-                'permission' => 'receivables.pay',
-            ],
-            [
-                'label' => 'Reminder Tagihan',
-                'route' => 'receivables.reminders',
-                'active' => ['receivables.reminders'],
-                'permission' => 'receivables.view',
-            ],
-            [
-                'label' => 'Limit Kredit',
-                'route' => 'receivables.credit-limits',
-                'active' => ['receivables.credit-limits'],
-                'permission' => 'receivables.manage_limits',
-            ],
-            [
-                'label' => 'Piutang Toko',
-                'route' => 'retail.receivables.index',
-                'active' => ['retail.receivables.*'],
-                'permission' => 'receivables.view',
-            ],
-        ],
-    ],
-    [
-        'label' => 'Keuangan & Pajak Tahunan',
-        'icon' => 'ki-outline ki-calculator',
-        'route' => 'tax.index',
-        'active' => ['tax.*'],
-        'permission' => 'finance_annual.view',
-    ],
+
+    // Portal Langganan (Khusus pelanggan B2B)
     [
         'label' => 'Portal Langganan',
         'icon' => 'ki-outline ki-basket',
@@ -600,6 +324,8 @@ return [
             ],
         ],
     ],
+
+    // Dokumentasi Panduan
     [
         'label' => 'Dokumentasi Panduan',
         'icon' => 'ki-outline ki-book-open',

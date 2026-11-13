@@ -32,9 +32,15 @@ class ReturnController extends Controller
     {
         $this->authorize('viewAny', ReturnDocument::class);
 
+        $locationIds = $request->user()?->permittedWorkLocationIds() ?? [];
+        $activeId = (int) $request->session()->get('work_location.id', 0);
+        if ($activeId > 0 && in_array($activeId, $locationIds, true)) {
+            $locationIds = [$activeId];
+        }
+
         $returns = ReturnDocument::query()
             ->with(['workLocation', 'requester', 'items'])
-            ->whereIn('work_location_id', $request->user()?->permittedWorkLocationIds() ?? [])
+            ->whereIn('work_location_id', $locationIds)
             ->when($request->filled('source_type'), fn ($query) => $query->where('source_type', $request->query('source_type')))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->filled('q'), fn ($query) => $query->where(fn ($search) => $search->where('number', 'like', '%'.$request->query('q').'%')->orWhere('reference_no', 'like', '%'.$request->query('q').'%')->orWhere('source_name', 'like', '%'.$request->query('q').'%')))
