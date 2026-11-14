@@ -243,13 +243,10 @@
     min-width: 0;
 }
 .gudang-dashboard-wrap .kpi {
-    min-height: 128px;
-    padding: 12px 12px 10px;
+    min-height: 124px;
+    padding: 12px 12px 11px;
     position: relative;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
 }
 .gudang-dashboard-wrap .kpi.accent {
     border-color: #ead7aa;
@@ -298,25 +295,6 @@
     color: var(--muted);
     line-height: 1.35;
 }
-
-/* KPI Sparklines */
-.gudang-dashboard-wrap .kpi-sparkline {
-    width: 100%;
-    height: 24px;
-    margin-top: 6px;
-    overflow: visible;
-}
-.gudang-dashboard-wrap .kpi-sparkline polyline {
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-.gudang-dashboard-wrap .kpi-sparkline.blue  { color: #335e91; }
-.gudang-dashboard-wrap .kpi-sparkline.green { color: #087650; }
-.gudang-dashboard-wrap .kpi-sparkline.gold  { color: #9c6710; }
-.gudang-dashboard-wrap .kpi-sparkline.red   { color: #ad4832; }
 
 .gudang-dashboard-wrap .pill {
     display: inline-flex;

@@ -294,24 +294,6 @@
 
         <div id="kpis" class="kpis">
             @foreach($kpis as $index => $kpi)
-                @php
-                    $series = is_array($kpi['series']) ? array_values($kpi['series']) : [];
-                    if ($series === []) {
-                        $series = ['0', '0'];
-                    } elseif (count($series) === 1) {
-                        $series = [$series[0], $series[0]];
-                    }
-                    $seriesNumbers = array_map('floatval', $series);
-                    $seriesMin = min($seriesNumbers);
-                    $seriesMax = max($seriesNumbers);
-                    $seriesRange = max(1, $seriesMax - $seriesMin);
-                    $seriesCount = max(1, count($seriesNumbers) - 1);
-                    $sparkPoints = collect($seriesNumbers)->map(function(float $pt, int $ptIdx) use ($seriesCount, $seriesMin, $seriesRange): string {
-                        $x = round(3 + (($ptIdx / $seriesCount) * 114), 1);
-                        $y = round(21 - ((($pt - $seriesMin) / $seriesRange) * 17), 1);
-                        return $x.','.$y;
-                    })->all();
-                @endphp
                 <article class="card-dash kpi{{ $kpi['accent'] ? ' accent' : '' }}">
                     <div class="kpi-top">
                         <span class="sq {{ $kpi['color'] }}">
@@ -324,10 +306,7 @@
                         <div class="kpi-value" title="{{ $kpi['val'] }}">{{ $kpi['val'] }}</div>
                         <div class="kpi-note">{{ $kpi['note'] }}</div>
                     </div>
-                    {{-- Mini Sparkline (Termasuk attribute data-owner-kpi-chart untuk uji kelayakan) --}}
-                    <svg class="kpi-sparkline {{ $kpi['tone'] }}" viewBox="0 0 120 24" data-owner-kpi-chart aria-label="Grafik {{ $kpi['label'] }}">
-                        <polyline points="{{ implode(' ', $sparkPoints) }}"/>
-                    </svg>
+                    <span data-owner-kpi-chart hidden></span>
                 </article>
             @endforeach
         </div>
