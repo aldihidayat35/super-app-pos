@@ -5,7 +5,6 @@
 
 @push('styles')
 <style>
-    .shift-header-card { border-left: 4px solid var(--bs-primary); }
     .shift-stat-card { transition: transform 0.15s ease, box-shadow 0.15s ease; border-radius: 0.75rem; }
     .shift-stat-card:hover { transform: translateY(-2px); box-shadow: var(--bs-box-shadow-sm); }
     .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; }
@@ -23,25 +22,236 @@
 @endpush
 
 @section('toolbar_actions')
-    @can('cash_shifts.view')
-        <a href="{{ route('retail.shifts.index') }}" class="btn btn-light-primary btn-sm"><i class="ki-outline ki-time fs-5 me-1"></i>Riwayat Shift</a>
-    @endcan
-    @if($shift)
-        <a href="{{ route('retail.pos.index') }}" class="btn btn-primary btn-sm"><i class="ki-outline ki-shop fs-5 me-1"></i>Lanjut ke POS</a>
-        <a href="{{ route('retail.shifts.export.pdf', $shift) }}" class="btn btn-light btn-sm" target="_blank"><i class="ki-outline ki-printer fs-5 me-1"></i>Download PDF</a>
-    @endif
+@endsection
+
+@section('page_guide')
+    <x-metronic.page-guide id="retail-shift-current" title="Panduan Shift Kasir Aktif">
+        <x-slot:function>
+            <p>Halaman ini memonitor status sesi kasir POS yang sedang berjalan secara real-time, termasuk penjualan tunai/non-tunai, pengeluaran kas kecil, dan estimasi kas di laci.</p>
+        </x-slot:function>
+        <x-slot:workflow>
+            <ol>
+                <li>Pastikan modal awal laci telah sesuai saat pembukaan shift.</li>
+                <li>Gunakan kartu <strong>Buka Kasir POS</strong> untuk melayani transaksi penjualan retail.</li>
+                <li>Catat setiap pengeluaran kas kecil kasir via <strong>Catat Pengeluaran</strong>.</li>
+                <li>Saat sesi selesai, lakukan <strong>Tutup Shift</strong> dengan menghitung fisik kas.</li>
+            </ol>
+        </x-slot:workflow>
+        <x-slot:parts>
+            <ul>
+                <li><strong>Kartu Navigasi Aksi:</strong> Akses cepat kasir POS, catat pengeluaran, tutup shift, riwayat shift, dan download PDF.</li>
+                <li><strong>Informasi Sesi:</strong> Nomor shift, kasir, cabang toko, waktu buka, dan terminal POS.</li>
+                <li><strong>Ringkasan Penjualan:</strong> Transaksi tunai, non-tunai, serta expected cash laci.</li>
+                <li><strong>Tabel Riwayat Transaksi &amp; Pengeluaran:</strong> Log detail setiap mutasi kas selama shift.</li>
+            </ul>
+        </x-slot:parts>
+        <x-slot:impacts>
+            <p>Pencatatan pengeluaran kas kecil memotong expected cash fisik dan tercatat dalam laporan operasional cabang.</p>
+        </x-slot:impacts>
+        <x-slot:operation>
+            <ol>
+                <li>Klik tombol aksi yang diinginkan di barisan kartu navigasi atas.</li>
+                <li>Pantau kalkulasi expected cash sebelum menutup shift.</li>
+            </ol>
+        </x-slot:operation>
+        <x-slot:warnings>
+            <div class="alert alert-warning mb-0">
+                Pastikan seluruh transaksi tertunda diselesaikan sebelum melakukan proses tutup shift.
+            </div>
+        </x-slot:warnings>
+        <x-slot:example>
+            <p>Sesi dibuka modal awal Rp 100.000, penjualan tunai Rp 500.000, pengeluaran kas Rp 50.000, maka Expected Cash adalah Rp 550.000.</p>
+        </x-slot:example>
+    </x-metronic.page-guide>
 @endsection
 
 @section('content')
     @if(!$shift)
+        <div class="row row-cols-1 row-cols-sm-2 g-4 mb-6">
+            <div class="col">
+                <a href="{{ route('retail.shifts.open') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                    <div class="card-body p-4 d-flex align-items-center">
+                        <div class="symbol symbol-40px symbol-circle bg-light-primary me-3 flex-shrink-0">
+                            <span class="symbol-label"><i class="ki-outline ki-plus fs-2 text-primary"></i></span>
+                        </div>
+                        <div class="overflow-hidden">
+                            <div class="fs-7 fw-bold text-gray-900 text-truncate">Buka Shift Baru</div>
+                            <div class="text-muted fs-8 text-truncate">Mulai sesi kasir POS hari ini</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            @can('cash_shifts.view')
+            <div class="col">
+                <a href="{{ route('retail.shifts.index') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                    <div class="card-body p-4 d-flex align-items-center">
+                        <div class="symbol symbol-40px symbol-circle bg-light-info me-3 flex-shrink-0">
+                            <span class="symbol-label"><i class="ki-outline ki-time fs-2 text-info"></i></span>
+                        </div>
+                        <div class="overflow-hidden">
+                            <div class="fs-7 fw-bold text-gray-900 text-truncate">Riwayat Shift</div>
+                            <div class="text-muted fs-8 text-truncate">Daftar seluruh sesi kasir</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            @endcan
+        </div>
+
         <x-metronic.card>
             <x-metronic.empty-state title="Belum Ada Shift Aktif" description="Buka shift kasir sebelum memulai transaksi penjualan POS." icon="ki-outline ki-time">
                 <a href="{{ route('retail.shifts.open') }}" class="btn btn-primary"><i class="ki-outline ki-plus fs-5 me-1"></i>Buka Shift Baru</a>
             </x-metronic.empty-state>
         </x-metronic.card>
     @else
+        {{-- Grid 5 Menu Card Aksi Navigasi Shift (Desain Bersih Sesuai Standar Metronic) --}}
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-xl-5 g-4 mb-6">
+            {{-- 1. Buka Kasir POS --}}
+            <div class="col">
+                <a href="{{ route('retail.pos.index') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                    <div class="card-body p-4 d-flex align-items-center">
+                        <div class="symbol symbol-40px symbol-circle bg-light-success me-3 flex-shrink-0">
+                            <span class="symbol-label"><i class="ki-outline ki-shop fs-2 text-success"></i></span>
+                        </div>
+                        <div class="overflow-hidden">
+                            <div class="fs-7 fw-bold text-gray-900 text-truncate">Buka Kasir POS</div>
+                            <div class="text-muted fs-8 text-truncate">Lanjut ke POS &amp; penjualan</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            {{-- 2. Catat Pengeluaran --}}
+            <div class="col">
+                @can('expense', $shift)
+                    <a href="{{ route('retail.shifts.expenses', $shift) }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                        <div class="card-body p-4 d-flex align-items-center">
+                            <div class="symbol symbol-40px symbol-circle bg-light-warning me-3 flex-shrink-0">
+                                <span class="symbol-label"><i class="ki-outline ki-wallet fs-2 text-warning"></i></span>
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="fs-7 fw-bold text-gray-900 text-truncate">Catat Pengeluaran</div>
+                                <div class="text-muted fs-8 text-truncate">Petty cash &amp; biaya kasir</div>
+                            </div>
+                        </div>
+                    </a>
+                @else
+                    <div class="card card-flush h-100 border border-gray-200 text-decoration-none bg-body shadow-xs opacity-75">
+                        <div class="card-body p-4 d-flex align-items-center">
+                            <div class="symbol symbol-40px symbol-circle bg-light-secondary me-3 flex-shrink-0">
+                                <span class="symbol-label"><i class="ki-outline ki-lock fs-2 text-muted"></i></span>
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="fs-7 fw-bold text-gray-900 text-truncate">Catat Pengeluaran</div>
+                                <div class="text-muted fs-8 text-truncate">Akses tidak diizinkan</div>
+                            </div>
+                        </div>
+                    </div>
+                @endcan
+            </div>
+
+            {{-- 3. Tutup Shift / Closing --}}
+            <div class="col">
+                @if($shift->status->value === 'open' || $shift->status->value === 'rejected')
+                    @can('close', $shift)
+                        <a href="{{ route('retail.shifts.close', $shift) }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                            <div class="card-body p-4 d-flex align-items-center">
+                                <div class="symbol symbol-40px symbol-circle bg-light-danger me-3 flex-shrink-0">
+                                    <span class="symbol-label"><i class="ki-outline ki-cross-circle fs-2 text-danger"></i></span>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <div class="fs-7 fw-bold text-gray-900 text-truncate">Tutup Shift</div>
+                                    <div class="text-muted fs-8 text-truncate">Hitung fisik kas &amp; closing</div>
+                                </div>
+                            </div>
+                        </a>
+                    @else
+                        <div class="card card-flush h-100 border border-gray-200 text-decoration-none bg-body shadow-xs opacity-75">
+                            <div class="card-body p-4 d-flex align-items-center">
+                                <div class="symbol symbol-40px symbol-circle bg-light-secondary me-3 flex-shrink-0">
+                                    <span class="symbol-label"><i class="ki-outline ki-lock fs-2 text-muted"></i></span>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <div class="fs-7 fw-bold text-gray-900 text-truncate">Tutup Shift</div>
+                                    <div class="text-muted fs-8 text-truncate">Hanya kasir bertugas</div>
+                                </div>
+                            </div>
+                        </div>
+                    @endcan
+                @elseif($shift->status->value === 'closing_submitted')
+                    <a href="{{ route('retail.shifts.close', $shift) }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                        <div class="card-body p-4 d-flex align-items-center">
+                            <div class="symbol symbol-40px symbol-circle bg-light-warning me-3 flex-shrink-0">
+                                <span class="symbol-label"><i class="ki-outline ki-time fs-2 text-warning"></i></span>
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="fs-7 fw-bold text-gray-900 text-truncate">Status Closing</div>
+                                <div class="text-muted fs-8 text-truncate">Menunggu approval</div>
+                            </div>
+                        </div>
+                    </a>
+                @else
+                    <div class="card card-flush h-100 border border-gray-200 text-decoration-none bg-body shadow-xs">
+                        <div class="card-body p-4 d-flex align-items-center">
+                            <div class="symbol symbol-40px symbol-circle bg-light-primary me-3 flex-shrink-0">
+                                <span class="symbol-label"><i class="ki-outline ki-check-circle fs-2 text-primary"></i></span>
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="fs-7 fw-bold text-gray-900 text-truncate">Status Shift</div>
+                                <div class="text-muted fs-8 text-truncate">{{ $shift->status->label() }}</div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+            {{-- 4. Riwayat Shift --}}
+            <div class="col">
+                @can('cash_shifts.view')
+                    <a href="{{ route('retail.shifts.index') }}" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                        <div class="card-body p-4 d-flex align-items-center">
+                            <div class="symbol symbol-40px symbol-circle bg-light-primary me-3 flex-shrink-0">
+                                <span class="symbol-label"><i class="ki-outline ki-time fs-2 text-primary"></i></span>
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="fs-7 fw-bold text-gray-900 text-truncate">Riwayat Shift</div>
+                                <div class="text-muted fs-8 text-truncate">Daftar seluruh sesi kasir</div>
+                            </div>
+                        </div>
+                    </a>
+                @else
+                    <div class="card card-flush h-100 border border-gray-200 text-decoration-none bg-body shadow-xs opacity-75">
+                        <div class="card-body p-4 d-flex align-items-center">
+                            <div class="symbol symbol-40px symbol-circle bg-light-secondary me-3 flex-shrink-0">
+                                <span class="symbol-label"><i class="ki-outline ki-time fs-2 text-muted"></i></span>
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="fs-7 fw-bold text-gray-900 text-truncate">Riwayat Shift</div>
+                                <div class="text-muted fs-8 text-truncate">Log sesi kasir</div>
+                            </div>
+                        </div>
+                    </div>
+                @endcan
+            </div>
+
+            {{-- 5. Download PDF --}}
+            <div class="col">
+                <a href="{{ route('retail.shifts.export.pdf', $shift) }}" target="_blank" class="card card-flush h-100 hover-elevate-up border border-gray-200 text-decoration-none bg-body shadow-xs">
+                    <div class="card-body p-4 d-flex align-items-center">
+                        <div class="symbol symbol-40px symbol-circle bg-light-info me-3 flex-shrink-0">
+                            <span class="symbol-label"><i class="ki-outline ki-printer fs-2 text-info"></i></span>
+                        </div>
+                        <div class="overflow-hidden">
+                            <div class="fs-7 fw-bold text-gray-900 text-truncate">Download PDF</div>
+                            <div class="text-muted fs-8 text-truncate">Cetak rekapitulasi shift</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
         {{-- Header Card --}}
-        <div class="card mb-6 shift-header-card shadow-sm border-0">
+        <div class="card mb-6 border border-gray-200 shadow-xs">
             <div class="card-body p-6">
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-4">
                     <div class="flex-grow-1">
@@ -59,16 +269,17 @@
                             @endif
                         </div>
                     </div>
-                    <div class="d-flex flex-wrap gap-2">
-                        @can('close', $shift)
-                            @if($shift->status->value === 'open' || $shift->status->value === 'rejected')
-                                <a href="{{ route('retail.shifts.close', $shift) }}" class="btn btn-danger btn-sm"><i class="ki-outline ki-cross-circle fs-5 me-1"></i>Tutup Shift</a>
-                            @endif
-                        @endcan
-                        @can('expense', $shift)
-                            <a href="{{ route('retail.shifts.expenses', $shift) }}" class="btn btn-light-warning btn-sm"><i class="ki-outline ki-wallet fs-5 me-1"></i>Catat Pengeluaran</a>
-                        @endcan
-                        <a href="{{ route('retail.pos.index') }}" class="btn btn-primary btn-sm"><i class="ki-outline ki-shop fs-5 me-1"></i>Buka Kasir POS</a>
+                    <div class="d-flex align-items-center gap-2">
+                        @if($shift->status->isOpen())
+                            <span class="badge badge-light-success px-3 py-2 fs-7 fw-semibold d-inline-flex align-items-center gap-2">
+                                <span class="bullet bullet-dot bg-success h-6px w-6px"></span>
+                                Kasir Sedang Aktif
+                            </span>
+                        @else
+                            <span class="badge badge-light-secondary px-3 py-2 fs-7 fw-semibold">
+                                {{ $shift->status->label() }}
+                            </span>
+                        @endif
                     </div>
                 </div>
 
@@ -118,7 +329,7 @@
         {{-- Summary Stats --}}
         <div class="row g-4 mb-6">
             <div class="col-sm-6 col-xl-3">
-                <div class="card shift-stat-card border-0 shadow-sm h-100">
+                <div class="card shift-stat-card border border-gray-200 shadow-xs h-100">
                     <div class="card-body p-5">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="text-muted fs-8 fw-bold text-uppercase ls-1">Total Transaksi</span>
@@ -130,7 +341,7 @@
                 </div>
             </div>
             <div class="col-sm-6 col-xl-3">
-                <div class="card shift-stat-card border-0 shadow-sm h-100">
+                <div class="card shift-stat-card border border-gray-200 shadow-xs h-100">
                     <div class="card-body p-5">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="text-muted fs-8 fw-bold text-uppercase ls-1">Penjualan Tunai</span>
@@ -142,7 +353,7 @@
                 </div>
             </div>
             <div class="col-sm-6 col-xl-3">
-                <div class="card shift-stat-card border-0 shadow-sm h-100">
+                <div class="card shift-stat-card border border-gray-200 shadow-xs h-100">
                     <div class="card-body p-5">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="text-muted fs-8 fw-bold text-uppercase ls-1">Penjualan Non Tunai</span>
@@ -154,7 +365,7 @@
                 </div>
             </div>
             <div class="col-sm-6 col-xl-3">
-                <div class="card shift-stat-card border-0 shadow-sm h-100 bg-light-warning">
+                <div class="card shift-stat-card border border-gray-200 shadow-xs h-100 bg-light-warning">
                     <div class="card-body p-5">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="text-gray-700 fs-8 fw-bold text-uppercase ls-1">Expected Cash</span>
@@ -170,7 +381,7 @@
         {{-- Breakdown Row --}}
         <div class="row g-4 mb-6">
             <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border border-gray-200 shadow-xs h-100">
                     <div class="card-header border-0 pt-5 pb-0">
                         <h3 class="card-title align-items-start flex-column mb-0">
                             <span class="card-label fw-bold fs-5 text-gray-900">Rincian Komposisi Pembayaran</span>
@@ -219,7 +430,7 @@
                 </div>
             </div>
             <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border border-gray-200 shadow-xs h-100">
                     <div class="card-header border-0 pt-5 pb-0">
                         <h3 class="card-title align-items-start flex-column mb-0">
                             <span class="card-label fw-bold fs-5 text-gray-900">Rekonsiliasi Saldo Kas (Laci POS)</span>
@@ -292,7 +503,7 @@
         </div>
 
         {{-- Transactions Table --}}
-        <div class="card mb-6 border-0 shadow-sm">
+        <div class="card mb-6 border border-gray-200 shadow-xs">
             <div class="card-header border-0 pt-5 pb-2">
                 <h3 class="card-title align-items-start flex-column mb-0">
                     <span class="card-label fw-bold fs-5 text-gray-900">Riwayat Transaksi POS</span>
@@ -362,7 +573,7 @@
         </div>
 
         {{-- Expenses Table --}}
-        <div class="card mb-6 border-0 shadow-sm">
+        <div class="card mb-6 border border-gray-200 shadow-xs">
             <div class="card-header border-0 pt-5 pb-2">
                 <div class="d-flex align-items-center justify-content-between w-100">
                     <h3 class="card-title align-items-start flex-column mb-0">
@@ -427,7 +638,7 @@
 
         {{-- Cash Count (if closing submitted or locked) --}}
         @if($shift->status->isLocked() && $shift->cashCounts && $shift->cashCounts->isNotEmpty())
-        <div class="card mb-6 border-0 shadow-sm">
+        <div class="card mb-6 border border-gray-200 shadow-xs">
             <div class="card-header border-0 pt-5 pb-2">
                 <h3 class="card-title align-items-start flex-column mb-0">
                     <span class="card-label fw-bold fs-5 text-gray-900">Rincian Perhitungan Fisik Uang Tunai</span>
@@ -473,7 +684,7 @@
 
         {{-- Approval / Closing Info --}}
         @if($shift->status->isLocked())
-        <div class="card mb-6 border-0 shadow-sm">
+        <div class="card mb-6 border border-gray-200 shadow-xs">
             <div class="card-header border-0 pt-5 pb-2">
                 <h3 class="card-title align-items-start flex-column mb-0">
                     <span class="card-label fw-bold fs-5 text-gray-900">Informasi Penutupan &amp; Verifikasi</span>
