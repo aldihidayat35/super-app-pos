@@ -172,7 +172,10 @@ class NotificationDispatchService
     private function sendWhatsapp(NotificationChannel $channel, NotificationLog $log): array
     {
         if ($channel->provider() === 'baileys_gateway') {
-            return $this->whatsappGateway->send($log->destination, $log->body);
+            $sessionId = $channel->sender;
+            $apiToken = $channel->metadata['api_token'] ?? null;
+
+            return $this->whatsappGateway->send($log->destination, $log->body, $sessionId, $apiToken);
         }
 
         $credentials = $channel->credentialData();

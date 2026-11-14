@@ -94,14 +94,34 @@
         .signatures {
             display: flex;
             justify-content: space-between;
-            margin-top: 20px;
+            align-items: flex-start;
+            margin-top: 18px;
             text-align: center;
+            width: 100%;
         }
         .sig-block {
-            width: 28%;
+            width: 31%;
+            text-align: center;
+        }
+        .sig-title {
+            font-size: 11px;
+            margin-bottom: 2px;
+            white-space: nowrap;
         }
         .sig-space {
-            height: 45px;
+            height: 42px;
+        }
+        .sig-name {
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+        .sig-dots {
+            display: inline-block;
+            white-space: nowrap;
+            letter-spacing: 1px;
         }
 
         @media print {
@@ -230,19 +250,19 @@
         @if($settings['print_show_signatures'])
             <div class="signatures">
                 <div class="sig-block">
-                    <div>Penerima / Pembeli,</div>
+                    <div class="sig-title">Penerima / Pembeli,</div>
                     <div class="sig-space"></div>
-                    <div>( ........................ )</div>
+                    <div class="sig-name"><span class="sig-dots">( .................... )</span></div>
                 </div>
                 <div class="sig-block">
-                    <div>Sopir / Pengirim,</div>
+                    <div class="sig-title">Sopir / Pengirim,</div>
                     <div class="sig-space"></div>
-                    <div>( ........................ )</div>
+                    <div class="sig-name"><span class="sig-dots">( .................... )</span></div>
                 </div>
                 <div class="sig-block">
-                    <div>Hormat Kami,</div>
+                    <div class="sig-title">Hormat Kami,</div>
                     <div class="sig-space"></div>
-                    <div class="bold">( {{ $sale->cashier?->name ?? 'Admin / Kasir' }} )</div>
+                    <div class="sig-name bold">( {{ $sale->cashier?->name ?? 'Admin / Kasir' }} )</div>
                 </div>
             </div>
         @endif

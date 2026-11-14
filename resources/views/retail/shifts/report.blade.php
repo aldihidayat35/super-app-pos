@@ -8,5 +8,17 @@
     @endforeach
     <p><strong>Catatan:</strong> {{ $shift->handover_notes ?: '-' }}</p>
     <p><strong>Approval:</strong> {{ $shift->approval_notes ?: '-' }}</p>
+    <div style="display:flex;justify-content:space-between;margin-top:40px;text-align:center;">
+        <div style="width:45%;">
+            <div style="font-size:12px;margin-bottom:4px;">Diserahkan oleh (Kasir),</div>
+            <div style="height:45px;"></div>
+            <div style="white-space:nowrap;font-weight:bold;">( {{ $shift->cashier?->name ?? 'Kasir' }} )</div>
+        </div>
+        <div style="width:45%;">
+            <div style="font-size:12px;margin-bottom:4px;">Diterima / Diverifikasi oleh,</div>
+            <div style="height:45px;"></div>
+            <div style="white-space:nowrap;font-weight:bold;">( .................... )</div>
+        </div>
+    </div>
 </body>
 </html>

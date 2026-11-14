@@ -12,6 +12,9 @@
 @endsection
 
 @section('content')
+    {{-- Grid Menu Card Berikon untuk Navigasi Pengaturan Sistem --}}
+    @include('admin.settings._nav_cards')
+
     <div class="row g-5 mb-6">
         <div class="col-md-3"><x-metronic.card title="Lokasi Sedang Aktif"><div class="fs-2hx fw-bold text-success">{{ $activeCount }}</div></x-metronic.card></div>
         <div class="col-md-3"><x-metronic.card title="Menunggu Persetujuan"><div class="fs-2hx fw-bold text-warning">{{ $pendingCount }}</div></x-metronic.card></div>

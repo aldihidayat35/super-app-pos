@@ -7,6 +7,7 @@ use App\Jobs\SendNotificationJob;
 use App\Models\NotificationChannel;
 use App\Models\NotificationLog;
 use App\Models\User;
+use App\Models\WhatsappConnection;
 use App\Services\Notifications\NotificationDispatchService;
 use App\Services\Notifications\WhatsappGatewayClient;
 use Database\Seeders\RolePermissionSeeder;
@@ -31,15 +32,66 @@ class WhatsappGatewayIntegrationTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin_config');
         Http::fake([
-            'wa-gateway.test/api/integrations/pos/session/status' => Http::response(['success' => true, 'data' => ['status' => 'disconnected']], 200),
-            'wa-gateway.test/api/integrations/pos/session/connect' => Http::response(['success' => true, 'data' => ['status' => 'qr_ready', 'qr' => 'QR-SECRET', 'qr_expires_at' => now()->addSeconds(20)->toIso8601String()]], 200),
+            'wa-gateway.test/api/sessions' => Http::response(['success' => true, 'sessions' => []], 200),
+            'wa-gateway.test/api/guest-session/create' => Http::response([
+                'success' => true,
+                'sessionId' => 'guest_watoken123',
+                'apiToken' => 'secret-test-key',
+                'status' => 'connecting',
+            ], 200),
+            'wa-gateway.test/api/guest-session/guest_watoken123/status' => Http::response([
+                'success' => true,
+                'status' => 'qr_ready',
+                'qr' => 'QR-SECRET',
+                'info' => ['status' => 'qr_ready'],
+            ], 200),
         ]);
 
         $this->actingAs($admin)->get(route('admin.whatsapp.index'))->assertOk()->assertDontSee('secret-test-key');
-        $this->actingAs($admin)->postJson(route('admin.whatsapp.connect'))->assertOk()->assertJsonPath('status', 'qr_ready')->assertJsonPath('qr', 'QR-SECRET');
-        $this->assertDatabaseHas('whatsapp_connections', ['session_id' => 'gudangtoko-main', 'status' => 'qr_ready']);
+        $this->actingAs($admin)->postJson(route('admin.whatsapp.connect'))
+            ->assertOk()
+            ->assertJsonPath('status', 'qr_ready')
+            ->assertJsonPath('qr', 'QR-SECRET');
+
+        $this->assertDatabaseHas('whatsapp_connections', [
+            'session_id' => 'guest_watoken123',
+            'status' => 'qr_ready',
+            'api_token' => 'secret-test-key',
+        ]);
         $this->assertDatabaseMissing('whatsapp_connections', ['last_error' => 'QR-SECRET']);
-        Http::assertSent(fn ($request): bool => $request->hasHeader('X-Api-Key', 'secret-test-key'));
+        Http::assertSent(fn ($request): bool => $request->hasHeader('Authorization', 'Bearer secret-test-key') || $request->hasHeader('X-Api-Key', 'secret-test-key'));
+    }
+
+    public function test_reconnect_refreshes_qr_code_for_guest_session(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin_config');
+        WhatsappConnection::query()->create([
+            'session_id' => 'guest_watoken123',
+            'api_token' => 'secret-test-key',
+            'status' => 'connecting',
+        ]);
+        Http::fake([
+            'wa-gateway.test/api/guest-session/guest_watoken123/refresh-qr' => Http::response([
+                'success' => true,
+                'status' => 'connecting',
+            ], 200),
+            'wa-gateway.test/api/guest-session/guest_watoken123/status' => Http::response([
+                'success' => true,
+                'status' => 'qr_ready',
+                'qr' => 'NEW-QR-SECRET',
+                'info' => ['status' => 'qr_ready'],
+            ], 200),
+        ]);
+
+        $this->actingAs($admin)->postJson(route('admin.whatsapp.reconnect'))
+            ->assertOk()
+            ->assertJsonPath('status', 'qr_ready')
+            ->assertJsonPath('qr', 'NEW-QR-SECRET');
+        $this->assertDatabaseHas('whatsapp_connections', [
+            'session_id' => 'guest_watoken123',
+            'status' => 'qr_ready',
+        ]);
     }
 
     public function test_connected_session_creates_baileys_channel_and_test_message_is_queued(): void
@@ -47,7 +99,14 @@ class WhatsappGatewayIntegrationTest extends TestCase
         Queue::fake();
         $admin = User::factory()->create();
         $admin->assignRole('super_admin');
-        Http::fake(['wa-gateway.test/api/integrations/pos/session/status' => Http::response(['success' => true, 'data' => ['status' => 'connected', 'phone' => '628123456789', 'name' => 'GudangToko']], 200)]);
+        Http::fake([
+            'wa-gateway.test/api/sessions' => Http::response([
+                'success' => true,
+                'sessions' => [
+                    ['id' => 'gudangtoko-main', 'status' => 'connected', 'phoneNumber' => '628123456789', 'name' => 'GudangToko'],
+                ],
+            ], 200),
+        ]);
 
         $this->actingAs($admin)->get(route('admin.whatsapp.index'))->assertOk();
         $this->assertDatabaseHas('notification_channels', ['sender' => 'gudangtoko-main', 'is_active' => true]);
@@ -71,7 +130,14 @@ class WhatsappGatewayIntegrationTest extends TestCase
         $admin->assignRole('admin_config');
         $recipient = User::factory()->create(['name' => 'Kepala Toko Melati', 'phone_number' => '0812-3456-7890']);
         $recipient->assignRole('kepala_toko');
-        Http::fake(['wa-gateway.test/api/integrations/pos/session/status' => Http::response(['success' => true, 'data' => ['status' => 'connected']], 200)]);
+        Http::fake([
+            'wa-gateway.test/api/sessions' => Http::response([
+                'success' => true,
+                'sessions' => [
+                    ['id' => 'gudangtoko-main', 'status' => 'connected', 'phoneNumber' => '628123456789', 'name' => 'GudangToko'],
+                ],
+            ], 200),
+        ]);
 
         $log = app(NotificationDispatchService::class)->queueLog(
             NotificationChannelType::WHATSAPP,
@@ -110,8 +176,13 @@ class WhatsappGatewayIntegrationTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin_config');
         Http::fake([
-            'wa-gateway.test/api/integrations/pos/session/status' => Http::response(['success' => true, 'data' => ['status' => 'connected', 'phone' => '628123456789', 'name' => 'GudangToko']], 200),
-            'wa-gateway.test/api/integrations/pos/session' => Http::response(['success' => true, 'data' => ['status' => 'disconnected']], 200),
+            'wa-gateway.test/api/sessions' => Http::response([
+                'success' => true,
+                'sessions' => [
+                    ['id' => 'gudangtoko-main', 'status' => 'connected', 'phoneNumber' => '628123456789', 'name' => 'GudangToko'],
+                ],
+            ], 200),
+            'wa-gateway.test/api/guest-session/*' => Http::response(['success' => true, 'message' => 'Guest session dihapus.'], 200),
         ]);
 
         $this->actingAs($admin)->get(route('admin.whatsapp.index'))->assertOk()->assertSee('Putuskan WhatsApp');
@@ -138,15 +209,15 @@ class WhatsappGatewayIntegrationTest extends TestCase
             'channel_type' => 'whatsapp',
             'sender' => 'gudangtoko-main',
             'endpoint' => 'http://wa-gateway.test',
-            'auth_type' => 'api_key',
-            'credentials' => [],
+            'auth_type' => 'bearer',
+            'credentials' => ['api_token' => 'secret-test-key'],
             'timeout_seconds' => 10,
             'retry_attempts' => 3,
             'is_active' => true,
-            'metadata' => ['provider' => 'baileys_gateway'],
+            'metadata' => ['provider' => 'baileys_gateway', 'api_token' => 'secret-test-key'],
         ]);
         Http::fake([
-            'wa-gateway.test/api/wa/send' => Http::response(['success' => true, 'data' => ['msg_id' => 'wa-message-123']], 200),
+            'wa-gateway.test/api/send-message' => Http::response(['success' => true, 'msg_id' => 'wa-message-123'], 200),
         ]);
         $log = NotificationLog::query()->create([
             'channel_type' => 'whatsapp',
@@ -164,7 +235,7 @@ class WhatsappGatewayIntegrationTest extends TestCase
             'status' => 'sent',
             'provider_message_id' => 'wa-message-123',
         ]);
-        Http::assertSent(fn ($request): bool => $request->data()['to'] === '6281234567890');
+        Http::assertSent(fn ($request): bool => $request->data()['to'] === '6281234567890' && $request->data()['session_id'] === 'gudangtoko-main');
     }
 
     public function test_queue_job_throws_only_while_delivery_is_waiting_for_retry(): void
@@ -175,14 +246,14 @@ class WhatsappGatewayIntegrationTest extends TestCase
             'channel_type' => 'whatsapp',
             'sender' => 'gudangtoko-main',
             'endpoint' => 'http://wa-gateway.test',
-            'auth_type' => 'api_key',
-            'credentials' => [],
+            'auth_type' => 'bearer',
+            'credentials' => ['api_token' => 'secret-test-key'],
             'timeout_seconds' => 10,
             'retry_attempts' => 2,
             'is_active' => true,
-            'metadata' => ['provider' => 'baileys_gateway'],
+            'metadata' => ['provider' => 'baileys_gateway', 'api_token' => 'secret-test-key'],
         ]);
-        Http::fake(['wa-gateway.test/api/wa/send' => Http::response(['error' => 'gateway down'], 500)]);
+        Http::fake(['wa-gateway.test/api/send-message' => Http::response(['error' => 'gateway down'], 500)]);
         $log = NotificationLog::query()->create([
             'channel_type' => 'whatsapp',
             'destination' => '081234567890',

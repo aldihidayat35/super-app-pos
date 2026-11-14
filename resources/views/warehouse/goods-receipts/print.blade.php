@@ -17,7 +17,17 @@
         <thead><tr><th>Produk</th><th>Unit</th><th>Datang</th><th>Accepted</th><th>Rejected</th><th>Damaged</th><th>Lokasi</th><th>Batch</th></tr></thead>
         <tbody>@foreach($receipt->items as $item)<tr><td>{{ $item->product_sku_snapshot }} - {{ $item->product_name_snapshot }}</td><td>{{ $item->unit_name_snapshot }}</td><td>{{ qty($item->quantity_received) }}</td><td>{{ qty($item->quantity_accepted) }}</td><td>{{ qty($item->quantity_rejected) }}</td><td>{{ qty($item->quantity_damaged) }}</td><td>{{ $item->warehouseLocation?->full_code ?: '-' }}</td><td>{{ $item->batch_no ?: '-' }}</td></tr>@endforeach</tbody>
     </table>
-    <br><br>
-    <table><tr><td style="height:90px;vertical-align:bottom;text-align:center">Penerima<br>{{ $receipt->receiver?->name }}</td><td style="height:90px;vertical-align:bottom;text-align:center">Kepala Gudang</td></tr></table>
+    <div style="display:flex;justify-content:space-around;margin-top:40px;text-align:center;">
+        <div style="width:40%;">
+            <div>Petugas Penerima,</div>
+            <div style="height:50px;"></div>
+            <div style="font-weight:bold;white-space:nowrap;">( {{ $receipt->receiver?->name ?: '....................' }} )</div>
+        </div>
+        <div style="width:40%;">
+            <div>Kepala Gudang / Verifikator,</div>
+            <div style="height:50px;"></div>
+            <div style="font-weight:bold;white-space:nowrap;">( .................... )</div>
+        </div>
+    </div>
 </body>
 </html>

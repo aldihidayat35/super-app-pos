@@ -93,21 +93,26 @@ class RestructuredNavigationAndUiTest extends TestCase
         $response->assertSee($branch->name);
     }
 
-    public function test_general_settings_renders_horizontal_line_tabs_without_page_reload(): void
+    public function test_general_settings_renders_navigation_cards_and_links_to_separate_pages(): void
     {
         $user = $this->createSuperAdmin();
 
         $response = $this->actingAs($user)->get(route('admin.settings.general.edit'))->assertOk();
 
-        $response->assertSee('nav-line-tabs', false);
-        $response->assertSee('#tab_general', false);
-        $response->assertSee('#tab_printer', false);
-        $response->assertSee('#tab_docnum', false);
-        $response->assertSee('#tab_stock_adjustment', false);
-        $response->assertSee('#tab_whatsapp', false);
+        $response->assertSee(route('admin.settings.general.edit'));
+        $response->assertSee(route('admin.settings.printer.edit'));
+        $response->assertSee(route('admin.settings.document-numbers.index'));
+        $response->assertSee(route('admin.settings.stock-adjustment-access.index'));
+        $response->assertSee(route('admin.whatsapp.index'));
         $response->assertSee('Identitas &amp; Preferensi', false);
         $response->assertSee('Pengaturan Printer', false);
         $response->assertSee('Nomor Dokumen', false);
+        $response->assertSee('Akses Koreksi Stok', false);
+        $response->assertSee('Koneksi WhatsApp', false);
+
+        // Pastikan halaman-halaman mandiri dapat diakses terpisah
+        $this->actingAs($user)->get(route('admin.settings.printer.edit'))->assertOk();
+        $this->actingAs($user)->get(route('admin.settings.document-numbers.index'))->assertOk();
     }
 
     public function test_master_products_renders_five_icon_cards_and_product_table(): void

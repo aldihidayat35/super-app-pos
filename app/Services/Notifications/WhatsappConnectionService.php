@@ -15,26 +15,35 @@ class WhatsappConnectionService
 
     public function current(): WhatsappConnection
     {
-        return WhatsappConnection::query()->firstOrCreate(
-            ['session_id' => $this->gateway->sessionId()],
-            ['status' => 'disconnected']
-        );
+        $connection = WhatsappConnection::query()->first();
+        if (! $connection) {
+            $connection = WhatsappConnection::query()->create([
+                'session_id' => $this->gateway->sessionId(),
+                'status' => 'disconnected',
+            ]);
+        }
+
+        return $connection;
     }
 
     /** @return array{connection: WhatsappConnection, qr: ?string, qr_expires_at: ?string, configured: bool} */
     public function refresh(?User $actor = null): array
     {
+        $connection = $this->current();
+
         if (! $this->gateway->configured()) {
-            $connection = $this->current();
-            $connection->forceFill(['status' => 'disconnected', 'last_checked_at' => now(), 'last_error' => 'Gateway WhatsApp belum dikonfigurasi.'])->save();
+            $connection->forceFill([
+                'status' => 'disconnected',
+                'last_checked_at' => now(),
+                'last_error' => 'Gateway WhatsApp belum dikonfigurasi.',
+            ])->save();
 
             return ['connection' => $connection, 'qr' => null, 'qr_expires_at' => null, 'configured' => false];
         }
 
         try {
-            return $this->persist($this->gateway->status(), $actor);
+            return $this->persist($this->gateway->status($connection->session_id, $connection->api_token), $actor);
         } catch (Throwable $exception) {
-            $connection = $this->current();
             $connection->forceFill([
                 'status' => 'disconnected',
                 'last_checked_at' => now(),
@@ -49,26 +58,32 @@ class WhatsappConnectionService
     /** @return array{connection: WhatsappConnection, qr: ?string, qr_expires_at: ?string, configured: bool} */
     public function connect(User $actor): array
     {
-        return $this->persist($this->gateway->connect(), $actor);
+        $connection = $this->current();
+
+        return $this->persist($this->gateway->connect($connection->session_id, $connection->api_token), $actor);
     }
 
     /** @return array{connection: WhatsappConnection, qr: ?string, qr_expires_at: ?string, configured: bool} */
     public function reconnect(User $actor): array
     {
-        return $this->persist($this->gateway->reconnect(), $actor);
+        $connection = $this->current();
+
+        return $this->persist($this->gateway->reconnect($connection->session_id, $connection->api_token), $actor);
     }
 
     /** @return array{connection: WhatsappConnection, qr: ?string, qr_expires_at: ?string, configured: bool} */
     public function disconnect(User $actor): array
     {
-        $payload = $this->gateway->disconnect();
+        $connection = $this->current();
+        $payload = $this->gateway->disconnect($connection->session_id, $connection->api_token);
         $payload['status'] = 'logged_out';
         $payload['phone'] = null;
         $payload['name'] = null;
         $payload['connected_at'] = null;
         $result = $this->persist($payload, $actor, true);
+
         NotificationChannel::query()->where('channel_type', NotificationChannelType::WHATSAPP->value)
-            ->where('sender', $this->gateway->sessionId())->update(['is_active' => false]);
+            ->update(['is_active' => false]);
 
         return $result;
     }
@@ -82,7 +97,8 @@ class WhatsappConnectionService
         $connection = $this->current();
         $status = in_array($payload['status'] ?? null, ['disconnected', 'connecting', 'qr_ready', 'connected', 'reconnecting', 'logged_out'], true)
             ? $payload['status'] : 'disconnected';
-        $connection->forceFill([
+
+        $fields = [
             'status' => $status,
             'phone_number' => $clearIdentity ? null : ($payload['phone'] ?? $connection->phone_number),
             'account_name' => $clearIdentity ? null : ($payload['name'] ?? $connection->account_name),
@@ -90,10 +106,19 @@ class WhatsappConnectionService
             'last_checked_at' => now(),
             'last_error' => null,
             'last_action_by' => $actor?->id,
-        ])->save();
+        ];
+
+        if (! empty($payload['session_id'])) {
+            $fields['session_id'] = $payload['session_id'];
+        }
+        if (! empty($payload['api_token'])) {
+            $fields['api_token'] = $payload['api_token'];
+        }
+
+        $connection->forceFill($fields)->save();
 
         if ($status === 'connected') {
-            $this->ensureNotificationChannel($actor);
+            $this->ensureNotificationChannel($actor, $connection);
         }
 
         return [
@@ -104,19 +129,24 @@ class WhatsappConnectionService
         ];
     }
 
-    private function ensureNotificationChannel(?User $actor): void
+    private function ensureNotificationChannel(?User $actor, WhatsappConnection $connection): void
     {
         $channel = NotificationChannel::query()->updateOrCreate(
-            ['channel_type' => NotificationChannelType::WHATSAPP->value, 'sender' => $this->gateway->sessionId()],
+            ['channel_type' => NotificationChannelType::WHATSAPP->value],
             [
                 'name' => 'WhatsApp Perusahaan',
+                'sender' => $connection->session_id,
                 'endpoint' => rtrim((string) config('whatsapp.gateway.base_url'), '/'),
-                'auth_type' => 'api_key',
-                'credentials' => [],
-                'timeout_seconds' => (int) config('whatsapp.gateway.timeout', 10),
+                'auth_type' => 'bearer',
+                'credentials' => ['api_token' => $connection->api_token],
+                'timeout_seconds' => (int) config('whatsapp.gateway.timeout', 15),
                 'retry_attempts' => 3,
                 'is_active' => true,
-                'metadata' => ['provider' => 'baileys_gateway'],
+                'metadata' => [
+                    'provider' => 'baileys_gateway',
+                    'session_id' => $connection->session_id,
+                    'api_token' => $connection->api_token,
+                ],
                 'updated_by' => $actor?->id,
                 'created_by' => $actor?->id,
             ]

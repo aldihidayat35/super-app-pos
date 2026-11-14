@@ -198,6 +198,23 @@
             </div>
         @endif
 
+        {{-- Kolom Tanda Tangan jika diaktifkan --}}
+        @if($settings['print_show_signatures'])
+            <div class="line"></div>
+            <div style="display: flex; justify-content: space-between; text-align: center; margin-top: 8px; font-size: {{ $settings['printer_thermal_width'] === '58mm' ? '9px' : '10px' }};">
+                <div style="width: 48%; text-align: center;">
+                    <div style="white-space: nowrap;">Penerima / Pembeli,</div>
+                    <div style="height: 36px;"></div>
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">( ................ )</div>
+                </div>
+                <div style="width: 48%; text-align: center;">
+                    <div style="white-space: nowrap;">Hormat Kami,</div>
+                    <div style="height: 36px;"></div>
+                    <div class="bold" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">( Kasir / Admin )</div>
+                </div>
+            </div>
+        @endif
+
         <div class="line"></div>
         <div class="center" style="margin-top: 6px;">
             <span>{{ $settings['print_receipt_footer_note'] ?? 'Terima kasih atas kunjungan Anda' }}</span><br>

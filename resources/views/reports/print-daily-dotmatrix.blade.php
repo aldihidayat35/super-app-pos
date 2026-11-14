@@ -69,14 +69,34 @@
         .signatures {
             display: flex;
             justify-content: space-around;
-            margin-top: 30px;
+            align-items: flex-start;
+            margin-top: 25px;
             text-align: center;
+            width: 100%;
         }
         .sig-block {
-            width: 35%;
+            width: 38%;
+            text-align: center;
+        }
+        .sig-title {
+            font-size: 11px;
+            margin-bottom: 2px;
+            white-space: nowrap;
         }
         .sig-space {
-            height: 50px;
+            height: 48px;
+        }
+        .sig-name {
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+        .sig-dots {
+            display: inline-block;
+            white-space: nowrap;
+            letter-spacing: 1px;
         }
         .no-print-bar {
             text-align: center;
@@ -235,16 +255,16 @@
         {{-- Tanda Tangan --}}
         <div class="signatures">
             <div class="sig-block">
-                <div>Disiapkan Oleh,</div>
+                <div class="sig-title">Disiapkan Oleh,</div>
                 <div class="sig-space"></div>
-                <div class="bold">( {{ auth()->user()?->name ?? 'Kasir / Petugas' }} )</div>
-                <div style="font-size: 10px;">Staff Operasional</div>
+                <div class="sig-name bold">( {{ auth()->user()?->name ?? 'Kasir / Petugas' }} )</div>
+                <div style="font-size: 10px; color: #444; margin-top: 2px;">Staff Operasional</div>
             </div>
             <div class="sig-block">
-                <div>Diketahui &amp; Disetujui Oleh,</div>
+                <div class="sig-title">Diketahui &amp; Disetujui Oleh,</div>
                 <div class="sig-space"></div>
-                <div class="bold">( ............................ )</div>
-                <div style="font-size: 10px;">Kepala Toko / Owner</div>
+                <div class="sig-name bold"><span class="sig-dots">( .................... )</span></div>
+                <div style="font-size: 10px; color: #444; margin-top: 2px;">Kepala Toko / Owner</div>
             </div>
         </div>
     </div>

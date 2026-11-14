@@ -8,6 +8,7 @@ use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Retail\StorePosReturnRequest;
 use App\Http\Requests\Retail\VoidPosSaleRequest;
+use App\Models\Branch;
 use App\Models\PosSale;
 use App\Models\PosSaleItem;
 use App\Models\SystemSetting;
@@ -148,6 +149,120 @@ class PosSaleController extends Controller
             'sale' => $sale,
             'settings' => $settings,
             'companyName' => $companyName,
+        ]);
+    }
+
+    public function printHistory(Request $request): View
+    {
+        $this->authorize('viewAny', PosSale::class);
+
+        $user = $request->user();
+
+        $startDate = $request->input('start_date', now()->toDateString());
+        $startTime = $request->input('start_time', '00:00');
+        $endDate = $request->input('end_date', now()->toDateString());
+        $endTime = $request->input('end_time', '23:59');
+
+        $startTimeFormatted = strlen($startTime) === 5 ? "{$startTime}:00" : (strlen($startTime) === 8 ? $startTime : '00:00:00');
+        $endTimeFormatted = strlen($endTime) === 5 ? "{$endTime}:59" : (strlen($endTime) === 8 ? $endTime : '23:59:59');
+
+        $startDateTime = "{$startDate} {$startTimeFormatted}";
+        $endDateTime = "{$endDate} {$endTimeFormatted}";
+
+        $query = PosSale::query()
+            ->whereIn('work_location_id', $user->permittedWorkLocationIds());
+
+        if (! $user->can('pos.void') && ! $user->hasRole('super_admin')) {
+            $query->where('cashier_user_id', $user->id);
+        }
+
+        $query->whereBetween('created_at', [$startDateTime, $endDateTime]);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('cashier_id')) {
+            $query->where('cashier_user_id', $request->cashier_id);
+        }
+
+        if ($request->filled('payment_method')) {
+            $method = $request->payment_method;
+            $query->whereHas('payments', fn ($q) => $q->where('method', $method));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search): void {
+                $q->where('number', 'like', "%{$search}%")
+                    ->orWhereHas('customer', fn ($q2) => $q2->where('business_name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('owner_name', 'like', "%{$search}%")
+                        ->orWhere('pic_name', 'like', "%{$search}%")
+                        ->orWhere('whatsapp_number', 'like', "%{$search}%"));
+            });
+        }
+
+        $sales = $query
+            ->with(['cashier', 'customer', 'branch', 'payments', 'items.product', 'items.unit'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $settings = SystemSetting::getPrinterSettings();
+        $companyName = SystemSetting::getCompanyName();
+
+        $totalCount = $sales->count();
+        $completedSales = $sales->where('status', PosSaleStatus::COMPLETED);
+        $totalCompleted = $completedSales->count();
+        $totalVoidOrReturned = $sales->whereIn('status', [PosSaleStatus::VOID_APPROVED, PosSaleStatus::RETURNED])->count();
+
+        $totalQuantitySold = 0;
+        foreach ($completedSales as $s) {
+            $totalQuantitySold += (float) $s->items->sum('quantity');
+        }
+
+        $totalGrossAmount = $completedSales->sum(fn ($s) => (float) $s->subtotal_amount);
+        $totalDiscountAmount = $completedSales->sum(fn ($s) => (float) $s->discount_amount);
+        $totalGrandAmount = $completedSales->sum(fn ($s) => (float) $s->grand_total_amount);
+
+        $paymentSummary = [];
+        foreach ($completedSales as $s) {
+            foreach ($s->payments as $p) {
+                $label = $p->method?->label() ?? 'Tunai';
+                if (! isset($paymentSummary[$label])) {
+                    $paymentSummary[$label] = 0;
+                }
+                $paymentSummary[$label] += (float) $p->amount;
+            }
+        }
+
+        $branch = $sales->first()?->branch ?? Branch::first();
+
+        return view('retail.sales.print-history-dotmatrix', [
+            'sales' => $sales,
+            'startDate' => $startDate,
+            'startTime' => $startTime,
+            'endDate' => $endDate,
+            'endTime' => $endTime,
+            'startDateTime' => $startDateTime,
+            'endDateTime' => $endDateTime,
+            'totalCount' => $totalCount,
+            'totalCompleted' => $totalCompleted,
+            'totalVoidOrReturned' => $totalVoidOrReturned,
+            'totalQuantitySold' => $totalQuantitySold,
+            'totalGrossAmount' => $totalGrossAmount,
+            'totalDiscountAmount' => $totalDiscountAmount,
+            'totalGrandAmount' => $totalGrandAmount,
+            'paymentSummary' => $paymentSummary,
+            'settings' => $settings,
+            'companyName' => $companyName,
+            'currentUser' => $user,
+            'branch' => $branch,
+            'filters' => [
+                'status' => $request->input('status'),
+                'cashier_id' => $request->input('cashier_id'),
+                'payment_method' => $request->input('payment_method'),
+            ],
         ]);
     }
 

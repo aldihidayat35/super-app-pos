@@ -25,4 +25,9 @@ enum CashShiftStatus: string
     {
         return in_array($this, [self::CLOSING_SUBMITTED, self::APPROVED, self::CLOSED], true);
     }
+
+    public function isOpen(): bool
+    {
+        return $this === self::OPEN;
+    }
 }

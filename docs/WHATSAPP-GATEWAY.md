@@ -1,65 +1,79 @@
-# Integrasi WhatsApp Gateway
+# Integrasi WhatsApp Gateway (Billey WA)
 
-Aplikasi memakai satu sesi WhatsApp perusahaan pada gateway Baileys. Super Admin dan Admin Config mengelolanya melalui menu **Koneksi WhatsApp** (`/admin/integrasi/whatsapp`). API key hanya digunakan oleh Laravel dan tidak pernah dikirim ke browser.
+Aplikasi memakai gateway WhatsApp berbasis Baileys (**Billey WA**) yang terhubung ke server `https://jokiin35.web.id`. Super Admin dan Admin Config mengelolanya melalui menu **Koneksi WhatsApp** (`/admin/integrasi/whatsapp`). Token API dan sesi disimpan secara aman di database dan tidak pernah diekspos ke browser pengguna.
 
-## Konfigurasi
+## Arsitektur & Endpoint Gateway (`https://jokiin35.web.id`)
 
-Tambahkan ke `.env` aplikasi POS:
+Gateway Billey WA menyediakan endpoint REST API berbasis Bearer Token:
+
+1. **Pembuatan Sesi Baru / Guest Session**:
+   - `POST https://jokiin35.web.id/api/guest-session/create`
+   - Menghasilkan `sessionId` unik (misal `guest_watoken...`), `apiToken` (misal `WATOKEN-...`), dan status awal `connecting`.
+2. **Pemeriksaan Status & Kode QR**:
+   - `GET https://jokiin35.web.id/api/guest-session/{sessionId}/status`
+   - Header: `Authorization: Bearer {apiToken}`
+   - Mengembalikan status (`qr_ready`, `connected`, `connecting`, `disconnected`), string QR code untuk dipindai, serta metadata akun (`phoneNumber`, `pushName`).
+3. **Penyegaran QR Code**:
+   - `POST https://jokiin35.web.id/api/guest-session/{sessionId}/refresh-qr`
+   - Header: `Authorization: Bearer {apiToken}`
+4. **Pemutusan Sesi (Disconnect / Logout)**:
+   - `DELETE https://jokiin35.web.id/api/guest-session/{sessionId}`
+   - Header: `Authorization: Bearer {apiToken}`
+5. **Pengiriman Pesan WhatsApp**:
+   - `POST https://jokiin35.web.id/api/send-message`
+   - Header: `Authorization: Bearer {apiToken}`, `Content-Type: application/json`
+   - Payload:
+     ```json
+     {
+       "session_id": "guest_watoken...",
+       "to": "628xxxxxxxxxx",
+       "message": "Isi pesan notifikasi"
+     }
+     ```
+   - Mengembalikan `{"success": true, "msg_id": "..."}` jika terhubung. Jika sesi belum terhubung/dipindai, gateway mengembalikan HTTP 409 `{"success": false, "error": "Session belum connected."}`.
+6. **Daftar Sesi Aktif**:
+   - `GET https://jokiin35.web.id/api/sessions`
+
+## Konfigurasi `.env`
+
+Tambahkan / sesuaikan pada `.env` aplikasi GudangToko:
 
 ```env
 WA_GATEWAY_ENABLED=true
-WA_GATEWAY_BASE_URL=http://127.0.0.1:3000
-WA_GATEWAY_API_KEY=isi_dengan_kunci_yang_sama_di_gateway
+WA_GATEWAY_BASE_URL=https://jokiin35.web.id
+WA_GATEWAY_API_KEY=
 WA_GATEWAY_SESSION_ID=gudangtoko-main
-WA_GATEWAY_TIMEOUT=10
+WA_GATEWAY_TIMEOUT=15
 NOTIFICATION_DRY_RUN=false
 ```
 
-Tambahkan ke `.env` gateway:
+> **Catatan:** Jika `WA_GATEWAY_API_KEY` tidak diisi manual di `.env`, aplikasi otomatis membuat guest session dinamis via `POST /api/guest-session/create` dan menyimpan `api_token` beserta `session_id` langsung ke tabel `whatsapp_connections`.
 
-```env
-WA_API_KEY=isi_dengan_kunci_yang_sama_di_pos
-POS_WA_SESSION_ID=gudangtoko-main
-SESSION_DIR=./sessions
-```
+## Menjalankan Antrean Notifikasi
 
-`SESSION_DIR` wajib berada pada disk persisten dan mempunyai izin tulis. Jangan menghapus folder ini saat deployment karena berisi kredensial perangkat tertaut.
-
-## Menjalankan layanan
+Untuk memproses notifikasi keluar di latar belakang, jalankan queue worker:
 
 ```powershell
-cd C:\laragon\www\billey-waapi-v2
-npm.cmd run start
-
-cd C:\laragon\www\super-app-pos
 php artisan queue:work database --queue=default --tries=3 --timeout=120
 ```
 
-Worker queue wajib aktif agar pesan berstatus **Dalam Antrian** diproses. Halaman Koneksi WhatsApp menampilkan 10 pengiriman terbaru langsung dari server, lalu memperbarui status antrean, percobaan ulang, gagal, serta terkirim secara otomatis. Kolom **Jenis Notifikasi** memakai pengaturan notifikasi bisnis atau template yang menjadi sumber pesan. Kolom **Penerima** memakai akun aktual yang nomor WhatsApp-nya cocok; nomor yang belum terhubung ke akun ditandai sebagai **Nomor eksternal**. Tombol **Detail Pesan** membuka isi lengkap, penerima, waktu proses, percobaan, ID WhatsApp, kegagalan, pemicu, dan respons gateway yang sudah disanitasi. Informasi yang sama tersedia pada menu **Log Pengiriman**.
+Worker queue wajib aktif agar pesan berstatus **Dalam Antrian** diproses. Halaman Koneksi WhatsApp menampilkan 10 pengiriman terbaru langsung dari server, lalu memperbarui status antrean, percobaan ulang, gagal, serta terkirim secara otomatis.
 
-Status **Terkirim** berarti gateway WhatsApp telah menerima pesan dan mengembalikan ID pesan. Jika gateway sementara tidak dapat dijangkau, job masuk percobaan ulang sesuai jeda queue.
-
-Setelah gateway aktif, buka halaman koneksi, klik **Hubungkan WhatsApp**, lalu pindai QR dari menu **Perangkat tertaut** pada WhatsApp. Gangguan jaringan atau restart gateway akan memakai kembali sesi tersimpan. Saat status terhubung, tombol utama otomatis berubah menjadi **Putuskan WhatsApp**. Tombol tersebut melakukan logout, membersihkan identitas koneksi tersimpan di POS, menonaktifkan channel pengiriman, dan mengembalikan tombol menjadi **Hubungkan WhatsApp**.
-
-Gunakan **Sambungkan Ulang** hanya ketika status koneksi menunjukkan gangguan. Pengaturan jenis pesan berada pada menu **Aktif/Nonaktif Notifikasi** (`/admin/notifications/pengaturan-bisnis`).
-
-Scheduler aplikasi perlu aktif bersama queue worker. Scheduler memeriksa stok, piutang, order tertunda, dan mengirim laporan owner pukul 21.00 Asia/Jakarta. Laporan owner juga diantrikan setelah kepala toko atau kepala gudang menyelesaikan checklist hariannya. Pesan laporan menyertakan tautan Dashboard Owner, Laporan Harian, dan Dashboard Toko yang dapat dibuka setelah login.
+## Alur Kerja
 
 ```mermaid
 flowchart LR
-    AD[Admin POS] --> HP[Hubungkan WhatsApp]
-    HP --> GW[Gateway Baileys]
-    GW --> QR[QR di halaman POS]
-    QR --> SC[Pindai dari WhatsApp]
-    SC --> PS[Sesi tersimpan]
-    PS --> NT[Queue notifikasi]
-    NT --> WA[Pesan terkirim]
+    AD[Admin POS] -->|Klik Hubungkan| GW[Billey WA Gateway]
+    GW -->|Buat Session & QR| POS[Halaman Koneksi POS]
+    POS -->|Tampilkan QR| WA[Scan dari WhatsApp HP]
+    WA -->|Terhubung| DB[Simpan Session & Token]
+    DB -->|Queue Worker| SND[POST /api/send-message]
+    SND -->|Kirim Pesan| REC[Nomor Tujuan Pelanggan/Karyawan]
 ```
 
-## Pemecahan masalah
+## Pemecahan Masalah
 
-- **Gateway tidak dapat dijangkau:** pastikan proses Node aktif dan `WA_GATEWAY_BASE_URL` benar.
-- **QR kedaluwarsa:** klik **Minta QR Baru / Sambungkan Ulang**.
-- **Status tidak terhubung setelah restart:** pastikan `SESSION_DIR` tidak berubah dan masih berisi folder `gudangtoko-main`.
-- **Pesan hanya berstatus dilewati:** ubah `NOTIFICATION_DRY_RUN=false` dan jalankan queue worker.
-- **Pesan gagal:** periksa Log Pengiriman dan Kesehatan Sistem tanpa menyalin API key ke log.
+- **Gateway tidak dapat dijangkau:** Pastikan server `https://jokiin35.web.id` aktif dan koneksi internet stabil.
+- **QR kedaluwarsa:** Klik tombol **Minta QR Baru / Sambungkan Ulang**.
+- **Sesi terputus di HP:** Klik **Putuskan WhatsApp**, lalu klik **Hubungkan WhatsApp** untuk membuat sesi baru.
+- **Pesan gagal / HTTP 409:** Pastikan WhatsApp sudah berstatus **Terhubung** sebelum mengirim pesan. Periksa Log Pengiriman dan Kesehatan Sistem.

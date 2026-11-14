@@ -63,14 +63,34 @@
         .signatures {
             display: flex;
             justify-content: space-between;
-            margin-top: 25px;
+            align-items: flex-start;
+            margin-top: 20px;
             text-align: center;
+            width: 100%;
         }
         .sig-block {
-            width: 28%;
+            width: 31%;
+            text-align: center;
+        }
+        .sig-title {
+            font-size: 11px;
+            margin-bottom: 2px;
+            white-space: nowrap;
         }
         .sig-space {
-            height: 45px;
+            height: 42px;
+        }
+        .sig-name {
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+        .sig-dots {
+            display: inline-block;
+            white-space: nowrap;
+            letter-spacing: 1px;
         }
         .no-print-bar {
             text-align: center;
@@ -178,19 +198,19 @@
         @if($settings['print_show_signatures'])
             <div class="signatures">
                 <div class="sig-block">
-                    <div>Penerima (Tujuan),</div>
+                    <div class="sig-title">Penerima (Tujuan),</div>
                     <div class="sig-space"></div>
-                    <div>( ........................ )</div>
+                    <div class="sig-name"><span class="sig-dots">( .................... )</span></div>
                 </div>
                 <div class="sig-block">
-                    <div>Sopir / Kurir Pengantar,</div>
+                    <div class="sig-title">Sopir / Kurir Pengantar,</div>
                     <div class="sig-space"></div>
-                    <div>( {{ $transfer->carrier ?: '........................' }} )</div>
+                    <div class="sig-name"><span class="sig-dots">( {{ $transfer->carrier ?: '....................' }} )</span></div>
                 </div>
                 <div class="sig-block">
-                    <div>Pengirim (Asal),</div>
+                    <div class="sig-title">Pengirim (Asal),</div>
                     <div class="sig-space"></div>
-                    <div class="bold">( {{ $transfer->shipper?->name ?: 'Petugas Gudang' }} )</div>
+                    <div class="sig-name bold">( {{ $transfer->shipper?->name ?: 'Petugas Gudang' }} )</div>
                 </div>
             </div>
         @endif

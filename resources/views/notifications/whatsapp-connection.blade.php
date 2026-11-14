@@ -4,6 +4,9 @@
 @section('page_title', 'Koneksi WhatsApp')
 
 @section('content')
+{{-- Grid Menu Card Berikon untuk Navigasi Pengaturan Sistem --}}
+@include('admin.settings._nav_cards')
+
 @php
     $initial = ['configured' => $configured, 'status' => $connection->status, 'phone' => $connection->phone_number, 'name' => $connection->account_name, 'connected_at' => $connection->connected_at?->toIso8601String(), 'last_checked_at' => $connection->last_checked_at?->toIso8601String(), 'last_error' => $connection->last_error, 'qr' => $qr, 'qr_expires_at' => $qr_expires_at, 'messages' => $messages];
     $statusLabel = match ($connection->status) {

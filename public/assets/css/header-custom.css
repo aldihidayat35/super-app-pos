@@ -167,4 +167,80 @@
     display: block !important;
 }
 
+/* Header Catalog Button (Desktop & Mobile) */
+.gt-header-catalog-btn {
+    height: 32px !important;
+    max-height: 32px !important;
+    padding: 2px 10px !important;
+    border-radius: 999px !important;
+    background-color: var(--bs-body-bg, #ffffff);
+    border: 1px solid var(--bs-border-color, #e4e6ef);
+    color: var(--bs-gray-700);
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    transition: all 0.2s ease;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+}
+
+.gt-header-catalog-btn i {
+    color: var(--bs-primary);
+    font-size: 1.05rem !important;
+    transition: transform 0.2s ease;
+}
+
+.gt-header-catalog-btn:hover {
+    background-color: var(--bs-light-primary, #f1faff);
+    border-color: var(--bs-primary, #009ef7);
+    color: var(--bs-primary, #009ef7);
+}
+
+.gt-header-catalog-btn:hover i {
+    transform: scale(1.1);
+}
+
+.gt-header-catalog-btn.active {
+    background-color: var(--bs-light-primary, #f1faff) !important;
+    border-color: var(--bs-primary, #009ef7) !important;
+    color: var(--bs-primary, #009ef7) !important;
+    box-shadow: 0 1px 3px rgba(0, 158, 247, 0.15);
+}
+
+[data-bs-theme='dark'] .gt-header-catalog-btn {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: var(--bs-gray-300);
+}
+
+[data-bs-theme='dark'] .gt-header-catalog-btn:hover,
+[data-bs-theme='dark'] .gt-header-catalog-btn.active {
+    background-color: rgba(0, 158, 247, 0.15) !important;
+    border-color: var(--bs-primary) !important;
+    color: var(--bs-primary) !important;
+}
+
+/* Responsif Mobile Header */
+@media (max-width: 575.98px) {
+    .gt-header-catalog-btn {
+        padding: 2px 8px !important;
+        gap: 4px !important;
+        font-size: 0.75rem !important;
+    }
+    .gt-header-catalog-label {
+        display: inline-block !important; /* Wajib tampil di mobile */
+    }
+    .gt-header-brand-name {
+        max-width: 120px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+}
+
+
 

@@ -1540,6 +1540,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/sales', [PosSaleController::class, 'index'])
             ->middleware('permission:pos.view')
             ->name('sales.index');
+        Route::get('/sales/print-history', [PosSaleController::class, 'printHistory'])
+            ->middleware('permission:pos.view')
+            ->name('sales.print-history');
 
         Route::get('/sales/{sale}', [PosSaleController::class, 'show'])
             ->middleware('permission:pos.view')

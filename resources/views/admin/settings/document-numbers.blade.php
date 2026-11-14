@@ -13,6 +13,9 @@
 @endsection
 
 @section('content')
+    {{-- Grid Menu Card Berikon untuk Navigasi Pengaturan Sistem --}}
+    @include('admin.settings._nav_cards')
+
     <x-metronic.card title="Konfigurasi Nomor Dokumen">
         <form method="POST" action="{{ route('admin.settings.document-numbers.update') }}">
             @csrf

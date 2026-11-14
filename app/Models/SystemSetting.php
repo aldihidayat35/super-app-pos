@@ -72,7 +72,7 @@ class SystemSetting extends Model
         $defaults = [
             'printer_thermal_width' => '80mm',
             'printer_dotmatrix_paper' => 'half_letter',
-            'printer_auto_print_pos' => true,
+            'printer_auto_print_pos' => false,
             'print_show_logo' => true,
             'print_show_store_header' => true,
             'print_show_cashier_name' => true,

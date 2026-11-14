@@ -51,23 +51,23 @@ use App\Enums\CashShiftStatus;
 <body>
     <div class="header">
         <h1>LAPORAN SHIFT KASIR</h1>
-        <p>Shift #{{ $shift->number }} &mdash; {{ $shift->started_at->format('d M Y') }}</p>
+        <p>Shift #{{ $shift->number }} &mdash; {{ $shift->opened_at?->format('d M Y') ?? date('d M Y') }}</p>
         <p>{{ config('app.name') }} &mdash; {{ date('d M Y H:i') }} WIB</p>
     </div>
 
     <table class="info-grid">
         <tr><td class="info-label">Kasir</td><td class="info-value">{{ $shift->cashier?->name ?? '-' }}</td>
-            <td class="info-label">شعبه</td><td class="info-value">{{ $shift->branch?->name ?? '-' }}</td></tr>
-        <tr><td class="info-label">آغاز</td><td class="info-value">{{ $shift->opened_at?->format('d/m/Y H:i') ?? '-' }}</td>
-            <td class="info-label">پایان</td><td class="info-value">{{ $shift->closed_at?->format('d/m/Y H:i') ?? 'باز' }}</td></tr>
-        <tr><td class="info-label">موجودی اولیه</td><td class="info-value amount">{{ App\Support\CurrencyFormatter::rupiah($shift->opening_cash_amount) }}</td>
-            <td class="info-label">وضعیت</td><td class="info-value">
+            <td class="info-label">Cabang</td><td class="info-value">{{ $shift->branch?->name ?? '-' }}</td></tr>
+        <tr><td class="info-label">Waktu Buka</td><td class="info-value">{{ $shift->opened_at?->format('d/m/Y H:i') ?? '-' }}</td>
+            <td class="info-label">Waktu Tutup</td><td class="info-value">{{ $shift->closed_at?->format('d/m/Y H:i') ?? 'Masih Aktif' }}</td></tr>
+        <tr><td class="info-label">Modal Awal</td><td class="info-value amount">{{ App\Support\CurrencyFormatter::rupiah($shift->opening_cash_amount) }}</td>
+            <td class="info-label">Status</td><td class="info-value">
                 @if($shift->status == \App\Enums\CashShiftStatus::CLOSED)
-                    <span class="badge badge-closed">بسته شده</span>
+                    <span class="badge badge-closed">Ditutup</span>
                 @elseif($shift->status == \App\Enums\CashShiftStatus::OPEN)
-                    <span class="badge badge-open">باز</span>
+                    <span class="badge badge-open">Terbuka</span>
                 @else
-                    <span class="badge badge-approved">تایید شده</span>
+                    <span class="badge badge-approved">{{ $shift->status->label() }}</span>
                 @endif
             </td></tr>
     </table>
@@ -204,6 +204,22 @@ use App\Enums\CashShiftStatus;
         @endforeach
     </table>
     @endif
+
+    <table style="width: 100%; margin-top: 25px; border-collapse: collapse;">
+        <tr>
+            <td style="width: 45%; text-align: center; border: none;">
+                <div style="font-size: 9pt; margin-bottom: 3px;">Kasir yang Menyerahkan,</div>
+                <div style="height: 45px;"></div>
+                <div style="font-weight: bold; white-space: nowrap; font-size: 9pt;">( {{ $shift->cashier?->name ?? 'Kasir' }} )</div>
+            </td>
+            <td style="width: 10%; border: none;"></td>
+            <td style="width: 45%; text-align: center; border: none;">
+                <div style="font-size: 9pt; margin-bottom: 3px;">Supervisor / Verifikator,</div>
+                <div style="height: 45px;"></div>
+                <div style="font-weight: bold; white-space: nowrap; font-size: 9pt;">( {{ $shift->approvals->firstWhere('approved_by', $shift->approved_by)?->actor?->name ?? '....................' }} )</div>
+            </td>
+        </tr>
+    </table>
 
     <div class="footer">
         <p>Dokumen ini dicetak secara otomatis oleh sistem &mdash; {{ config('app.name') }} &copy; {{ date('Y') }}</p>

@@ -266,13 +266,15 @@
                         <div class="mt-3 text-muted">Kembalian</div>
                         <div id="success-change" class="fs-2 fw-bold text-success"></div>
                         <div class="d-grid gap-2.5 mt-7">
-                            <button type="button" id="success-print" class="btn btn-primary fw-bold">
+                            <button type="button" id="success-print" class="btn btn-success fw-bold py-3">
                                 <i class="ki-outline ki-receipt-square fs-4 me-1"></i>Cetak Struk (Thermal 80mm)
                             </button>
-                            <button type="button" id="success-print-dotmatrix" class="btn btn-light-success fw-bold">
+                            <button type="button" id="success-print-dotmatrix" class="btn btn-light-primary fw-bold py-3">
                                 <i class="ki-outline ki-document fs-4 me-1"></i>Cetak Faktur (Epson LX-310)
                             </button>
-                            <button type="button" id="new-transaction" class="btn btn-light-primary fw-bold">Transaksi Baru</button>
+                            <button type="button" id="new-transaction" class="btn btn-light-success fw-bold py-3">
+                                <i class="ki-outline ki-plus fs-4 me-1"></i>Transaksi Baru (Tanpa Struk)
+                            </button>
                             <a id="success-detail" class="btn btn-light">Lihat Detail</a>
                         </div>
                     </div>
@@ -1887,11 +1889,14 @@
                         document.getElementById('success-change').textContent = money(data.sale.change);
                         receiptPrintUrl = data.sale.print_url;
                         document.getElementById('success-detail').href = data.sale.show_url;
+
+                        const btnThermal = document.getElementById('success-print');
+                        if (btnThermal) btnThermal.innerHTML = '<i class="ki-outline ki-receipt-square fs-4 me-1"></i>Cetak Struk (Thermal 80mm)';
+                        const btnDot = document.getElementById('success-print-dotmatrix');
+                        if (btnDot) btnDot.innerHTML = '<i class="ki-outline ki-document fs-4 me-1"></i>Cetak Faktur (Epson LX-310)';
+
                         clearTransaction();
                         successModal.show();
-                        if (printerSettings && printerSettings.printer_auto_print_pos) {
-                            setTimeout(() => printReceipt('thermal'), 300);
-                        }
                     } catch (error) {
                         window.Swal ? Swal.fire('Checkout gagal', error.message, 'error') : alert(error.message);
                         button.disabled = false;
@@ -2019,7 +2024,14 @@
                         showToast('Popup cetak diblokir browser. Izinkan popup untuk mencetak.');
                         return;
                     }
-                    startNewTransaction();
+                    if (format === 'thermal') {
+                        const btn = document.getElementById('success-print');
+                        if (btn) btn.innerHTML = '<i class="ki-outline ki-check fs-4 me-1"></i>Cetak Ulang Struk (Thermal)';
+                    } else {
+                        const btn = document.getElementById('success-print-dotmatrix');
+                        if (btn) btn.innerHTML = '<i class="ki-outline ki-check fs-4 me-1"></i>Cetak Ulang Faktur (LX-310)';
+                    }
+                    document.getElementById('new-transaction')?.focus();
                 }
 
                 scanner.addEventListener('input', () => {
@@ -2171,6 +2183,7 @@
                 document.getElementById('new-transaction').addEventListener('click', startNewTransaction);
                 document.getElementById('success-print')?.addEventListener('click', () => printReceipt('thermal'));
                 document.getElementById('success-print-dotmatrix')?.addEventListener('click', () => printReceipt('dotmatrix'));
+                document.getElementById('success-modal')?.addEventListener('shown.bs.modal', () => document.getElementById('new-transaction')?.focus());
                 document.getElementById('payment-modal').addEventListener('shown.bs.modal', () => document.querySelector(
                     '.payment-amount')?.focus());
                 document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('hidden.bs.modal',
@@ -2257,6 +2270,18 @@
                         'show') && !document.getElementById('confirm-payment').disabled) {
                         event.preventDefault();
                         checkout();
+                    }
+                    if (document.getElementById('success-modal')?.classList.contains('show')) {
+                        if (event.key === 'Escape' || (event.key === 'Enter' && event.target.id !== 'success-print' && event.target.id !== 'success-print-dotmatrix')) {
+                            event.preventDefault();
+                            startNewTransaction();
+                        } else if (event.key === 'F9') {
+                            event.preventDefault();
+                            printReceipt('thermal');
+                        } else if (event.key === 'F10') {
+                            event.preventDefault();
+                            printReceipt('dotmatrix');
+                        }
                     }
                 });
 

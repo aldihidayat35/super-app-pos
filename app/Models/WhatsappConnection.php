@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WhatsappConnection extends Model
 {
-    protected $fillable = ['session_id', 'status', 'phone_number', 'account_name', 'connected_at', 'last_checked_at', 'last_error', 'last_action_by'];
+    protected $fillable = ['session_id', 'api_token', 'status', 'phone_number', 'account_name', 'connected_at', 'last_checked_at', 'last_error', 'last_action_by'];
 
     protected function casts(): array
     {

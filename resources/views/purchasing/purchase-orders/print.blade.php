@@ -12,7 +12,10 @@
         .title { font-size: 24px; font-weight: bold; }
         .right { text-align: right; }
         .total { font-size: 16px; font-weight: bold; }
-        .signature { margin-top: 60px; display: flex; justify-content: space-between; }
+        .signature { margin-top: 40px; display: flex; justify-content: space-between; text-align: center; }
+        .signature > div { width: 30%; text-align: center; }
+        .sig-space { height: 45px; }
+        .sig-name { white-space: nowrap; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -58,9 +61,21 @@
     </table>
     <p><strong>Catatan:</strong> {{ $purchaseOrder->notes ?: '-' }}</p>
     <div class="signature">
-        <div>Dibuat oleh,<br><br><br>{{ $purchaseOrder->creator?->name ?: '-' }}</div>
-        <div>Disetujui oleh,<br><br><br>{{ $purchaseOrder->approver?->name ?: '-' }}</div>
-        <div>Supplier,<br><br><br>________________</div>
+        <div>
+            <div>Dibuat oleh,</div>
+            <div class="sig-space"></div>
+            <div class="sig-name">( {{ $purchaseOrder->creator?->name ?: '....................' }} )</div>
+        </div>
+        <div>
+            <div>Disetujui oleh,</div>
+            <div class="sig-space"></div>
+            <div class="sig-name">( {{ $purchaseOrder->approver?->name ?: '....................' }} )</div>
+        </div>
+        <div>
+            <div>Supplier / Pemasok,</div>
+            <div class="sig-space"></div>
+            <div class="sig-name">( .................... )</div>
+        </div>
     </div>
 </body>
 </html>

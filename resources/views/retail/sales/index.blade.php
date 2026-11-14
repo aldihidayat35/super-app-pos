@@ -129,9 +129,15 @@
                         @if(request()->anyFilled(['search', 'status', 'cashier_id', 'payment_method']) || request('start_date') !== now()->toDateString() || request('end_date') !== now()->toDateString())
                             <a href="{{ route('retail.sales.index') }}" class="btn btn-light-danger" title="Kembali ke default transaksi hari ini">Reset</a>
                         @endif
+                        <a href="{{ route('retail.sales.print-history', request()->query()) }}" target="_blank" class="btn btn-light-success" title="Cetak Riwayat Transaksi sesuai filter yang aktif">
+                            <i class="ki-outline ki-printer fs-4 me-1"></i> Cetak Filter Ini
+                        </a>
                     </form>
                 </div>
-                <div class="card-toolbar d-flex justify-content-end w-100">
+                <div class="card-toolbar d-flex justify-content-end gap-2 w-100">
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modal-print-history">
+                        <i class="ki-outline ki-printer fs-2"></i> Cetak Transaksi (Dot Matrix)
+                    </button>
                     @can('pos.create')
                     <a href="{{ route('retail.pos.index') }}" class="btn btn-primary">
                         <i class="ki-outline ki-plus fs-2"></i> Kasir POS Baru
@@ -280,6 +286,114 @@
         </x-metronic.card>
     </div>
 </div>
+
+<!-- Modal Cetak Transaksi Riwayat -->
+<div class="modal fade" id="modal-print-history" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-600px">
+        <div class="modal-content">
+            <form method="GET" action="{{ route('retail.sales.print-history') }}" target="_blank">
+                <div class="modal-header">
+                    <h2 class="fw-bold d-flex align-items-center gap-2">
+                        <i class="ki-outline ki-printer text-success fs-1"></i>
+                        Cetak Riwayat Transaksi (Dot Matrix)
+                    </h2>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="ki-outline ki-cross fs-1"></i>
+                    </div>
+                </div>
+
+                <div class="modal-body py-lg-7 px-lg-9">
+                    <div class="alert alert-dismissible bg-light-success border border-success border-dashed d-flex flex-column p-4 mb-6">
+                        <div class="d-flex align-items-center">
+                            <i class="ki-outline ki-information-5 fs-2hx text-success me-3"></i>
+                            <div class="d-flex flex-column">
+                                <span class="fw-bold text-gray-800">Format Printer Dot Matrix (Epson LX-310)</span>
+                                <span class="text-muted fs-7">Rincian riwayat transaksi dan detail item barang yang terjual dengan format kompak, rapi, dan hemat kertas.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preset Rentang Waktu Cepat -->
+                    <div class="mb-5">
+                        <label class="form-label fw-semibold fs-7 text-muted mb-2">Preset Rentang Waktu:</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-light-primary" id="btn-preset-today">Hari Ini</button>
+                            <button type="button" class="btn btn-sm btn-light-primary" id="btn-preset-yesterday">Kemarin</button>
+                            <button type="button" class="btn btn-sm btn-light-primary" id="btn-preset-7days">7 Hari Terakhir</button>
+                            <button type="button" class="btn btn-sm btn-light-primary" id="btn-preset-month">Bulan Ini</button>
+                        </div>
+                    </div>
+
+                    <!-- Input Rentang Waktu Detail -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-sm-7">
+                            <label class="form-label required fw-semibold">Tanggal Mulai:</label>
+                            <input type="date" name="start_date" id="print_start_date" class="form-control form-control-solid" value="{{ $startDate ?: now()->toDateString() }}" required>
+                        </div>
+                        <div class="col-sm-5">
+                            <label class="form-label required fw-semibold">Jam Mulai:</label>
+                            <input type="time" name="start_time" id="print_start_time" class="form-control form-control-solid" value="00:00" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-5">
+                        <div class="col-sm-7">
+                            <label class="form-label required fw-semibold">Tanggal Selesai:</label>
+                            <input type="date" name="end_date" id="print_end_date" class="form-control form-control-solid" value="{{ $endDate ?: now()->toDateString() }}" required>
+                        </div>
+                        <div class="col-sm-5">
+                            <label class="form-label required fw-semibold">Jam Selesai:</label>
+                            <input type="time" name="end_time" id="print_end_time" class="form-control form-control-solid" value="23:59" required>
+                        </div>
+                    </div>
+
+                    <div class="separator separator-dashed my-5"></div>
+
+                    <!-- Filter Tambahan -->
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Status Transaksi:</label>
+                            <select name="status" class="form-select form-select-solid">
+                                <option value="">Semua Status</option>
+                                <option value="completed" selected>Selesai (Completed)</option>
+                                <option value="returned">Diretur (Returned)</option>
+                                <option value="void_approved">Dibatalkan (Void)</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Metode Pembayaran:</label>
+                            <select name="payment_method" class="form-select form-select-solid">
+                                <option value="">Semua Metode</option>
+                                @foreach($paymentMethods as $val => $label)
+                                    <option value="{{ $val }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        @if(auth()->user()->can('pos.void') || auth()->user()->hasRole('super_admin'))
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Kasir:</label>
+                            <select name="cashier_id" class="form-select form-select-solid">
+                                <option value="">Semua Kasir</option>
+                                @foreach($cashiers as $c)
+                                    <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="modal-footer flex-center">
+                    <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="ki-outline ki-printer fs-2 me-1"></i> Buka &amp; Cetak Transaksi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -327,6 +441,41 @@
             $(this).val('');
             startInput.val('');
             endInput.val('');
+        });
+
+        // Event handler Preset Rentang Waktu Modal Cetak
+        $('#btn-preset-today').on('click', function() {
+            var today = moment().format('YYYY-MM-DD');
+            $('#print_start_date').val(today);
+            $('#print_start_time').val('00:00');
+            $('#print_end_date').val(today);
+            $('#print_end_time').val('23:59');
+        });
+
+        $('#btn-preset-yesterday').on('click', function() {
+            var yesterday = moment().subtract(1, 'days').format('YYYY-MM-DD');
+            $('#print_start_date').val(yesterday);
+            $('#print_start_time').val('00:00');
+            $('#print_end_date').val(yesterday);
+            $('#print_end_time').val('23:59');
+        });
+
+        $('#btn-preset-7days').on('click', function() {
+            var start = moment().subtract(6, 'days').format('YYYY-MM-DD');
+            var end = moment().format('YYYY-MM-DD');
+            $('#print_start_date').val(start);
+            $('#print_start_time').val('00:00');
+            $('#print_end_date').val(end);
+            $('#print_end_time').val('23:59');
+        });
+
+        $('#btn-preset-month').on('click', function() {
+            var start = moment().startOf('month').format('YYYY-MM-DD');
+            var end = moment().endOf('month').format('YYYY-MM-DD');
+            $('#print_start_date').val(start);
+            $('#print_start_time').val('00:00');
+            $('#print_end_date').val(end);
+            $('#print_end_time').val('23:59');
         });
     });
 </script>

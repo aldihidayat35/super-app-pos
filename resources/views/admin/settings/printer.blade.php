@@ -42,6 +42,9 @@
 @endsection
 
 @section('content')
+{{-- Grid Menu Card Berikon untuk Navigasi Pengaturan Sistem --}}
+@include('admin.settings._nav_cards')
+
 <form method="POST" action="{{ route('admin.settings.printer.update') }}" novalidate>
     @csrf
     @method('PUT')
