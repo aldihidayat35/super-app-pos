@@ -1027,6 +1027,217 @@ class OwnerOperationalReportService
 
     /**
      * @param  array<string, mixed>  $filters
+     * @param  array<string, mixed>  $base
+     * @return array<string, mixed>
+     */
+    public function buildBranchComparisonReport(array $filters, array $base, bool $canViewSensitive): array
+    {
+        $locationIds = array_map('intval', $filters['location_ids']);
+
+        $locations = DB::table('work_locations')
+            ->whereIn('id', $locationIds)
+            ->where('is_active', true)
+            ->get();
+
+        $branchRows = [];
+        $totalConsolidatedRevenue = '0.00';
+        $totalConsolidatedExpenses = '0.00';
+        $totalConsolidatedStockValue = '0.00';
+        $totalConsolidatedCritical = 0;
+
+        foreach ($locations as $loc) {
+            $locId = (int) $loc->id;
+            $locType = (string) $loc->type;
+
+            // 1. Omzet Penjualan POS & B2B
+            $posSales = DB::table('pos_sales')
+                ->where('work_location_id', $locId)
+                ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+                ->whereIn('status', ['completed', 'returned']);
+
+            $posRev = (string) (clone $posSales)->sum('grand_total_amount');
+            $posMargin = (string) (clone $posSales)->sum('total_margin_amount');
+            $posTxCount = (clone $posSales)->count();
+
+            $b2bSales = $this->scopedB2bOrders([$locId])
+                ->whereBetween('b2b_orders.submitted_at', [$filters['start'], $filters['end']])
+                ->whereNotIn('b2b_orders.status', ['cancelled', 'rejected']);
+
+            $b2bRev = (string) (clone $b2bSales)->sum('b2b_orders.grand_total_amount');
+            $b2bTxCount = (clone $b2bSales)->count();
+
+            $netRevenue = Decimal::add($posRev, $b2bRev, 2);
+            $totalTx = $posTxCount + $b2bTxCount;
+
+            // 2. Beban Kas Shift & Selisih Kasir
+            $shiftExpenses = (string) DB::table('shift_expenses')
+                ->join('cash_shifts', 'cash_shifts.id', '=', 'shift_expenses.cash_shift_id')
+                ->where('cash_shifts.work_location_id', $locId)
+                ->whereBetween('shift_expenses.spent_at', [$filters['start'], $filters['end']])
+                ->sum('shift_expenses.amount');
+
+            $cashShortage = (string) DB::table('cash_shifts')
+                ->where('work_location_id', $locId)
+                ->whereBetween('opened_at', [$filters['start'], $filters['end']])
+                ->where('difference_amount', '<', 0)
+                ->sum(DB::raw('ABS(difference_amount)'));
+
+            $totalCashExpense = Decimal::add($shiftExpenses, $cashShortage, 2);
+            $expenseRatio = $this->percent($totalCashExpense, $netRevenue);
+
+            // 3. Nilai Aset Persediaan HPP & SKU Kritis
+            $stockValue = (string) DB::table('stock_batches')
+                ->where('work_location_id', $locId)
+                ->where('status', 'active')
+                ->selectRaw('COALESCE(SUM(quantity_on_hand * cost_price), 0) as value')
+                ->value('value');
+
+            $stockStats = DB::table('stocks')
+                ->leftJoin('products', 'products.id', '=', 'stocks.product_id')
+                ->where('stocks.work_location_id', $locId)
+                ->selectRaw('
+                    COUNT(DISTINCT stocks.product_id) as total_skus,
+                    COALESCE(SUM(stocks.quantity_on_hand), 0) as total_units,
+                    COALESCE(SUM(CASE WHEN stocks.quantity_on_hand <= products.minimum_stock THEN 1 ELSE 0 END), 0) as critical_skus
+                ')
+                ->first();
+
+            $totalSkus = (int) ($stockStats->total_skus ?? 0);
+            $totalUnits = (float) ($stockStats->total_units ?? 0);
+            $criticalSkus = (int) ($stockStats->critical_skus ?? 0);
+
+            // 4. Piutang Berjalan Cabang
+            $receivableOutstanding = (string) DB::table('receivables')
+                ->where('work_location_id', $locId)
+                ->whereNotIn('status', ['cancelled', 'written_off'])
+                ->sum('outstanding_amount');
+
+            // 5. Data Modal Detail (Breakdown Pengeluaran Shift & 5 SKU Kritis)
+            $expenseCategories = DB::table('shift_expenses')
+                ->join('cash_shifts', 'cash_shifts.id', '=', 'shift_expenses.cash_shift_id')
+                ->where('cash_shifts.work_location_id', $locId)
+                ->whereBetween('shift_expenses.spent_at', [$filters['start'], $filters['end']])
+                ->selectRaw("COALESCE(shift_expenses.category, 'Operasional Umum') as category, COUNT(*) as count, COALESCE(SUM(shift_expenses.amount), 0) as total")
+                ->groupBy('category')
+                ->orderByDesc('total')
+                ->get()
+                ->map(fn ($c): array => [
+                    'category' => (string) $c->category,
+                    'count' => (int) $c->count,
+                    'total' => (string) $c->total,
+                ])->all();
+
+            $criticalProducts = DB::table('stocks')
+                ->join('products', 'products.id', '=', 'stocks.product_id')
+                ->where('stocks.work_location_id', $locId)
+                ->whereRaw('stocks.quantity_on_hand <= products.minimum_stock')
+                ->select('products.name', 'products.sku', 'stocks.quantity_on_hand', 'products.minimum_stock')
+                ->orderBy('stocks.quantity_on_hand')
+                ->limit(5)
+                ->get()
+                ->map(fn ($p): array => [
+                    'name' => (string) $p->name,
+                    'sku' => (string) $p->sku,
+                    'on_hand' => (float) $p->quantity_on_hand,
+                    'min_stock' => (float) $p->minimum_stock,
+                ])->all();
+
+            // Akumulasi Konsolidasi
+            $totalConsolidatedRevenue = Decimal::add($totalConsolidatedRevenue, $netRevenue, 2);
+            $totalConsolidatedExpenses = Decimal::add($totalConsolidatedExpenses, $totalCashExpense, 2);
+            $totalConsolidatedStockValue = Decimal::add($totalConsolidatedStockValue, $stockValue, 2);
+            $totalConsolidatedCritical += $criticalSkus;
+
+            $branchRows[] = [
+                'id' => $locId,
+                'name' => (string) $loc->name,
+                'type' => $locType,
+                'type_label' => $locType === 'branch' ? 'Toko Retail' : 'Gudang Pusat',
+                'net_revenue' => $netRevenue,
+                'pos_revenue' => $posRev,
+                'b2b_revenue' => $b2bRev,
+                'gross_margin' => $canViewSensitive ? $posMargin : null,
+                'transactions_count' => $totalTx,
+                'shift_expenses' => $shiftExpenses,
+                'cash_shortage' => $cashShortage,
+                'total_cash_expense' => $totalCashExpense,
+                'expense_ratio' => $expenseRatio,
+                'stock_value' => $canViewSensitive ? $stockValue : null,
+                'total_skus' => $totalSkus,
+                'total_units' => $totalUnits,
+                'critical_skus' => $criticalSkus,
+                'receivable_outstanding' => $receivableOutstanding,
+                'expense_categories' => $expenseCategories,
+                'critical_products' => $criticalProducts,
+            ];
+        }
+
+        // Urutkan berdasarkan omzet tertinggi
+        usort($branchRows, fn ($a, $b) => Decimal::compare($b['net_revenue'], $a['net_revenue'], 2));
+
+        // Tambahkan ranking dan kontribusi omzet
+        $rank = 1;
+        foreach ($branchRows as &$b) {
+            $b['rank'] = $rank++;
+            $b['contribution_percent'] = $this->percent($b['net_revenue'], $totalConsolidatedRevenue);
+        }
+        unset($b);
+
+        // Leaderboard Top 3 Podia
+        // Top 1: Juara Omzet
+        $topRevenue = ! empty($branchRows) ? $branchRows[0] : null;
+
+        // Top 2: Juara Efisiensi Kas (Cabang dengan omzet > 0 dan expense_ratio terkecil)
+        $branchesWithRev = array_values(array_filter($branchRows, fn ($r) => Decimal::compare($r['net_revenue'], '0', 2) > 0));
+        usort($branchesWithRev, fn ($a, $b) => (float) $a['expense_ratio'] <=> (float) $b['expense_ratio']);
+        $topEfficiency = ! empty($branchesWithRev) ? $branchesWithRev[0] : (! empty($branchRows) ? $branchRows[0] : null);
+
+        // Top 3: Juara Aset Stok (Nilai aset tertinggi dengan critical_skus terendah)
+        $branchesStock = $branchRows;
+        usort($branchesStock, fn ($a, $b) => Decimal::compare((string) ($b['stock_value'] ?? '0'), (string) ($a['stock_value'] ?? '0'), 2));
+        $topStock = ! empty($branchesStock) ? $branchesStock[0] : null;
+
+        $leaderboard = [
+            'revenue_champion' => $topRevenue,
+            'efficiency_champion' => $topEfficiency,
+            'stock_champion' => $topStock,
+        ];
+
+        // Rows untuk Ekspor (PDF, Excel, CSV)
+        $exportRows = [];
+        foreach ($branchRows as $row) {
+            $exportRows[] = [
+                'Peringkat' => '#'.$row['rank'],
+                'Unit Kerja' => $row['name'],
+                'Tipe' => $row['type_label'],
+                'Omzet Penjualan' => 'Rp '.number_format((float) $row['net_revenue'], 2, ',', '.'),
+                'Kontribusi Omzet' => $row['contribution_percent'].'%',
+                'Beban Kas Operasional' => 'Rp '.number_format((float) $row['total_cash_expense'], 2, ',', '.'),
+                'Rasio Beban Kas' => $row['expense_ratio'].'%',
+                'Nilai Aset Persediaan' => $canViewSensitive && $row['stock_value'] !== null ? 'Rp '.number_format((float) $row['stock_value'], 2, ',', '.') : 'Akses terbatas',
+                'SKU Kritis' => (string) $row['critical_skus'],
+            ];
+        }
+
+        return [
+            'summary' => [
+                'total_revenue' => $totalConsolidatedRevenue,
+                'total_expenses' => $totalConsolidatedExpenses,
+                'total_stock_value' => $canViewSensitive ? $totalConsolidatedStockValue : null,
+                'total_critical_skus' => $totalConsolidatedCritical,
+                'branches_count' => count($locations),
+                'top_branch_name' => $topRevenue['name'] ?? '-',
+                'top_branch_share' => $topRevenue['contribution_percent'] ?? '0.00',
+            ],
+            'branches' => $branchRows,
+            'leaderboard' => $leaderboard,
+            'rows' => $exportRows,
+            'can_view_sensitive' => $canViewSensitive,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
      */
     private function calculateReturnsValue(array $filters): string
     {

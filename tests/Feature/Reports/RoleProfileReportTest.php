@@ -415,6 +415,52 @@ class RoleProfileReportTest extends TestCase
         ]);
     }
 
+    public function test_owner_locations_report_renders_branch_comparison_table_and_modal(): void
+    {
+        $branch = WorkLocation::factory()->create(['type' => 'branch', 'name' => 'Toko Cabang Utama']);
+        $warehouse = WorkLocation::factory()->create(['type' => 'warehouse', 'name' => 'Gudang Distribusi']);
+        $owner = $this->userWithRole('owner_approver', $branch);
+
+        $route = route('reports.profiles.owner.show', ['report' => 'locations', 'work_location_id' => $branch->id]);
+        $response = $this->actingAs($owner)->get($route);
+
+        $response->assertOk()
+            ->assertSee('EXECUTIVE BRANCH PERFORMANCE')
+            ->assertSee('Performa Cabang')
+            ->assertSee('Total Omzet Konsolidasi')
+            ->assertSee('Total Beban Kas Cabang')
+            ->assertSee('Total Nilai Aset Stok HPP')
+            ->assertSee('JUARA OMZET')
+            ->assertSee('JUARA EFISIENSI KAS')
+            ->assertSee('JUARA MANAJEMEN ASET')
+            ->assertSee('Matriks Komparasi Performa Seluruh Cabang')
+            ->assertSee('modal-branch-detail')
+            ->assertDontSee('id="kt_app_toolbar"', false);
+
+        // Pastikan seluruh 4 tombol switcher tersedia di header
+        $response->assertSee('Ringkasan Eksekutif')
+            ->assertSee('Laba Rugi &amp; Finansial', false)
+            ->assertSee('Rekapitulasi Pajak')
+            ->assertSee('Performa Cabang');
+
+        Queue::fake();
+        $this->actingAs($owner)->post(route('reports.profiles.exports.store', [
+            'profile' => 'owner',
+            'report' => 'locations',
+        ]), [
+            'format' => 'pdf',
+            'work_location_id' => $branch->id,
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-31',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('report_exports', [
+            'report_type' => 'profile.owner.locations',
+            'format' => 'pdf',
+            'requested_by' => $owner->id,
+        ]);
+    }
+
     public function test_non_head_roles_cannot_open_any_profile_report(): void
     {
         foreach (['purchasing', 'supervisor_shift', 'staff_gudang', 'kasir', 'kepala_keuangan'] as $role) {

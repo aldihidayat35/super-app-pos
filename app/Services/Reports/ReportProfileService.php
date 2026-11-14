@@ -142,6 +142,14 @@ class ReportProfileService
                         'active' => ['reports.profiles.owner.show'],
                         'active_report' => 'tax',
                     ],
+                    [
+                        'label' => 'Performa Cabang',
+                        'icon' => 'ki-outline ki-shop',
+                        'route' => 'reports.profiles.owner.show',
+                        'route_params' => array_filter(['report' => 'locations', 'work_location_id' => $location?->id]),
+                        'active' => ['reports.profiles.owner.show'],
+                        'active_report' => 'locations',
+                    ],
                 ];
             }
 
