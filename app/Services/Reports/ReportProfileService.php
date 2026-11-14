@@ -150,6 +150,14 @@ class ReportProfileService
                         'active' => ['reports.profiles.owner.show'],
                         'active_report' => 'locations',
                     ],
+                    [
+                        'label' => 'Piutang & Aging',
+                        'icon' => 'ki-outline ki-wallet',
+                        'route' => 'reports.profiles.owner.show',
+                        'route_params' => array_filter(['report' => 'receivables', 'work_location_id' => $location?->id]),
+                        'active' => ['reports.profiles.owner.show'],
+                        'active_report' => 'receivables',
+                    ],
                 ];
             }
 

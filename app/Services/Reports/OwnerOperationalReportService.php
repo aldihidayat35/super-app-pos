@@ -1238,6 +1238,242 @@ class OwnerOperationalReportService
 
     /**
      * @param  array<string, mixed>  $filters
+     * @param  array<string, mixed>  $base
+     * @return array<string, mixed>
+     */
+    public function buildAgingReceivablesReport(array $filters, array $base, bool $canViewSensitive): array
+    {
+        $locationIds = array_map('intval', $filters['location_ids']);
+        $asOf = Carbon::parse($filters['end_date'] ?? now())->startOfDay();
+
+        $recQuery = DB::table('receivables')
+            ->whereIn('receivables.work_location_id', $locationIds)
+            ->whereNotIn('receivables.status', ['cancelled', 'written_off']);
+
+        $allReceivables = (clone $recQuery)
+            ->leftJoin('customers', 'customers.id', '=', 'receivables.customer_id')
+            ->leftJoin('work_locations', 'work_locations.id', '=', 'receivables.work_location_id')
+            ->select([
+                'receivables.id',
+                'receivables.number',
+                'receivables.customer_id',
+                'receivables.work_location_id',
+                'receivables.issue_date',
+                'receivables.due_date',
+                'receivables.principal_amount',
+                'receivables.paid_amount',
+                'receivables.outstanding_amount',
+                'receivables.status',
+                'customers.business_name',
+                'customers.owner_name',
+                'customers.pic_name',
+                'customers.whatsapp_number',
+                'customers.credit_limit',
+                'customers.payment_term_days',
+                'work_locations.name as location_name',
+            ])
+            ->get();
+
+        // 1. Inisialisasi Ringkasan & 5 Bucket Aging
+        $totalOutstanding = '0.00';
+        $totalNotDue = '0.00';
+        $totalOverdue = '0.00';
+        $totalCriticalOver60 = '0.00';
+
+        $agingBuckets = [
+            'not_due' => ['label' => 'Belum Jatuh Tempo (Lancar)', 'amount' => '0.00', 'count' => 0, 'tone' => 'green', 'percent' => '0.00'],
+            '1_7' => ['label' => '1 – 7 Hari (Grace Period)',   'amount' => '0.00', 'count' => 0, 'tone' => 'blue',  'percent' => '0.00'],
+            '8_30' => ['label' => '8 – 30 Hari (Follow-up)',     'amount' => '0.00', 'count' => 0, 'tone' => 'gold',  'percent' => '0.00'],
+            '31_60' => ['label' => '31 – 60 Hari (Warning)',      'amount' => '0.00', 'count' => 0, 'tone' => 'orange', 'percent' => '0.00'],
+            'over_60' => ['label' => '> 60 Hari (Kritis/Macet)',   'amount' => '0.00', 'count' => 0, 'tone' => 'red',   'percent' => '0.00'],
+        ];
+
+        $customerMap = [];
+        $priorityList = [];
+
+        foreach ($allReceivables as $r) {
+            $out = (string) $r->outstanding_amount;
+            if (Decimal::compare($out, '0', 2) <= 0) {
+                continue;
+            }
+
+            $totalOutstanding = Decimal::add($totalOutstanding, $out, 2);
+
+            $dueDate = Carbon::parse($r->due_date ?? $r->issue_date)->startOfDay();
+            $daysLate = $dueDate->diffInDays($asOf, false);
+
+            $bucketKey = match (true) {
+                $daysLate <= 0 => 'not_due',
+                $daysLate <= 7 => '1_7',
+                $daysLate <= 30 => '8_30',
+                $daysLate <= 60 => '31_60',
+                default => 'over_60',
+            };
+
+            $agingBuckets[$bucketKey]['amount'] = Decimal::add($agingBuckets[$bucketKey]['amount'], $out, 2);
+            $agingBuckets[$bucketKey]['count']++;
+
+            if ($bucketKey === 'not_due') {
+                $totalNotDue = Decimal::add($totalNotDue, $out, 2);
+            } else {
+                $totalOverdue = Decimal::add($totalOverdue, $out, 2);
+                if ($bucketKey === 'over_60') {
+                    $totalCriticalOver60 = Decimal::add($totalCriticalOver60, $out, 2);
+                }
+
+                // Tambahkan ke kandidat Priority Action List
+                $phone = (string) ($r->whatsapp_number ?? '');
+                $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+                if (str_starts_with($cleanPhone, '0')) {
+                    $cleanPhone = '62'.substr($cleanPhone, 1);
+                }
+                $custName = (string) ($r->business_name ?: 'Pelanggan Umum');
+                $pic = (string) ($r->pic_name ?: $custName);
+
+                $waText = "Halo Bapak/Ibu {$pic} ({$custName}),\n\n"
+                    ."Kami dari Manajemen Keuangan ingin mengingatkan tagihan No: {$r->number} "
+                    .'sebesar Rp '.number_format((float) $out, 0, ',', '.')
+                    .' telah melewati jatuh tempo pada tanggal '.date('d/m/Y', strtotime((string) $r->due_date))." ({$daysLate} hari lalu).\n\n"
+                    .'Mohon konfirmasi kesiapan pembayaran atau kirimkan bukti transfer jika sudah diselesaikan. Terima kasih.';
+
+                $priorityList[] = [
+                    'id' => (int) $r->id,
+                    'number' => (string) $r->number,
+                    'customer_name' => $custName,
+                    'pic_name' => $pic,
+                    'whatsapp_number' => $phone,
+                    'due_date' => (string) $r->due_date,
+                    'days_late' => $daysLate,
+                    'outstanding' => $out,
+                    'bucket' => $bucketKey,
+                    'wa_link' => ! empty($cleanPhone) ? 'https://wa.me/'.$cleanPhone.'?text='.rawurlencode($waText) : null,
+                    'location_name' => (string) ($r->location_name ?: '-'),
+                ];
+            }
+
+            // Kelompokkan per pelanggan B2B
+            $custId = (int) ($r->customer_id ?? 0);
+            if (! isset($customerMap[$custId])) {
+                $limit = (string) ($r->credit_limit ?? '0.00');
+                $customerMap[$custId] = [
+                    'customer_id' => $custId,
+                    'customer_name' => (string) ($r->business_name ?: 'Pelanggan Umum'),
+                    'pic_name' => (string) ($r->pic_name ?: '-'),
+                    'whatsapp_number' => (string) ($r->whatsapp_number ?: '-'),
+                    'credit_limit' => $limit,
+                    'payment_term_days' => (int) ($r->payment_term_days ?? 0),
+                    'total_outstanding' => '0.00',
+                    'not_due' => '0.00',
+                    '1_7' => '0.00',
+                    '8_30' => '0.00',
+                    '31_60' => '0.00',
+                    'over_60' => '0.00',
+                    'overdue_total' => '0.00',
+                ];
+            }
+
+            $customerMap[$custId]['total_outstanding'] = Decimal::add($customerMap[$custId]['total_outstanding'], $out, 2);
+            $customerMap[$custId][$bucketKey] = Decimal::add($customerMap[$custId][$bucketKey], $out, 2);
+            if ($bucketKey !== 'not_due') {
+                $customerMap[$custId]['overdue_total'] = Decimal::add($customerMap[$custId]['overdue_total'], $out, 2);
+            }
+        }
+
+        // Hitung persentase aging bucket terhadap total outstanding
+        foreach ($agingBuckets as $k => &$ab) {
+            $ab['percent'] = $this->percent($ab['amount'], $totalOutstanding);
+        }
+        unset($ab);
+
+        // Susun Customer Matrix dengan Credit Limit Utilization & Risk Category
+        $customerMatrix = [];
+        foreach ($customerMap as $c) {
+            $limit = $c['credit_limit'];
+            $out = $c['total_outstanding'];
+            $utilization = Decimal::compare($limit, '0', 2) > 0
+                ? $this->percent($out, $limit)
+                : '100.00';
+
+            $hasOverdueLong = Decimal::compare($c['over_60'], '0', 2) > 0 || Decimal::compare($c['31_60'], '0', 2) > 0;
+            $isOverLimit = Decimal::compare($limit, '0', 2) > 0 && Decimal::compare($out, $limit, 2) > 0;
+
+            $riskStatus = match (true) {
+                $isOverLimit || Decimal::compare($c['over_60'], '0', 2) > 0 => 'danger',
+                $hasOverdueLong || (float) $utilization >= 85.0 => 'warning',
+                default => 'safe',
+            };
+
+            $riskLabel = match ($riskStatus) {
+                'danger' => 'Risiko Macet / Over Limit',
+                'warning' => 'Perhatian / Waspada',
+                default => 'Lancar / Aman',
+            };
+
+            $c['utilization_percent'] = $utilization;
+            $c['risk_status'] = $riskStatus;
+            $c['risk_label'] = $riskLabel;
+
+            $customerMatrix[] = $c;
+        }
+
+        // Urutkan pelanggan berdasarkan overdue terbesar, lalu total outstanding terbesar
+        usort($customerMatrix, function ($a, $b) {
+            $cmpOverdue = Decimal::compare($b['overdue_total'], $a['overdue_total'], 2);
+            if ($cmpOverdue !== 0) {
+                return $cmpOverdue;
+            }
+
+            return Decimal::compare($b['total_outstanding'], $a['total_outstanding'], 2);
+        });
+
+        // Urutkan Priority Action List berdasarkan hari terlambat terbesar & nominal terbesar
+        usort($priorityList, function ($a, $b) {
+            if ($b['days_late'] !== $a['days_late']) {
+                return $b['days_late'] <=> $a['days_late'];
+            }
+
+            return Decimal::compare($b['outstanding'], $a['outstanding'], 2);
+        });
+        $priorityList = array_slice($priorityList, 0, 8);
+
+        // Rows untuk Ekspor (PDF, Excel, CSV)
+        $exportRows = [];
+        foreach ($customerMatrix as $row) {
+            $exportRows[] = [
+                'Pelanggan B2B' => $row['customer_name'],
+                'Kontak PIC' => $row['pic_name'].' ('.$row['whatsapp_number'].')',
+                'Plafon Kredit' => Decimal::compare($row['credit_limit'], '0', 2) > 0 ? 'Rp '.number_format((float) $row['credit_limit'], 2, ',', '.') : 'Tanpa Limit',
+                'Total Piutang' => 'Rp '.number_format((float) $row['total_outstanding'], 2, ',', '.'),
+                'Belum Jatuh Tempo' => 'Rp '.number_format((float) $row['not_due'], 2, ',', '.'),
+                '1-7 Hari' => 'Rp '.number_format((float) $row['1_7'], 2, ',', '.'),
+                '8-30 Hari' => 'Rp '.number_format((float) $row['8_30'], 2, ',', '.'),
+                '31-60 Hari' => 'Rp '.number_format((float) $row['31_60'], 2, ',', '.'),
+                '>60 Hari' => 'Rp '.number_format((float) $row['over_60'], 2, ',', '.'),
+                'Utilitas Kredit' => $row['utilization_percent'].'%',
+                'Status Risiko' => $row['risk_label'],
+            ];
+        }
+
+        return [
+            'summary' => [
+                'total_outstanding' => $totalOutstanding,
+                'total_not_due' => $totalNotDue,
+                'total_overdue' => $totalOverdue,
+                'total_critical_over_60' => $totalCriticalOver60,
+                'overdue_ratio' => $this->percent($totalOverdue, $totalOutstanding),
+                'open_accounts_count' => count($customerMatrix),
+                'as_of_date' => $asOf->translatedFormat('d F Y'),
+            ],
+            'aging_buckets' => $agingBuckets,
+            'customers_matrix' => $customerMatrix,
+            'priority_collection_list' => $priorityList,
+            'rows' => $exportRows,
+            'can_view_sensitive' => $canViewSensitive,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
      */
     private function calculateReturnsValue(array $filters): string
     {

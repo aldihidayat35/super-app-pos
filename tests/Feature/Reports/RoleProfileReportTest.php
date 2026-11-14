@@ -3,8 +3,10 @@
 namespace Tests\Feature\Reports;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
+use App\Models\Receivable;
 use App\Models\Stock;
 use App\Models\StockBatch;
 use App\Models\Supplier;
@@ -456,6 +458,76 @@ class RoleProfileReportTest extends TestCase
 
         $this->assertDatabaseHas('report_exports', [
             'report_type' => 'profile.owner.locations',
+            'format' => 'pdf',
+            'requested_by' => $owner->id,
+        ]);
+    }
+
+    public function test_owner_receivables_report_renders_aging_matrix_and_collection_priority(): void
+    {
+        $location = WorkLocation::factory()->create(['type' => 'branch', 'name' => 'Toko Piutang']);
+        $owner = $this->userWithRole('owner_approver', $location);
+
+        $customer = Customer::factory()->create([
+            'business_name' => 'PT Maju Terus B2B',
+            'pic_name' => 'Budi Santoso',
+            'whatsapp_number' => '081234567890',
+            'credit_limit' => '50000000.00',
+        ]);
+
+        Receivable::query()->create([
+            'number' => 'REC-2026-TEST-001',
+            'customer_id' => $customer->id,
+            'work_location_id' => $location->id,
+            'source_type' => 'invoice',
+            'source_id' => 1,
+            'source_no' => 'INV-TEST-001',
+            'channel' => 'b2b',
+            'issue_date' => now()->subDays(45)->toDateString(),
+            'due_date' => now()->subDays(15)->toDateString(),
+            'principal_amount' => '15000000.00',
+            'paid_amount' => '5000000.00',
+            'outstanding_amount' => '10000000.00',
+            'aging_bucket' => '8_30',
+            'status' => 'partial',
+        ]);
+
+        $route = route('reports.profiles.owner.show', ['report' => 'receivables', 'work_location_id' => $location->id]);
+        $response = $this->actingAs($owner)->get($route);
+
+        $response->assertOk()
+            ->assertSee('EXECUTIVE RECEIVABLES &amp; AGING SUITE', false)
+            ->assertSee('Piutang &amp; Umur Tagihan', false)
+            ->assertSee('Total Piutang Berjalan')
+            ->assertSee('Piutang Lancar')
+            ->assertSee('Piutang Lewat Jatuh Tempo')
+            ->assertSee('Piutang Kritis')
+            ->assertSee('Belum Jatuh Tempo (Lancar)')
+            ->assertSee('Matriks Umur Piutang per Pelanggan B2B')
+            ->assertSee('Top Prioritas Penagihan Hari Ini')
+            ->assertSee('PT Maju Terus B2B')
+            ->assertDontSee('id="kt_app_toolbar"', false);
+
+        // Pastikan seluruh 5 tombol switcher tersedia di header
+        $response->assertSee('Ringkasan Eksekutif')
+            ->assertSee('Laba Rugi &amp; Finansial', false)
+            ->assertSee('Rekapitulasi Pajak')
+            ->assertSee('Performa Cabang')
+            ->assertSee('Piutang &amp; Aging', false);
+
+        Queue::fake();
+        $this->actingAs($owner)->post(route('reports.profiles.exports.store', [
+            'profile' => 'owner',
+            'report' => 'receivables',
+        ]), [
+            'format' => 'pdf',
+            'work_location_id' => $location->id,
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-31',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('report_exports', [
+            'report_type' => 'profile.owner.receivables',
             'format' => 'pdf',
             'requested_by' => $owner->id,
         ]);
