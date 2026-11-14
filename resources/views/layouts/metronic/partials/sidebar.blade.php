@@ -196,23 +196,55 @@
 
                         @foreach ($reportMenuItems as $item)
                             @php
+                                $children = collect($item['children'] ?? [])->filter($isVisible);
                                 $isOpen = collect($item['active'] ?? [])->contains(
                                     fn(string $pattern): bool => request()->routeIs($pattern),
                                 );
                                 $tone = $item['tone'] ?? 'default';
                             @endphp
 
-                            <div class="menu-item sidebar-report-item sidebar-report-tone-{{ $tone }} mb-1">
-                                <a class="menu-link sidebar-report-link {{ $isOpen ? 'active' : '' }}"
-                                    href="{{ route($item['route'], $item['route_params'] ?? []) }}"
-                                    title="{{ $item['label'] }}">
-                                    <span class="menu-icon sidebar-report-icon">
-                                        <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+                            @if ($children->isNotEmpty())
+                                <div class="menu-item menu-accordion {{ $isOpen ? 'here show' : '' }} sidebar-report-item sidebar-report-tone-{{ $tone }} mb-1"
+                                    data-kt-menu-trigger="click">
+                                    <span class="menu-link sidebar-report-link {{ $isOpen ? 'active' : '' }}" title="{{ $item['label'] }}">
+                                        <span class="menu-icon sidebar-report-icon">
+                                            <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="menu-title sidebar-report-title">{{ $item['label'] }}</span>
+                                        <span class="menu-arrow"></span>
                                     </span>
-                                    <span class="menu-title sidebar-report-title">{{ $item['label'] }}</span>
-                                    <span class="sidebar-report-pill">Laporan</span>
-                                </a>
-                            </div>
+                                    <div class="menu-sub menu-sub-accordion {{ $isOpen ? 'show' : '' }}">
+                                        <div class="sidebar-submenu-grid">
+                                            @foreach ($children as $child)
+                                                @php
+                                                    $childActive = request()->routeIs(...$child['active'])
+                                                        && (!isset($child['active_report']) || request()->route('report') === $child['active_report']);
+                                                    $isLastOdd = $loop->last && ($loop->count % 2 !== 0);
+                                                @endphp
+                                                <div class="menu-item {{ $isLastOdd ? 'is-full-width' : '' }}">
+                                                    <a class="menu-link sidebar-submenu-card {{ $childActive ? 'active' : '' }} {{ $isLastOdd ? 'is-full-width' : '' }}"
+                                                        href="{{ route($child['route'], $child['route_params'] ?? []) }}" title="{{ $child['label'] }}">
+                                                        <i class="submenu-card-icon {{ $child['icon'] ?? 'ki-outline ki-package' }}"></i>
+                                                        <span class="menu-title submenu-card-title">{{ $child['label'] }}</span>
+                                                    </a>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="menu-item sidebar-report-item sidebar-report-tone-{{ $tone }} mb-1">
+                                    <a class="menu-link sidebar-report-link {{ $isOpen ? 'active' : '' }}"
+                                        href="{{ route($item['route'], $item['route_params'] ?? []) }}"
+                                        title="{{ $item['label'] }}">
+                                        <span class="menu-icon sidebar-report-icon">
+                                            <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="menu-title sidebar-report-title">{{ $item['label'] }}</span>
+                                        <span class="sidebar-report-pill">Laporan</span>
+                                    </a>
+                                </div>
+                            @endif
                         @endforeach
                     </div>
                 @endif

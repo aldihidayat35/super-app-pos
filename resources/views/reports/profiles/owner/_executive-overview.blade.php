@@ -187,6 +187,18 @@
             </div>
             <h1 id="title">Laporan Owner</h1>
             <p>Pantau kinerja toko dan gudang, kondisi persediaan, dan hal yang perlu ditindaklanjuti.</p>
+            <div class="d-flex align-items-center gap-2 mt-3 flex-wrap">
+                <a href="{{ route('reports.profiles.owner.show', ['report' => 'overview', 'start_date' => $filters['start_date'], 'end_date' => $filters['end_date'], 'work_location_id' => $selectedLocation?->id]) }}" 
+                   class="btn-dash gold py-1 px-3" style="min-height:30px; font-size:11px;">
+                    <svg class="ico me-1" style="width:13px;height:13px;"><use href="#i-chart"/></svg>
+                    Ringkasan Eksekutif
+                </a>
+                <a href="{{ route('reports.profiles.owner.show', ['report' => 'income', 'start_date' => $filters['start_date'], 'end_date' => $filters['end_date'], 'work_location_id' => $selectedLocation?->id]) }}" 
+                   class="btn-dash clear py-1 px-3" style="min-height:30px; font-size:11px; background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.22);">
+                    <svg class="ico me-1" style="width:13px;height:13px;"><use href="#i-coins"/></svg>
+                    Laba Rugi &amp; Finansial
+                </a>
+            </div>
         </div>
 
         <div class="hero-actions">

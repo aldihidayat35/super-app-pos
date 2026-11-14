@@ -234,21 +234,28 @@
         </svg>
 
         <div>
-            <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
-                <a href="{{ route('reports.profiles.owner.show', ['report' => 'overview', 'start_date' => $filters['start_date'], 'end_date' => $filters['end_date'], 'work_location_id' => $selectedLocation?->id]) }}" class="btn-dash clear py-1 px-3" style="min-height:30px; font-size:11px; background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.2);">
-                    <svg class="ico me-1" style="width:14px;height:14px;"><use href="#i-arrow-left"/></svg>
-                    Ringkasan Eksekutif
-                </a>
-                <div class="eyebrow m-0">
-                    <svg class="ico"><use href="#i-crown"/></svg>
-                    <span>EXECUTIVE BUSINESS REPORT</span>
-                </div>
+            <div class="eyebrow">
+                <svg class="ico"><use href="#i-crown"/></svg>
+                <span>EXECUTIVE BUSINESS REPORT</span>
             </div>
 
             <h1>Laba Rugi &amp; Finansial</h1>
             <p>
                 Laporan resmi laba rugi komprehensif berjenjang, beban pokok penjualan (HPP), efisiensi operasional cabang, dan estimasi pajak usaha.
             </p>
+
+            <div class="d-flex align-items-center gap-2 mt-3 flex-wrap">
+                <a href="{{ route('reports.profiles.owner.show', ['report' => 'overview', 'start_date' => $filters['start_date'], 'end_date' => $filters['end_date'], 'work_location_id' => $selectedLocation?->id]) }}" 
+                   class="btn-dash clear py-1 px-3" style="min-height:30px; font-size:11px; background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.22);">
+                    <svg class="ico me-1" style="width:13px;height:13px;"><use href="#i-chart"/></svg>
+                    Ringkasan Eksekutif
+                </a>
+                <a href="{{ route('reports.profiles.owner.show', ['report' => 'income', 'start_date' => $filters['start_date'], 'end_date' => $filters['end_date'], 'work_location_id' => $selectedLocation?->id]) }}" 
+                   class="btn-dash gold py-1 px-3" style="min-height:30px; font-size:11px;">
+                    <svg class="ico me-1" style="width:13px;height:13px;"><use href="#i-coins"/></svg>
+                    Laba Rugi &amp; Finansial
+                </a>
+            </div>
         </div>
 
         <div class="hero-actions">

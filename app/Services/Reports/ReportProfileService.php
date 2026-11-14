@@ -115,6 +115,28 @@ class ReportProfileService
                 $label .= ' '.$locationName;
             }
 
+            $children = [];
+            if ($profile === 'owner') {
+                $children = [
+                    [
+                        'label' => 'Ringkasan Eksekutif',
+                        'icon' => 'ki-outline ki-home-2',
+                        'route' => 'reports.profiles.owner.show',
+                        'route_params' => array_filter(['report' => 'overview', 'work_location_id' => $location?->id]),
+                        'active' => ['reports.profiles.owner.show'],
+                        'active_report' => 'overview',
+                    ],
+                    [
+                        'label' => 'Laba Rugi & Finansial',
+                        'icon' => 'ki-outline ki-chart-line-up',
+                        'route' => 'reports.profiles.owner.show',
+                        'route_params' => array_filter(['report' => 'income', 'work_location_id' => $location?->id]),
+                        'active' => ['reports.profiles.owner.show'],
+                        'active_report' => 'income',
+                    ],
+                ];
+            }
+
             $groups[] = [
                 'label' => $label,
                 'icon' => $definition['icon'],
@@ -124,6 +146,7 @@ class ReportProfileService
                 'is_report' => true,
                 'profile' => $profile,
                 'tone' => $definition['tone'] ?? 'default',
+                'children' => $children,
             ];
         }
 
