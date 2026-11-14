@@ -260,4 +260,25 @@ class CashShiftClosingTest extends TestCase
         ], $this->supervisor);
         app(AttendanceService::class)->checkIn($this->cashier, ['checked_at' => now()->toDateTimeString()]);
     }
+
+    public function test_shift_pdf_report_can_be_exported_with_sales(): void
+    {
+        $shift = $this->openShift();
+        $product = $this->stockedProduct('10');
+
+        $this->pos->checkout([
+            'branch_id' => $this->branch->id,
+            'idempotency_key' => 'shift-pdf-sale-1',
+            'items' => [['product_id' => $product->id, 'unit_id' => $this->unit->id, 'quantity' => '2']],
+            'payments' => [
+                ['method' => 'cash', 'amount' => '240'],
+            ],
+        ], $this->cashier);
+
+        $this->shifts->addExpense($shift, ['category' => 'plastic', 'payment_method' => 'cash', 'amount' => '40', 'notes' => 'Plastik'], $this->cashier);
+
+        $response = $this->actingAs($this->supervisor)->get(route('retail.shifts.export.pdf', $shift));
+        $response->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+    }
 }

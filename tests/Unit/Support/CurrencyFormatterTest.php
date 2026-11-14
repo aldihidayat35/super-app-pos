@@ -15,4 +15,19 @@ class CurrencyFormatterTest extends TestCase
 
         $this->assertStringContainsString('1.250.000', str_replace("\u{00A0}", ' ', $formatted));
     }
+
+    #[Test]
+    public function it_formats_null_and_empty_string_as_zero(): void
+    {
+        $this->assertSame('Rp0', CurrencyFormatter::rupiah(null));
+        $this->assertSame('Rp0', CurrencyFormatter::rupiah(''));
+    }
+
+    #[Test]
+    public function it_formats_float_values(): void
+    {
+        $formatted = CurrencyFormatter::rupiah(1250000.50);
+
+        $this->assertStringContainsString('1.250.000', str_replace("\u{00A0}", ' ', $formatted));
+    }
 }

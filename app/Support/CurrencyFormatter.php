@@ -6,8 +6,16 @@ use InvalidArgumentException;
 
 final class CurrencyFormatter
 {
-    public static function rupiah(int|string $amount, bool $withDecimals = false): string
+    public static function rupiah(int|string|float|null $amount = 0, bool $withDecimals = false): string
     {
+        if ($amount === null || $amount === '') {
+            $amount = 0;
+        }
+
+        if (is_float($amount)) {
+            $amount = number_format($amount, 2, '.', '');
+        }
+
         $normalized = trim((string) $amount);
 
         if (preg_match('/^-?\d+(?:\.\d+)?$/', $normalized) !== 1) {

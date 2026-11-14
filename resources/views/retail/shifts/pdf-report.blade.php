@@ -1,5 +1,7 @@
+<?php
 use App\Support\CurrencyFormatter;
 use App\Enums\CashShiftStatus;
+use App\Enums\PosSaleStatus;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -60,7 +62,7 @@ use App\Enums\CashShiftStatus;
             <td class="info-label">Cabang</td><td class="info-value">{{ $shift->branch?->name ?? '-' }}</td></tr>
         <tr><td class="info-label">Waktu Buka</td><td class="info-value">{{ $shift->opened_at?->format('d/m/Y H:i') ?? '-' }}</td>
             <td class="info-label">Waktu Tutup</td><td class="info-value">{{ $shift->closed_at?->format('d/m/Y H:i') ?? 'Masih Aktif' }}</td></tr>
-        <tr><td class="info-label">Modal Awal</td><td class="info-value amount">{{ App\Support\CurrencyFormatter::rupiah($shift->opening_cash_amount) }}</td>
+        <tr><td class="info-label">Modal Awal</td><td class="info-value amount">{{ App\Support\CurrencyFormatter::rupiah($shift->opening_cash_amount ?? 0) }}</td>
             <td class="info-label">Status</td><td class="info-value">
                 @if($shift->status == \App\Enums\CashShiftStatus::CLOSED)
                     <span class="badge badge-closed">Ditutup</span>
@@ -83,13 +85,13 @@ use App\Enums\CashShiftStatus;
             <th class="amount">Selisih</th>
         </tr>
         <tr>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($shift->opening_cash_amount) }}</td>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($summary['cash_sales']) }}</td>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($summary['non_cash_sales']) }}</td>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($summary['expenses']) }}</td>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($summary['expected_cash']) }}</td>
-            <td class="amount" style="color: {{ $summary['difference'] >= 0 ? '#155724' : '#721c24' }}">
-                {{ App\Support\CurrencyFormatter::rupiah($summary['difference']) }}
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($shift->opening_cash_amount ?? 0) }}</td>
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($summary['cash_sales'] ?? 0) }}</td>
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($summary['non_cash_sales'] ?? 0) }}</td>
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($summary['expenses'] ?? 0) }}</td>
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($summary['expected_cash'] ?? 0) }}</td>
+            <td class="amount" style="color: {{ ($summary['difference'] ?? 0) >= 0 ? '#155724' : '#721c24' }}">
+                {{ App\Support\CurrencyFormatter::rupiah($summary['difference'] ?? 0) }}
             </td>
         </tr>
     </table>
@@ -111,20 +113,26 @@ use App\Enums\CashShiftStatus;
         <tr>
             <td>{{ $i + 1 }}</td>
             <td>{{ $sale->completed_at ? $sale->completed_at->format('d/m/Y H:i') : '-' }}</td>
-            <td>{{ $sale->invoice_no ?? $sale->id }}</td>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($sale->subtotal) }}</td>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($sale->discount) }}</td>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($sale->tax) }}</td>
-            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($sale->total) }}</strong></td>
-            <td class="text-center">{{ ucfirst($sale->status) }}</td>
+            <td>{{ $sale->number ?? ($sale->invoice_no ?? $sale->id) }}</td>
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($sale->subtotal_amount ?? 0) }}</td>
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($sale->discount_amount ?? 0) }}</td>
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($sale->tax_amount ?? 0) }}</td>
+            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($sale->grand_total_amount ?? 0) }}</strong></td>
+            <td class="text-center">
+                @if($sale->status instanceof \App\Enums\PosSaleStatus)
+                    {{ $sale->status->label() }}
+                @else
+                    {{ ucfirst((string) ($sale->status->value ?? $sale->status)) }}
+                @endif
+            </td>
         </tr>
         @endforeach
         <tr class="total-row">
             <td colspan="3" class="text-right"><strong>TOTAL</strong></td>
-            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->sales->sum('subtotal')) }}</strong></td>
-            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->sales->sum('discount')) }}</strong></td>
-            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->sales->sum('tax')) }}</strong></td>
-            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->sales->sum('total')) }}</strong></td>
+            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->sales->sum('subtotal_amount')) }}</strong></td>
+            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->sales->sum('discount_amount')) }}</strong></td>
+            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->sales->sum('tax_amount')) }}</strong></td>
+            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->sales->sum('grand_total_amount')) }}</strong></td>
             <td></td>
         </tr>
     </table>
@@ -144,9 +152,9 @@ use App\Enums\CashShiftStatus;
         @foreach($shift->expenses as $i => $expense)
         <tr>
             <td>{{ $i + 1 }}</td>
-            <td>{{ $expense->spent_at->format('d/m/Y H:i') }}</td>
+            <td>{{ $expense->spent_at ? $expense->spent_at->format('d/m/Y H:i') : '-' }}</td>
             <td>{{ $expense->category ?? '-' }}</td>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($expense->amount) }}</td>
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($expense->amount ?? 0) }}</td>
             <td>{{ $expense->notes ?? '-' }}</td>
             <td class="text-center">
                 @if($expense->proof_path)
@@ -159,7 +167,7 @@ use App\Enums\CashShiftStatus;
         @endforeach
         <tr class="total-row">
             <td colspan="3" class="text-right"><strong>TOTAL PENGELUARAN</strong></td>
-            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->expenses->sum('amount')) }}</strong></td>
+            <td class="amount"><strong>{{ App\Support\CurrencyFormatter::rupiah($shift->expenses->sum('amount') ?? 0) }}</strong></td>
             <td colspan="2"></td>
         </tr>
     </table>
@@ -177,9 +185,9 @@ use App\Enums\CashShiftStatus;
         @foreach($shift->cashCounts as $i => $cc)
         <tr>
             <td>{{ $i + 1 }}</td>
-            <td>{{ $cc->counted_at->format('d/m/Y H:i') }}</td>
+            <td>{{ $cc->counted_at ? $cc->counted_at->format('d/m/Y H:i') : '-' }}</td>
             <td>{{ $cc->counted_by_name ?? '-' }}</td>
-            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($cc->total_amount) }}</td>
+            <td class="amount">{{ App\Support\CurrencyFormatter::rupiah($cc->total_amount ?? 0) }}</td>
         </tr>
         @endforeach
     </table>
@@ -197,7 +205,7 @@ use App\Enums\CashShiftStatus;
         @foreach($shift->approvals as $i => $approval)
         <tr>
             <td>{{ $i + 1 }}</td>
-            <td>{{ $approval->approved_at->format('d/m/Y H:i') }}</td>
+            <td>{{ $approval->approved_at ? $approval->approved_at->format('d/m/Y H:i') : '-' }}</td>
             <td>{{ $approval->actor->name ?? '-' }}</td>
             <td>{{ $approval->notes ?? '-' }}</td>
         </tr>

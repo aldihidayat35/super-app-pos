@@ -227,6 +227,8 @@ class CashShiftController extends Controller
             ->setPaper('a4', 'portrait')
             ->setOptions(['isRemoteEnabled' => true]);
 
-        return $pdf->stream('Laporan-Shift-'.$shift->number.'.pdf');
+        $safeNumber = str_replace(['/', '\\'], '-', (string) $shift->number);
+
+        return $pdf->stream('Laporan-Shift-'.$safeNumber.'.pdf');
     }
 }
