@@ -167,8 +167,8 @@
 </head>
 <body>
     <div class="no-print-bar">
-        <button type="button" class="btn-print" onclick="window.print()">🖨️ Cetak Riwayat Transaksi (Dot Matrix LX-310)</button>
-        <button type="button" class="btn-close" onclick="window.close()">Tutup Jendela</button>
+        <button type="button" id="btn-do-print" class="btn-print" onclick="window.print()">🖨️ Cetak Riwayat Transaksi (LX-310) [Enter]</button>
+        <button type="button" class="btn-close" onclick="window.close()">Tutup [ESC]</button>
     </div>
 
     <div class="report-box">
@@ -331,11 +331,22 @@
     </div>
 
     <script>
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                window.print();
-            }, 400);
-        });
+        (() => {
+            const printBtn = document.getElementById('btn-do-print');
+            if (printBtn) {
+                printBtn.focus();
+            }
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    window.close();
+                } else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
+                    e.preventDefault();
+                    window.print();
+                }
+            });
+        })();
     </script>
 </body>
 </html>

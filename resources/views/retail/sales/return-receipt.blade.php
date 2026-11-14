@@ -104,8 +104,8 @@
 </head>
 <body>
     <div class="no-print-bar">
-        <button type="button" class="btn-print" onclick="window.print()">🖨️ Cetak Nota Retur</button>
-        <button type="button" class="btn-close" onclick="window.close()">Tutup Jendela</button>
+        <button type="button" id="btn-do-print" class="btn-print" onclick="window.print()">🖨️ Cetak Nota Retur [Enter]</button>
+        <button type="button" class="btn-close" onclick="window.close()">Tutup [ESC]</button>
     </div>
 
     <div class="receipt-container">
@@ -208,15 +208,20 @@
 
     <script>
         (() => {
-            const closePrintWindow = () => {
-                if (window.opener && !window.closed) window.close();
-            };
+            const printBtn = document.getElementById('btn-do-print');
+            if (printBtn) {
+                printBtn.focus();
+            }
 
-            window.addEventListener('afterprint', closePrintWindow, { once: true });
-            window.addEventListener('load', () => window.setTimeout(() => {
-                window.print();
-                window.setTimeout(closePrintWindow, 300);
-            }, 150), { once: true });
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    window.close();
+                } else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
+                    e.preventDefault();
+                    window.print();
+                }
+            });
         })();
     </script>
 </body>
