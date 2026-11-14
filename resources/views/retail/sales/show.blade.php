@@ -4,13 +4,22 @@
 @section('page_title', 'Detail Penjualan dan Struk')
 
 @section('toolbar_actions')
-    <a href="{{ route('retail.sales.print', $sale) }}" target="_blank" class="btn btn-light-primary"><i class="ki-outline ki-receipt-square"></i> Cetak Struk (Thermal)</a>
-    <a href="{{ route('retail.sales.print', [$sale, 'format' => 'dotmatrix']) }}" target="_blank" class="btn btn-light-success"><i class="ki-outline ki-document"></i> Cetak Faktur (LX-310)</a>
+    <a href="{{ route('retail.sales.index') }}" class="btn btn-sm btn-light">
+        <i class="ki-outline ki-arrow-left fs-4 me-1"></i> Kembali ke Riwayat
+    </a>
+    <a href="{{ route('retail.sales.print', $sale) }}" target="_blank" class="btn btn-sm btn-primary">
+        <i class="ki-outline ki-receipt-square fs-4 me-1"></i> Cetak Struk (Thermal)
+    </a>
+    <a href="{{ route('retail.sales.print', [$sale, 'format' => 'dotmatrix']) }}" target="_blank" class="btn btn-sm btn-success">
+        <i class="ki-outline ki-document fs-4 me-1"></i> Faktur (LX-310)
+    </a>
     @if($sale->returns->isNotEmpty())
-        <a href="{{ route('retail.sales.return-receipt', $sale->returns->last()) }}" target="_blank" class="btn btn-light-warning"><i class="ki-outline ki-arrows-loop"></i> Cetak Struk Retur</a>
+        <a href="{{ route('retail.sales.return-receipt', $sale->returns->last()) }}" target="_blank" class="btn btn-sm btn-warning">
+            <i class="ki-outline ki-arrows-loop fs-4 me-1"></i> Cetak Bukti Retur
+        </a>
     @endif
-    @can('void', $sale)<a href="{{ route('retail.sales.void', $sale) }}" class="btn btn-light-danger">Batalkan</a>@endcan
-    @can('return', $sale)<a href="{{ route('retail.sales.return', $sale) }}" class="btn btn-light-warning">Retur</a>@endcan
+    @can('void', $sale)<a href="{{ route('retail.sales.void', $sale) }}" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-cross-circle fs-4 me-1"></i> Batalkan</a>@endcan
+    @can('return', $sale)<a href="{{ route('retail.sales.return', $sale) }}" class="btn btn-sm btn-light-warning"><i class="ki-outline ki-arrows-loop fs-4 me-1"></i> Retur</a>@endcan
 @endsection
 
 @section('content')
@@ -27,6 +36,62 @@
     @endphp
     <div class="row g-6">
         <div class="col-lg-4">
+            <!-- Card Pilihan Cetak Struk & Dokumen (Jelas & Prominent) -->
+            <x-metronic.card title="Aksi Cetak Dokumen" class="mb-6">
+                <div class="d-flex flex-column gap-3">
+                    <!-- Cetak Struk Thermal -->
+                    <a href="{{ route('retail.sales.print', $sale) }}" target="_blank" class="btn btn-primary d-flex align-items-center justify-content-between py-4 px-5 shadow-xs">
+                        <div class="d-flex align-items-center">
+                            <div class="symbol symbol-40px bg-white bg-opacity-20 rounded p-2 me-3 d-flex align-items-center justify-content-center">
+                                <i class="ki-outline ki-receipt-square fs-1 text-white"></i>
+                            </div>
+                            <div class="text-start">
+                                <div class="fs-6 fw-bolder text-white">Cetak Struk POS (Thermal)</div>
+                                <div class="fs-8 text-white text-opacity-80">Format struk kasir mini printer 80mm / 58mm</div>
+                            </div>
+                        </div>
+                        <i class="ki-outline ki-printer fs-2 text-white"></i>
+                    </a>
+
+                    <!-- Cetak Faktur Dot Matrix LX-310 -->
+                    <a href="{{ route('retail.sales.print', [$sale, 'format' => 'dotmatrix']) }}" target="_blank" class="btn btn-success d-flex align-items-center justify-content-between py-4 px-5 shadow-xs">
+                        <div class="d-flex align-items-center">
+                            <div class="symbol symbol-40px bg-white bg-opacity-20 rounded p-2 me-3 d-flex align-items-center justify-content-center">
+                                <i class="ki-outline ki-document fs-1 text-white"></i>
+                            </div>
+                            <div class="text-start">
+                                <div class="fs-6 fw-bolder text-white">Cetak Faktur (Dot Matrix)</div>
+                                <div class="fs-8 text-white text-opacity-80">Kertas rangkap Epson LX-310</div>
+                            </div>
+                        </div>
+                        <i class="ki-outline ki-printer fs-2 text-white"></i>
+                    </a>
+
+                    <!-- Cetak Struk Retur jika ada transaksi retur -->
+                    @if($sale->returns->isNotEmpty())
+                    <a href="{{ route('retail.sales.return-receipt', $sale->returns->last()) }}" target="_blank" class="btn btn-warning d-flex align-items-center justify-content-between py-4 px-5 shadow-xs">
+                        <div class="d-flex align-items-center">
+                            <div class="symbol symbol-40px bg-white bg-opacity-20 rounded p-2 me-3 d-flex align-items-center justify-content-center">
+                                <i class="ki-outline ki-arrows-loop fs-1 text-white"></i>
+                            </div>
+                            <div class="text-start">
+                                <div class="fs-6 fw-bolder text-white">Cetak Bukti Retur (Thermal)</div>
+                                <div class="fs-8 text-white text-opacity-80">Struk pengembalian barang &amp; refund</div>
+                            </div>
+                        </div>
+                        <i class="ki-outline ki-printer fs-2 text-white"></i>
+                    </a>
+                    @endif
+
+                    <div class="separator separator-dashed my-2"></div>
+
+                    <!-- Tombol Navigasi Kembali -->
+                    <a href="{{ route('retail.sales.index') }}" class="btn btn-light-secondary d-flex align-items-center justify-content-center py-3 fw-bold">
+                        <i class="ki-outline ki-arrow-left fs-4 me-2"></i> Kembali ke Riwayat Penjualan
+                    </a>
+                </div>
+            </x-metronic.card>
+
             <x-metronic.card title="Ringkasan">
                 <div class="mb-4">
                     <div class="text-muted mb-1">Kasir</div>
