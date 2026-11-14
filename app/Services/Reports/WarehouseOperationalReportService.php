@@ -117,6 +117,92 @@ class WarehouseOperationalReportService
                     'status' => $presentEmployeeIds->contains($employee->id) ? 'Hadir' : 'Belum tercatat',
                 ])->all(),
             ],
+            'rows' => $this->buildExportRows($summary, $layerValue, $mutationTotal, $receiptCount, $receiptValue, $suppliers, $transferRows, $correctionCount, $lossCount, $lossValue, $teamCount, $presentEmployeeIds->count(), $lateCount, $canViewSensitive),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $summary
+     * @param  list<array{name: string, value: string}>  $suppliers
+     * @param  list<array{date: string, incoming: string, outgoing: string}>  $transferRows
+     * @return list<array<string, mixed>>
+     */
+    private function buildExportRows(
+        array $summary,
+        ?string $layerValue,
+        int $mutationTotal,
+        int $receiptCount,
+        string $receiptValue,
+        array $suppliers,
+        array $transferRows,
+        int $correctionCount,
+        int $lossCount,
+        string $lossValue,
+        int $teamCount,
+        int $presentCount,
+        int $lateCount,
+        bool $canViewSensitive,
+    ): array {
+        $rows = [];
+
+        $rows[] = [
+            'Seksi' => 'Ringkasan Gudang',
+            'Item / Keterangan' => 'Total Produk Terdaftar',
+            'Jumlah / Qty' => (int) ($summary['total_products'] ?? 0).' SKU',
+            'Nominal / Nilai' => $canViewSensitive && $layerValue !== null ? 'Rp '.number_format((float) $layerValue, 2, ',', '.') : 'Akses terbatas',
+            'Status / Catatan' => 'Stok Tersedia: '.($summary['available_quantity'] ?? '0'),
+        ];
+        $rows[] = [
+            'Seksi' => 'Ringkasan Gudang',
+            'Item / Keterangan' => 'Aktivitas Gudang',
+            'Jumlah / Qty' => $mutationTotal.' Mutasi',
+            'Nominal / Nilai' => $canViewSensitive ? 'Rp '.number_format((float) $receiptValue, 2, ',', '.') : '-',
+            'Status / Catatan' => $receiptCount.' Penerimaan Barang dari '.count($suppliers).' Supplier',
+        ];
+        $rows[] = [
+            'Seksi' => 'Status Stok',
+            'Item / Keterangan' => 'Kondisi Stok SKU',
+            'Jumlah / Qty' => 'Normal: '.max(0, (int) ($summary['total_products'] ?? 0) - (int) ($summary['critical_count'] ?? 0) - (int) ($summary['empty_count'] ?? 0)),
+            'Nominal / Nilai' => '-',
+            'Status / Catatan' => 'Kritis: '.(int) ($summary['critical_count'] ?? 0).' | Kosong: '.(int) ($summary['empty_count'] ?? 0),
+        ];
+
+        foreach ($suppliers as $sup) {
+            $rows[] = [
+                'Seksi' => 'Penerimaan Supplier',
+                'Item / Keterangan' => $sup['name'],
+                'Jumlah / Qty' => '-',
+                'Nominal / Nilai' => $canViewSensitive ? 'Rp '.number_format((float) $sup['value'], 2, ',', '.') : 'Akses terbatas',
+                'Status / Catatan' => 'Barang Masuk',
+            ];
+        }
+
+        foreach ($transferRows as $tr) {
+            $rows[] = [
+                'Seksi' => 'Transfer Stok',
+                'Item / Keterangan' => 'Transfer Tanggal '.$tr['date'],
+                'Jumlah / Qty' => 'Masuk: '.$tr['incoming'].' | Keluar: '.$tr['outgoing'],
+                'Nominal / Nilai' => '-',
+                'Status / Catatan' => '-',
+            ];
+        }
+
+        $rows[] = [
+            'Seksi' => 'Audit & Selisih',
+            'Item / Keterangan' => 'Opname & Kerugian',
+            'Jumlah / Qty' => $correctionCount.' Koreksi Opname | '.$lossCount.' Kejadian Loss',
+            'Nominal / Nilai' => $canViewSensitive ? 'Rp '.number_format((float) $lossValue, 2, ',', '.') : '-',
+            'Status / Catatan' => '-',
+        ];
+
+        $rows[] = [
+            'Seksi' => 'Tim Gudang',
+            'Item / Keterangan' => 'Kehadiran Karyawan Gudang',
+            'Jumlah / Qty' => $presentCount.' Hadir dari '.$teamCount.' Tim',
+            'Nominal / Nilai' => '-',
+            'Status / Catatan' => 'Terlambat: '.$lateCount,
+        ];
+
+        return $rows;
     }
 }

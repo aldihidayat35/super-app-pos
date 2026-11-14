@@ -200,7 +200,84 @@ class OwnerOperationalReportService
             'receivables' => $latestReceivables,
             'purchasing' => ['value' => $canViewSensitive ? $purchaseValue : null, 'supplier_score' => $supplierScore, 'suppliers' => $supplierRows],
             'workforce' => $workforce,
+            'rows' => $this->buildOverviewExportRows($summary, $locations, $latestReceivables, $supplierRows, $canViewSensitive),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $summary
+     * @param  list<array<string, mixed>>  $locations
+     * @param  list<array<string, mixed>>  $latestReceivables
+     * @param  list<array{supplier: string, po_count: int, value: string, last_order: string}>  $supplierRows
+     * @return list<array<string, mixed>>
+     */
+    private function buildOverviewExportRows(
+        array $summary,
+        array $locations,
+        array $latestReceivables,
+        array $supplierRows,
+        bool $canViewSensitive,
+    ): array {
+        $rows = [];
+
+        $rows[] = [
+            'Seksi' => 'Ringkasan Konsolidasi',
+            'Item / Keterangan' => 'Total Omzet Konsolidasi',
+            'Jumlah / Qty' => count($locations).' Cabang Aktif',
+            'Nominal / Nilai' => 'Rp '.number_format((float) ($summary['total_revenue'] ?? 0), 2, ',', '.'),
+            'Status / Catatan' => 'Retail: Rp '.number_format((float) ($summary['retail_revenue'] ?? 0), 2, ',', '.').' | B2B: Rp '.number_format((float) ($summary['b2b_revenue'] ?? 0), 2, ',', '.'),
+        ];
+
+        if ($canViewSensitive) {
+            $rows[] = [
+                'Seksi' => 'Ringkasan Konsolidasi',
+                'Item / Keterangan' => 'Gross Profit (Margin Kotor)',
+                'Jumlah / Qty' => '-',
+                'Nominal / Nilai' => 'Rp '.number_format((float) ($summary['gross_profit'] ?? 0), 2, ',', '.'),
+                'Status / Catatan' => 'HPP: Rp '.number_format((float) ($summary['cogs'] ?? 0), 2, ',', '.'),
+            ];
+            $rows[] = [
+                'Seksi' => 'Ringkasan Konsolidasi',
+                'Item / Keterangan' => 'Net Operating Profit (Laba Bersih)',
+                'Jumlah / Qty' => '-',
+                'Nominal / Nilai' => 'Rp '.number_format((float) ($summary['net_profit'] ?? 0), 2, ',', '.'),
+                'Status / Catatan' => 'Beban Operasional: Rp '.number_format((float) ($summary['total_expenses'] ?? 0), 2, ',', '.'),
+            ];
+        }
+
+        foreach ($locations as $loc) {
+            $typeLabel = isset($loc['type']) ? ' ('.ucfirst((string) $loc['type']).')' : '';
+            $txLabel = isset($loc['transaction_count']) ? $loc['transaction_count'].' Transaksi' : '-';
+            $rows[] = [
+                'Seksi' => 'Performa Cabang',
+                'Item / Keterangan' => ($loc['name'] ?? '-').$typeLabel,
+                'Jumlah / Qty' => $txLabel,
+                'Nominal / Nilai' => 'Rp '.number_format((float) ($loc['revenue'] ?? 0), 2, ',', '.'),
+                'Status / Catatan' => 'Stok Kritis: '.($loc['critical_count'] ?? 0).' SKU',
+            ];
+        }
+
+        foreach ($supplierRows as $sup) {
+            $rows[] = [
+                'Seksi' => 'Pengadaan Supplier',
+                'Item / Keterangan' => $sup['supplier'],
+                'Jumlah / Qty' => $sup['po_count'].' PO',
+                'Nominal / Nilai' => $canViewSensitive ? 'Rp '.number_format((float) $sup['value'], 2, ',', '.') : 'Akses terbatas',
+                'Status / Catatan' => 'Nilai Pembelian',
+            ];
+        }
+
+        foreach ($latestReceivables as $rec) {
+            $rows[] = [
+                'Seksi' => 'Piutang Berjalan',
+                'Item / Keterangan' => ($rec['number'] ?? '-').' - '.($rec['customer'] ?? '-'),
+                'Jumlah / Qty' => '-',
+                'Nominal / Nilai' => 'Rp '.number_format((float) ($rec['outstanding_amount'] ?? 0), 2, ',', '.'),
+                'Status / Catatan' => 'Jatuh Tempo: '.($rec['due_date'] ?? '-'),
+            ];
+        }
+
+        return $rows;
     }
 
     /** @param list<int> $locationIds */

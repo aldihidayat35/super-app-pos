@@ -85,6 +85,7 @@ class RetailOperationalReportService
             'exceptions' => $returns,
             'receivables' => $receivables,
             'team' => $team,
+            'rows' => $this->buildExportRows($current, $summary, $cogs, $margin, $expenses, $profitability, $locationIds, $filters, $retailReport, $stock, $returns, $receivables, $team, $canViewSensitive),
             'last_updated_at' => $filters['last_updated_at'],
         ];
     }
@@ -408,5 +409,173 @@ class RetailOperationalReportService
     private function quantity(mixed $value): string
     {
         return Decimal::normalize((string) ($value ?? 0), 4);
+    }
+
+    /**
+     * @param  array{revenue: string, cogs: string, transaction_count: int}  $current
+     * @param  array<string, mixed>  $summary
+     * @param  array<string, mixed>  $profitability
+     * @param  list<int>  $locationIds
+     * @param  array<string, mixed>  $filters
+     * @param  array<string, mixed>  $retailReport
+     * @param  array<string, mixed>  $stock
+     * @param  array<string, mixed>  $returns
+     * @param  array<string, mixed>  $receivables
+     * @param  array<string, mixed>  $team
+     * @return list<array<string, mixed>>
+     */
+    private function buildExportRows(
+        array $current,
+        array $summary,
+        string $cogs,
+        string $margin,
+        string $expenses,
+        array $profitability,
+        array $locationIds,
+        array $filters,
+        array $retailReport,
+        array $stock,
+        array $returns,
+        array $receivables,
+        array $team,
+        bool $canViewSensitive,
+    ): array {
+        $rows = [];
+
+        $revChange = isset($summary['revenue_change']['value']) ? $summary['revenue_change']['value'].'%' : '-';
+        $marginChange = isset($summary['margin_change']['value']) ? $summary['margin_change']['value'].'%' : '-';
+
+        // 1. Kinerja Penjualan & Margin
+        $rows[] = [
+            'Seksi' => 'Ringkasan Penjualan',
+            'Item / Keterangan' => 'Total Penjualan Bersih (Net Revenue)',
+            'Jumlah / Qty' => $current['transaction_count'].' Transaksi',
+            'Nominal / Nilai' => 'Rp '.number_format((float) $current['revenue'], 2, ',', '.'),
+            'Status / Catatan' => 'Perubahan vs periode sebelumnya: '.$revChange,
+        ];
+        $rows[] = [
+            'Seksi' => 'Ringkasan Penjualan',
+            'Item / Keterangan' => 'Rata-rata Nilai Transaksi (Average Ticket)',
+            'Jumlah / Qty' => '-',
+            'Nominal / Nilai' => 'Rp '.number_format((float) $this->average($current['revenue'], $current['transaction_count']), 2, ',', '.'),
+            'Status / Catatan' => '-',
+        ];
+
+        if ($canViewSensitive) {
+            $rows[] = [
+                'Seksi' => 'Profitabilitas',
+                'Item / Keterangan' => 'Harga Pokok Penjualan (HPP)',
+                'Jumlah / Qty' => '-',
+                'Nominal / Nilai' => 'Rp '.number_format((float) $cogs, 2, ',', '.'),
+                'Status / Catatan' => 'Rasio HPP: '.($profitability['hpp_percent'] ?? '0.00').'%',
+            ];
+            $rows[] = [
+                'Seksi' => 'Profitabilitas',
+                'Item / Keterangan' => 'Margin Kotor (Gross Margin)',
+                'Jumlah / Qty' => '-',
+                'Nominal / Nilai' => 'Rp '.number_format((float) $margin, 2, ',', '.'),
+                'Status / Catatan' => 'Margin: '.($profitability['margin_percent'] ?? '0.00').'% | Perubahan: '.$marginChange,
+            ];
+            $rows[] = [
+                'Seksi' => 'Profitabilitas',
+                'Item / Keterangan' => 'Beban Operasional Shift',
+                'Jumlah / Qty' => '-',
+                'Nominal / Nilai' => 'Rp '.number_format((float) $expenses, 2, ',', '.'),
+                'Status / Catatan' => 'Rasio Beban: '.($profitability['expense_percent'] ?? '0.00').'%',
+            ];
+        }
+
+        // 2. Transaksi Shift Kasir
+        $shiftsData = $this->shiftSummary($locationIds, $filters, $current, $retailReport);
+        foreach ($shiftsData['rows'] ?? [] as $shiftRow) {
+            $rows[] = [
+                'Seksi' => 'Shift & Kasir',
+                'Item / Keterangan' => 'Kasir: '.($shiftRow['cashier'] ?? '-'),
+                'Jumlah / Qty' => ($shiftRow['transaction_count'] ?? 0).' Transaksi',
+                'Nominal / Nilai' => 'Rp '.number_format((float) ($shiftRow['revenue'] ?? 0), 2, ',', '.'),
+                'Status / Catatan' => 'Tanggal: '.($shiftRow['date'] ?? '-'),
+            ];
+        }
+
+        // 3. Stok Barang & Kritis
+        $rows[] = [
+            'Seksi' => 'Persediaan & Stok',
+            'Item / Keterangan' => 'Total Produk Terdaftar',
+            'Jumlah / Qty' => ($stock['total_products'] ?? 0).' SKU',
+            'Nominal / Nilai' => $canViewSensitive && isset($stock['stock_value']) ? 'Rp '.number_format((float) $stock['stock_value'], 2, ',', '.') : 'Akses terbatas',
+            'Status / Catatan' => 'Stok Tersedia: '.number_format((float) ($stock['available_stock'] ?? 0), 2, ',', '.'),
+        ];
+        $rows[] = [
+            'Seksi' => 'Persediaan & Stok',
+            'Item / Keterangan' => 'Stok Kritis & Perlu Restock',
+            'Jumlah / Qty' => ($stock['critical_count'] ?? 0).' SKU Kritis',
+            'Nominal / Nilai' => '-',
+            'Status / Catatan' => ($stock['restock_count'] ?? 0).' SKU Perlu Restock',
+        ];
+        foreach ($stock['alerts'] ?? [] as $alert) {
+            $rows[] = [
+                'Seksi' => 'Alert Stok Kritis',
+                'Item / Keterangan' => ($alert['sku'] ?? '').' - '.($alert['product'] ?? ''),
+                'Jumlah / Qty' => ($alert['available'] ?? 0).' Tersedia',
+                'Nominal / Nilai' => '-',
+                'Status / Catatan' => 'Status: Stok Kritis',
+            ];
+        }
+
+        // 4. Retur & Pengecualian
+        $rows[] = [
+            'Seksi' => 'Retur & Pengecualian',
+            'Item / Keterangan' => 'Total Retur Penjualan',
+            'Jumlah / Qty' => ($returns['return_count'] ?? 0).' Kali',
+            'Nominal / Nilai' => 'Rp '.number_format((float) ($returns['return_value'] ?? 0), 2, ',', '.'),
+            'Status / Catatan' => 'Nilai Kerugian / Darurat: Rp '.number_format((float) ($returns['loss_value'] ?? 0), 2, ',', '.'),
+        ];
+        foreach ($returns['rows'] ?? [] as $excRow) {
+            $rows[] = [
+                'Seksi' => 'Detail Pengecualian',
+                'Item / Keterangan' => $excRow['label'] ?? '-',
+                'Jumlah / Qty' => ($excRow['transaction_count'] ?? 0).' Transaksi',
+                'Nominal / Nilai' => 'Rp '.number_format((float) ($excRow['value'] ?? 0), 2, ',', '.'),
+                'Status / Catatan' => '-',
+            ];
+        }
+
+        // 5. Piutang Retail
+        $rows[] = [
+            'Seksi' => 'Piutang Retail',
+            'Item / Keterangan' => 'Total Piutang Berjalan (Outstanding)',
+            'Jumlah / Qty' => ($receivables['account_count'] ?? 0).' Akun',
+            'Nominal / Nilai' => 'Rp '.number_format((float) ($receivables['outstanding'] ?? 0), 2, ',', '.'),
+            'Status / Catatan' => 'Lewat Jatuh Tempo: Rp '.number_format((float) ($receivables['overdue'] ?? 0), 2, ',', '.'),
+        ];
+        foreach ($receivables['rows'] ?? [] as $recRow) {
+            $rows[] = [
+                'Seksi' => 'Detail Piutang',
+                'Item / Keterangan' => ($recRow['number'] ?? '-').' - '.($recRow['customer'] ?? '-'),
+                'Jumlah / Qty' => '-',
+                'Nominal / Nilai' => 'Rp '.number_format((float) ($recRow['outstanding_amount'] ?? 0), 2, ',', '.'),
+                'Status / Catatan' => 'Jatuh Tempo: '.($recRow['due_date'] ?? '-'),
+            ];
+        }
+
+        // 6. Tim Toko
+        $rows[] = [
+            'Seksi' => 'Tim Toko',
+            'Item / Keterangan' => 'Kehadiran Karyawan Toko',
+            'Jumlah / Qty' => ($team['present'] ?? 0).' Hadir dari '.($team['total'] ?? 0).' Tim',
+            'Nominal / Nilai' => '-',
+            'Status / Catatan' => 'Terlambat: '.($team['late'] ?? 0).' | Sakit: '.($team['sick'] ?? 0).' | Izin: '.($team['permission'] ?? 0),
+        ];
+        foreach ($team['rows'] ?? [] as $tRow) {
+            $rows[] = [
+                'Seksi' => 'Anggota Tim',
+                'Item / Keterangan' => ($tRow['name'] ?? '-').' ('.($tRow['position'] ?? '-').')',
+                'Jumlah / Qty' => ($tRow['transactions'] ?? 0).' Transaksi',
+                'Nominal / Nilai' => '-',
+                'Status / Catatan' => 'Shift: '.($tRow['shift'] ?? '-').' | Status: '.($tRow['status'] ?? '-'),
+            ];
+        }
+
+        return $rows;
     }
 }

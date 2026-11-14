@@ -3,10 +3,12 @@
 namespace Tests\Feature\Reports;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\ReportExportStatus;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\Receivable;
+use App\Models\ReportExport;
 use App\Models\Stock;
 use App\Models\StockBatch;
 use App\Models\Supplier;
@@ -15,6 +17,7 @@ use App\Models\WorkLocation;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -636,6 +639,78 @@ class RoleProfileReportTest extends TestCase
             ->assertSee('#f59e0b', false)
             ->assertSee('data-profit-tooltip', false)
             ->assertDontSee('id="kt_app_toolbar"', false);
+    }
+
+    public function test_retail_overview_report_supports_direct_instant_download_without_queue(): void
+    {
+        Storage::fake('local');
+        $location = WorkLocation::factory()->create(['type' => 'branch', 'name' => 'Toko Direct Download']);
+        $user = $this->userWithRole('kepala_toko', $location);
+
+        $response = $this->actingAs($user)->post(route('reports.profiles.exports.store', [
+            'profile' => 'retail',
+            'report' => 'overview',
+        ]), [
+            'format' => 'csv',
+            'work_location_id' => $location->id,
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->toDateString(),
+            'range' => 'monthly',
+        ]);
+
+        $response->assertOk();
+        $response->assertHeader('content-disposition');
+        $this->assertStringContainsString('laporan_retail_overview', (string) $response->headers->get('content-disposition'));
+
+        $export = ReportExport::query()->where('report_type', 'profile.retail.overview')->latest('id')->firstOrFail();
+        $this->assertSame(ReportExportStatus::COMPLETED, $export->status);
+        $this->assertNotNull($export->file_path);
+        Storage::disk('local')->assertExists($export->file_path);
+    }
+
+    public function test_warehouse_overview_and_owner_income_support_direct_download(): void
+    {
+        Storage::fake('local');
+        $warehouse = WorkLocation::factory()->create(['type' => 'warehouse', 'name' => 'Gudang Direct Download']);
+        $gudangUser = $this->userWithRole('kepala_gudang', $warehouse);
+
+        $responseGudang = $this->actingAs($gudangUser)->post(route('reports.profiles.exports.store', [
+            'profile' => 'warehouse',
+            'report' => 'overview',
+        ]), [
+            'format' => 'csv',
+            'work_location_id' => $warehouse->id,
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->toDateString(),
+            'range' => 'monthly',
+        ]);
+
+        $responseGudang->assertOk();
+        $responseGudang->assertHeader('content-disposition');
+        $this->assertStringContainsString('laporan_warehouse_overview', (string) $responseGudang->headers->get('content-disposition'));
+
+        $exportGudang = ReportExport::query()->where('report_type', 'profile.warehouse.overview')->latest('id')->firstOrFail();
+        $this->assertSame(ReportExportStatus::COMPLETED, $exportGudang->status);
+        Storage::disk('local')->assertExists($exportGudang->file_path);
+
+        $owner = $this->userWithRole('owner_approver', $warehouse);
+        $responseOwner = $this->actingAs($owner)->post(route('reports.profiles.exports.store', [
+            'profile' => 'owner',
+            'report' => 'income',
+        ]), [
+            'format' => 'xlsx',
+            'work_location_id' => $warehouse->id,
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->toDateString(),
+        ]);
+
+        $responseOwner->assertOk();
+        $responseOwner->assertHeader('content-disposition');
+        $this->assertStringContainsString('laporan_owner_income', (string) $responseOwner->headers->get('content-disposition'));
+
+        $exportOwner = ReportExport::query()->where('report_type', 'profile.owner.income')->latest('id')->firstOrFail();
+        $this->assertSame(ReportExportStatus::COMPLETED, $exportOwner->status);
+        Storage::disk('local')->assertExists($exportOwner->file_path);
     }
 
     private function userWithRole(string $role, ?WorkLocation $location = null): User

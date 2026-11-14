@@ -44,7 +44,10 @@ class GenerateReportExportJob implements ShouldQueue
                 $filters = $reports->filters($user, $export->filters ?? []);
                 $payload = $reports->report($export->report_type, $user, $filters);
             }
-            $rows = $payload['rows'];
+            $rows = $payload['rows'] ?? [];
+            if (! is_array($rows) || $rows === []) {
+                $rows = $this->fallbackRowsFromPayload($payload);
+            }
             $headings = $this->headings($rows);
             $directory = 'report-exports/'.now()->format('Y/m');
             $filename = $export->report_type.'-'.$export->id.'.'.$this->extension($export->format);
@@ -118,5 +121,33 @@ class GenerateReportExportJob implements ShouldQueue
     private function extension(string $format): string
     {
         return $format === 'pdf' ? 'pdf' : ($format === 'xlsx' ? 'xlsx' : 'csv');
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return list<array<string, mixed>>
+     */
+    private function fallbackRowsFromPayload(array $payload): array
+    {
+        $rows = [];
+        if (isset($payload['summary']) && is_array($payload['summary'])) {
+            foreach ($payload['summary'] as $key => $val) {
+                if (is_scalar($val) || $val === null) {
+                    $rows[] = [
+                        'Parameter' => ucwords(str_replace('_', ' ', (string) $key)),
+                        'Nilai' => (string) ($val ?? '-'),
+                    ];
+                }
+            }
+        }
+
+        if ($rows === []) {
+            $rows[] = [
+                'Keterangan' => 'Laporan Berhasil Dibuat',
+                'Status' => 'Tidak ada baris data tambahan untuk filter aktif',
+            ];
+        }
+
+        return $rows;
     }
 }

@@ -42,6 +42,36 @@ class ReportExportService
         return $export;
     }
 
+    /** @param array<string, mixed> $filters */
+    public function requestSync(string $reportType, string $format, array $filters, User $user): ReportExport
+    {
+        $export = ReportExport::query()->create([
+            'report_type' => $reportType,
+            'format' => $format,
+            'status' => ReportExportStatus::QUEUED,
+            'requested_by' => $user->id,
+            'filters' => [
+                'start_date' => $filters['start_date'] ?? null,
+                'end_date' => $filters['end_date'] ?? null,
+                'work_location_id' => $filters['work_location_id'] ?? null,
+                'channel' => $filters['channel'] ?? null,
+                'status' => $filters['status'] ?? null,
+                'range' => $filters['range'] ?? null,
+                'product_id' => $filters['product_id'] ?? null,
+                'category_id' => $filters['category_id'] ?? null,
+                'supplier_id' => $filters['supplier_id'] ?? null,
+                'customer_id' => $filters['customer_id'] ?? null,
+                'user_id' => $filters['user_id'] ?? null,
+            ],
+            'correlation_id' => (string) Str::uuid(),
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        GenerateReportExportJob::dispatchSync($export->id);
+
+        return $export->fresh() ?? $export;
+    }
+
     /** @return list<string> */
     public function allowedTypes(): array
     {

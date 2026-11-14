@@ -35,9 +35,9 @@ class ReportExportController extends Controller
 
     public function store(StoreReportExportRequest $request, ReportExportService $service): RedirectResponse
     {
-        $export = $service->request($request->validated('report_type'), $request->validated('format'), $request->validated(), $request->user());
+        $export = $service->requestSync($request->validated('report_type'), $request->validated('format'), $request->validated(), $request->user());
 
-        return redirect()->route('reports.exports.index')->with('notification', ['type' => 'success', 'message' => "Export #{$export->id} masuk antrian."]);
+        return redirect()->route('reports.exports.index')->with('notification', ['type' => 'success', 'message' => "Export #{$export->id} berhasil diproses dan siap diunduh."]);
     }
 
     public function download(Request $request, ReportExport $export): StreamedResponse
