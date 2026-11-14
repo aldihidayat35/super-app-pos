@@ -8,75 +8,93 @@
 @endphp
 
 <!-- KPI Ringkasan Dinamis -->
-<div class="row g-5 g-xl-8 mb-5 mb-xl-8">
-    <div class="col-sm-6 col-xl-3">
-        <div class="card bg-light-success card-xl-stretch mb-xl-8 border border-success border-opacity-20 shadow-xs">
-            <div class="card-body py-4 px-5">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fs-6 fw-bold text-gray-700">Total Omzet</span>
-                    <span class="badge badge-success p-2">
-                        <i class="ki-outline ki-dollar fs-3 text-white"></i>
-                    </span>
-                </div>
-                <div class="fs-2x fw-bolder text-success mb-1">
-                    {{ \App\Support\CurrencyFormatter::rupiah($kpi['revenue']) }}
-                </div>
-                <div class="text-muted fw-semibold fs-8">
-                    Transaksi Selesai Sesuai Filter
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
+<div class="row g-4 g-xl-6 mb-5 mb-xl-8">
+    <div class="col-sm-6 col-xl">
         <div class="card bg-light-primary card-xl-stretch mb-xl-8 border border-primary border-opacity-20 shadow-xs">
             <div class="card-body py-4 px-5">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fs-6 fw-bold text-gray-700">Transaksi Selesai</span>
+                    <span class="fs-6 fw-bold text-gray-700">Omzet Kotor</span>
                     <span class="badge badge-primary p-2">
-                        <i class="ki-outline ki-basket fs-3 text-white"></i>
+                        <i class="ki-outline ki-dollar fs-3 text-white"></i>
                     </span>
                 </div>
                 <div class="fs-2x fw-bolder text-primary mb-1">
-                    {{ number_format((int) $kpi['transactions'], 0, ',', '.') }}
+                    {{ \App\Support\CurrencyFormatter::rupiah($kpi['gross_revenue'] ?? $kpi['revenue']) }}
                 </div>
                 <div class="text-muted fw-semibold fs-8">
-                    Nota Berhasil
+                    {{ number_format((int) $kpi['transactions'], 0, ',', '.') }} Transaksi Selesai
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-6 col-xl">
+        <div class="card bg-light-danger card-xl-stretch mb-xl-8 border border-danger border-opacity-20 shadow-xs">
+            <div class="card-body py-4 px-5">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fs-6 fw-bold text-gray-700">Total Retur (Refund)</span>
+                    <span class="badge badge-danger p-2">
+                        <i class="ki-outline ki-arrows-loop fs-3 text-white"></i>
+                    </span>
+                </div>
+                <div class="fs-2x fw-bolder text-danger mb-1">
+                    {{ \App\Support\CurrencyFormatter::rupiah($kpi['refund_amount'] ?? 0) }}
+                </div>
+                <div class="text-danger fw-semibold fs-8">
+                    {{ number_format((int) ($kpi['returns_count'] ?? 0), 0, ',', '.') }} Nota · {{ qty($kpi['returned_items_qty'] ?? 0) }} item kembali
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl">
+        <div class="card bg-light-success card-xl-stretch mb-xl-8 border border-success border-opacity-20 shadow-xs">
+            <div class="card-body py-4 px-5">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fs-6 fw-bold text-gray-700">Omzet Bersih (Net)</span>
+                    <span class="badge badge-success p-2">
+                        <i class="ki-outline ki-wallet fs-3 text-white"></i>
+                    </span>
+                </div>
+                <div class="fs-2x fw-bolder text-success mb-1">
+                    {{ \App\Support\CurrencyFormatter::rupiah($kpi['net_revenue'] ?? $kpi['revenue']) }}
+                </div>
+                <div class="text-muted fw-semibold fs-8">
+                    Omzet Riil Setelah Retur
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl">
         <div class="card bg-light-info card-xl-stretch mb-xl-8 border border-info border-opacity-20 shadow-xs">
             <div class="card-body py-4 px-5">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fs-6 fw-bold text-gray-700">Item Terjual</span>
+                    <span class="fs-6 fw-bold text-gray-700">Item Terjual (Net)</span>
                     <span class="badge badge-info p-2">
                         <i class="ki-outline ki-cube-2 fs-3 text-white"></i>
                     </span>
                 </div>
                 <div class="fs-2x fw-bolder text-info mb-1">
-                    {{ qty($kpi['items_sold']) }}
+                    {{ qty($kpi['net_items_sold'] ?? $kpi['items_sold']) }}
                 </div>
                 <div class="text-muted fw-semibold fs-8">
-                    Total Qty Produk Terjual
+                    Kotor: {{ qty($kpi['gross_items_sold'] ?? $kpi['items_sold']) }} unit
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card bg-light-danger card-xl-stretch mb-xl-8 border border-danger border-opacity-20 shadow-xs">
+    <div class="col-sm-6 col-xl">
+        <div class="card bg-light-secondary card-xl-stretch mb-xl-8 border border-secondary border-opacity-20 shadow-xs">
             <div class="card-body py-4 px-5">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fs-6 fw-bold text-gray-700">Void & Retur</span>
-                    <span class="badge badge-danger p-2">
-                        <i class="ki-outline ki-cross-circle fs-3 text-white"></i>
+                    <span class="fs-6 fw-bold text-gray-700">Batal (Void)</span>
+                    <span class="badge badge-secondary p-2">
+                        <i class="ki-outline ki-cross-circle fs-3 text-gray-700"></i>
                     </span>
                 </div>
-                <div class="fs-2x fw-bolder text-danger mb-1">
-                    {{ number_format((int) $kpi['void_retur_count'], 0, ',', '.') }}
+                <div class="fs-2x fw-bolder text-gray-800 mb-1">
+                    {{ number_format((int) ($kpi['void_count'] ?? 0), 0, ',', '.') }}
                 </div>
-                <div class="text-danger fw-semibold fs-8">
-                    {{ \App\Support\CurrencyFormatter::rupiah($kpi['void_retur_amount']) }}
+                <div class="text-muted fw-semibold fs-8">
+                    {{ \App\Support\CurrencyFormatter::rupiah($kpi['void_amount'] ?? 0) }}
                 </div>
             </div>
         </div>
@@ -164,6 +182,17 @@
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
                             @forelse($sales as $sale)
+                                @php
+                                    $totalRefAmount = (float) $sale->returns->sum('refund_amount');
+                                    $totalRetQty = (float) $sale->items->sum('returned_quantity');
+                                    $hasReturn = $totalRefAmount > 0 || $totalRetQty > 0 || $sale->status->value === 'returned';
+                                    $originalQty = (float) $sale->items->sum('quantity');
+                                    $netQty = max(0, $originalQty - $totalRetQty);
+                                    $originalGrandTotal = (float) $sale->grand_total_amount;
+                                    $netGrandTotal = max(0, $originalGrandTotal - $totalRefAmount);
+                                    $isFullyReturned = $hasReturn && ($netQty <= 0 || $netGrandTotal <= 0);
+                                    $isPartiallyReturned = $hasReturn && ! $isFullyReturned;
+                                @endphp
                                 <tr>
                                     <td>
                                         <a href="{{ route('retail.sales.show', $sale) }}" class="text-gray-800 text-hover-primary fw-bold fs-6">
@@ -205,8 +234,18 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <span class="fw-bold fs-6 text-gray-800">{{ qty($sale->items->sum('quantity')) }}</span>
-                                        <div class="text-muted fs-8">{{ $sale->items->count() }} jenis produk</div>
+                                        @if($hasReturn)
+                                            <div class="d-flex flex-column align-items-center">
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <span class="fw-bold fs-6 text-gray-900">{{ qty($netQty) }}</span>
+                                                    <span class="badge badge-light-danger fs-9 py-0 px-1">-{{ qty($totalRetQty) }} Retur</span>
+                                                </div>
+                                                <div class="text-muted fs-8">Beli: {{ qty($originalQty) }} · {{ $sale->items->count() }} jenis produk</div>
+                                            </div>
+                                        @else
+                                            <span class="fw-bold fs-6 text-gray-800">{{ qty($originalQty) }}</span>
+                                            <div class="text-muted fs-8">{{ $sale->items->count() }} jenis produk</div>
+                                        @endif
                                     </td>
                                     <td class="text-center">
                                         @if($sale->payments->isEmpty())
@@ -223,30 +262,58 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        <div class="fw-bolder text-gray-800 fs-6">
-                                            {{ \App\Support\CurrencyFormatter::rupiah($sale->grand_total_amount) }}
-                                        </div>
-                                        @if(Decimal::compare((string) $sale->discount_amount, '0', 2) > 0)
-                                            <div class="text-danger fs-8 fw-semibold mt-1">
-                                                Diskon: -{{ \App\Support\CurrencyFormatter::rupiah($sale->discount_amount) }}
+                                        @if($hasReturn)
+                                            <div class="fw-bolder text-gray-900 fs-6">
+                                                {{ \App\Support\CurrencyFormatter::rupiah($netGrandTotal) }}
                                             </div>
+                                            <div class="text-muted fs-8 text-decoration-line-through">
+                                                Asli: {{ \App\Support\CurrencyFormatter::rupiah($originalGrandTotal) }}
+                                            </div>
+                                            <div class="text-danger fs-8 fw-semibold">
+                                                -{{ \App\Support\CurrencyFormatter::rupiah($totalRefAmount) }} (Retur)
+                                            </div>
+                                        @else
+                                            <div class="fw-bolder text-gray-800 fs-6">
+                                                {{ \App\Support\CurrencyFormatter::rupiah($sale->grand_total_amount) }}
+                                            </div>
+                                            @if(Decimal::compare((string) $sale->discount_amount, '0', 2) > 0)
+                                                <div class="text-danger fs-8 fw-semibold mt-1">
+                                                    Diskon: -{{ \App\Support\CurrencyFormatter::rupiah($sale->discount_amount) }}
+                                                </div>
+                                            @endif
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <x-metronic.status-badge :status="$sale->status" />
+                                        @if($sale->status->value === 'void_approved')
+                                            <span class="badge badge-light-danger">Dibatalkan</span>
+                                        @elseif($sale->status->value === 'void_pending')
+                                            <span class="badge badge-light-warning">Menunggu Batal</span>
+                                        @elseif($isFullyReturned)
+                                            <span class="badge badge-light-danger" title="Semua barang telah diretur">
+                                                <i class="ki-outline ki-arrows-loop text-danger fs-7 me-1"></i>Diretur Penuh
+                                            </span>
+                                        @elseif($isPartiallyReturned)
+                                            <span class="badge badge-light-warning" title="Sebagian barang telah diretur">
+                                                <i class="ki-outline ki-arrows-loop text-warning fs-7 me-1"></i>Diretur Sebagian
+                                            </span>
+                                        @elseif($sale->status->value === 'completed')
+                                            <span class="badge badge-light-success">Selesai</span>
+                                        @else
+                                            <x-metronic.status-badge :status="$sale->status" />
+                                        @endif
                                     </td>
                                     <td class="text-center">
-                                        @if($sale->status->value === 'completed')
-                                            <span class="badge badge-light-success">
-                                                <i class="ki-outline ki-check-circle text-success fs-7 me-1"></i>Terpotong
-                                            </span>
-                                        @elseif($sale->status->value === 'void_approved')
+                                        @if($sale->status->value === 'void_approved' || $isFullyReturned)
                                             <span class="badge badge-light-danger">
                                                 <i class="ki-outline ki-cross-circle text-danger fs-7 me-1"></i>Dikembalikan
                                             </span>
-                                        @elseif($sale->status->value === 'returned')
-                                            <span class="badge badge-light-warning">
-                                                <i class="ki-outline ki-arrows-loop text-warning fs-7 me-1"></i>Diretur
+                                        @elseif($isPartiallyReturned)
+                                            <span class="badge badge-light-warning" title="Sisa stok terpotong: {{ qty($netQty) }}">
+                                                <i class="ki-outline ki-arrows-loop text-warning fs-7 me-1"></i>Retur Sebagian
+                                            </span>
+                                        @elseif($sale->status->value === 'completed')
+                                            <span class="badge badge-light-success">
+                                                <i class="ki-outline ki-check-circle text-success fs-7 me-1"></i>Terpotong
                                             </span>
                                         @else
                                             <span class="badge badge-light-secondary">-</span>
@@ -256,12 +323,17 @@
                                         <a href="{{ route('retail.sales.show', $sale) }}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Lihat Detail Transaksi">
                                             <i class="ki-outline ki-eye fs-3"></i>
                                         </a>
-                                        @if($sale->status->value === 'completed')
+                                        @if(in_array($sale->status->value, ['completed', 'returned'], true))
                                             <a href="{{ route('retail.sales.print', $sale) }}" target="_blank" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Cetak Ulang Struk (Thermal 80mm)">
                                                 <i class="ki-outline ki-receipt-square fs-3"></i>
                                             </a>
                                             <a href="{{ route('retail.sales.print', [$sale, 'format' => 'dotmatrix']) }}" target="_blank" class="btn btn-icon btn-bg-light btn-active-color-success btn-sm me-1" title="Cetak Faktur (Epson LX-310)">
                                                 <i class="ki-outline ki-document fs-3"></i>
+                                            </a>
+                                        @endif
+                                        @if($sale->returns->isNotEmpty())
+                                            <a href="{{ route('retail.sales.return-receipt', $sale->returns->last()) }}" target="_blank" class="btn btn-icon btn-bg-light btn-active-color-warning btn-sm me-1" title="Cetak Struk Retur (Thermal)">
+                                                <i class="ki-outline ki-arrows-loop fs-3 text-warning"></i>
                                             </a>
                                         @endif
                                     </td>

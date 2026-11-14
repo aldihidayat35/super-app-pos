@@ -278,6 +278,13 @@
                     </thead>
                     <tbody>
                         @forelse($sale->items as $itemIdx => $item)
+                            @php
+                                $itemRetQty = (float) ($item->returned_quantity ?? 0);
+                                $itemNetQty = max(0, (float) $item->quantity - $itemRetQty);
+                                $itemUPrice = (float) $item->selected_price;
+                                $itemRetSubtotal = $itemRetQty * $itemUPrice;
+                                $itemNetSubtotal = max(0, (float) $item->line_total - $itemRetSubtotal);
+                            @endphp
                             <tr>
                                 <td>{{ $itemIdx + 1 }}</td>
                                 <td>
@@ -286,14 +293,29 @@
                                         <span
                                             style="font-size: 9px; color: #444;">({{ $item->sku_snapshot ?? $item->product?->sku }})</span>
                                     @endif
+                                    @if ($itemRetQty > 0)
+                                        <div style="font-size: 9px; color: #b91c1c;">* Retur: -{{ qty($itemRetQty) }} {{ $item->unit_name_snapshot ?? ($item->unit?->symbol ?? 'Pcs') }} (-{{ CurrencyFormatter::rupiah($itemRetSubtotal) }})</div>
+                                    @endif
                                 </td>
-                                <td class="right">{{ qty($item->quantity) }}</td>
+                                <td class="right">
+                                    {{ qty($item->quantity) }}
+                                    @if ($itemRetQty > 0)
+                                        <div style="font-size: 8.5px; font-weight: bold;">(Net: {{ qty($itemNetQty) }})</div>
+                                    @endif
+                                </td>
                                 <td>{{ $item->unit_name_snapshot ?? ($item->unit?->symbol ?? 'Pcs') }}</td>
                                 <td class="right">{{ CurrencyFormatter::rupiah($item->selected_price) }}</td>
                                 <td class="right">
                                     {{ (float) $item->discount_amount > 0 ? '-' . CurrencyFormatter::rupiah($item->discount_amount) : '-' }}
                                 </td>
-                                <td class="right">{{ CurrencyFormatter::rupiah($item->line_total) }}</td>
+                                <td class="right">
+                                    @if ($itemRetQty > 0)
+                                        <div style="text-decoration: line-through; color: #777; font-size: 9px;">{{ CurrencyFormatter::rupiah($item->line_total) }}</div>
+                                        <div style="font-weight: bold;">{{ CurrencyFormatter::rupiah($itemNetSubtotal) }}</div>
+                                    @else
+                                        {{ CurrencyFormatter::rupiah($item->line_total) }}
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
@@ -304,15 +326,23 @@
                 </table>
 
                 {{-- Baris Ringkasan Nota --}}
+                @php
+                    $notaRefAmount = (float) $sale->returns->sum('refund_amount');
+                    $notaNetAmount = max(0, (float) $sale->grand_total_amount - $notaRefAmount);
+                @endphp
                 <div style="display: flex; justify-content: flex-end; font-size: 10px; margin-bottom: 6px;">
                     <div style="text-align: right; line-height: 1.2;">
                         <span>Subtotal: {{ CurrencyFormatter::rupiah($sale->subtotal_amount) }}</span>
                         @if ((float) $sale->discount_amount > 0)
-                            <span style="margin-left: 8px;">| Diskon Nota:
-                                -{{ CurrencyFormatter::rupiah($sale->discount_amount) }}</span>
+                            <span style="margin-left: 8px;">| Diskon: -{{ CurrencyFormatter::rupiah($sale->discount_amount) }}</span>
                         @endif
-                        <span class="bold" style="margin-left: 8px;">| Total:
-                            {{ CurrencyFormatter::rupiah($sale->grand_total_amount) }}</span>
+                        @if ($notaRefAmount > 0)
+                            <span style="margin-left: 8px; text-decoration: line-through; color: #777;">| Asli: {{ CurrencyFormatter::rupiah($sale->grand_total_amount) }}</span>
+                            <span style="margin-left: 8px; color: #b91c1c;">| Retur: -{{ CurrencyFormatter::rupiah($notaRefAmount) }}</span>
+                            <span class="bold" style="margin-left: 8px;">| Net: {{ CurrencyFormatter::rupiah($notaNetAmount) }}</span>
+                        @else
+                            <span class="bold" style="margin-left: 8px;">| Total: {{ CurrencyFormatter::rupiah($sale->grand_total_amount) }}</span>
+                        @endif
                     </div>
                 </div>
 
@@ -334,10 +364,16 @@
                     <td class="right" style="width: 25%;">: {{ CurrencyFormatter::rupiah($totalGrossAmount) }}</td>
                 </tr>
                 <tr>
-                    <td>Total Qty Terjual</td>
-                    <td>: <span class="bold">{{ qty($totalQuantitySold) }}</span> unit/barang</td>
+                    <td>Total Qty Terjual (Netto)</td>
+                    <td>: <span class="bold">{{ qty($totalNetQuantity) }}</span> unit (Kotor: {{ qty($totalQuantitySold) }}@if($totalReturnedQuantity > 0), Retur: -{{ qty($totalReturnedQuantity) }}@endif)</td>
                     <td>Total Diskon Nota/Item</td>
                     <td class="right">: -{{ CurrencyFormatter::rupiah($totalDiscountAmount) }}</td>
+                </tr>
+                <tr>
+                    <td>Total Nilai Retur/Refund</td>
+                    <td style="color: #b91c1c;">: <span class="bold">-{{ CurrencyFormatter::rupiah($totalRefundAmount) }}</span></td>
+                    <td style="width: 25%;">Total Penjualan Kotor</td>
+                    <td class="right" style="width: 25%;">: {{ CurrencyFormatter::rupiah($totalGrandAmount) }}</td>
                 </tr>
                 <tr>
                     <td>Rincian Pembayaran</td>
@@ -350,9 +386,9 @@
                             -
                         @endforelse
                     </td>
-                    <td class="bold" style="font-size: 11.5px;">TOTAL OMZET BERSIH</td>
+                    <td class="bold" style="font-size: 11.5px;">TOTAL OMZET BERSIH (NET)</td>
                     <td class="right bold" style="font-size: 11.5px;">:
-                        {{ CurrencyFormatter::rupiah($totalGrandAmount) }}</td>
+                        {{ CurrencyFormatter::rupiah($totalNetAmount) }}</td>
                 </tr>
             </table>
 

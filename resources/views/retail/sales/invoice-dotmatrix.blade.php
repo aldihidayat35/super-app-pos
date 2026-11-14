@@ -198,15 +198,39 @@
             </thead>
             <tbody>
                 @foreach($sale->items as $index => $item)
+                    @php
+                        $retQty = (float) ($item->returned_quantity ?? 0);
+                        $netQty = max(0, (float) $item->quantity - $retQty);
+                        $uPrice = (float) $item->selected_price;
+                        $retSubtotal = $retQty * $uPrice;
+                        $netSubtotal = max(0, (float) $item->line_total - $retSubtotal);
+                    @endphp
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         @if($settings['print_show_item_barcode'])
                             <td>{{ $item->product?->sku ?? $item->product?->barcode ?? '-' }}</td>
                         @endif
-                        <td>{{ $item->product_name_snapshot ?? $item->product?->name }}</td>
-                        <td class="center">{{ qty($item->quantity) }} {{ $item->unit?->code ?? '' }}</td>
+                        <td>
+                            {{ $item->product_name_snapshot ?? $item->product?->name }}
+                            @if($retQty > 0)
+                                <div style="font-size: 9.5px; color: #b91c1c;">* Retur: -{{ qty($retQty) }} {{ $item->unit?->code ?? '' }} (-Rp {{ number_format($retSubtotal, 0, ',', '.') }})</div>
+                            @endif
+                        </td>
+                        <td class="center">
+                            {{ qty($item->quantity) }} {{ $item->unit?->code ?? '' }}
+                            @if($retQty > 0)
+                                <div style="font-size: 9px; font-weight: bold;">(Net: {{ qty($netQty) }})</div>
+                            @endif
+                        </td>
                         <td class="right">{{ number_format((float) $item->selected_price, 0, ',', '.') }}</td>
-                        <td class="right">{{ number_format((float) $item->line_total, 0, ',', '.') }}</td>
+                        <td class="right">
+                            @if($retQty > 0)
+                                <div style="text-decoration: line-through; color: #777; font-size: 9.5px;">{{ number_format((float) $item->line_total, 0, ',', '.') }}</div>
+                                <div style="font-weight: bold;">{{ number_format($netSubtotal, 0, ',', '.') }}</div>
+                            @else
+                                {{ number_format((float) $item->line_total, 0, ',', '.') }}
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
@@ -215,6 +239,10 @@
         <div class="dashed-line"></div>
 
         {{-- Ringkasan Total & Keterangan --}}
+        @php
+            $totalRefAmount = (float) $sale->returns->sum('refund_amount');
+            $netGrandAmount = max(0, (float) $sale->grand_total_amount - $totalRefAmount);
+        @endphp
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div style="width: 55%;">
                 <div style="font-size: 10px; color: #333;">
@@ -238,11 +266,27 @@
                         <span>Rp {{ number_format((float) $sale->tax_amount, 0, ',', '.') }}</span>
                     </div>
                 @endif
-                <div class="dashed-line"></div>
-                <div style="display: flex; justify-content: space-between; font-size: 13px;" class="bold">
-                    <span>GRAND TOTAL</span>
-                    <span>Rp {{ number_format((float) $sale->grand_total_amount, 0, ',', '.') }}</span>
-                </div>
+                @if($totalRefAmount > 0)
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Total Awal</span>
+                        <span>Rp {{ number_format((float) $sale->grand_total_amount, 0, ',', '.') }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; color: #b91c1c;">
+                        <span>Retur / Refund</span>
+                        <span>-Rp {{ number_format($totalRefAmount, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="dashed-line"></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px;" class="bold">
+                        <span>GRAND TOTAL BERSIH</span>
+                        <span>Rp {{ number_format($netGrandAmount, 0, ',', '.') }}</span>
+                    </div>
+                @else
+                    <div class="dashed-line"></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px;" class="bold">
+                        <span>GRAND TOTAL</span>
+                        <span>Rp {{ number_format((float) $sale->grand_total_amount, 0, ',', '.') }}</span>
+                    </div>
+                @endif
             </div>
         </div>
 

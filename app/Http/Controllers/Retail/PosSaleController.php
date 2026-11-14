@@ -10,6 +10,7 @@ use App\Http\Requests\Retail\StorePosReturnRequest;
 use App\Http\Requests\Retail\VoidPosSaleRequest;
 use App\Models\Branch;
 use App\Models\PosReturn;
+use App\Models\PosReturnItem;
 use App\Models\PosSale;
 use App\Models\PosSaleItem;
 use App\Models\SystemSetting;
@@ -74,29 +75,49 @@ class PosSaleController extends Controller
         }
 
         // Ringkasan KPI dinamis sesuai filter yang sedang aktif
-        $completedQuery = (clone $query)->where('status', PosSaleStatus::COMPLETED->value);
-        $totalRevenue = (string) $completedQuery->sum('grand_total_amount');
-        $totalCompletedTransactions = $completedQuery->count();
+        $completedOrReturnedQuery = (clone $query)->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value]);
+        $totalGrossRevenue = (string) $completedOrReturnedQuery->sum('grand_total_amount');
+        $totalCompletedTransactions = $completedOrReturnedQuery->count();
 
         $saleIdsSubquery = (clone $query)->select('id');
-        $totalItemsSold = (string) PosSaleItem::whereIn('pos_sale_id', $saleIdsSubquery)
-            ->whereHas('sale', fn ($q) => $q->where('status', PosSaleStatus::COMPLETED->value))
+        $totalGrossItemsSold = (string) PosSaleItem::whereIn('pos_sale_id', $saleIdsSubquery)
+            ->whereHas('sale', fn ($q) => $q->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value]))
             ->sum('quantity');
 
-        $voidReturQuery = (clone $query)->whereIn('status', [PosSaleStatus::VOID_APPROVED->value, PosSaleStatus::RETURNED->value]);
-        $totalVoidReturCount = $voidReturQuery->count();
-        $totalVoidReturAmount = (string) $voidReturQuery->sum('grand_total_amount');
+        // Retur dan Pengembalian Dana
+        $returnsSubquery = PosReturn::query()->whereIn('pos_sale_id', $saleIdsSubquery);
+        $totalRefundAmount = (string) (clone $returnsSubquery)->sum('refund_amount');
+        $totalReturnsCount = (clone $returnsSubquery)->count();
+        $totalReturnedItemsQty = (string) PosReturnItem::whereIn('pos_return_id', (clone $returnsSubquery)->select('id'))->sum('quantity');
+
+        // Omzet Bersih & Qty Bersih Riil
+        $netRevenue = (string) max(0, (float) $totalGrossRevenue - (float) $totalRefundAmount);
+        $netItemsSold = (string) max(0, (float) $totalGrossItemsSold - (float) $totalReturnedItemsQty);
+
+        // Void (Dibatalkan)
+        $voidQuery = (clone $query)->where('status', PosSaleStatus::VOID_APPROVED->value);
+        $totalVoidCount = $voidQuery->count();
+        $totalVoidAmount = (string) $voidQuery->sum('grand_total_amount');
 
         $kpi = [
-            'revenue' => $totalRevenue,
+            'gross_revenue' => $totalGrossRevenue,
+            'revenue' => $totalGrossRevenue, // fallback kompatibilitas
             'transactions' => $totalCompletedTransactions,
-            'items_sold' => $totalItemsSold,
-            'void_retur_count' => $totalVoidReturCount,
-            'void_retur_amount' => $totalVoidReturAmount,
+            'gross_items_sold' => $totalGrossItemsSold,
+            'items_sold' => $netItemsSold,
+            'net_items_sold' => $netItemsSold,
+            'refund_amount' => $totalRefundAmount,
+            'returns_count' => $totalReturnsCount,
+            'returned_items_qty' => $totalReturnedItemsQty,
+            'net_revenue' => $netRevenue,
+            'void_count' => $totalVoidCount,
+            'void_amount' => $totalVoidAmount,
+            'void_retur_count' => $totalVoidCount + $totalReturnsCount,
+            'void_retur_amount' => (string) ((float) $totalVoidAmount + (float) $totalRefundAmount),
         ];
 
         $sales = (clone $query)
-            ->with(['cashier', 'customer', 'items', 'payments', 'branch'])
+            ->with(['cashier', 'customer', 'items.product', 'items.unit', 'payments', 'branch', 'returns.items.product', 'returns.cashier'])
             ->latest('created_at')
             ->paginate(25)
             ->withQueryString();
@@ -122,7 +143,20 @@ class PosSaleController extends Controller
         $this->authorize('view', $sale);
 
         return view('retail.sales.show', [
-            'sale' => $sale->load(['items.product', 'items.unit', 'items.allocations.emergencyItem.purchase', 'payments', 'branch', 'cashier', 'customer', 'stockMutations']),
+            'sale' => $sale->load([
+                'items.product',
+                'items.unit',
+                'items.allocations.emergencyItem.purchase',
+                'payments',
+                'branch',
+                'cashier',
+                'customer',
+                'stockMutations.product',
+                'returns.items.product',
+                'returns.items.saleItem',
+                'returns.cashier',
+                'returns.cashShift',
+            ]),
         ]);
     }
 
@@ -136,7 +170,7 @@ class PosSaleController extends Controller
         $settings = SystemSetting::getPrinterSettings();
         $companyName = SystemSetting::getCompanyName();
 
-        $sale->load(['items.product', 'items.unit', 'payments', 'branch', 'cashier', 'customer']);
+        $sale->load(['items.product', 'items.unit', 'payments', 'branch', 'cashier', 'customer', 'returns.items.product']);
 
         if ($request->query('format') === 'dotmatrix') {
             return view('retail.sales.invoice-dotmatrix', [
@@ -220,7 +254,7 @@ class PosSaleController extends Controller
         }
 
         $sales = $query
-            ->with(['cashier', 'customer', 'branch', 'payments', 'items.product', 'items.unit'])
+            ->with(['cashier', 'customer', 'branch', 'payments', 'items.product', 'items.unit', 'returns.items.product'])
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -228,21 +262,28 @@ class PosSaleController extends Controller
         $companyName = SystemSetting::getCompanyName();
 
         $totalCount = $sales->count();
-        $completedSales = $sales->where('status', PosSaleStatus::COMPLETED);
-        $totalCompleted = $completedSales->count();
-        $totalVoidOrReturned = $sales->whereIn('status', [PosSaleStatus::VOID_APPROVED, PosSaleStatus::RETURNED])->count();
+        $activeSales = $sales->whereIn('status', [PosSaleStatus::COMPLETED, PosSaleStatus::RETURNED]);
+        $totalCompleted = $activeSales->count();
+        $totalVoid = $sales->where('status', PosSaleStatus::VOID_APPROVED)->count();
+        $totalReturned = $sales->where('status', PosSaleStatus::RETURNED)->count();
+        $totalVoidOrReturned = $totalVoid + $totalReturned;
 
         $totalQuantitySold = 0;
-        foreach ($completedSales as $s) {
+        $totalReturnedQuantity = 0;
+        foreach ($activeSales as $s) {
             $totalQuantitySold += (float) $s->items->sum('quantity');
+            $totalReturnedQuantity += (float) $s->items->sum('returned_quantity');
         }
 
-        $totalGrossAmount = $completedSales->sum(fn ($s) => (float) $s->subtotal_amount);
-        $totalDiscountAmount = $completedSales->sum(fn ($s) => (float) $s->discount_amount);
-        $totalGrandAmount = $completedSales->sum(fn ($s) => (float) $s->grand_total_amount);
+        $totalGrossAmount = $activeSales->sum(fn ($s) => (float) $s->subtotal_amount);
+        $totalDiscountAmount = $activeSales->sum(fn ($s) => (float) $s->discount_amount);
+        $totalGrandAmount = $activeSales->sum(fn ($s) => (float) $s->grand_total_amount);
+        $totalRefundAmount = $sales->sum(fn ($s) => (float) $s->returns->sum('refund_amount'));
+        $totalNetAmount = max(0, $totalGrandAmount - $totalRefundAmount);
+        $totalNetQuantity = max(0, $totalQuantitySold - $totalReturnedQuantity);
 
         $paymentSummary = [];
-        foreach ($completedSales as $s) {
+        foreach ($activeSales as $s) {
             foreach ($s->payments as $p) {
                 $label = $p->method?->label() ?? 'Tunai';
                 if (! isset($paymentSummary[$label])) {
@@ -266,9 +307,13 @@ class PosSaleController extends Controller
             'totalCompleted' => $totalCompleted,
             'totalVoidOrReturned' => $totalVoidOrReturned,
             'totalQuantitySold' => $totalQuantitySold,
+            'totalReturnedQuantity' => $totalReturnedQuantity,
+            'totalNetQuantity' => $totalNetQuantity,
             'totalGrossAmount' => $totalGrossAmount,
             'totalDiscountAmount' => $totalDiscountAmount,
             'totalGrandAmount' => $totalGrandAmount,
+            'totalRefundAmount' => $totalRefundAmount,
+            'totalNetAmount' => $totalNetAmount,
             'paymentSummary' => $paymentSummary,
             'settings' => $settings,
             'companyName' => $companyName,
