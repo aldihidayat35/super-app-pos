@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
 class PosReturn extends Model
 {
     protected $fillable = [
-        'number', 'pos_sale_id', 'branch_id', 'work_location_id', 'cashier_user_id', 'status', 'resolution',
+        'number', 'pos_sale_id', 'branch_id', 'work_location_id', 'cashier_user_id', 'cash_shift_id', 'status', 'resolution',
         'refund_method', 'refund_amount', 'reason', 'completed_at',
     ];
 
@@ -44,6 +44,12 @@ class PosReturn extends Model
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cashier_user_id');
+    }
+
+    /** @return BelongsTo<CashShift, $this> */
+    public function cashShift(): BelongsTo
+    {
+        return $this->belongsTo(CashShift::class);
     }
 
     /** @return HasMany<PosReturnItem, $this> */

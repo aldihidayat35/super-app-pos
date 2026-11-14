@@ -451,13 +451,29 @@ class PosService
     }
 
     /** @param array<string, mixed> $data */
-    public function returnSale(PosSale $sale, array $data, User $actor): PosReturn
+    public function returnSale(PosSale $sale, array $data, User $actor, ?CashShift $activeShift = null): PosReturn
     {
-        return DB::transaction(function () use ($sale, $data, $actor): PosReturn {
+        return DB::transaction(function () use ($sale, $data, $actor, $activeShift): PosReturn {
             $sale = PosSale::query()->with(['items.product', 'items.allocations', 'branch.workLocation', 'cashShift'])->lockForUpdate()->findOrFail($sale->id);
-            if ($sale->cashShift?->status->isLocked()) {
-                throw ServiceException::validation('Transaksi pada shift yang sudah closing tidak dapat diretur. Gunakan workflow koreksi resmi.');
+
+            $targetShift = null;
+            if ($activeShift instanceof CashShift) {
+                $targetShift = $activeShift;
+            } elseif ($sale->cashShift && ! $sale->cashShift->status->isLocked()) {
+                $targetShift = $sale->cashShift;
+            } else {
+                $targetShift = $this->activeShift($sale->branch, $actor);
             }
+
+            if ($sale->cashShift?->status->isLocked()) {
+                if (! $targetShift instanceof CashShift || $targetShift->status->isLocked()) {
+                    throw ServiceException::validation('Transaksi pada shift sebelumnya hanya dapat diretur jika kasir memiliki sesi shift aktif di cabang ini.');
+                }
+                if ((int) $targetShift->branch_id !== (int) $sale->branch_id) {
+                    throw ServiceException::validation('Retur harus diproses di cabang toko yang sama dengan transaksi asal.');
+                }
+            }
+
             if (! in_array($sale->status, [PosSaleStatus::COMPLETED, PosSaleStatus::RETURNED], true)) {
                 throw ServiceException::validation('Transaksi tidak dapat diretur pada status saat ini.');
             }
@@ -470,6 +486,7 @@ class PosService
                 'branch_id' => $sale->branch_id,
                 'work_location_id' => $sale->work_location_id,
                 'cashier_user_id' => $actor->id,
+                'cash_shift_id' => $targetShift?->id,
                 'status' => PosReturnStatus::COMPLETED,
                 'resolution' => $data['resolution'] ?? 'refund',
                 'refund_method' => $data['refund_method'] ?? 'cash',

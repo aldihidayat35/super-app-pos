@@ -1536,6 +1536,12 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/pos/holds/{hold}/cancel', [PosController::class, 'cancelHold'])
             ->middleware('permission:pos.create')
             ->name('pos.holds.cancel');
+        Route::get('/pos/sales-lookup', [PosController::class, 'lookupSale'])
+            ->middleware('permission:pos.view')
+            ->name('pos.sales-lookup');
+        Route::post('/pos/returns', [PosController::class, 'processReturn'])
+            ->middleware('permission:returns.create|pos.create|pos.void')
+            ->name('pos.returns.store');
 
         Route::get('/sales', [PosSaleController::class, 'index'])
             ->middleware('permission:pos.view')
@@ -1550,6 +1556,9 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::get('/sales/{sale}/print', [PosSaleController::class, 'print'])
             ->middleware('permission:pos.view')
             ->name('sales.print');
+        Route::get('/sales/returns/{posReturn}/print', [PosSaleController::class, 'printReturn'])
+            ->middleware('permission:pos.view')
+            ->name('sales.return-receipt');
         Route::get('/sales/{sale}/void', [PosSaleController::class, 'voidForm'])
             ->middleware('permission:pos.void')
             ->name('sales.void');

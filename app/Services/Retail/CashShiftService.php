@@ -302,7 +302,17 @@ class CashShiftService
     private function refundTotal(CashShift $shift): string
     {
         return Decimal::normalize(PosReturn::query()
-            ->whereHas('sale', fn ($query) => $query->where('cash_shift_id', $shift->id))
+            ->where(function ($q) {
+                $q->whereNull('refund_method')
+                    ->orWhere('refund_method', 'cash');
+            })
+            ->where(function ($q) use ($shift) {
+                $q->where('cash_shift_id', $shift->id)
+                    ->orWhere(function ($legacy) use ($shift) {
+                        $legacy->whereNull('cash_shift_id')
+                            ->whereHas('sale', fn ($query) => $query->where('cash_shift_id', $shift->id));
+                    });
+            })
             ->sum('refund_amount'), 2);
     }
 

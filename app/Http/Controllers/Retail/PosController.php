@@ -2,23 +2,28 @@
 
 namespace App\Http\Controllers\Retail;
 
+use App\Enums\CashShiftStatus;
 use App\Enums\CreditLimitStatus;
 use App\Enums\CustomerStatus;
 use App\Enums\CustomerType;
 use App\Enums\PaymentMethod;
+use App\Enums\PosSaleStatus;
 use App\Exceptions\ServiceException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Retail\CancelPosHoldRequest;
 use App\Http\Requests\Retail\QuotePosItemRequest;
 use App\Http\Requests\Retail\StorePosHoldRequest;
 use App\Http\Requests\Retail\StorePosSaleRequest;
+use App\Models\Branch;
 use App\Models\CashShift;
 use App\Models\CreditLimit;
 use App\Models\Customer;
 use App\Models\EmergencyPurchase;
 use App\Models\PosHold;
+use App\Models\PosSale;
 use App\Models\ProductBrand;
 use App\Models\ProductCategory;
+use App\Models\User;
 use App\Services\Organization\DocumentNumberService;
 use App\Services\Retail\PosCatalogService;
 use App\Services\Retail\PosService;
@@ -264,6 +269,35 @@ class PosController extends Controller
         return $shift;
     }
 
+    private function resolveActiveBranch(User $user): Branch
+    {
+        $shift = CashShift::query()
+            ->with('branch')
+            ->where('cashier_user_id', $user->id)
+            ->where('status', CashShiftStatus::OPEN)
+            ->latest('opened_at')
+            ->first();
+
+        if ($shift?->branch) {
+            return $shift->branch;
+        }
+
+        $permittedIds = $user->permittedWorkLocationIds();
+        if (! empty($permittedIds)) {
+            $branch = Branch::query()->whereIn('work_location_id', $permittedIds)->where('is_active', true)->first();
+            if ($branch) {
+                return $branch;
+            }
+        }
+
+        $firstBranch = Branch::query()->where('is_active', true)->first();
+        if ($firstBranch) {
+            return $firstBranch;
+        }
+
+        throw ServiceException::validation('Cabang aktif tidak ditemukan.');
+    }
+
     public function storeQuickCustomer(Request $request, DocumentNumberService $numbers): JsonResponse
     {
         abort_unless($request->user()->can('pos.create'), 403);
@@ -330,6 +364,131 @@ class PosController extends Controller
                 'receivable_balance' => (float) $customer->receivable_balance,
                 'available_credit' => max(0, (float) ($customer->credit_limit - $customer->receivable_balance)),
                 'minimum_order' => (float) $customer->minimum_order,
+            ],
+        ]);
+    }
+
+    public function lookupSale(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->can('pos.view'), 403);
+
+        $branch = $this->resolveActiveBranch($request->user());
+        $query = trim((string) $request->query('query', ''));
+
+        $salesQuery = PosSale::query()
+            ->with(['items.product', 'items.unit', 'items.allocations', 'customer', 'cashier'])
+            ->where('branch_id', $branch->id)
+            ->whereIn('status', [PosSaleStatus::COMPLETED, PosSaleStatus::RETURNED]);
+
+        if ($query !== '') {
+            $salesQuery->where(function ($q) use ($query) {
+                $q->where('number', $query)
+                    ->orWhere('number', 'like', "%{$query}%");
+            });
+        }
+
+        $sales = $salesQuery->latest('id')->limit(15)->get();
+
+        $data = $sales->map(function (PosSale $sale) {
+            $canReturnAny = false;
+            $items = $sale->items->map(function ($item) use (&$canReturnAny) {
+                $remainingQty = max(0, (float) Decimal::sub((string) $item->base_quantity, (string) $item->returned_quantity, 4));
+                if ($remainingQty > 0) {
+                    $canReturnAny = true;
+                }
+
+                $normalAllocation = $item->allocations->firstWhere('source', 'normal');
+                $emergencyAllocation = $item->allocations->firstWhere('source', 'emergency');
+                $normalRemaining = $item->allocations->isEmpty()
+                    ? $remainingQty
+                    : ($normalAllocation ? max(0, (float) Decimal::sub((string) $normalAllocation->base_quantity, (string) $normalAllocation->returned_quantity, 4)) : 0);
+                $emergencyRemaining = $emergencyAllocation ? max(0, (float) Decimal::sub((string) $emergencyAllocation->base_quantity, (string) $emergencyAllocation->returned_quantity, 4)) : 0;
+
+                return [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product_name_snapshot ?? $item->product?->name ?? 'Produk',
+                    'sku' => $item->product?->sku ?? '-',
+                    'barcode' => $item->product?->barcode ?? '',
+                    'unit' => $item->unit?->code ?? 'PCS',
+                    'quantity' => (float) $item->quantity,
+                    'returned_quantity' => (float) $item->returned_quantity,
+                    'remaining_quantity' => $remainingQty,
+                    'selected_price' => (float) $item->selected_price,
+                    'line_total' => (float) $item->line_total,
+                    'normal_remaining' => $normalRemaining,
+                    'emergency_remaining' => $emergencyRemaining,
+                    'has_emergency' => $item->allocations->contains(fn ($a) => $a->source === 'emergency'),
+                ];
+            });
+
+            return [
+                'id' => $sale->id,
+                'number' => $sale->number,
+                'status' => $sale->status->value,
+                'status_label' => $sale->status->label(),
+                'date' => $sale->completed_at?->format('d/m/Y H:i') ?? $sale->created_at->format('d/m/Y H:i'),
+                'cashier_name' => $sale->cashier?->name ?? '-',
+                'customer_name' => $sale->customer?->business_name ?? $sale->customer?->name ?? 'Pelanggan Umum',
+                'grand_total' => (float) $sale->grand_total_amount,
+                'can_return' => $canReturnAny,
+                'items' => $items,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'sales' => $data,
+        ]);
+    }
+
+    public function processReturn(Request $request, PosService $posService): JsonResponse
+    {
+        abort_unless($request->user()->can('returns.create') || $request->user()->can('pos.create') || $request->user()->can('pos.void'), 403);
+
+        $validated = $request->validate([
+            'pos_sale_id' => ['required', 'integer', 'exists:pos_sales,id'],
+            'resolution' => ['nullable', 'string', 'in:refund,exchange,credit'],
+            'refund_method' => ['required', 'string', 'in:cash,bank_transfer,qris,manual'],
+            'reason' => ['required', 'string', 'max:500'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.pos_sale_item_id' => ['required', 'integer'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0'],
+            'items.*.condition' => ['nullable', 'string', 'in:good,damaged'],
+        ]);
+
+        $branch = $this->resolveActiveBranch($request->user());
+        $sale = PosSale::query()->where('branch_id', $branch->id)->findOrFail($validated['pos_sale_id']);
+
+        $activeShift = CashShift::query()
+            ->where('branch_id', $branch->id)
+            ->where('cashier_user_id', $request->user()->id)
+            ->where('status', CashShiftStatus::OPEN)
+            ->latest('id')
+            ->first();
+
+        try {
+            $posReturn = $posService->returnSale($sale, $validated, $request->user(), $activeShift);
+        } catch (ServiceException $e) {
+            return $this->serviceError($e, 'return');
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Retur penjualan '.$sale->number.' berhasil diproses.',
+            'return' => [
+                'id' => $posReturn->id,
+                'number' => $posReturn->number,
+                'refund_amount' => (float) $posReturn->refund_amount,
+                'refund_method' => $posReturn->refund_method,
+                'print_receipt_url' => route('retail.sales.print', $sale),
+                'print_return_url' => route('retail.sales.return-receipt', $posReturn),
+            ],
+            'sale' => [
+                'id' => $sale->id,
+                'number' => $sale->number,
+                'status' => $sale->status->value,
+                'status_label' => $sale->status->label(),
             ],
         ]);
     }

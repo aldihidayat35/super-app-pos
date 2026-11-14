@@ -36,14 +36,14 @@
                 </div>
                 <div class="d-flex gap-2">
                     @can('emergency_purchases.create')<a href="{{ route('retail.emergency.create', ['branch_id' => $branch->id]) }}" class="btn btn-light-warning">Pembelian Darurat</a>@endcan
-                    <button type="button" id="pos-sidebar-toggle" class="btn btn-icon btn-light" title="Kecilkan sidebar"
-                        aria-label="Kecilkan sidebar" aria-expanded="true"><i
-                            class="ki-outline ki-arrow-left fs-3"></i></button>
                     <button type="button" id="open-holds" class="btn btn-light-warning"><i
                             class="ki-outline ki-time fs-5 me-1"></i>Hold (<span id="hold-count">{{ $holdCount }}</span>)
                         <kbd>F6</kbd></button>
+                    <button type="button" id="open-return-modal" class="btn btn-light-danger fw-bold d-inline-flex align-items-center" title="Retur barang penjualan (F7)">
+                        <i class="ki-outline ki-arrows-circle fs-4 me-1"></i>Retur <kbd class="ms-1">F7</kbd>
+                    </button>
                     <a href="{{ route('retail.shifts.current') }}" class="btn btn-light-info fw-bold d-inline-flex align-items-center" id="btn-shift-detail" title="Detail shift aktif dan rekap kasir">
-                        <i class="ki-outline ki-time fs-4 me-1"></i>Shift Aktif / Detail Shift
+                        <i class="ki-outline ki-time fs-4 me-1"></i>Detail Shift
                     </a>
                 </div>
             </header>
@@ -335,6 +335,170 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal Retur Penjualan Produk --}}
+        <div class="modal fade" id="modal-pos-return" tabindex="-1" aria-labelledby="modal-pos-return-title" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-lg-down">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="symbol symbol-40px symbol-circle bg-light-danger text-danger flex-shrink-0">
+                                <span class="symbol-label"><i class="ki-outline ki-arrows-circle fs-2 text-danger"></i></span>
+                            </div>
+                            <div>
+                                <h3 class="modal-title fs-4 fw-bolder text-gray-900" id="modal-pos-return-title">Retur Penjualan Produk</h3>
+                                <div class="text-muted fs-8">Proses pengembalian barang pelanggan, pembaruan stok, dan cetak ulang struk</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-icon btn-light" data-bs-dismiss="modal" aria-label="Tutup"><i class="ki-outline ki-cross fs-2"></i></button>
+                    </div>
+
+                    <div class="modal-body p-6">
+                        {{-- Step 1: Search Form --}}
+                        <div id="return-step-search" class="mb-5">
+                            <label class="form-label fw-bold fs-7 mb-2">Cari No. Struk / Faktur Transaksi Asal</label>
+                            <div class="input-group input-group-solid mb-3">
+                                <span class="input-group-text"><i class="ki-outline ki-magnifier fs-3"></i></span>
+                                <input type="text" id="return-search-input" class="form-control form-control-solid" placeholder="Scan barcode struk atau ketik no. faktur (cth: POS/TKO-PUSAT/2026/00001)..." autocomplete="off">
+                                <button type="button" id="btn-search-return" class="btn btn-primary fw-bold">
+                                    <span class="indicator-label"><i class="ki-outline ki-search fs-4 me-1"></i>Cari Struk</span>
+                                    <span class="indicator-progress d-none"><span class="spinner-border spinner-border-sm align-middle me-1"></span>Mencari...</span>
+                                </button>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="text-muted fs-8"><i class="ki-outline ki-information fs-7 me-1"></i>Tekan Enter untuk mencari langsung atau pilih dari 15 transaksi terakhir di bawah:</div>
+                                <button type="button" id="btn-reload-recent-sales" class="btn btn-link btn-color-muted btn-active-color-primary p-0 fs-8"><i class="ki-outline ki-arrows-circle fs-8 me-1"></i>Muat Ulang Transaksi</button>
+                            </div>
+                            {{-- Recent sales cards/table --}}
+                            <div id="return-recent-container" class="mt-3 table-responsive border rounded border-gray-200" style="max-height: 250px; overflow-y: auto;">
+                                <div class="text-center py-5 text-muted fs-8"><span class="spinner-border spinner-border-sm me-2"></span>Memuat transaksi cabang...</div>
+                            </div>
+                        </div>
+
+                        {{-- Step 2: Return Items Entry (Hidden until sale is selected) --}}
+                        <div id="return-step-items" class="d-none">
+                            <div class="p-4 rounded bg-light-subtle border border-gray-200 mb-4">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                                    <div>
+                                        <span class="text-muted fs-8 fw-semibold text-uppercase d-block">TRANSAKSI DIPILIH</span>
+                                        <span class="fs-4 fw-bolder text-gray-900 font-monospace" id="return-sale-number">-</span>
+                                        <span class="badge badge-light-primary ms-2 fs-8" id="return-sale-status">Selesai</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-4 text-gray-700 fs-7">
+                                        <div><span class="text-muted fs-8 d-block">TANGGAL:</span><strong id="return-sale-date">-</strong></div>
+                                        <div><span class="text-muted fs-8 d-block">PELANGGAN:</span><strong id="return-sale-customer">-</strong></div>
+                                        <div><span class="text-muted fs-8 d-block">KASIR:</span><strong id="return-sale-cashier">-</strong></div>
+                                        <div><span class="text-muted fs-8 d-block">TOTAL TRANSAKSI:</span><strong class="text-primary" id="return-sale-total">Rp 0</strong></div>
+                                    </div>
+                                    <div>
+                                        <button type="button" id="btn-change-sale" class="btn btn-sm btn-light-secondary"><i class="ki-outline ki-arrow-left fs-6 me-1"></i>Ganti Struk</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <form id="form-submit-return">
+                                <input type="hidden" id="return-input-sale-id" name="pos_sale_id" value="">
+                                
+                                <div class="table-responsive border rounded border-gray-200 mb-4">
+                                    <table class="table table-row-bordered table-row-gray-200 align-middle gs-4 gy-3 mb-0" id="return-items-table">
+                                        <thead class="bg-light text-muted fw-bold fs-8 text-uppercase">
+                                            <tr>
+                                                <th class="ps-4" style="min-width: 180px;">Produk</th>
+                                                <th class="text-center" style="width: 110px;">Qty Beli</th>
+                                                <th class="text-center" style="width: 120px;">Sisa Bisa Retur</th>
+                                                <th class="text-center" style="width: 130px;">Qty Diretur</th>
+                                                <th class="text-center" style="width: 140px;">Kondisi Barang</th>
+                                                <th class="text-end pe-4" style="width: 160px;">Subtotal Refund</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="fw-semibold text-gray-800 fs-7" id="return-items-tbody">
+                                            {{-- Dynamic rows --}}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold fs-7 required">Metode Pengembalian Dana</label>
+                                        <select class="form-select form-select-solid" id="return-refund-method" name="refund_method" required>
+                                            <option value="cash" selected>Kas / Tunai (Potong Laci Shift Aktif)</option>
+                                            <option value="bank_transfer">Transfer Bank</option>
+                                            <option value="qris">QRIS Refund</option>
+                                            <option value="manual">Manual / Lainnya</option>
+                                        </select>
+                                        <div class="text-muted fs-8 mt-1">Uang tunai akan mengurangi Expected Cash shift saat closing.</div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold fs-7 required">Alasan Retur / Keterangan</label>
+                                        <input type="text" class="form-control form-control-solid" id="return-reason" name="reason" placeholder="Contoh: Barang rusak saat dibuka / kemasan bocor / salah varian..." required>
+                                    </div>
+                                </div>
+
+                                <div class="p-4 rounded bg-light-danger border border-danger-subtle d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                                    <div>
+                                        <div class="fw-bold fs-6 text-gray-900">Total Dana yang Dikembalikan ke Pelanggan:</div>
+                                        <div class="text-muted fs-8">Stok produk yang diretur dengan kondisi baik akan otomatis dikembalikan ke inventaris cabang.</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="fs-2hx fw-bolder text-danger" id="return-total-refund-display">Rp 0</span>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                                    <button type="submit" id="btn-submit-return-confirm" class="btn btn-danger fw-bold" disabled>
+                                        <span class="indicator-label"><i class="ki-outline ki-check-circle fs-4 me-1"></i>Konfirmasi &amp; Proses Retur</span>
+                                        <span class="indicator-progress d-none"><span class="spinner-border spinner-border-sm align-middle me-1"></span>Memproses Retur...</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {{-- Step 3: Success Screen with Reprint options --}}
+                        <div id="return-step-success" class="d-none text-center py-6">
+                            <div class="mb-4">
+                                <i class="ki-outline ki-check-circle text-success fs-4tx"></i>
+                            </div>
+                            <h3 class="fs-2 fw-bolder text-gray-900 mb-1">Retur Barang Berhasil Diproses!</h3>
+                            <div class="text-muted fs-7 mb-4">
+                                Nomor Bukti Retur: <span class="fw-bold text-gray-900 font-monospace" id="return-success-number">-</span>
+                            </div>
+
+                            <div class="row justify-content-center mb-6">
+                                <div class="col-md-8">
+                                    <div class="p-4 rounded bg-light border border-gray-200 text-start">
+                                        <div class="d-flex justify-content-between py-1 border-bottom border-gray-200">
+                                            <span class="text-muted">Total Dana Dikembalikan:</span>
+                                            <strong class="text-danger" id="return-success-amount">Rp 0</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-1 border-bottom border-gray-200">
+                                            <span class="text-muted">Metode Refund:</span>
+                                            <strong id="return-success-method">Tunai</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-1">
+                                            <span class="text-muted">Status Stok:</span>
+                                            <span class="badge badge-light-success">Stok Berhasil Dikembalikan</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap justify-content-center gap-3">
+                                <button type="button" id="btn-print-reprinted-receipt" class="btn btn-primary fw-bold py-3 px-6">
+                                    <i class="ki-outline ki-printer fs-3 me-2"></i>Cetak Ulang Struk (Revisi)
+                                </button>
+                                <button type="button" id="btn-print-return-receipt" class="btn btn-light-danger fw-bold py-3 px-6">
+                                    <i class="ki-outline ki-receipt fs-3 me-2"></i>Cetak Nota Retur Resmi
+                                </button>
+                                <button type="button" class="btn btn-light py-3 px-5" data-bs-dismiss="modal">
+                                    Selesai / Lanjut POS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1035,6 +1199,8 @@
                     checkout: @json(route('retail.pos.store')),
                     hold: @json(route('retail.pos.holds.store')),
                     holds: @json(route('retail.pos.holds.data')),
+                    salesLookup: @json(route('retail.pos.sales-lookup')),
+                    processReturn: @json(route('retail.pos.returns.store')),
                 };
                 const branchId = @json($branch->id);
                 const paymentMethods = @json($paymentMethods);
@@ -1048,6 +1214,8 @@
                 const paymentModal = new bootstrap.Modal(document.getElementById('payment-modal'));
                 const holdsModal = new bootstrap.Modal(document.getElementById('holds-modal'));
                 const successModal = new bootstrap.Modal(document.getElementById('success-modal'));
+                const returnModalEl = document.getElementById('modal-pos-return');
+                const returnModal = returnModalEl ? new bootstrap.Modal(returnModalEl) : null;
                 if (window.jQuery && typeof window.jQuery.fn.select2 === 'function' && !window.jQuery(customerSelect)
                     .hasClass('select2-hidden-accessible')) {
                     window.jQuery(customerSelect).select2({
@@ -2241,6 +2409,323 @@
                     });
                     updatePosSidebarBtn();
                 }
+                // ==================== RETURN MODAL LOGIC ====================
+                let currentReturnSale = null;
+                let lastPrintedReceiptUrl = null;
+                let lastPrintedReturnUrl = null;
+
+                const openReturnModal = () => {
+                    if (!returnModal) return;
+                    resetReturnModal();
+                    returnModal.show();
+                    loadRecentSalesForReturn();
+                };
+
+                const resetReturnModal = () => {
+                    currentReturnSale = null;
+                    document.getElementById('return-step-search')?.classList.remove('d-none');
+                    document.getElementById('return-step-items')?.classList.add('d-none');
+                    document.getElementById('return-step-success')?.classList.add('d-none');
+                    const searchInput = document.getElementById('return-search-input');
+                    if (searchInput) searchInput.value = '';
+                    const itemsTbody = document.getElementById('return-items-tbody');
+                    if (itemsTbody) itemsTbody.innerHTML = '';
+                    const totalDisplay = document.getElementById('return-total-refund-display');
+                    if (totalDisplay) totalDisplay.textContent = 'Rp 0';
+                    const confirmBtn = document.getElementById('btn-submit-return-confirm');
+                    if (confirmBtn) confirmBtn.disabled = true;
+                    setTimeout(() => searchInput?.focus(), 250);
+                };
+
+                const loadRecentSalesForReturn = async (query = '') => {
+                    const container = document.getElementById('return-recent-container');
+                    if (!container) return;
+                    container.innerHTML = `<div class="text-center py-5 text-muted fs-8"><span class="spinner-border spinner-border-sm me-2"></span>Memuat transaksi cabang...</div>`;
+
+                    try {
+                        const url = new URL(endpoints.salesLookup, window.location.origin);
+                        if (query) url.searchParams.set('query', query);
+
+                        const response = await fetch(url.toString(), {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        const data = await response.json();
+
+                        if (!data.success || !data.sales || data.sales.length === 0) {
+                            container.innerHTML = `<div class="text-center py-5 text-muted fs-8"><i class="ki-outline ki-information fs-4 d-block mb-1"></i>Tidak ditemukan transaksi penjualan selesai dengan pencarian tersebut.</div>`;
+                            return;
+                        }
+
+                        let html = `
+                            <table class="table table-sm table-hover align-middle mb-0 gs-3 gy-2">
+                                <thead class="bg-light fs-8 text-muted text-uppercase fw-bold">
+                                    <tr>
+                                        <th class="ps-3">No. Faktur</th>
+                                        <th>Waktu</th>
+                                        <th>Pelanggan</th>
+                                        <th class="text-end">Total</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-end pe-3">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="fs-8">
+                        `;
+                        data.sales.forEach(sale => {
+                            html += `
+                                <tr>
+                                    <td class="ps-3 fw-bold text-gray-900 font-monospace">${escapeHtml(sale.number)}</td>
+                                    <td class="text-muted">${escapeHtml(sale.date)}</td>
+                                    <td>${escapeHtml(sale.customer_name)}</td>
+                                    <td class="text-end fw-bold">${money(sale.grand_total)}</td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light-${sale.status === 'returned' ? 'warning' : 'success'} fs-9">${escapeHtml(sale.status_label)}</span>
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 btn-select-sale" data-sale='${JSON.stringify(sale).replace(/'/g, "&apos;")}'>
+                                            Pilih Struk
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        html += `</tbody></table>`;
+                        container.innerHTML = html;
+
+                        container.querySelectorAll('.btn-select-sale').forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                const saleData = JSON.parse(btn.getAttribute('data-sale'));
+                                selectSaleForReturn(saleData);
+                            });
+                        });
+                    } catch (err) {
+                        container.innerHTML = `<div class="text-center py-5 text-danger fs-8">Gagal memuat transaksi: ${escapeHtml(err.message)}</div>`;
+                    }
+                };
+
+                const selectSaleForReturn = (sale) => {
+                    currentReturnSale = sale;
+                    document.getElementById('return-step-search')?.classList.add('d-none');
+                    document.getElementById('return-step-items')?.classList.remove('d-none');
+                    document.getElementById('return-step-success')?.classList.add('d-none');
+
+                    document.getElementById('return-sale-number').textContent = sale.number;
+                    document.getElementById('return-sale-status').textContent = sale.status_label;
+                    document.getElementById('return-sale-status').className = `badge badge-light-${sale.status === 'returned' ? 'warning' : 'primary'} ms-2 fs-8`;
+                    document.getElementById('return-sale-date').textContent = sale.date;
+                    document.getElementById('return-sale-customer').textContent = sale.customer_name;
+                    document.getElementById('return-sale-cashier').textContent = sale.cashier_name;
+                    document.getElementById('return-sale-total').textContent = money(sale.grand_total);
+                    document.getElementById('return-input-sale-id').value = sale.id;
+
+                    const tbody = document.getElementById('return-items-tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+
+                    sale.items.forEach((item, idx) => {
+                        const tr = document.createElement('tr');
+                        const canReturn = item.remaining_quantity > 0;
+                        tr.innerHTML = `
+                            <td class="ps-4">
+                                <div class="fw-bold text-gray-900">${escapeHtml(item.product_name)}</div>
+                                <div class="text-muted fs-8 font-monospace">${escapeHtml(item.sku || '-')} &bull; ${money(item.selected_price)} / ${escapeHtml(item.unit)}</div>
+                                <input type="hidden" name="items[${idx}][pos_sale_item_id]" value="${item.id}">
+                            </td>
+                            <td class="text-center">${qty(item.quantity)} ${escapeHtml(item.unit)}</td>
+                            <td class="text-center">
+                                ${canReturn 
+                                    ? `<span class="badge badge-light-success fw-bold">${qty(item.remaining_quantity)} ${escapeHtml(item.unit)}</span>` 
+                                    : `<span class="badge badge-light-secondary fs-9">Sudah Habis</span>`}
+                            </td>
+                            <td class="text-center">
+                                <input type="number" 
+                                    class="form-control form-control-sm text-center return-item-qty" 
+                                    name="items[${idx}][quantity]" 
+                                    data-price="${item.selected_price}" 
+                                    data-max="${item.remaining_quantity}" 
+                                    step="any" 
+                                    min="0" 
+                                    max="${item.remaining_quantity}" 
+                                    value="0" 
+                                    ${!canReturn ? 'disabled' : ''}>
+                            </td>
+                            <td class="text-center">
+                                <select class="form-select form-select-sm return-item-condition" name="items[${idx}][condition]" ${!canReturn ? 'disabled' : ''}>
+                                    <option value="good" selected>Baik (Kembali ke Stok)</option>
+                                    <option value="damaged">Rusak (Inventaris Rusak)</option>
+                                </select>
+                            </td>
+                            <td class="text-end pe-4 fw-bolder return-item-subtotal text-danger">
+                                Rp 0
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    tbody.querySelectorAll('.return-item-qty').forEach(input => {
+                        input.addEventListener('input', () => {
+                            const max = parseFloat(input.getAttribute('data-max') || '0');
+                            let val = parseFloat(input.value || '0');
+                            if (val > max) {
+                                input.value = max;
+                                val = max;
+                            }
+                            if (val < 0 || isNaN(val)) {
+                                input.value = 0;
+                                val = 0;
+                            }
+                            const price = parseFloat(input.getAttribute('data-price') || '0');
+                            const subtotal = val * price;
+                            const row = input.closest('tr');
+                            row.querySelector('.return-item-subtotal').textContent = money(subtotal);
+                            recalculateReturnTotal();
+                        });
+                    });
+
+                    recalculateReturnTotal();
+                };
+
+                const recalculateReturnTotal = () => {
+                    let totalRefund = 0;
+                    let hasAnyQty = false;
+
+                    document.querySelectorAll('.return-item-qty').forEach(input => {
+                        const val = parseFloat(input.value || '0');
+                        const price = parseFloat(input.getAttribute('data-price') || '0');
+                        if (val > 0) {
+                            totalRefund += (val * price);
+                            hasAnyQty = true;
+                        }
+                    });
+
+                    const totalDisplay = document.getElementById('return-total-refund-display');
+                    if (totalDisplay) totalDisplay.textContent = money(totalRefund);
+
+                    const confirmBtn = document.getElementById('btn-submit-return-confirm');
+                    if (confirmBtn) confirmBtn.disabled = !hasAnyQty;
+                };
+
+                document.getElementById('btn-search-return')?.addEventListener('click', () => {
+                    const query = document.getElementById('return-search-input')?.value.trim();
+                    loadRecentSalesForReturn(query);
+                });
+
+                document.getElementById('return-search-input')?.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const query = e.target.value.trim();
+                        loadRecentSalesForReturn(query);
+                    }
+                });
+
+                document.getElementById('btn-reload-recent-sales')?.addEventListener('click', () => {
+                    loadRecentSalesForReturn('');
+                });
+
+                document.getElementById('btn-change-sale')?.addEventListener('click', () => {
+                    resetReturnModal();
+                });
+
+                document.getElementById('open-return-modal')?.addEventListener('click', () => {
+                    openReturnModal();
+                });
+
+                document.getElementById('form-submit-return')?.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const confirmBtn = document.getElementById('btn-submit-return-confirm');
+                    if (!confirmBtn || confirmBtn.disabled) return;
+
+                    const formData = new FormData(e.target);
+                    const reason = formData.get('reason')?.toString().trim();
+                    if (!reason) {
+                        alert('Mohon isi alasan pengembalian/retur.');
+                        return;
+                    }
+
+                    const payload = {
+                        pos_sale_id: formData.get('pos_sale_id'),
+                        refund_method: formData.get('refund_method'),
+                        resolution: 'refund',
+                        reason: reason,
+                        items: [],
+                    };
+
+                    document.querySelectorAll('#return-items-tbody tr').forEach((tr) => {
+                        const qtyInput = tr.querySelector('.return-item-qty');
+                        const itemQty = parseFloat(qtyInput?.value || '0');
+                        if (itemQty > 0) {
+                            const itemId = tr.querySelector('input[type="hidden"]')?.value;
+                            const condition = tr.querySelector('.return-item-condition')?.value || 'good';
+                            payload.items.push({
+                                pos_sale_item_id: parseInt(itemId),
+                                quantity: itemQty,
+                                condition: condition,
+                            });
+                        }
+                    });
+
+                    if (payload.items.length === 0) {
+                        alert('Pilih minimal satu item dengan kuantitas lebih dari nol untuk diretur.');
+                        return;
+                    }
+
+                    confirmBtn.disabled = true;
+                    confirmBtn.querySelector('.indicator-label')?.classList.add('d-none');
+                    confirmBtn.querySelector('.indicator-progress')?.classList.remove('d-none');
+
+                    try {
+                        const res = await fetch(endpoints.processReturn, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrf,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const result = await res.json();
+                        if (!res.ok || !result.success) {
+                            throw new Error(result.message || 'Terjadi kesalahan saat memproses retur.');
+                        }
+
+                        document.getElementById('return-step-items')?.classList.add('d-none');
+                        document.getElementById('return-step-success')?.classList.remove('d-none');
+
+                        document.getElementById('return-success-number').textContent = result.return.number;
+                        document.getElementById('return-success-amount').textContent = money(result.return.refund_amount);
+                        document.getElementById('return-success-method').textContent = result.return.refund_method === 'cash' ? 'Kas / Tunai' : result.return.refund_method.toUpperCase();
+
+                        lastPrintedReceiptUrl = result.return.print_receipt_url;
+                        lastPrintedReturnUrl = result.return.print_return_url;
+
+                        loadProducts(true);
+
+                    } catch (err) {
+                        alert(err.message || 'Gagal memproses retur.');
+                    } finally {
+                        confirmBtn.disabled = false;
+                        confirmBtn.querySelector('.indicator-label')?.classList.remove('d-none');
+                        confirmBtn.querySelector('.indicator-progress')?.classList.add('d-none');
+                    }
+                });
+
+                document.getElementById('btn-print-reprinted-receipt')?.addEventListener('click', () => {
+                    if (lastPrintedReceiptUrl) {
+                        window.open(lastPrintedReceiptUrl, '_blank', 'width=450,height=650,menubar=no,toolbar=no,location=no,status=no');
+                    }
+                });
+
+                document.getElementById('btn-print-return-receipt')?.addEventListener('click', () => {
+                    if (lastPrintedReturnUrl) {
+                        window.open(lastPrintedReturnUrl, '_blank', 'width=450,height=650,menubar=no,toolbar=no,location=no,status=no');
+                    }
+                });
+
+                returnModalEl?.addEventListener('hidden.bs.modal', () => {
+                    focusScanner(true);
+                });
+
                 window.addEventListener('focus', () => focusScanner());
                 document.addEventListener('keydown', event => {
                     if (event.key === 'F2') {
@@ -2256,6 +2741,10 @@
                     if (event.key === 'F6') {
                         event.preventDefault();
                         cart.length ? holdCart() : openHolds();
+                    }
+                    if (event.key === 'F7') {
+                        event.preventDefault();
+                        openReturnModal();
                     }
                     if (event.key === 'F8') {
                         event.preventDefault();

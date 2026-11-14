@@ -144,19 +144,57 @@
             </div>
         @endif
 
+        @php
+            $sale->loadMissing(['returns.items']);
+            $totalRefundAmount = '0.00';
+            if ($sale->relationLoaded('returns')) {
+                $totalRefundAmount = (string) $sale->returns->where('status.value', 'completed')->sum('refund_amount');
+            }
+            $isReturnedSale = (float) $totalRefundAmount > 0 || $sale->status->value === 'returned';
+        @endphp
+
+        @if($isReturnedSale)
+            <div class="row" style="margin-top: 3px;">
+                <span class="bold" style="color: #b91c1c; font-size: {{ $is58mm ? '9px' : '10px' }};">** STRUK REVISI (TERDAPAT RETUR) **</span>
+            </div>
+        @endif
+
         <div class="line"></div>
 
         {{-- Daftar Barang --}}
+        @php
+            $hasAnyItemReturn = false;
+        @endphp
         @foreach($sale->items as $item)
+            @php
+                $returnedQty = (float) ($item->returned_quantity ?? 0);
+                if ($returnedQty > 0) {
+                    $hasAnyItemReturn = true;
+                }
+                $netQty = max(0, (float) $item->quantity - $returnedQty);
+                $unitPrice = (float) $item->selected_price;
+                $returnedSubtotal = $returnedQty * $unitPrice;
+                $netSubtotal = max(0, (float) $item->line_total - $returnedSubtotal);
+            @endphp
             <div class="item-row">
                 <div class="bold">{{ $item->product_name_snapshot ?? $item->product?->name }}</div>
                 @if($settings['print_show_item_barcode'] && ($item->product?->barcode || $item->product?->sku))
                     <div class="barcode-text">{{ $item->product?->barcode ?? $item->product?->sku }}</div>
                 @endif
                 <div class="row">
-                    <span>{{ qty($item->quantity) }} {{ $item->unit?->code ?? '' }} x {{ number_format((float) $item->selected_price, 0, ',', '.') }}</span>
+                    <span>{{ qty($item->quantity) }} {{ $item->unit?->code ?? '' }} x {{ number_format($unitPrice, 0, ',', '.') }}</span>
                     <span class="bold">{{ number_format((float) $item->line_total, 0, ',', '.') }}</span>
                 </div>
+                @if($returnedQty > 0)
+                    <div class="row" style="color: #b91c1c; font-size: {{ $is58mm ? '9px' : '10px' }}; padding-left: 6px;">
+                        <span>&bull; Retur: -{{ qty($returnedQty) }} {{ $item->unit?->code ?? '' }}</span>
+                        <span>-{{ number_format($returnedSubtotal, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="row" style="font-weight: bold; font-size: {{ $is58mm ? '9px' : '10px' }}; padding-left: 6px;">
+                        <span>Netto: {{ qty($netQty) }} {{ $item->unit?->code ?? '' }}</span>
+                        <span>{{ number_format($netSubtotal, 0, ',', '.') }}</span>
+                    </div>
+                @endif
             </div>
         @endforeach
 
@@ -180,13 +218,33 @@
             </div>
         @endif
 
-        <div class="double-line"></div>
+        @if($isReturnedSale || $hasAnyItemReturn)
+            @php
+                $netGrandTotal = max(0, (float) $sale->grand_total_amount - (float) $totalRefundAmount);
+            @endphp
+            <div class="double-line"></div>
+            <div class="row">
+                <span>Total Asli</span>
+                <span>Rp {{ number_format((float) $sale->grand_total_amount, 0, ',', '.') }}</span>
+            </div>
+            <div class="row" style="color: #b91c1c;">
+                <span>Total Pengembalian (Retur)</span>
+                <span>-Rp {{ number_format((float) $totalRefundAmount, 0, ',', '.') }}</span>
+            </div>
+            <div class="line"></div>
+            <div class="row bold" style="font-size: 13px;">
+                <span>TOTAL SETELAH RETUR</span>
+                <span>Rp {{ number_format($netGrandTotal, 0, ',', '.') }}</span>
+            </div>
+        @else
+            <div class="double-line"></div>
 
-        {{-- Grand Total --}}
-        <div class="row bold" style="font-size: 13px;">
-            <span>TOTAL</span>
-            <span>Rp {{ number_format((float) $sale->grand_total_amount, 0, ',', '.') }}</span>
-        </div>
+            {{-- Grand Total --}}
+            <div class="row bold" style="font-size: 13px;">
+                <span>TOTAL</span>
+                <span>Rp {{ number_format((float) $sale->grand_total_amount, 0, ',', '.') }}</span>
+            </div>
+        @endif
 
         {{-- Rincian Pembayaran --}}
         @if($settings['print_show_payment_details'])

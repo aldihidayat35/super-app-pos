@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Retail\StorePosReturnRequest;
 use App\Http\Requests\Retail\VoidPosSaleRequest;
 use App\Models\Branch;
+use App\Models\PosReturn;
 use App\Models\PosSale;
 use App\Models\PosSaleItem;
 use App\Models\SystemSetting;
@@ -147,6 +148,21 @@ class PosSaleController extends Controller
 
         return view('retail.sales.receipt', [
             'sale' => $sale,
+            'settings' => $settings,
+            'companyName' => $companyName,
+        ]);
+    }
+
+    public function printReturn(PosReturn $posReturn): View
+    {
+        $this->authorize('view', $posReturn->sale);
+
+        $posReturn->load(['sale.branch', 'sale.cashier', 'sale.customer', 'items.product', 'items.saleItem.unit', 'cashier']);
+        $settings = SystemSetting::getPrinterSettings();
+        $companyName = SystemSetting::getCompanyName();
+
+        return view('retail.sales.return-receipt', [
+            'return' => $posReturn,
             'settings' => $settings,
             'companyName' => $companyName,
         ]);
