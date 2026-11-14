@@ -286,7 +286,7 @@
         <div class="modal fade" id="modal-quick-customer" tabindex="-1" aria-labelledby="modal-quick-customer-title" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
-                    <form id="form-quick-customer" novalidate>
+                    <form id="form-quick-customer" method="POST" data-no-spa novalidate>
                         <div class="modal-header">
                             <h3 class="modal-title fs-5 fw-bold" id="modal-quick-customer-title">
                                 <i class="ki-outline ki-user fs-3 text-primary me-2"></i>Tambah Pelanggan Cepat
@@ -340,7 +340,7 @@
         </div>
 
         {{-- Modal Retur Penjualan Produk --}}
-        <div class="modal fade" id="modal-pos-return" tabindex="-1" aria-labelledby="modal-pos-return-title" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal fade" id="modal-pos-return" tabindex="-1" aria-labelledby="modal-pos-return-title" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
             <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-lg-down">
                 <div class="modal-content">
                     <div class="modal-header border-0 pb-0">
@@ -399,7 +399,7 @@
                                 </div>
                             </div>
 
-                            <form id="form-submit-return">
+                            <form id="form-submit-return" method="POST" data-no-spa onsubmit="return false;">
                                 <input type="hidden" id="return-input-sale-id" name="pos_sale_id" value="">
                                 
                                 <div class="table-responsive border rounded border-gray-200 mb-4">
@@ -2631,6 +2631,7 @@
 
                 document.getElementById('form-submit-return')?.addEventListener('submit', async (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     const confirmBtn = document.getElementById('btn-submit-return-confirm');
                     if (!confirmBtn || confirmBtn.disabled) return;
 
@@ -2699,7 +2700,9 @@
                         lastPrintedReceiptUrl = result.return.print_receipt_url;
                         lastPrintedReturnUrl = result.return.print_return_url;
 
-                        loadProducts(true);
+                        setTimeout(() => {
+                            document.getElementById('btn-print-reprinted-receipt')?.focus();
+                        }, 60);
 
                     } catch (err) {
                         alert(err.message || 'Gagal memproses retur.');
@@ -2723,6 +2726,7 @@
                 });
 
                 returnModalEl?.addEventListener('hidden.bs.modal', () => {
+                    loadProducts(true);
                     focusScanner(true);
                 });
 

@@ -327,8 +327,16 @@ export const initializeSpaRouter = () => {
 
     // 2. Delegasi Form Pencarian/Filter (GET)
     document.addEventListener('submit', (event) => {
+        // Abaikan form yang sudah ditangani secara manual/AJAX dengan preventDefault()
+        if (event.defaultPrevented) return;
+
         const form = event.target;
         if (!form || form.tagName !== 'FORM') return;
+
+        // Halaman POS adalah workstation full-screen independen, navigasi selalu native
+        if (window.location.pathname === '/retail/pos') {
+            return;
+        }
 
         const method = (form.getAttribute('method') || 'GET').toUpperCase();
         if (method !== 'GET') return; // POST/PUT/DELETE tetap submit normal
