@@ -41,30 +41,14 @@
 .ar-kpi-card {
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 18px 20px;
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: 125px;
-    position: relative;
-    overflow: hidden;
 }
-.ar-kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--card-accent, #387bd5);
-}
-.ar-kpi-card.tone-blue   { --card-accent: #2563eb; }
-.ar-kpi-card.tone-green  { --card-accent: #059669; }
-.ar-kpi-card.tone-gold   { --card-accent: #d97706; }
-.ar-kpi-card.tone-red    { --card-accent: #dc2626; }
-.ar-kpi-card.tone-slate  { --card-accent: #64748b; }
 
 .ar-kpi-top {
     display: flex;
@@ -122,17 +106,10 @@
 .aging-bucket-card {
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: 10px;
     padding: 14px 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
-.aging-bucket-card.green  { border-left: 4px solid #059669; }
-.aging-bucket-card.blue   { border-left: 4px solid #2563eb; }
-.aging-bucket-card.gold   { border-left: 4px solid #d97706; }
-.aging-bucket-card.orange { border-left: 4px solid #ea580c; }
-.aging-bucket-card.red    { border-left: 4px solid #dc2626; }
 
 .aging-bucket-name {
     font-size: 11px;
@@ -422,7 +399,7 @@
          ══════════════════════════════════════════════════════════════════════════ --}}
     <section class="ar-kpi-grid">
         {{-- Total Piutang Aktif --}}
-        <div class="ar-kpi-card tone-blue">
+        <div class="ar-kpi-card">
             <div class="ar-kpi-top">
                 <span class="ar-kpi-label">Total Piutang Berjalan</span>
                 <span class="ar-kpi-badge">Total Outstanding</span>
@@ -434,7 +411,7 @@
         </div>
 
         {{-- Piutang Lancar --}}
-        <div class="ar-kpi-card tone-green">
+        <div class="ar-kpi-card">
             <div class="ar-kpi-top">
                 <span class="ar-kpi-label">Piutang Lancar</span>
                 <span class="ar-kpi-badge">Belum Jatuh Tempo</span>
@@ -446,7 +423,7 @@
         </div>
 
         {{-- Piutang Jatuh Tempo --}}
-        <div class="ar-kpi-card {{ $overdueRatio > 25 ? 'tone-red' : 'tone-gold' }}">
+        <div class="ar-kpi-card">
             <div class="ar-kpi-top">
                 <span class="ar-kpi-label">Piutang Lewat Jatuh Tempo</span>
                 <span class="ar-kpi-badge text-danger fw-bold">Overdue: {{ $summary['overdue_ratio'] ?? 0 }}%</span>
@@ -460,7 +437,7 @@
         </div>
 
         {{-- Piutang Kritis (>60 Hari) --}}
-        <div class="ar-kpi-card tone-red">
+        <div class="ar-kpi-card">
             <div class="ar-kpi-top">
                 <span class="ar-kpi-label">Piutang Kritis (>60 Hari)</span>
                 <span class="ar-kpi-badge text-danger fw-bold">Risiko Macet</span>
@@ -479,7 +456,7 @@
          ══════════════════════════════════════════════════════════════════════════ --}}
     <section class="aging-banner-grid">
         @foreach($agingBuckets as $key => $bucket)
-            <div class="aging-bucket-card {{ $bucket['tone'] }}">
+            <div class="aging-bucket-card">
                 <div class="aging-bucket-name">{{ $bucket['label'] }}</div>
                 <div class="aging-bucket-val">{{ $money($bucket['amount']) }}</div>
                 <div class="aging-bucket-meta">
@@ -494,7 +471,7 @@
          PANEL TOP PRIORITAS PENAGIHAN HARI INI (DENGAN AKSI WHATSAPP 1-KLIK)
          ══════════════════════════════════════════════════════════════════════════ --}}
     @if(!empty($priorityList))
-        <article class="card-dash panel mb-4" style="border-left: 4px solid #dc2626;">
+        <article class="card-dash panel mb-4">
             <div class="panel-head mb-3">
                 <div class="d-flex align-items-center gap-2">
                     <span class="sq red" style="width:34px;height:34px;"><svg class="ico" style="width:18px;height:18px;"><use href="#i-alert"/></svg></span>

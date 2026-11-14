@@ -124,29 +124,14 @@
 .profit-kpi-card {
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 18px 20px;
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: 125px;
-    position: relative;
-    overflow: hidden;
 }
-.profit-kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--card-accent, #387bd5);
-}
-.profit-kpi-card.tone-blue { --card-accent: #2563eb; }
-.profit-kpi-card.tone-slate { --card-accent: #64748b; }
-.profit-kpi-card.tone-green { --card-accent: #059669; }
-.profit-kpi-card.tone-teal { --card-accent: #0d9488; }
 
 .profit-kpi-top {
     display: flex;
@@ -376,7 +361,7 @@
          ══════════════════════════════════════════════════════════════════════════ --}}
     <section class="profit-card-grid">
         {{-- Net Revenue --}}
-        <div class="profit-kpi-card tone-blue">
+        <div class="profit-kpi-card">
             <div class="profit-kpi-top">
                 <span class="profit-kpi-label">Penjualan Bersih</span>
                 <span class="profit-kpi-badge">Net Revenue</span>
@@ -388,7 +373,7 @@
         </div>
 
         {{-- COGS / HPP --}}
-        <div class="profit-kpi-card tone-slate">
+        <div class="profit-kpi-card">
             <div class="profit-kpi-top">
                 <span class="profit-kpi-label">Beban Pokok (HPP)</span>
                 <span class="profit-kpi-badge">COGS</span>
@@ -406,7 +391,7 @@
         </div>
 
         {{-- Gross Profit --}}
-        <div class="profit-kpi-card tone-green">
+        <div class="profit-kpi-card">
             <div class="profit-kpi-top">
                 <span class="profit-kpi-label">Laba Kotor</span>
                 <span class="profit-kpi-badge" style="background:#e6f9f0; color:#065f46;">Gross Profit</span>
@@ -420,7 +405,7 @@
         </div>
 
         {{-- Net Operating Profit --}}
-        <div class="profit-kpi-card tone-teal">
+        <div class="profit-kpi-card">
             <div class="profit-kpi-top">
                 <span class="profit-kpi-label">Laba Operasional Bersih</span>
                 <span class="profit-kpi-badge" style="background:#e0f2fe; color:#0369a1;">Net Operating</span>

@@ -42,29 +42,14 @@
 .loc-kpi-card {
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 18px 20px;
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: 125px;
-    position: relative;
-    overflow: hidden;
 }
-.loc-kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--card-accent, #387bd5);
-}
-.loc-kpi-card.tone-blue  { --card-accent: #2563eb; }
-.loc-kpi-card.tone-green { --card-accent: #059669; }
-.loc-kpi-card.tone-gold  { --card-accent: #d97706; }
-.loc-kpi-card.tone-slate { --card-accent: #64748b; }
 
 .loc-kpi-top {
     display: flex;
@@ -117,18 +102,13 @@
 .podia-card {
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 18px 20px;
     box-shadow: var(--shadow);
-    position: relative;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
-.podia-card.gold   { border-top: 3px solid #f59e0b; background: linear-gradient(180deg, #fffcf5 0%, #fff 60px); }
-.podia-card.silver { border-top: 3px solid #059669; background: linear-gradient(180deg, #f4fbf7 0%, #fff 60px); }
-.podia-card.bronze { border-top: 3px solid #2563eb; background: linear-gradient(180deg, #f4f8fe 0%, #fff 60px); }
 
 .podia-crown {
     width: 38px;
@@ -136,8 +116,6 @@
     border-radius: 10px;
     display: grid;
     place-items: center;
-    font-weight: 800;
-    font-size: 15px;
     flex: none;
 }
 .podia-card.gold .podia-crown   { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
@@ -258,6 +236,8 @@
     <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
     <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M8 16v-4m5 4V8m5 8V5"/></symbol>
     <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H7v2h10v-2h-2c-.55 0-1-.45-1-1v-2.34"/><path d="M18 4H6v7a6 6 0 0 0 12 0V4Z"/></symbol>
+    <symbol id="i-medal" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></symbol>
+    <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M18 14.5V22l-6-3-6 3v-7.5"/></symbol>
     <symbol id="i-shield-tick" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3Zm0 6v5m0 3h.01"/></symbol>
@@ -399,7 +379,7 @@
          ══════════════════════════════════════════════════════════════════════════ --}}
     <section class="loc-kpi-grid">
         {{-- Total Omzet Konsolidasi --}}
-        <div class="loc-kpi-card tone-blue">
+        <div class="loc-kpi-card">
             <div class="loc-kpi-top">
                 <span class="loc-kpi-label">Total Omzet Konsolidasi</span>
                 <span class="loc-kpi-badge">Semua Cabang</span>
@@ -411,7 +391,7 @@
         </div>
 
         {{-- Total Beban Kas Operasional --}}
-        <div class="loc-kpi-card tone-slate">
+        <div class="loc-kpi-card">
             <div class="loc-kpi-top">
                 <span class="loc-kpi-label">Total Beban Kas Cabang</span>
                 <span class="loc-kpi-badge">Beban Shift &amp; Shortage</span>
@@ -423,7 +403,7 @@
         </div>
 
         {{-- Total Nilai Aset Stok --}}
-        <div class="loc-kpi-card tone-green">
+        <div class="loc-kpi-card">
             <div class="loc-kpi-top">
                 <span class="loc-kpi-label">Total Nilai Aset Stok HPP</span>
                 <span class="loc-kpi-badge">Aset Persediaan</span>
@@ -437,7 +417,7 @@
         </div>
 
         {{-- Top Performer Cabang --}}
-        <div class="loc-kpi-card tone-gold">
+        <div class="loc-kpi-card">
             <div class="loc-kpi-top">
                 <span class="loc-kpi-label">Cabang Juara Omzet (#1)</span>
                 <span class="loc-kpi-badge">Kontribusi {{ $summary['top_branch_share'] ?? 0 }}%</span>
@@ -465,7 +445,9 @@
         <div class="podia-card gold">
             <div class="d-flex align-items-start justify-content-between mb-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="podia-crown">🥇</div>
+                    <div class="podia-crown" title="Juara 1 Omzet">
+                        <svg class="ico" style="width:20px;height:20px;"><use href="#i-trophy"/></svg>
+                    </div>
                     <div>
                         <span class="badge bg-light-warning text-warning fw-bold fs-8">JUARA OMZET</span>
                         <h4 class="fs-6 fw-bold text-dark m-0 mt-1">{{ $revChamp['name'] ?? '-' }}</h4>
@@ -488,7 +470,9 @@
         <div class="podia-card silver">
             <div class="d-flex align-items-start justify-content-between mb-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="podia-crown">🥈</div>
+                    <div class="podia-crown" title="Juara Efisiensi Kas">
+                        <svg class="ico" style="width:20px;height:20px;"><use href="#i-medal"/></svg>
+                    </div>
                     <div>
                         <span class="badge bg-light-success text-success fw-bold fs-8">JUARA EFISIENSI KAS</span>
                         <h4 class="fs-6 fw-bold text-dark m-0 mt-1">{{ $effChamp['name'] ?? '-' }}</h4>
@@ -511,7 +495,9 @@
         <div class="podia-card bronze">
             <div class="d-flex align-items-start justify-content-between mb-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="podia-crown">🥉</div>
+                    <div class="podia-crown" title="Juara Manajemen Aset">
+                        <svg class="ico" style="width:20px;height:20px;"><use href="#i-award"/></svg>
+                    </div>
                     <div>
                         <span class="badge bg-light-primary text-primary fw-bold fs-8">JUARA MANAJEMEN ASET</span>
                         <h4 class="fs-6 fw-bold text-dark m-0 mt-1">{{ $stockChamp['name'] ?? '-' }}</h4>

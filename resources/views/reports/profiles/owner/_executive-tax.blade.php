@@ -44,30 +44,14 @@
 .tax-kpi-card {
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 18px 20px;
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: 125px;
-    position: relative;
-    overflow: hidden;
 }
-.tax-kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--card-accent, #387bd5);
-}
-.tax-kpi-card.tone-blue  { --card-accent: #2563eb; }
-.tax-kpi-card.tone-green { --card-accent: #059669; }
-.tax-kpi-card.tone-red   { --card-accent: #dc2626; }
-.tax-kpi-card.tone-gold  { --card-accent: #d97706; }
-.tax-kpi-card.tone-slate { --card-accent: #64748b; }
 
 .tax-kpi-top {
     display: flex;
@@ -432,7 +416,7 @@
          ══════════════════════════════════════════════════════════════════════════ --}}
     <section class="tax-kpi-grid">
         {{-- PPN Keluaran --}}
-        <div class="tax-kpi-card tone-blue">
+        <div class="tax-kpi-card">
             <div class="tax-kpi-top">
                 <span class="tax-kpi-label">PPN Keluaran</span>
                 <span class="tax-kpi-badge">Output Tax</span>
@@ -444,7 +428,7 @@
         </div>
 
         {{-- PPN Masukan --}}
-        <div class="tax-kpi-card tone-slate">
+        <div class="tax-kpi-card">
             <div class="tax-kpi-top">
                 <span class="tax-kpi-label">PPN Masukan Dapat Dikreditkan</span>
                 <span class="tax-kpi-badge">Creditable Input</span>
@@ -457,18 +441,13 @@
 
         {{-- Posisi SPT Masa PPN --}}
         @php
-            $tonePos = match($taxStatus) {
-                'kurang_bayar' => 'tone-red',
-                'lebih_bayar'  => 'tone-green',
-                default        => 'tone-slate',
-            };
             $tagPos = match($taxStatus) {
                 'kurang_bayar' => 'kurang-bayar',
                 'lebih_bayar'  => 'lebih-bayar',
                 default        => 'nihil',
             };
         @endphp
-        <div class="tax-kpi-card {{ $tonePos }}">
+        <div class="tax-kpi-card">
             <div class="tax-kpi-top">
                 <span class="tax-kpi-label">Posisi SPT Masa PPN</span>
                 <span class="tax-status-tag {{ $tagPos }}">{{ $summary['tax_status_label'] ?? 'Nihil' }}</span>
@@ -488,7 +467,7 @@
         </div>
 
         {{-- Estimasi PPh Final UMKM --}}
-        <div class="tax-kpi-card tone-gold">
+        <div class="tax-kpi-card">
             <div class="tax-kpi-top">
                 <span class="tax-kpi-label">Estimasi PPh Final UMKM (0,5%)</span>
                 <span class="tax-kpi-badge">PP 55/2022</span>
