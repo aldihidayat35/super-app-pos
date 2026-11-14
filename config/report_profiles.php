@@ -65,7 +65,7 @@ return [
         'location_type' => null,
         'reports' => [
             'overview' => ['label' => 'Ringkasan Eksekutif', 'metric' => 'daily'],
-            'income' => ['label' => 'Penghasilan & Channel', 'metric' => 'daily'],
+            'income' => ['label' => 'Laba Rugi & Finansial', 'metric' => 'daily'],
             'profitability' => ['label' => 'Profitabilitas & Margin', 'metric' => 'pricing'],
             'inventory' => ['label' => 'Nilai & Kesehatan Stok', 'metric' => 'warehouse'],
             'receivables' => ['label' => 'Piutang & Aging', 'metric' => 'receivables'],

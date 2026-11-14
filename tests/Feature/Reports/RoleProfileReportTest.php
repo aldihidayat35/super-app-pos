@@ -328,6 +328,49 @@ class RoleProfileReportTest extends TestCase
         $this->actingAs($owner)->get($route)->assertOk()->assertSee('Akses terbatas')->assertDontSee('Rp190.000');
     }
 
+    public function test_owner_income_statement_renders_pnl_and_protects_sensitive_data(): void
+    {
+        $location = WorkLocation::factory()->create(['type' => 'branch', 'name' => 'Toko Finansial']);
+        $owner = $this->userWithRole('owner_approver', $location);
+
+        $route = route('reports.profiles.owner.show', ['report' => 'income', 'work_location_id' => $location->id]);
+        $response = $this->actingAs($owner)->get($route);
+
+        $response->assertOk()
+            ->assertSee('EXECUTIVE BUSINESS REPORT')
+            ->assertSee('Laba Rugi &amp; Finansial', false)
+            ->assertSee('Penjualan Bersih')
+            ->assertSee('Beban Pokok (HPP)')
+            ->assertSee('Laba Kotor')
+            ->assertSee('Laba Operasional Bersih')
+            ->assertSee('Laporan Laba Rugi Berjenjang (Income Statement)')
+            ->assertSee('Perbandingan Profitabilitas Antar Cabang')
+            ->assertSee('Estimasi Kewajiban Perpajakan')
+            ->assertDontSee('id="kt_app_toolbar"', false);
+
+        Role::findByName('owner_approver')->revokePermissionTo('margins.view_sensitive');
+        $this->actingAs($owner)->get($route)
+            ->assertOk()
+            ->assertSee('Akses terbatas');
+
+        Queue::fake();
+        $this->actingAs($owner)->post(route('reports.profiles.exports.store', [
+            'profile' => 'owner',
+            'report' => 'income',
+        ]), [
+            'format' => 'pdf',
+            'work_location_id' => $location->id,
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-31',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('report_exports', [
+            'report_type' => 'profile.owner.income',
+            'format' => 'pdf',
+            'requested_by' => $owner->id,
+        ]);
+    }
+
     public function test_non_head_roles_cannot_open_any_profile_report(): void
     {
         foreach (['purchasing', 'supervisor_shift', 'staff_gudang', 'kasir', 'kepala_keuangan'] as $role) {

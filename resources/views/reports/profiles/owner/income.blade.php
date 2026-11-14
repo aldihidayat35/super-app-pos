@@ -1,6 +1,7 @@
 @extends('layouts.metronic.app')
-@section('title', $currentReport['label'].' - '.config('app.name'))
-@section('page_title', $currentReport['label'])
+@section('title', 'Laba Rugi & Finansial – '.config('app.name'))
+@section('hide_toolbar', '1')
+
 @section('content')
-    @include('reports.profiles.owner._content')
+    @include('reports.profiles.owner._executive-income')
 @endsection

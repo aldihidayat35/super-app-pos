@@ -254,4 +254,422 @@ class OwnerOperationalReportService
             ->selectRaw($dateSql.' as period, COALESCE(SUM(total_margin_amount),0) as value')
             ->groupBy('period')->orderBy('period')->pluck('value')->map(fn ($value): string => (string) $value)->values()->all();
     }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @param  array<string, mixed>  $base
+     * @return array<string, mixed>
+     */
+    public function buildIncomeStatement(array $filters, array $base, bool $canViewSensitive): array
+    {
+        $locationIds = array_map('intval', $filters['location_ids']);
+
+        // 1. Retail POS Queries
+        $posQuery = DB::table('pos_sales')
+            ->whereIn('work_location_id', $locationIds)
+            ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+            ->whereIn('status', ['completed', 'returned']);
+
+        $posRevenue = (string) (clone $posQuery)->sum('grand_total_amount');
+        $posMargin = (string) (clone $posQuery)->sum('total_margin_amount');
+        $posDiscount = (string) (clone $posQuery)->sum('discount_amount');
+        $posTax = (string) (clone $posQuery)->sum('tax_amount');
+        $posSubtotal = (string) (clone $posQuery)->sum('subtotal_amount');
+        $posCogs = Decimal::sub($posRevenue, $posMargin, 2);
+        if (Decimal::compare($posCogs, '0', 2) < 0) {
+            $posCogs = '0.00';
+        }
+
+        // 2. B2B Orders Queries
+        if ($filters['work_location_id'] !== null) {
+            $b2bQuery = $this->scopedB2bOrders($locationIds)
+                ->whereBetween('b2b_orders.submitted_at', [$filters['start'], $filters['end']])
+                ->whereNotIn('b2b_orders.status', ['cancelled', 'rejected']);
+        } else {
+            $b2bQuery = DB::table('b2b_orders')
+                ->whereBetween('b2b_orders.submitted_at', [$filters['start'], $filters['end']])
+                ->whereNotIn('b2b_orders.status', ['cancelled', 'rejected']);
+        }
+
+        $b2bRevenue = (string) (clone $b2bQuery)->sum('b2b_orders.grand_total_amount');
+        $b2bTax = (string) (clone $b2bQuery)->sum('b2b_orders.tax_amount');
+        $b2bDiscount = (string) (clone $b2bQuery)->sum('b2b_orders.discount_amount');
+        $b2bSubtotal = (string) (clone $b2bQuery)->sum('b2b_orders.subtotal_amount');
+        $b2bCogs = $b2bRevenue;
+
+        // 3. Deductions: Returns and Discounts
+        $returnsAmount = $this->calculateReturnsValue($filters);
+        $discountsAmount = Decimal::add($posDiscount, $b2bDiscount, 2);
+        $grossRevenue = Decimal::add($posRevenue, $b2bRevenue, 2);
+        $netRevenue = Decimal::sub($grossRevenue, $returnsAmount, 2);
+        if (Decimal::compare($netRevenue, '0', 2) < 0) {
+            $netRevenue = '0.00';
+        }
+
+        // 4. COGS & Gross Profit
+        $cogs = Decimal::add($posCogs, $b2bCogs, 2);
+        $grossProfit = Decimal::sub($netRevenue, $cogs, 2);
+        $grossMarginPercent = $this->percent($grossProfit, $netRevenue);
+
+        // 5. Operational Shift Expenses
+        $shiftQuery = DB::table('cash_shifts')
+            ->whereIn('work_location_id', $locationIds)
+            ->whereBetween('opened_at', [$filters['start'], $filters['end']]);
+
+        $shiftExpensesTotal = (string) (clone $shiftQuery)->sum('expense_amount');
+        $cashShortage = (string) (clone $shiftQuery)->where('difference_amount', '<', 0)->sum(DB::raw('ABS(difference_amount)'));
+        $cashSurplus = (string) (clone $shiftQuery)->where('difference_amount', '>', 0)->sum('difference_amount');
+        $totalOperationalExpenses = Decimal::add($shiftExpensesTotal, $cashShortage, 2);
+
+        // 6. Net Operating Profit
+        $netOperatingProfit = Decimal::sub($grossProfit, $totalOperationalExpenses, 2);
+        $netMarginPercent = $this->percent($netOperatingProfit, $netRevenue);
+
+        // 7. Taxes
+        $totalTaxCollected = Decimal::add($posTax, $b2bTax, 2);
+        $pphFinalEstimate = Decimal::mul($netRevenue, '0.005', 2);
+        $taxSummary = [
+            'ppn_collected' => $totalTaxCollected,
+            'pph_final_estimate' => $pphFinalEstimate,
+            'tax_scheme' => 'PP 55/2022 (PPh Final UMKM 0,5%) & PPN',
+            'status' => 'Tertib Terdata',
+        ];
+
+        // 8. Multi-step P&L Statement Line Items
+        $pnlStatement = [
+            [
+                'section' => 'REVENUE',
+                'code' => '4-1000',
+                'name' => 'Penjualan Retail (POS)',
+                'notes' => 'Total transaksi penjualan kasir selesai',
+                'amount' => $posRevenue,
+                'is_deduction' => false,
+                'is_total' => false,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'REVENUE',
+                'code' => '4-2000',
+                'name' => 'Penjualan Grosir & B2B',
+                'notes' => 'Pesanan langganan/B2B disetujui',
+                'amount' => $b2bRevenue,
+                'is_deduction' => false,
+                'is_total' => false,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'REVENUE',
+                'code' => '4-SUB',
+                'name' => 'Subtotal Penjualan Kotor',
+                'notes' => 'POS + B2B sebelum retur',
+                'amount' => $grossRevenue,
+                'is_deduction' => false,
+                'is_total' => false,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'REVENUE',
+                'code' => '4-3000',
+                'name' => 'Potongan Retur Penjualan',
+                'notes' => 'Retur konsumen / refund shift kasir',
+                'amount' => $returnsAmount,
+                'is_deduction' => true,
+                'is_total' => false,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'REVENUE',
+                'code' => '4-4000',
+                'name' => 'Potongan Diskon Penjualan',
+                'notes' => 'Diskon nota dan promosi kasir',
+                'amount' => $discountsAmount,
+                'is_deduction' => true,
+                'is_total' => false,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'REVENUE',
+                'code' => 'REV-NET',
+                'name' => 'TOTAL PENDAPATAN BERSIH',
+                'notes' => 'Net Revenue Periode Terpilih',
+                'amount' => $netRevenue,
+                'is_deduction' => false,
+                'is_total' => true,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'COGS',
+                'code' => '5-1000',
+                'name' => 'Beban Pokok Penjualan Retail (HPP POS)',
+                'notes' => 'Berdasarkan lapisan batch aktif terjual',
+                'amount' => $canViewSensitive ? $posCogs : null,
+                'is_deduction' => true,
+                'is_total' => false,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'COGS',
+                'code' => '5-2000',
+                'name' => 'Beban Pokok Penjualan B2B (HPP B2B)',
+                'notes' => 'HPP barang pesanan langganan',
+                'amount' => $canViewSensitive ? $b2bCogs : null,
+                'is_deduction' => true,
+                'is_total' => false,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'COGS',
+                'code' => 'COGS-TOT',
+                'name' => 'TOTAL BEBAN POKOK PENJUALAN (HPP)',
+                'notes' => 'Total pengeluaran pokok persediaan',
+                'amount' => $canViewSensitive ? $cogs : null,
+                'is_deduction' => true,
+                'is_total' => true,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'GROSS_PROFIT',
+                'code' => 'GP-TOT',
+                'name' => 'LABA KOTOR USAHA (GROSS PROFIT)',
+                'notes' => 'Gross Profit Margin',
+                'amount' => $canViewSensitive ? $grossProfit : null,
+                'ratio' => $canViewSensitive ? $grossMarginPercent.'%' : null,
+                'is_deduction' => false,
+                'is_total' => true,
+                'is_highlight' => true,
+            ],
+            [
+                'section' => 'EXPENSES',
+                'code' => '6-1000',
+                'name' => 'Beban Operasional Kasir (Shift Expenses)',
+                'notes' => 'Pengeluaran kasir selama shift kerja',
+                'amount' => $shiftExpensesTotal,
+                'is_deduction' => true,
+                'is_total' => false,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'EXPENSES',
+                'code' => '6-2000',
+                'name' => 'Beban Selisih Kas Kurang (Cash Shortage)',
+                'notes' => 'Selisih kas fisik minus saat closing',
+                'amount' => $cashShortage,
+                'is_deduction' => true,
+                'is_total' => false,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'EXPENSES',
+                'code' => 'OPEX-TOT',
+                'name' => 'TOTAL BEBAN OPERASIONAL CABANG',
+                'notes' => 'Beban langsung unit kerja',
+                'amount' => $totalOperationalExpenses,
+                'is_deduction' => true,
+                'is_total' => true,
+                'is_highlight' => false,
+            ],
+            [
+                'section' => 'NET_PROFIT',
+                'code' => 'NP-TOT',
+                'name' => 'LABA OPERASIONAL BERSIH (NET OPERATING PROFIT)',
+                'notes' => 'Laba setelah beban operasional cabang',
+                'amount' => $canViewSensitive ? $netOperatingProfit : null,
+                'ratio' => $canViewSensitive ? $netMarginPercent.'%' : null,
+                'is_deduction' => false,
+                'is_total' => true,
+                'is_highlight' => true,
+            ],
+        ];
+
+        // 9. Branch Profitability
+        $locationRows = DB::table('work_locations')
+            ->whereIn('id', $locationIds)
+            ->get();
+
+        $branchProfitability = [];
+        foreach ($locationRows as $loc) {
+            $locId = (int) $loc->id;
+            $locPos = DB::table('pos_sales')
+                ->where('work_location_id', $locId)
+                ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+                ->whereIn('status', ['completed', 'returned']);
+            $locPosRev = (string) (clone $locPos)->sum('grand_total_amount');
+            $locPosMargin = (string) (clone $locPos)->sum('total_margin_amount');
+            $locPosCogs = Decimal::sub($locPosRev, $locPosMargin, 2);
+            if (Decimal::compare($locPosCogs, '0', 2) < 0) {
+                $locPosCogs = '0.00';
+            }
+
+            $locB2bQuery = $this->scopedB2bOrders([$locId])
+                ->whereBetween('b2b_orders.submitted_at', [$filters['start'], $filters['end']])
+                ->whereNotIn('b2b_orders.status', ['cancelled', 'rejected']);
+            $locB2bRev = (string) (clone $locB2bQuery)->sum('b2b_orders.grand_total_amount');
+            $locB2bCogs = $locB2bRev;
+
+            $locTotalRev = Decimal::add($locPosRev, $locB2bRev, 2);
+            $locTotalCogs = Decimal::add($locPosCogs, $locB2bCogs, 2);
+            $locGrossProfit = Decimal::sub($locTotalRev, $locTotalCogs, 2);
+            $locGrossMarginPct = $this->percent($locGrossProfit, $locTotalRev);
+
+            $locShiftExpenses = (string) DB::table('cash_shifts')
+                ->where('work_location_id', $locId)
+                ->whereBetween('opened_at', [$filters['start'], $filters['end']])
+                ->sum('expense_amount');
+            $locShortage = (string) DB::table('cash_shifts')
+                ->where('work_location_id', $locId)
+                ->whereBetween('opened_at', [$filters['start'], $filters['end']])
+                ->where('difference_amount', '<', 0)
+                ->sum(DB::raw('ABS(difference_amount)'));
+            $locTotalExpenses = Decimal::add($locShiftExpenses, $locShortage, 2);
+
+            $locNetProfit = Decimal::sub($locGrossProfit, $locTotalExpenses, 2);
+            $locNetMarginPct = $this->percent($locNetProfit, $locTotalRev);
+
+            $branchProfitability[] = [
+                'id' => $locId,
+                'name' => (string) $loc->name,
+                'type' => (string) $loc->type,
+                'pos_revenue' => $locPosRev,
+                'b2b_revenue' => $locB2bRev,
+                'net_revenue' => $locTotalRev,
+                'cogs' => $canViewSensitive ? $locTotalCogs : null,
+                'gross_profit' => $canViewSensitive ? $locGrossProfit : null,
+                'gross_margin_percent' => $canViewSensitive ? $locGrossMarginPct : null,
+                'expenses' => $locTotalExpenses,
+                'net_profit' => $canViewSensitive ? $locNetProfit : null,
+                'net_margin_percent' => $canViewSensitive ? $locNetMarginPct : null,
+            ];
+        }
+
+        usort($branchProfitability, fn ($a, $b) => Decimal::compare($b['net_revenue'], $a['net_revenue'], 2));
+
+        $positiveTotalNet = '0.00';
+        foreach ($branchProfitability as $b) {
+            if ($b['net_profit'] !== null && Decimal::compare($b['net_profit'], '0', 2) > 0) {
+                $positiveTotalNet = Decimal::add($positiveTotalNet, $b['net_profit'], 2);
+            }
+        }
+        foreach ($branchProfitability as &$b) {
+            $b['contribution_percent'] = ($canViewSensitive && $b['net_profit'] !== null)
+                ? $this->percent($b['net_profit'], $positiveTotalNet)
+                : null;
+        }
+        unset($b);
+
+        // 10. Shift Expenses Breakdown
+        $expenseCategories = DB::table('shift_expenses')
+            ->join('cash_shifts', 'cash_shifts.id', '=', 'shift_expenses.cash_shift_id')
+            ->whereIn('cash_shifts.work_location_id', $locationIds)
+            ->whereBetween('shift_expenses.spent_at', [$filters['start'], $filters['end']])
+            ->selectRaw("COALESCE(shift_expenses.category, 'Operasional Umum') as category, COUNT(*) as count, COALESCE(SUM(shift_expenses.amount), 0) as total")
+            ->groupBy('category')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($r): array => [
+                'category' => (string) $r->category,
+                'count' => (int) $r->count,
+                'total' => (string) $r->total,
+                'percent' => $this->percent((string) $r->total, $shiftExpensesTotal ?: '1.00'),
+            ])
+            ->all();
+
+        $recentExpenses = DB::table('shift_expenses')
+            ->join('cash_shifts', 'cash_shifts.id', '=', 'shift_expenses.cash_shift_id')
+            ->leftJoin('work_locations', 'work_locations.id', '=', 'cash_shifts.work_location_id')
+            ->leftJoin('users', 'users.id', '=', 'shift_expenses.created_by')
+            ->whereIn('cash_shifts.work_location_id', $locationIds)
+            ->whereBetween('shift_expenses.spent_at', [$filters['start'], $filters['end']])
+            ->select([
+                'shift_expenses.id',
+                'shift_expenses.spent_at',
+                'shift_expenses.category',
+                'shift_expenses.amount',
+                'shift_expenses.notes',
+                'work_locations.name as location_name',
+                'users.name as creator_name',
+            ])
+            ->orderByDesc('shift_expenses.spent_at')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r): array => [
+                'id' => (int) $r->id,
+                'spent_at' => (string) $r->spent_at,
+                'category' => (string) ($r->category ?: 'Operasional Umum'),
+                'amount' => (string) $r->amount,
+                'notes' => (string) ($r->notes ?: '-'),
+                'location_name' => (string) ($r->location_name ?: '-'),
+                'creator_name' => (string) ($r->creator_name ?: '-'),
+            ])
+            ->all();
+
+        // 11. Structured Rows for Export (PDF, Excel, CSV)
+        $exportRows = [];
+        foreach ($pnlStatement as $item) {
+            $amountDisplay = $item['amount'] === null
+                ? 'Akses terbatas'
+                : 'Rp '.number_format((float) $item['amount'], 2, ',', '.');
+            $exportRows[] = [
+                'Kode' => $item['code'],
+                'Komponen Laba Rugi' => $item['name'],
+                'Keterangan' => $item['notes'],
+                'Nominal' => $amountDisplay,
+                'Rasio / Margin' => $item['ratio'] ?? '-',
+            ];
+        }
+
+        return [
+            'summary' => [
+                'gross_revenue' => $grossRevenue,
+                'returns_amount' => $returnsAmount,
+                'discounts_amount' => $discountsAmount,
+                'revenue' => $netRevenue,
+                'net_revenue' => $netRevenue,
+                'cogs' => $canViewSensitive ? $cogs : null,
+                'gross_margin' => $canViewSensitive ? $grossProfit : null,
+                'margin_percent' => $canViewSensitive ? $grossMarginPercent : null,
+                'shift_expenses' => $shiftExpensesTotal,
+                'cash_shortage' => $cashShortage,
+                'cash_surplus' => $cashSurplus,
+                'total_expenses' => $totalOperationalExpenses,
+                'net_operating_profit' => $canViewSensitive ? $netOperatingProfit : null,
+                'net_margin_percent' => $canViewSensitive ? $netMarginPercent : null,
+            ],
+            'pnl_statement' => $pnlStatement,
+            'branch_profitability' => $branchProfitability,
+            'shift_expenses_breakdown' => $expenseCategories,
+            'recent_shift_expenses' => $recentExpenses,
+            'tax_summary' => $taxSummary,
+            'rows' => $exportRows,
+            'can_view_sensitive' => $canViewSensitive,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function calculateReturnsValue(array $filters): string
+    {
+        $posReturns = (string) DB::table('pos_returns')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->where('status', 'completed')
+            ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+            ->sum('refund_amount');
+
+        $whReturns = (string) DB::table('returns')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->whereIn('status', ['approved', 'settled'])
+            ->whereBetween('return_date', [$filters['start_date'], $filters['end_date']])
+            ->sum('total_value');
+
+        return Decimal::add($posReturns, $whReturns, 2);
+    }
+
+    private function percent(string $part, string $total): string
+    {
+        if (Decimal::compare($total, '0', 2) <= 0) {
+            return '0.00';
+        }
+
+        return Decimal::mul(Decimal::div($part, $total, 4, 4, 4), '100', 2, 2, 2);
+    }
 }
