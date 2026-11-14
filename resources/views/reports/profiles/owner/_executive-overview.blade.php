@@ -112,7 +112,7 @@
             'label'  => 'Stok Kritis',
             'val'    => qty((string)$criticalCount),
             'note'   => $criticalCount > 0 ? 'SKU di bawah batas minimum' : 'Tidak ada SKU di bawah minimum',
-            'pill'   => $criticalCount > 0 ? '<span class="pill alert">Prioritas</span>' : '',
+            'pill'   => '',
             'accent' => false,
             'series' => data_get($report, 'sparklines.critical_stock', []),
             'tone'   => $criticalCount > 0 ? 'red' : 'green',
@@ -326,7 +326,6 @@
                         <span class="sq {{ $kpi['color'] }}">
                             <svg class="ico" aria-hidden="true"><use href="#i-{{ $kpi['ico'] }}"/></svg>
                         </span>
-                        {!! $kpi['pill'] !!}
                     </div>
                     <div>
                         <div class="kpi-name">{{ $kpi['label'] }}</div>

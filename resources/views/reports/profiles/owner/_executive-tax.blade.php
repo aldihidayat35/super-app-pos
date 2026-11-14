@@ -16,6 +16,11 @@
     $fmtPercent = fn($v): string => $v === null ? 'Akses terbatas' : str_replace('.', ',', (string)$v).'%';
 
     $taxStatus = $summary['tax_status'] ?? 'nihil';
+    $tagPos = match($taxStatus) {
+        'kurang_bayar' => 'kurang-bayar',
+        'lebih_bayar'  => 'lebih-bayar',
+        default        => 'nihil',
+    };
     $finalTaxPos = (float) ($summary['final_tax_position'] ?? 0);
 @endphp
 
@@ -419,7 +424,6 @@
         <div class="tax-kpi-card">
             <div class="tax-kpi-top">
                 <span class="tax-kpi-label">PPN Keluaran</span>
-                <span class="tax-kpi-badge">Output Tax</span>
             </div>
             <div class="tax-kpi-val">{{ $money($summary['output_tax'] ?? 0) }}</div>
             <div class="tax-kpi-note">
@@ -431,7 +435,6 @@
         <div class="tax-kpi-card">
             <div class="tax-kpi-top">
                 <span class="tax-kpi-label">PPN Masukan Dapat Dikreditkan</span>
-                <span class="tax-kpi-badge">Creditable Input</span>
             </div>
             <div class="tax-kpi-val">{{ $money($summary['input_tax_creditable'] ?? 0) }}</div>
             <div class="tax-kpi-note">
@@ -440,17 +443,9 @@
         </div>
 
         {{-- Posisi SPT Masa PPN --}}
-        @php
-            $tagPos = match($taxStatus) {
-                'kurang_bayar' => 'kurang-bayar',
-                'lebih_bayar'  => 'lebih-bayar',
-                default        => 'nihil',
-            };
-        @endphp
         <div class="tax-kpi-card">
             <div class="tax-kpi-top">
                 <span class="tax-kpi-label">Posisi SPT Masa PPN</span>
-                <span class="tax-status-tag {{ $tagPos }}">{{ $summary['tax_status_label'] ?? 'Nihil' }}</span>
             </div>
             <div class="tax-kpi-val">
                 {{ $money(abs($finalTaxPos)) }}
@@ -470,7 +465,6 @@
         <div class="tax-kpi-card">
             <div class="tax-kpi-top">
                 <span class="tax-kpi-label">Estimasi PPh Final UMKM (0,5%)</span>
-                <span class="tax-kpi-badge">PP 55/2022</span>
             </div>
             <div class="tax-kpi-val">{{ $money($summary['pph_final_umkm'] ?? 0) }}</div>
             <div class="tax-kpi-note">

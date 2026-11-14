@@ -382,7 +382,6 @@
         <div class="loc-kpi-card">
             <div class="loc-kpi-top">
                 <span class="loc-kpi-label">Total Omzet Konsolidasi</span>
-                <span class="loc-kpi-badge">Semua Cabang</span>
             </div>
             <div class="loc-kpi-val">{{ $money($summary['total_revenue'] ?? 0) }}</div>
             <div class="loc-kpi-note">
@@ -394,7 +393,6 @@
         <div class="loc-kpi-card">
             <div class="loc-kpi-top">
                 <span class="loc-kpi-label">Total Beban Kas Cabang</span>
-                <span class="loc-kpi-badge">Beban Shift &amp; Shortage</span>
             </div>
             <div class="loc-kpi-val">{{ $money($summary['total_expenses'] ?? 0) }}</div>
             <div class="loc-kpi-note">
@@ -406,7 +404,6 @@
         <div class="loc-kpi-card">
             <div class="loc-kpi-top">
                 <span class="loc-kpi-label">Total Nilai Aset Stok HPP</span>
-                <span class="loc-kpi-badge">Aset Persediaan</span>
             </div>
             <div class="loc-kpi-val">
                 {{ $canViewSensitive ? $money($summary['total_stock_value'] ?? null) : 'Akses terbatas' }}
@@ -420,7 +417,6 @@
         <div class="loc-kpi-card">
             <div class="loc-kpi-top">
                 <span class="loc-kpi-label">Cabang Juara Omzet (#1)</span>
-                <span class="loc-kpi-badge">Kontribusi {{ $summary['top_branch_share'] ?? 0 }}%</span>
             </div>
             <div class="loc-kpi-val fs-5 text-truncate" title="{{ $summary['top_branch_name'] ?? '-' }}">
                 {{ $summary['top_branch_name'] ?? '-' }}

@@ -364,7 +364,6 @@
         <div class="profit-kpi-card">
             <div class="profit-kpi-top">
                 <span class="profit-kpi-label">Penjualan Bersih</span>
-                <span class="profit-kpi-badge">Net Revenue</span>
             </div>
             <div class="profit-kpi-val">{{ $money($summary['net_revenue'] ?? 0) }}</div>
             <div class="profit-kpi-note">
@@ -376,7 +375,6 @@
         <div class="profit-kpi-card">
             <div class="profit-kpi-top">
                 <span class="profit-kpi-label">Beban Pokok (HPP)</span>
-                <span class="profit-kpi-badge">COGS</span>
             </div>
             <div class="profit-kpi-val">
                 {{ $canViewSensitive ? $money($summary['cogs'] ?? null) : 'Akses terbatas' }}
@@ -394,7 +392,6 @@
         <div class="profit-kpi-card">
             <div class="profit-kpi-top">
                 <span class="profit-kpi-label">Laba Kotor</span>
-                <span class="profit-kpi-badge" style="background:#e6f9f0; color:#065f46;">Gross Profit</span>
             </div>
             <div class="profit-kpi-val">
                 {{ $canViewSensitive ? $money($summary['gross_margin'] ?? null) : 'Akses terbatas' }}
@@ -408,7 +405,6 @@
         <div class="profit-kpi-card">
             <div class="profit-kpi-top">
                 <span class="profit-kpi-label">Laba Operasional Bersih</span>
-                <span class="profit-kpi-badge" style="background:#e0f2fe; color:#0369a1;">Net Operating</span>
             </div>
             <div class="profit-kpi-val">
                 {{ $canViewSensitive ? $money($summary['net_operating_profit'] ?? null) : 'Akses terbatas' }}

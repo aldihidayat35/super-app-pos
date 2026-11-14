@@ -402,7 +402,6 @@
         <div class="ar-kpi-card">
             <div class="ar-kpi-top">
                 <span class="ar-kpi-label">Total Piutang Berjalan</span>
-                <span class="ar-kpi-badge">Total Outstanding</span>
             </div>
             <div class="ar-kpi-val">{{ $money($summary['total_outstanding'] ?? 0) }}</div>
             <div class="ar-kpi-note">
@@ -414,7 +413,6 @@
         <div class="ar-kpi-card">
             <div class="ar-kpi-top">
                 <span class="ar-kpi-label">Piutang Lancar</span>
-                <span class="ar-kpi-badge">Belum Jatuh Tempo</span>
             </div>
             <div class="ar-kpi-val">{{ $money($summary['total_not_due'] ?? 0) }}</div>
             <div class="ar-kpi-note">
@@ -426,7 +424,6 @@
         <div class="ar-kpi-card">
             <div class="ar-kpi-top">
                 <span class="ar-kpi-label">Piutang Lewat Jatuh Tempo</span>
-                <span class="ar-kpi-badge text-danger fw-bold">Overdue: {{ $summary['overdue_ratio'] ?? 0 }}%</span>
             </div>
             <div class="ar-kpi-val {{ $overdueRatio > 25 ? 'text-danger' : '' }}">
                 {{ $money($summary['total_overdue'] ?? 0) }}
@@ -440,7 +437,6 @@
         <div class="ar-kpi-card">
             <div class="ar-kpi-top">
                 <span class="ar-kpi-label">Piutang Kritis (>60 Hari)</span>
-                <span class="ar-kpi-badge text-danger fw-bold">Risiko Macet</span>
             </div>
             <div class="ar-kpi-val text-danger">
                 {{ $money($summary['total_critical_over_60'] ?? 0) }}
