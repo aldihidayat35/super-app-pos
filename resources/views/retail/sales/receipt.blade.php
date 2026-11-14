@@ -300,6 +300,10 @@
                 printBtn.focus();
             }
 
+            window.addEventListener('afterprint', () => {
+                window.close();
+            });
+
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     e.preventDefault();

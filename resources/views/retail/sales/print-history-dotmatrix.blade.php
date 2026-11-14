@@ -196,7 +196,8 @@
 
 <body>
     <div class="no-print-bar">
-        <button type="button" id="btn-do-print" class="btn-print" onclick="window.print()">🖨️ Cetak Riwayat Transaksi (LX-310) [Enter]</button>
+        <button type="button" id="btn-do-print" class="btn-print" onclick="window.print()">🖨️ Cetak Riwayat Transaksi
+            (LX-310) [Enter]</button>
         <button type="button" class="btn-close" onclick="window.close()">Tutup [ESC]</button>
     </div>
 
