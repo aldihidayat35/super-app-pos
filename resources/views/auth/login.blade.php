@@ -26,6 +26,7 @@
         </header>
 
         @if (session('status'))<div class="alert alert-success auth-alert" role="status">{{ session('status') }}</div>@endif
+        @if (session('warning'))<div class="alert alert-warning auth-alert" role="alert"><i class="ki-outline ki-information fs-4 me-2"></i>{{ session('warning') }}</div>@endif
         @if ($errors->any())<div class="alert alert-danger auth-alert" role="alert">{{ $errors->first() }}</div>@endif
 
         <div class="auth-field">

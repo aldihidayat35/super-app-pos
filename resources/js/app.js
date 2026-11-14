@@ -14,6 +14,70 @@ if (csrfToken) {
     window.axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
 }
 
+let isRedirectingToLogin = false;
+export const handleSessionExpired = (message = 'Sesi Anda telah kedaluwarsa. Mengalihkan ke halaman login...') => {
+    if (isRedirectingToLogin) return;
+    isRedirectingToLogin = true;
+
+    if (window.Swal) {
+        window.Swal.fire({
+            title: 'Sesi Kedaluwarsa',
+            text: message,
+            icon: 'warning',
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            allowOutsideClick: false,
+        }).then(() => {
+            window.location.assign('/login');
+        });
+        setTimeout(() => {
+            window.location.assign('/login');
+        }, 2200);
+    } else {
+        alert(message);
+        window.location.assign('/login');
+    }
+};
+
+window.handleSessionExpired = handleSessionExpired;
+
+// Intersep native fetch global untuk mendeteksi HTTP 419 Sesi Kedaluwarsa
+if (typeof window.fetch === 'function') {
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+        const response = await originalFetch(...args);
+        if (response && response.status === 419) {
+            response.clone().json().then((data) => {
+                handleSessionExpired(data.message);
+            }).catch(() => {
+                handleSessionExpired();
+            });
+        }
+        return response;
+    };
+}
+
+if (window.axios) {
+    window.axios.interceptors.response.use(
+        (response) => response,
+        (error) => {
+            if (error.response && (error.response.status === 419 || error.response.data?.session_expired)) {
+                handleSessionExpired(error.response.data?.message);
+            }
+            return Promise.reject(error);
+        }
+    );
+}
+
+if (window.jQuery) {
+    window.jQuery(document).ajaxError((event, jqXHR) => {
+        if (jqXHR.status === 419) {
+            handleSessionExpired(jqXHR.responseJSON?.message);
+        }
+    });
+}
+
 window.appFetch = (input, options = {}) => fetch(input, {
     ...options,
     headers: {

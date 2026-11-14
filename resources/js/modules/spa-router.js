@@ -133,6 +133,16 @@ export const navigateTo = async (url, pushState = true) => {
             signal: activeAbortController.signal,
         });
 
+        // Jika sesi kedaluwarsa (HTTP 419), tangani secara terpusat
+        if (response.status === 419) {
+            if (typeof window.handleSessionExpired === 'function') {
+                window.handleSessionExpired();
+            } else {
+                window.location.assign('/login');
+            }
+            return;
+        }
+
         // Jika dialihkan (misal session habis ke /login) atau bukan status sukses
         if (!response.ok || response.redirected) {
             window.location.assign(response.url || targetUrl.href);

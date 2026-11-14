@@ -280,12 +280,22 @@ class AuthenticationTest extends TestCase
     }
 
     #[Test]
-    public function csrf_protection_rejects_login_without_token_when_middleware_is_enabled(): void
+    public function csrf_token_mismatch_redirects_to_login_with_warning(): void
     {
         Route::post('/_test/csrf-probe', fn () => response('ok'))
             ->middleware(['web', EnforceCsrfForTest::class]);
 
-        $this->post('/_test/csrf-probe')->assertStatus(419);
+        $this->post('/_test/csrf-probe', ['login' => 'kasir'])
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('warning', 'Sesi Anda telah kedaluwarsa. Silakan masuk kembali.')
+            ->assertSessionHas('_old_input.login', 'kasir');
+
+        $this->postJson('/_test/csrf-probe')
+            ->assertStatus(419)
+            ->assertJson([
+                'session_expired' => true,
+                'redirect' => route('login'),
+            ]);
     }
 
     /** @return array<string, array{string, string}> */
