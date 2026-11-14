@@ -313,11 +313,16 @@ class OwnerOperationalReportService
         $grossMarginPercent = $this->percent($grossProfit, $netRevenue);
 
         // 5. Operational Shift Expenses
+        $shiftExpensesTotal = (string) DB::table('shift_expenses')
+            ->join('cash_shifts', 'cash_shifts.id', '=', 'shift_expenses.cash_shift_id')
+            ->whereIn('cash_shifts.work_location_id', $locationIds)
+            ->whereBetween('shift_expenses.spent_at', [$filters['start'], $filters['end']])
+            ->sum('shift_expenses.amount');
+
         $shiftQuery = DB::table('cash_shifts')
             ->whereIn('work_location_id', $locationIds)
             ->whereBetween('opened_at', [$filters['start'], $filters['end']]);
 
-        $shiftExpensesTotal = (string) (clone $shiftQuery)->sum('expense_amount');
         $cashShortage = (string) (clone $shiftQuery)->where('difference_amount', '<', 0)->sum(DB::raw('ABS(difference_amount)'));
         $cashSurplus = (string) (clone $shiftQuery)->where('difference_amount', '>', 0)->sum('difference_amount');
         $totalOperationalExpenses = Decimal::add($shiftExpensesTotal, $cashShortage, 2);
@@ -512,10 +517,11 @@ class OwnerOperationalReportService
             $locGrossProfit = Decimal::sub($locTotalRev, $locTotalCogs, 2);
             $locGrossMarginPct = $this->percent($locGrossProfit, $locTotalRev);
 
-            $locShiftExpenses = (string) DB::table('cash_shifts')
-                ->where('work_location_id', $locId)
-                ->whereBetween('opened_at', [$filters['start'], $filters['end']])
-                ->sum('expense_amount');
+            $locShiftExpenses = (string) DB::table('shift_expenses')
+                ->join('cash_shifts', 'cash_shifts.id', '=', 'shift_expenses.cash_shift_id')
+                ->where('cash_shifts.work_location_id', $locId)
+                ->whereBetween('shift_expenses.spent_at', [$filters['start'], $filters['end']])
+                ->sum('shift_expenses.amount');
             $locShortage = (string) DB::table('cash_shifts')
                 ->where('work_location_id', $locId)
                 ->whereBetween('opened_at', [$filters['start'], $filters['end']])
