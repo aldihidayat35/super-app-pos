@@ -100,16 +100,40 @@ class RetailOperationalReportService
             ->whereBetween('completed_at', [$start, $end])
             ->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value]);
 
-        $cogs = DB::table('pos_sale_items')
+        $grossRevenue = (string) (clone $query)->sum('grand_total_amount');
+        $returnsAmount = (string) DB::table('pos_returns')
+            ->whereIn('work_location_id', $locationIds)
+            ->where('status', PosReturnStatus::COMPLETED->value)
+            ->whereBetween('completed_at', [$start, $end])
+            ->sum('refund_amount');
+
+        $netRevenue = Decimal::sub($grossRevenue, $returnsAmount, 2);
+        if (Decimal::compare($netRevenue, '0', 2) < 0) {
+            $netRevenue = '0.00';
+        }
+
+        $grossCogs = (string) DB::table('pos_sale_items')
             ->join('pos_sales', 'pos_sales.id', '=', 'pos_sale_items.pos_sale_id')
             ->whereIn('pos_sales.work_location_id', $locationIds)
             ->whereBetween('pos_sales.completed_at', [$start, $end])
             ->whereIn('pos_sales.status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value])
             ->sum(DB::raw('pos_sale_items.hpp_snapshot * pos_sale_items.base_quantity'));
 
+        $returnedCogs = (string) DB::table('pos_return_items')
+            ->join('pos_returns', 'pos_returns.id', '=', 'pos_return_items.pos_return_id')
+            ->whereIn('pos_returns.work_location_id', $locationIds)
+            ->where('pos_returns.status', PosReturnStatus::COMPLETED->value)
+            ->whereBetween('pos_returns.completed_at', [$start, $end])
+            ->sum('pos_return_items.reversed_cogs_amount');
+
+        $netCogs = Decimal::sub($grossCogs, $returnedCogs, 2);
+        if (Decimal::compare($netCogs, '0', 2) < 0) {
+            $netCogs = '0.00';
+        }
+
         return [
-            'revenue' => $this->money((clone $query)->sum('grand_total_amount')),
-            'cogs' => $this->money($cogs),
+            'revenue' => $this->money($netRevenue),
+            'cogs' => $this->money($netCogs),
             'transaction_count' => (clone $query)->count(),
         ];
     }
@@ -142,7 +166,21 @@ class RetailOperationalReportService
             })
             ->sum(DB::raw('pos_sale_items.hpp_snapshot * pos_sale_items.base_quantity'));
 
-        return Decimal::add($this->money($layerCogs), $this->money($legacyCogs), 2);
+        $totalCogs = Decimal::add($this->money($layerCogs), $this->money($legacyCogs), 2);
+
+        $returnedCogs = (string) DB::table('pos_return_items')
+            ->join('pos_returns', 'pos_returns.id', '=', 'pos_return_items.pos_return_id')
+            ->whereIn('pos_returns.work_location_id', $locationIds)
+            ->where('pos_returns.status', PosReturnStatus::COMPLETED->value)
+            ->whereBetween('pos_returns.completed_at', [$start, $end])
+            ->sum('pos_return_items.reversed_cogs_amount');
+
+        $netActualCogs = Decimal::sub($totalCogs, $returnedCogs, 2);
+        if (Decimal::compare($netActualCogs, '0', 2) < 0) {
+            $netActualCogs = '0.00';
+        }
+
+        return $netActualCogs;
     }
 
     /**

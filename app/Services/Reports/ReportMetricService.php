@@ -827,8 +827,20 @@ class ReportMetricService
             ->whereBetween('completed_at', [$filters['start'], $filters['end']])
             ->whereIn('status', [PosSaleStatus::COMPLETED->value, PosSaleStatus::RETURNED->value]);
 
+        $grossRevenue = (string) (clone $query)->sum('grand_total_amount');
+        $returnsAmount = (string) DB::table('pos_returns')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->where('status', PosReturnStatus::COMPLETED->value)
+            ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+            ->sum('refund_amount');
+
+        $netRevenue = Decimal::sub($grossRevenue, $returnsAmount, 2);
+        if (Decimal::compare($netRevenue, '0', 2) < 0) {
+            $netRevenue = '0.00';
+        }
+
         return [
-            'revenue' => $this->money((clone $query)->sum('grand_total_amount')),
+            'revenue' => $this->money($netRevenue),
             'margin' => $this->money((clone $query)->sum('total_margin_amount')),
             'transaction_count' => (clone $query)->count(),
         ];
@@ -1129,15 +1141,29 @@ class ReportMetricService
             ->groupBy('work_location_id')
             ->get()->keyBy('work_location_id');
 
+        $returns = DB::table('pos_returns')
+            ->whereIn('work_location_id', $filters['location_ids'])
+            ->where('status', PosReturnStatus::COMPLETED->value)
+            ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+            ->selectRaw('work_location_id, COALESCE(SUM(refund_amount),0) as refund_total')
+            ->groupBy('work_location_id')
+            ->pluck('refund_total', 'work_location_id');
+
         $stocks = $this->locationStockMetrics($filters);
 
         return DB::table('work_locations')
             ->whereIn('id', $filters['location_ids'])->where('type', 'branch')->where('is_active', true)
             ->orderBy('name')->get(['id', 'code', 'name'])
-            ->map(function ($location) use ($sales, $stocks): array {
+            ->map(function ($location) use ($sales, $returns, $stocks): array {
                 $sale = $sales->get($location->id);
                 $stock = $stocks->get($location->id);
-                $revenue = $this->money(data_get($sale, 'revenue', 0));
+                $rawRevenue = (string) data_get($sale, 'revenue', 0);
+                $locReturn = (string) $returns->get($location->id, '0.00');
+                $netLocRevenue = Decimal::sub($rawRevenue, $locReturn, 2);
+                if (Decimal::compare($netLocRevenue, '0', 2) < 0) {
+                    $netLocRevenue = '0.00';
+                }
+                $revenue = $this->money($netLocRevenue);
                 $margin = $this->money(data_get($sale, 'margin', 0));
                 $transactions = (int) data_get($sale, 'transactions', 0);
 

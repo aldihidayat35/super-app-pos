@@ -474,7 +474,7 @@
             </div>
             <div class="tax-kpi-val">{{ $money($summary['pph_final_umkm'] ?? 0) }}</div>
             <div class="tax-kpi-note">
-                <span>Berdasarkan Omzet Bruto: {{ $money($summary['gross_turnover'] ?? 0) }}</span>
+                <span>Dasar Pengenaan (Netto): {{ $money($summary['net_turnover'] ?? $summary['gross_turnover'] ?? 0) }}</span>
             </div>
         </div>
     </section>

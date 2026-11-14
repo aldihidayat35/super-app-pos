@@ -24,9 +24,17 @@ class OwnerOperationalReportService
         $channelRows = is_array($charts['channel_mix'] ?? null) ? $charts['channel_mix'] : [];
 
         if ($filters['work_location_id'] !== null) {
-            $retailRevenue = (string) DB::table('pos_sales')->whereIn('work_location_id', $locationIds)
+            $retailGross = (string) DB::table('pos_sales')->whereIn('work_location_id', $locationIds)
                 ->whereBetween('completed_at', [$filters['start'], $filters['end']])
                 ->whereIn('status', ['completed', 'returned'])->sum('grand_total_amount');
+            $posReturns = (string) DB::table('pos_returns')->whereIn('work_location_id', $locationIds)
+                ->where('status', 'completed')
+                ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+                ->sum('refund_amount');
+            $retailRevenue = Decimal::sub($retailGross, $posReturns, 2);
+            if (Decimal::compare($retailRevenue, '0', 2) < 0) {
+                $retailRevenue = '0.00';
+            }
             $b2bQuery = $this->scopedB2bOrders($locationIds)
                 ->whereBetween('b2b_orders.submitted_at', [$filters['start'], $filters['end']])
                 ->whereNotIn('b2b_orders.status', ['cancelled', 'rejected']);
@@ -305,7 +313,25 @@ class OwnerOperationalReportService
         $posDiscount = (string) (clone $posQuery)->sum('discount_amount');
         $posTax = (string) (clone $posQuery)->sum('tax_amount');
         $posSubtotal = (string) (clone $posQuery)->sum('subtotal_amount');
-        $posCogs = Decimal::sub($posRevenue, $posMargin, 2);
+
+        // POS COGS riil dihitung dari HPP item terjual dikurangi HPP item retur (reversed COGS)
+        $posSaleCogs = (string) (DB::table('pos_sale_items')
+            ->join('pos_sales', 'pos_sales.id', '=', 'pos_sale_items.pos_sale_id')
+            ->whereIn('pos_sales.work_location_id', $locationIds)
+            ->whereBetween('pos_sales.completed_at', [$filters['start'], $filters['end']])
+            ->whereIn('pos_sales.status', ['completed', 'returned'])
+            ->selectRaw('COALESCE(SUM(pos_sale_items.base_quantity * pos_sale_items.hpp_snapshot), 0) as total')
+            ->value('total') ?? '0.00');
+
+        $returnedPosCogs = (string) (DB::table('pos_return_items')
+            ->join('pos_returns', 'pos_returns.id', '=', 'pos_return_items.pos_return_id')
+            ->whereIn('pos_returns.work_location_id', $locationIds)
+            ->where('pos_returns.status', 'completed')
+            ->whereBetween('pos_returns.completed_at', [$filters['start'], $filters['end']])
+            ->selectRaw('COALESCE(SUM(pos_return_items.reversed_cogs_amount), 0) as total')
+            ->value('total') ?? '0.00');
+
+        $posCogs = Decimal::sub($posSaleCogs, $returnedPosCogs, 2);
         if (Decimal::compare($posCogs, '0', 2) < 0) {
             $posCogs = '0.00';
         }
@@ -336,8 +362,10 @@ class OwnerOperationalReportService
         // 3. Deductions: Returns and Discounts
         $returnsAmount = $this->calculateReturnsValue($filters);
         $discountsAmount = Decimal::add($posDiscount, $b2bDiscount, 2);
-        $grossRevenue = Decimal::add($posRevenue, $b2bRevenue, 2);
-        $netRevenue = Decimal::sub($grossRevenue, $returnsAmount, 2);
+        $grossPosRevenue = Decimal::add($posRevenue, $posDiscount, 2);
+        $grossB2bRevenue = Decimal::add($b2bRevenue, $b2bDiscount, 2);
+        $grossRevenue = Decimal::add($grossPosRevenue, $grossB2bRevenue, 2);
+        $netRevenue = Decimal::sub(Decimal::sub($grossRevenue, $returnsAmount, 2), $discountsAmount, 2);
         if (Decimal::compare($netRevenue, '0', 2) < 0) {
             $netRevenue = '0.00';
         }
@@ -382,8 +410,8 @@ class OwnerOperationalReportService
                 'section' => 'REVENUE',
                 'code' => '4-1000',
                 'name' => 'Penjualan Retail (POS)',
-                'notes' => 'Total transaksi penjualan kasir selesai',
-                'amount' => $posRevenue,
+                'notes' => 'Total transaksi penjualan kasir selesai (sebelum potongan)',
+                'amount' => $grossPosRevenue,
                 'is_deduction' => false,
                 'is_total' => false,
                 'is_highlight' => false,
@@ -393,7 +421,7 @@ class OwnerOperationalReportService
                 'code' => '4-2000',
                 'name' => 'Penjualan Grosir & B2B',
                 'notes' => 'Pesanan langganan/B2B disetujui',
-                'amount' => $b2bRevenue,
+                'amount' => $grossB2bRevenue,
                 'is_deduction' => false,
                 'is_total' => false,
                 'is_highlight' => false,
@@ -534,9 +562,34 @@ class OwnerOperationalReportService
                 ->where('work_location_id', $locId)
                 ->whereBetween('completed_at', [$filters['start'], $filters['end']])
                 ->whereIn('status', ['completed', 'returned']);
-            $locPosRev = (string) (clone $locPos)->sum('grand_total_amount');
-            $locPosMargin = (string) (clone $locPos)->sum('total_margin_amount');
-            $locPosCogs = Decimal::sub($locPosRev, $locPosMargin, 2);
+            $locPosGrossRev = (string) (clone $locPos)->sum('grand_total_amount');
+            $locPosReturns = (string) DB::table('pos_returns')
+                ->where('work_location_id', $locId)
+                ->where('status', 'completed')
+                ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+                ->sum('refund_amount');
+            $locPosRev = Decimal::sub($locPosGrossRev, $locPosReturns, 2);
+            if (Decimal::compare($locPosRev, '0', 2) < 0) {
+                $locPosRev = '0.00';
+            }
+
+            $locPosSaleCogs = (string) (DB::table('pos_sale_items')
+                ->join('pos_sales', 'pos_sales.id', '=', 'pos_sale_items.pos_sale_id')
+                ->where('pos_sales.work_location_id', $locId)
+                ->whereBetween('pos_sales.completed_at', [$filters['start'], $filters['end']])
+                ->whereIn('pos_sales.status', ['completed', 'returned'])
+                ->selectRaw('COALESCE(SUM(pos_sale_items.base_quantity * pos_sale_items.hpp_snapshot), 0) as total')
+                ->value('total') ?? '0.00');
+
+            $locReturnedPosCogs = (string) (DB::table('pos_return_items')
+                ->join('pos_returns', 'pos_returns.id', '=', 'pos_return_items.pos_return_id')
+                ->where('pos_returns.work_location_id', $locId)
+                ->where('pos_returns.status', 'completed')
+                ->whereBetween('pos_returns.completed_at', [$filters['start'], $filters['end']])
+                ->selectRaw('COALESCE(SUM(pos_return_items.reversed_cogs_amount), 0) as total')
+                ->value('total') ?? '0.00');
+
+            $locPosCogs = Decimal::sub($locPosSaleCogs, $locReturnedPosCogs, 2);
             if (Decimal::compare($locPosCogs, '0', 2) < 0) {
                 $locPosCogs = '0.00';
             }
@@ -825,11 +878,10 @@ class OwnerOperationalReportService
 
         // 6. Estimasi Pajak Penghasilan (PPh)
         $grossTurnover = Decimal::add($posRevenue, $b2bRevenue, 2);
-        // PPh Final UMKM 0,5% PP 55/2022
-        $pphFinalUmkm = Decimal::mul($grossTurnover, '0.005', 2);
-
-        // Simulasi PPh Badan (22% & Fasilitas 31E 11%)
         $incomeReport = $this->buildIncomeStatement($filters, $base, $canViewSensitive);
+        $netTurnover = (string) data_get($incomeReport, 'summary.net_revenue', '0.00');
+        // PPh Final UMKM 0,5% PP 55/2022 dihitung dari Peredaran Bruto Neto (setelah retur)
+        $pphFinalUmkm = Decimal::mul($netTurnover, '0.005', 2);
         $netProfitForTax = (string) data_get($incomeReport, 'summary.net_operating_profit', '0.00');
         if (Decimal::compare($netProfitForTax, '0', 2) > 0) {
             $pphBadanNormal = Decimal::mul($netProfitForTax, '0.22', 2);
@@ -1079,6 +1131,7 @@ class OwnerOperationalReportService
                 'tax_status' => $taxStatus,
                 'tax_status_label' => $taxStatusLabel,
                 'gross_turnover' => $grossTurnover,
+                'net_turnover' => $netTurnover,
                 'pph_final_umkm' => $pphFinalUmkm,
                 'pph_badan_normal' => $canViewSensitive ? $pphBadanNormal : null,
                 'pph_badan_31e' => $canViewSensitive ? $pphBadan31e : null,
@@ -1130,7 +1183,16 @@ class OwnerOperationalReportService
                 ->whereBetween('completed_at', [$filters['start'], $filters['end']])
                 ->whereIn('status', ['completed', 'returned']);
 
-            $posRev = (string) (clone $posSales)->sum('grand_total_amount');
+            $posRevGross = (string) (clone $posSales)->sum('grand_total_amount');
+            $posReturns = (string) DB::table('pos_returns')
+                ->where('work_location_id', $locId)
+                ->where('status', 'completed')
+                ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+                ->sum('refund_amount');
+            $posRev = Decimal::sub($posRevGross, $posReturns, 2);
+            if (Decimal::compare($posRev, '0', 2) < 0) {
+                $posRev = '0.00';
+            }
             $posMargin = (string) (clone $posSales)->sum('total_margin_amount');
             $posTxCount = (clone $posSales)->count();
 
