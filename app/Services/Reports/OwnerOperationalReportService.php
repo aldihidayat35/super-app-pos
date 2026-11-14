@@ -40,12 +40,41 @@ class OwnerOperationalReportService
             ->selectRaw('COUNT(DISTINCT product_id) as products, COALESCE(SUM(quantity_on_hand),0) as on_hand, COALESCE(SUM(quantity_reserved),0) as reserved, COALESCE(SUM(quantity_damaged),0) as damaged')->first();
         $stockValue = (string) DB::table('stock_batches')->whereIn('work_location_id', $locationIds)
             ->where('status', 'active')->selectRaw('COALESCE(SUM(quantity_on_hand * cost_price),0) as value')->value('value');
+        if (Decimal::compare($stockValue, '0', 2) === 0) {
+            $stockValue = (string) (DB::table('stocks')
+                ->join('products', 'products.id', '=', 'stocks.product_id')
+                ->whereIn('stocks.work_location_id', $locationIds)
+                ->selectRaw('COALESCE(SUM(stocks.quantity_on_hand * products.cost_price), 0) as value')
+                ->value('value') ?? '0.00');
+        }
+
         $stockValueByLocation = DB::table('stock_batches')->whereIn('work_location_id', $locationIds)
             ->where('status', 'active')->selectRaw('work_location_id, COALESCE(SUM(quantity_on_hand * cost_price),0) as value')
             ->groupBy('work_location_id')->pluck('value', 'work_location_id');
 
-        $receivableQuery = DB::table('receivables')->whereIn('receivables.work_location_id', $locationIds)
+        $fallbackStockByLoc = DB::table('stocks')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->whereIn('stocks.work_location_id', $locationIds)
+            ->selectRaw('stocks.work_location_id, COALESCE(SUM(stocks.quantity_on_hand * products.cost_price), 0) as value')
+            ->groupBy('stocks.work_location_id')->pluck('value', 'stocks.work_location_id');
+
+        foreach ($fallbackStockByLoc as $fLocId => $fVal) {
+            if (! $stockValueByLocation->has($fLocId) || Decimal::compare((string) $stockValueByLocation->get($fLocId), '0', 2) === 0) {
+                $stockValueByLocation->put($fLocId, (string) $fVal);
+            }
+        }
+
+        $receivableQuery = DB::table('receivables')
             ->whereNotIn('receivables.status', ['cancelled', 'written_off']);
+
+        if ($filters['work_location_id'] !== null) {
+            $receivableQuery->where('receivables.work_location_id', $filters['work_location_id']);
+        } else {
+            $receivableQuery->where(function ($q) use ($locationIds) {
+                $q->whereIn('receivables.work_location_id', $locationIds)
+                    ->orWhereNull('receivables.work_location_id');
+            });
+        }
         $openAccounts = (clone $receivableQuery)->where('outstanding_amount', '>', 0)->count();
         $overdueAccounts = (clone $receivableQuery)->where('outstanding_amount', '>', 0)
             ->whereDate('due_date', '<', now('Asia/Jakarta')->toDateString())->count();
@@ -296,7 +325,13 @@ class OwnerOperationalReportService
         $b2bTax = (string) (clone $b2bQuery)->sum('b2b_orders.tax_amount');
         $b2bDiscount = (string) (clone $b2bQuery)->sum('b2b_orders.discount_amount');
         $b2bSubtotal = (string) (clone $b2bQuery)->sum('b2b_orders.subtotal_amount');
-        $b2bCogs = $b2bRevenue;
+        $b2bOrderIds = (clone $b2bQuery)->pluck('b2b_orders.id')->all();
+        $b2bCogs = ! empty($b2bOrderIds)
+            ? (string) DB::table('b2b_order_items')
+                ->join('products', 'products.id', '=', 'b2b_order_items.product_id')
+                ->whereIn('b2b_order_items.b2b_order_id', $b2bOrderIds)
+                ->sum(DB::raw('b2b_order_items.base_quantity * products.cost_price'))
+            : '0.00';
 
         // 3. Deductions: Returns and Discounts
         $returnsAmount = $this->calculateReturnsValue($filters);
@@ -510,7 +545,13 @@ class OwnerOperationalReportService
                 ->whereBetween('b2b_orders.submitted_at', [$filters['start'], $filters['end']])
                 ->whereNotIn('b2b_orders.status', ['cancelled', 'rejected']);
             $locB2bRev = (string) (clone $locB2bQuery)->sum('b2b_orders.grand_total_amount');
-            $locB2bCogs = $locB2bRev;
+            $locB2bOrderIds = (clone $locB2bQuery)->pluck('b2b_orders.id')->all();
+            $locB2bCogs = ! empty($locB2bOrderIds)
+                ? (string) DB::table('b2b_order_items')
+                    ->join('products', 'products.id', '=', 'b2b_order_items.product_id')
+                    ->whereIn('b2b_order_items.b2b_order_id', $locB2bOrderIds)
+                    ->sum(DB::raw('b2b_order_items.base_quantity * products.cost_price'))
+                : '0.00';
 
             $locTotalRev = Decimal::add($locPosRev, $locB2bRev, 2);
             $locTotalCogs = Decimal::add($locPosCogs, $locB2bCogs, 2);
@@ -662,16 +703,44 @@ class OwnerOperationalReportService
 
         // 1. Data Dokumen Pajak Resmi dari `tax_documents`
         $taxDocsQuery = DB::table('tax_documents')
-            ->whereIn('work_location_id', $locationIds)
             ->whereBetween('tax_date', [$filters['start_date'], $filters['end_date']])
             ->where('status', '!=', 'reversed');
 
-        $taxDocsOutDpp = (string) (clone $taxDocsQuery)->where('direction', 'out')->sum('dpp_amount');
-        $taxDocsOutTax = (string) (clone $taxDocsQuery)->where('direction', 'out')->sum('tax_amount');
+        if ($filters['work_location_id'] !== null) {
+            $taxDocsQuery->where('work_location_id', $filters['work_location_id']);
+        } else {
+            $taxDocsQuery->where(function ($q) use ($locationIds) {
+                $q->whereIn('work_location_id', $locationIds)
+                    ->orWhereNull('work_location_id');
+            });
+        }
 
-        $taxDocsInCreditable = (string) (clone $taxDocsQuery)->where('direction', 'in')->where('is_creditable', true)->sum('tax_amount');
-        $taxDocsInNonCreditable = (string) (clone $taxDocsQuery)->where('direction', 'in')->where('is_creditable', false)->sum('tax_amount');
-        $taxDocsInDpp = (string) (clone $taxDocsQuery)->where('direction', 'in')->sum('dpp_amount');
+        // Hindari double-counting faktur keluaran jika sudah tercakup di transaksi riil POS & B2B
+        $taxDocsOutQuery = (clone $taxDocsQuery)->where('direction', 'out')
+            ->where(function ($q) {
+                $q->whereNull('source_key')
+                    ->orWhere(function ($sq) {
+                        $sq->whereNot('source_key', 'like', 'pos_sale:%')
+                            ->whereNot('source_key', 'like', 'invoice:%');
+                    });
+            });
+
+        $taxDocsOutDpp = (string) (clone $taxDocsOutQuery)->sum('dpp_amount');
+        $taxDocsOutTax = (string) (clone $taxDocsOutQuery)->sum('tax_amount');
+
+        // Hindari double-counting faktur masukan jika sudah tercakup di PO supplier
+        $taxDocsInQuery = (clone $taxDocsQuery)->where('direction', 'in')
+            ->where(function ($q) {
+                $q->whereNull('source_key')
+                    ->orWhere(function ($sq) {
+                        $sq->whereNot('source_key', 'like', 'purchase_order:%')
+                            ->whereNot('source_key', 'like', 'goods_receipt:%');
+                    });
+            });
+
+        $taxDocsInCreditable = (string) (clone $taxDocsInQuery)->where('is_creditable', true)->sum('tax_amount');
+        $taxDocsInNonCreditable = (string) (clone $taxDocsInQuery)->where('is_creditable', false)->sum('tax_amount');
+        $taxDocsInDpp = (string) (clone $taxDocsInQuery)->sum('dpp_amount');
 
         // Withholding Taxes (PPh 21 & PPh 23)
         $withholdingPph21 = (string) (clone $taxDocsQuery)->where('tax_type', 'pph_21')->sum('withholding_tax_amount');
@@ -1072,6 +1141,16 @@ class OwnerOperationalReportService
             $b2bRev = (string) (clone $b2bSales)->sum('b2b_orders.grand_total_amount');
             $b2bTxCount = (clone $b2bSales)->count();
 
+            $b2bOrderIds = (clone $b2bSales)->pluck('b2b_orders.id')->all();
+            $b2bCogs = ! empty($b2bOrderIds)
+                ? (string) DB::table('b2b_order_items')
+                    ->join('products', 'products.id', '=', 'b2b_order_items.product_id')
+                    ->whereIn('b2b_order_items.b2b_order_id', $b2bOrderIds)
+                    ->sum(DB::raw('b2b_order_items.base_quantity * products.cost_price'))
+                : '0.00';
+            $b2bMargin = Decimal::sub($b2bRev, $b2bCogs, 2);
+            $totalMargin = Decimal::add($posMargin, $b2bMargin, 2);
+
             $netRevenue = Decimal::add($posRev, $b2bRev, 2);
             $totalTx = $posTxCount + $b2bTxCount;
 
@@ -1097,6 +1176,14 @@ class OwnerOperationalReportService
                 ->where('status', 'active')
                 ->selectRaw('COALESCE(SUM(quantity_on_hand * cost_price), 0) as value')
                 ->value('value');
+
+            if (Decimal::compare($stockValue, '0', 2) === 0) {
+                $stockValue = (string) (DB::table('stocks')
+                    ->join('products', 'products.id', '=', 'stocks.product_id')
+                    ->where('stocks.work_location_id', $locId)
+                    ->selectRaw('COALESCE(SUM(stocks.quantity_on_hand * products.cost_price), 0) as value')
+                    ->value('value') ?? '0.00');
+            }
 
             $stockStats = DB::table('stocks')
                 ->leftJoin('products', 'products.id', '=', 'stocks.product_id')
@@ -1162,7 +1249,7 @@ class OwnerOperationalReportService
                 'net_revenue' => $netRevenue,
                 'pos_revenue' => $posRev,
                 'b2b_revenue' => $b2bRev,
-                'gross_margin' => $canViewSensitive ? $posMargin : null,
+                'gross_margin' => $canViewSensitive ? $totalMargin : null,
                 'transactions_count' => $totalTx,
                 'shift_expenses' => $shiftExpenses,
                 'cash_shortage' => $cashShortage,
@@ -1253,8 +1340,16 @@ class OwnerOperationalReportService
         $asOf = Carbon::parse($filters['end_date'] ?? now())->startOfDay();
 
         $recQuery = DB::table('receivables')
-            ->whereIn('receivables.work_location_id', $locationIds)
             ->whereNotIn('receivables.status', ['cancelled', 'written_off']);
+
+        if ($filters['work_location_id'] !== null) {
+            $recQuery->where('receivables.work_location_id', $filters['work_location_id']);
+        } else {
+            $recQuery->where(function ($q) use ($locationIds) {
+                $q->whereIn('receivables.work_location_id', $locationIds)
+                    ->orWhereNull('receivables.work_location_id');
+            });
+        }
 
         $allReceivables = (clone $recQuery)
             ->leftJoin('customers', 'customers.id', '=', 'receivables.customer_id')
