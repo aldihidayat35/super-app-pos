@@ -3,10 +3,13 @@
 return [
     // Sembunyikan dari navigasi sementara; route dan izin tetap tersedia untuk peninjauan internal.
     'hidden_navigation_routes' => [
+        'dashboard',
         'owner.dashboard',
         'sales.dashboard',
         'warehouse.dashboard',
         'retail.dashboard',
+        'attendance.dashboard',
+        'langganan.dashboard',
         'warehouse.batches.index',
         'reports.suppliers.index',
         'reports.shift-productivity.index',

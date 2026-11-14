@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Actions\Auth\AuthenticateUserAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\Reports\ReportProfileService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,9 +27,16 @@ class AuthenticatedSessionController extends Controller
             $request->session()->forget('url.intended');
         }
 
+        $defaultReportUrl = app(ReportProfileService::class)->defaultReportUrlFor($user);
+
+        $intended = $request->session()->get('url.intended');
+        if ($intended !== null && (str_ends_with($intended, '/dashboard') || rtrim($intended, '/') === rtrim(url('/'), '/'))) {
+            $request->session()->forget('url.intended');
+        }
+
         $redirect = $user->hasRole('staf_toko')
             ? redirect()->route('retail.storefront.index')
-            : redirect()->intended(route('dashboard'));
+            : redirect()->intended($defaultReportUrl);
 
         return $redirect->with('notification', [
             'type' => 'success',

@@ -64,7 +64,7 @@ class SidebarNavigationTest extends TestCase
         }
     }
 
-    public function test_report_center_menu_is_positioned_at_the_bottom_with_distinct_contrast_styling(): void
+    public function test_report_center_menu_is_positioned_at_the_top_with_distinct_contrast_styling(): void
     {
         $user = $this->userAtLocation('kepala_toko', 'branch');
 
@@ -81,7 +81,18 @@ class SidebarNavigationTest extends TestCase
 
         $this->assertNotFalse($reportPos);
         $this->assertNotFalse($guidePos);
-        $this->assertGreaterThan($guidePos, $reportPos, 'Menu Laporan harus berada di posisi paling bawah setelah menu lainnya');
+        $this->assertLessThan($guidePos, $reportPos, 'Menu Laporan harus berada di posisi paling atas menggantikan dashboard');
+    }
+
+    public function test_dashboard_menu_is_hidden_from_navigation_for_all_roles(): void
+    {
+        foreach (['super_admin', 'kepala_toko', 'kepala_gudang', 'kasir'] as $role) {
+            $user = $this->userAtLocation($role, 'branch');
+            $this->actingAs($user);
+            $sidebar = $this->renderSidebar();
+
+            $this->assertStringNotContainsString('href="'.route('dashboard').'"', $sidebar);
+        }
     }
 
     private function userAtLocation(string $role, string $locationType): User

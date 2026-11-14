@@ -51,7 +51,7 @@ class AuthenticationTest extends TestCase
         $this->post(route('login.store'), [
             'login' => 'owner@example.test',
             'password' => 'password',
-        ])->assertRedirect(route('dashboard'));
+        ])->assertRedirect(route('reports.profiles.owner.show', ['report' => 'overview']));
 
         $this->get(route('dashboard'))
             ->assertOk()
@@ -72,7 +72,7 @@ class AuthenticationTest extends TestCase
         $this->post(route('login.store'), [
             'login' => 'owner_username',
             'password' => 'password',
-        ])->assertRedirect(route('dashboard'));
+        ])->assertRedirect(route('reports.profiles.owner.show', ['report' => 'overview']));
 
         $this->assertAuthenticated();
     }
@@ -89,7 +89,7 @@ class AuthenticationTest extends TestCase
         $this->post(route('login.store'), [
             'login' => 'mael-gudang',
             'password' => 'Mael-Gudang',
-        ])->assertRedirect(route('dashboard'));
+        ])->assertRedirect(route('reports.profiles.owner.show', ['report' => 'overview']));
 
         $this->assertAuthenticatedAs($user);
         Auth::logout();
@@ -97,7 +97,7 @@ class AuthenticationTest extends TestCase
         $this->post(route('login.store'), [
             'login' => 'mael-gudang@example.test',
             'password' => 'Mael-Gudang',
-        ])->assertRedirect(route('dashboard'));
+        ])->assertRedirect(route('reports.profiles.owner.show', ['report' => 'overview']));
 
         $this->assertAuthenticatedAs($user);
     }
@@ -296,6 +296,38 @@ class AuthenticationTest extends TestCase
                 'session_expired' => true,
                 'redirect' => route('login'),
             ]);
+    }
+
+    #[Test]
+    public function user_login_redirects_directly_to_role_reports_instead_of_dashboard(): void
+    {
+        $superAdmin = $this->createUserWithDashboardRole('super_admin', ['password' => 'password']);
+        $this->post(route('login.store'), [
+            'login' => $superAdmin->email,
+            'password' => 'password',
+        ])->assertRedirect(route('reports.profiles.system.show', ['report' => 'overview']));
+        Auth::logout();
+
+        $toko = $this->createUserWithDashboardRole('kepala_toko', ['password' => 'password']);
+        $this->post(route('login.store'), [
+            'login' => $toko->email,
+            'password' => 'password',
+        ])->assertRedirect(route('reports.profiles.retail.show', ['report' => 'overview']));
+        Auth::logout();
+
+        $gudang = $this->createUserWithDashboardRole('kepala_gudang', ['password' => 'password']);
+        $this->post(route('login.store'), [
+            'login' => $gudang->email,
+            'password' => 'password',
+        ])->assertRedirect(route('reports.profiles.warehouse.show', ['report' => 'overview']));
+        Auth::logout();
+
+        $kasir = $this->createUserWithDashboardRole('kasir', ['password' => 'password']);
+        $this->post(route('login.store'), [
+            'login' => $kasir->email,
+            'password' => 'password',
+        ])->assertRedirect(route('reports.retail.index'));
+        Auth::logout();
     }
 
     /** @return array<string, array{string, string}> */

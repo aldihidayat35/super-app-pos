@@ -174,6 +174,114 @@ class ReportProfileService
             ];
         }
 
+        if (empty($groups)) {
+            if ($user->hasRole('kasir') || $user->hasRole('supervisor_shift')) {
+                $groups[] = [
+                    'label' => 'Laporan Toko',
+                    'icon' => 'ki-outline ki-shop',
+                    'route' => 'reports.retail.index',
+                    'route_params' => [],
+                    'active' => ['reports.retail.*'],
+                    'is_report' => true,
+                    'profile' => 'retail',
+                    'tone' => 'retail',
+                    'children' => [],
+                ];
+            } elseif ($user->hasAnyRole(['staff_gudang', 'picker_packer', 'purchasing'])) {
+                $groups[] = [
+                    'label' => 'Laporan Gudang',
+                    'icon' => 'ki-outline ki-delivery-3',
+                    'route' => 'reports.warehouse.index',
+                    'route_params' => [],
+                    'active' => ['reports.warehouse.*'],
+                    'is_report' => true,
+                    'profile' => 'warehouse',
+                    'tone' => 'warehouse',
+                    'children' => [],
+                ];
+            } elseif ($user->hasRole('sales')) {
+                $groups[] = [
+                    'label' => 'Laporan Penjualan',
+                    'icon' => 'ki-outline ki-chart-line-up',
+                    'route' => 'reports.b2b.index',
+                    'route_params' => [],
+                    'active' => ['reports.b2b.*'],
+                    'is_report' => true,
+                    'profile' => 'b2b',
+                    'tone' => 'default',
+                    'children' => [],
+                ];
+            } elseif ($user->can('reports.view')) {
+                $groups[] = [
+                    'label' => 'Laporan Harian',
+                    'icon' => 'ki-outline ki-chart-line-up',
+                    'route' => 'reports.daily.index',
+                    'route_params' => [],
+                    'active' => ['reports.daily.*'],
+                    'is_report' => true,
+                    'profile' => 'daily',
+                    'tone' => 'default',
+                    'children' => [],
+                ];
+            }
+        }
+
         return $groups;
+    }
+
+    public function defaultReportUrlFor(User $user): string
+    {
+        if ($user->hasAnyRole(['owner', 'owner_viewer', 'owner_approver'])) {
+            return route('reports.profiles.owner.show', ['report' => 'overview']);
+        }
+
+        if ($user->hasRole('super_admin')) {
+            return route('reports.profiles.system.show', ['report' => 'overview']);
+        }
+
+        if ($user->hasRole('kepala_toko')) {
+            return route('reports.profiles.retail.show', ['report' => 'overview']);
+        }
+
+        if ($user->hasRole('kepala_gudang')) {
+            return route('reports.profiles.warehouse.show', ['report' => 'overview']);
+        }
+
+        if ($user->hasRole('admin_user')) {
+            return route('reports.profiles.users.show', ['report' => 'overview']);
+        }
+
+        if ($user->hasRole('kasir') || $user->hasRole('supervisor_shift')) {
+            return route('reports.retail.index');
+        }
+
+        if ($user->hasAnyRole(['staff_gudang', 'picker_packer', 'purchasing'])) {
+            return route('reports.warehouse.index');
+        }
+
+        if ($user->hasRole('sales')) {
+            return route('reports.b2b.index');
+        }
+
+        $navigation = $this->navigationFor($user);
+        if (! empty($navigation)) {
+            $first = $navigation[0];
+            $route = $first['route'];
+            $params = $first['route_params'] ?? [];
+
+            if (! empty($first['children'])) {
+                $firstChild = $first['children'][0];
+                $route = $firstChild['route'];
+                $params = $firstChild['route_params'] ?? [];
+            }
+
+            return route($route, $params);
+        }
+
+        if ($user->can('reports.view')) {
+            return route('reports.daily.index');
+        }
+
+        return route('reports.daily.index');
     }
 }
