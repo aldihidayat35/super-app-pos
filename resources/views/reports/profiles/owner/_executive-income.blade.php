@@ -255,6 +255,11 @@
                     <svg class="ico me-1" style="width:13px;height:13px;"><use href="#i-coins"/></svg>
                     Laba Rugi &amp; Finansial
                 </a>
+                <a href="{{ route('reports.profiles.owner.show', ['report' => 'tax', 'start_date' => $filters['start_date'], 'end_date' => $filters['end_date'], 'work_location_id' => $selectedLocation?->id]) }}" 
+                   class="btn-dash clear py-1 px-3" style="min-height:30px; font-size:11px; background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.22);">
+                    <svg class="ico me-1" style="width:13px;height:13px;"><use href="#i-check"/></svg>
+                    Rekapitulasi Pajak
+                </a>
             </div>
         </div>
 

@@ -371,6 +371,50 @@ class RoleProfileReportTest extends TestCase
         ]);
     }
 
+    public function test_owner_tax_report_renders_ppn_and_coretax_table(): void
+    {
+        $location = WorkLocation::factory()->create(['type' => 'branch', 'name' => 'Toko Perpajakan']);
+        $owner = $this->userWithRole('owner_approver', $location);
+
+        $route = route('reports.profiles.owner.show', ['report' => 'tax', 'work_location_id' => $location->id]);
+        $response = $this->actingAs($owner)->get($route);
+
+        $response->assertOk()
+            ->assertSee('EXECUTIVE TAX &amp; COMPLIANCE SUITE', false)
+            ->assertSee('Rekapitulasi Pajak')
+            ->assertSee('PPN Keluaran')
+            ->assertSee('PPN Masukan Dapat Dikreditkan')
+            ->assertSee('Posisi SPT Masa PPN')
+            ->assertSee('Estimasi PPh Final UMKM (0,5%)')
+            ->assertSee('Formulir Induk Rekapitulasi SPT Masa PPN 1111')
+            ->assertSee('Rekonsiliasi Faktur Pajak Coretax DJP')
+            ->assertSee('Simulasi &amp; Komparasi Skema Pajak Penghasilan (PPh)', false)
+            ->assertSee('Kalender Kepatuhan Pajak (DJP)', false)
+            ->assertDontSee('id="kt_app_toolbar"', false);
+
+        // Pastikan ketiga tombol switcher tersedia di header
+        $response->assertSee('Ringkasan Eksekutif')
+            ->assertSee('Laba Rugi &amp; Finansial', false)
+            ->assertSee('Rekapitulasi Pajak');
+
+        Queue::fake();
+        $this->actingAs($owner)->post(route('reports.profiles.exports.store', [
+            'profile' => 'owner',
+            'report' => 'tax',
+        ]), [
+            'format' => 'pdf',
+            'work_location_id' => $location->id,
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-31',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('report_exports', [
+            'report_type' => 'profile.owner.tax',
+            'format' => 'pdf',
+            'requested_by' => $owner->id,
+        ]);
+    }
+
     public function test_non_head_roles_cannot_open_any_profile_report(): void
     {
         foreach (['purchasing', 'supervisor_shift', 'staff_gudang', 'kasir', 'kepala_keuangan'] as $role) {

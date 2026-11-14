@@ -134,6 +134,14 @@ class ReportProfileService
                         'active' => ['reports.profiles.owner.show'],
                         'active_report' => 'income',
                     ],
+                    [
+                        'label' => 'Rekapitulasi Pajak',
+                        'icon' => 'ki-outline ki-shield-tick',
+                        'route' => 'reports.profiles.owner.show',
+                        'route_params' => array_filter(['report' => 'tax', 'work_location_id' => $location?->id]),
+                        'active' => ['reports.profiles.owner.show'],
+                        'active_report' => 'tax',
+                    ],
                 ];
             }
 

@@ -62,6 +62,10 @@ class ProfileReportDataService
             $payload = $this->ownerOperational->buildIncomeStatement($filters, $payload, $actor->can('margins.view_sensitive'));
         }
 
+        if ($profile === 'owner' && $report === 'tax') {
+            $payload = $this->ownerOperational->buildTaxReport($filters, $payload, $actor->can('margins.view_sensitive'));
+        }
+
         return [
             'profile' => $this->profiles->profile($profile),
             'report_definition' => $reportDefinition,
