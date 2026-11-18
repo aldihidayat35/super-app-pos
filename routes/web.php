@@ -131,6 +131,10 @@ use App\Http\Controllers\Warehouse\WarehouseLocationController;
 use App\Http\Controllers\WorkChecklist\WorkChecklistController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/offline', function () {
+    return response()->view('pwa.offline');
+})->name('pwa.offline');
+
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('dashboard')

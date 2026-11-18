@@ -40,6 +40,12 @@ cp -a "$APP_DIR/public/assets/." "$PUBLIC_DIR/assets/"
 cp -a "$APP_DIR/public/build/." "$PUBLIC_DIR/build/"
 cp "$APP_DIR/public/.htaccess" "$PUBLIC_DIR/.htaccess"
 
+for pwa_file in manifest.webmanifest manifest.json sw.js; do
+    if [[ -f "$APP_DIR/public/$pwa_file" ]]; then
+        cp "$APP_DIR/public/$pwa_file" "$PUBLIC_DIR/$pwa_file"
+    fi
+done
+
 if ! cmp -s "$APP_DIR/public/build/manifest.json" "$PUBLIC_DIR/build/manifest.json"; then
     echo "Manifest build di document root tidak sama dengan hasil build terbaru." >&2
     exit 1

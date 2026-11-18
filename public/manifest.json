@@ -1,0 +1,88 @@
+{
+  "name": "GudangToko - Sistem Manajemen Terpadu",
+  "short_name": "GudangToko",
+  "description": "Aplikasi Manajemen Gudang, Kasir Retail POS, Presensi Karyawan, dan Toko Internal",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1E1E2D",
+  "theme_color": "#1B84FF",
+  "lang": "id-ID",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/assets/media/pwa/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/media/pwa/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/media/pwa/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Kasir POS",
+      "short_name": "POS",
+      "description": "Buka modul kasir penjualan retail",
+      "url": "/retail/pos",
+      "icons": [
+        {
+          "src": "/assets/media/pwa/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Presensi Karyawan",
+      "short_name": "Presensi",
+      "description": "Check-in dan check-out absensi shift",
+      "url": "/attendance/check",
+      "icons": [
+        {
+          "src": "/assets/media/pwa/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Cek Stok Barang",
+      "short_name": "Stok",
+      "description": "Lihat inventaris dan ketersediaan stok produk",
+      "url": "/warehouse/stocks",
+      "icons": [
+        {
+          "src": "/assets/media/pwa/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Kotak Approval",
+      "short_name": "Approval",
+      "description": "Lihat dokumen yang menunggu persetujuan",
+      "url": "/control/inbox",
+      "icons": [
+        {
+          "src": "/assets/media/pwa/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ]
+}

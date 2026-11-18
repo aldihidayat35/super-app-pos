@@ -24,6 +24,12 @@ if [[ "$PUBLIC_DIR" != "$SOURCE_PUBLIC_DIR" ]]; then
     cp -a "$SOURCE_PUBLIC_DIR/assets/." "$PUBLIC_DIR/assets/"
     cp -a "$SOURCE_PUBLIC_DIR/build/." "$PUBLIC_DIR/build/"
     cp "$SOURCE_PUBLIC_DIR/.htaccess" "$PUBLIC_DIR/.htaccess"
+
+    for pwa_file in manifest.webmanifest manifest.json sw.js; do
+        if [[ -f "$SOURCE_PUBLIC_DIR/$pwa_file" ]]; then
+            cp "$SOURCE_PUBLIC_DIR/$pwa_file" "$PUBLIC_DIR/$pwa_file"
+        fi
+    done
 fi
 
 for required_asset in \

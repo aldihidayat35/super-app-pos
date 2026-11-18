@@ -2,6 +2,7 @@
 
 return [
     'headers' => [
+        'permissions_policy' => env('SECURITY_PERMISSIONS_POLICY', 'camera=(self), microphone=(), geolocation=(self)'),
         'csp' => [
             'enabled' => env('SECURITY_CSP_ENABLED', true),
             'report_only' => env('SECURITY_CSP_REPORT_ONLY', true),
@@ -15,6 +16,7 @@ return [
                 "font-src 'self' data: https://fonts.gstatic.com",
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                 "script-src 'self' 'unsafe-inline'",
+                "worker-src 'self' blob:",
                 "connect-src 'self'",
             ],
         ],

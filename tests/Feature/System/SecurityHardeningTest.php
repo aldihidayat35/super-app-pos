@@ -59,7 +59,7 @@ class SecurityHardeningTest extends TestCase
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+            ->assertHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(self)')
             ->assertHeader('Content-Security-Policy-Report-Only');
     }
 

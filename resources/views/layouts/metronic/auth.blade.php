@@ -9,6 +9,7 @@
         $dynamicLogo = \App\Models\SystemSetting::getCompanyLogo() ?? asset('assets/media/logos/favicon.ico');
     @endphp
     <link rel="shortcut icon" href="{{ $dynamicLogo }}">
+    @include('layouts.metronic.partials.pwa-meta')
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700">
     <link rel="stylesheet" href="{{ asset('assets/vendor/metronic/css/style.bundle.css') }}">
     <link rel="stylesheet" href="{{ versioned_asset('assets/css/ki-icons-fallback.css') }}">
@@ -55,21 +56,6 @@
     </main>
     @include('layouts.metronic.partials.loading-overlay')
     @include('layouts.metronic.partials.flash-toast')
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                for (const reg of registrations) {
-                    reg.unregister();
-                }
-            });
-        }
-        if ('caches' in window) {
-            caches.keys().then(keys => {
-                keys.forEach(k => caches.delete(k));
-            });
-        }
-        localStorage.removeItem('pwa_install_dismissed');
-        sessionStorage.removeItem('pwa_install_shown');
-    </script>
+    @include('layouts.metronic.partials.pwa-scripts')
 </body>
 </html>

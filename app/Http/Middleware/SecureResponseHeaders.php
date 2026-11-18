@@ -33,7 +33,7 @@ class SecureResponseHeaders
             'X-Frame-Options' => 'SAMEORIGIN',
             'X-Content-Type-Options' => 'nosniff',
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
-            'Permissions-Policy' => 'camera=(), microphone=(), geolocation=()',
+            'Permissions-Policy' => (string) config('security.headers.permissions_policy', 'camera=(self), microphone=(), geolocation=(self)'),
         ];
     }
 
