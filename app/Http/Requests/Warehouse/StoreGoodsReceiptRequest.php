@@ -15,6 +15,38 @@ class StoreGoodsReceiptRequest extends FormRequest
         return $this->user()?->can('goods_receipts.create') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $clean = [];
+        if ($this->has('actual_freight_cost') && is_string($this->actual_freight_cost)) {
+            $clean['actual_freight_cost'] = str_replace(['.', ','], ['', '.'], $this->actual_freight_cost);
+        }
+        if ($this->has('actual_additional_cost') && is_string($this->actual_additional_cost)) {
+            $clean['actual_additional_cost'] = str_replace(['.', ','], ['', '.'], $this->actual_additional_cost);
+        }
+        if ($this->has('tax_amount') && is_string($this->tax_amount)) {
+            $clean['tax_amount'] = str_replace(['.', ','], ['', '.'], $this->tax_amount);
+        }
+        if ($this->has('items') && is_array($this->items)) {
+            $items = $this->items;
+            foreach ($items as $k => $item) {
+                if (isset($item['unit_price']) && is_string($item['unit_price'])) {
+                    $items[$k]['unit_price'] = str_replace(['.', ','], ['', '.'], $item['unit_price']);
+                }
+                if (isset($item['sale_price']) && is_string($item['sale_price'])) {
+                    $items[$k]['sale_price'] = str_replace(['.', ','], ['', '.'], $item['sale_price']);
+                }
+                if (isset($item['actual_unit_cost']) && is_string($item['actual_unit_cost'])) {
+                    $items[$k]['actual_unit_cost'] = str_replace(['.', ','], ['', '.'], $item['actual_unit_cost']);
+                }
+            }
+            $clean['items'] = $items;
+        }
+        if ($clean !== []) {
+            $this->merge($clean);
+        }
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -24,8 +56,13 @@ class StoreGoodsReceiptRequest extends FormRequest
             'destination_work_location_id' => ['required_without:purchase_order_id', 'nullable', 'exists:work_locations,id'],
             'received_at' => ['required', 'date'],
             'delivery_note_number' => ['nullable', 'string', 'max:120'],
+            'tax_invoice_number' => ['nullable', 'string', 'max:120'],
             'actual_freight_cost' => ['nullable', 'numeric', 'min:0'],
             'actual_additional_cost' => ['nullable', 'numeric', 'min:0'],
+            'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'tax_amount' => ['nullable', 'numeric', 'min:0'],
+            'is_tax_included' => ['nullable', 'boolean'],
+            'is_tax_creditable' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
             'proof_path' => ['nullable', 'string', 'max:255'],

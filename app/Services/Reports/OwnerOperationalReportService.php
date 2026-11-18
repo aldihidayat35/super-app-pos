@@ -902,25 +902,61 @@ class OwnerOperationalReportService
         $b2bTax = (string) (clone $b2bQuery)->sum('b2b_orders.tax_amount');
         $b2bRevenue = (string) (clone $b2bQuery)->sum('b2b_orders.grand_total_amount');
 
-        // Purchase Orders (PO Supplier)
+        // 1. Goods Receipts (Penerimaan Barang Langsung Supplier)
+        $grQuery = DB::table('goods_receipts')
+            ->where(function (Builder $query) use ($locationIds): void {
+                $query->whereIn('goods_receipts.destination_work_location_id', $locationIds)
+                    ->orWhereIn('goods_receipts.warehouse_id', function (Builder $sub) use ($locationIds): void {
+                        $sub->select('id')->from('warehouses')->whereIn('work_location_id', $locationIds);
+                    });
+            })
+            ->whereBetween('goods_receipts.received_at', [$filters['start_date'], $filters['end_date']])
+            ->where('goods_receipts.status', 'posted');
+
+        $grIds = (clone $grQuery)->pluck('id')->all();
+        $grSubtotal = ! empty($grIds)
+            ? (string) DB::table('goods_receipt_items')
+                ->whereIn('goods_receipt_id', $grIds)
+                ->sum(DB::raw('quantity_accepted * unit_price'))
+            : '0.00';
+        $grCreditableTax = ! empty($grIds)
+            ? (string) (clone $grQuery)->where('is_tax_creditable', true)->sum('tax_amount')
+            : '0.00';
+        $grNonCreditableTax = ! empty($grIds)
+            ? (string) (clone $grQuery)->where('is_tax_creditable', false)->sum('tax_amount')
+            : '0.00';
+        $grTax = Decimal::add($grCreditableTax, $grNonCreditableTax, 2);
+
+        // 2. Emergency Purchases (Pembelian Darurat Kasir / POS)
+        $emergencyQuery = DB::table('emergency_purchases')
+            ->whereIn('branch_id', $locationIds)
+            ->whereBetween('purchased_at', [$filters['start'], $filters['end']])
+            ->where('status', 'completed');
+        $emergencySubtotal = (string) (clone $emergencyQuery)->sum('total_cost');
+
+        // 3. Fallback Purchase Orders jika ada data historis lama saat sistem masih menggunakan PO
         $poQuery = DB::table('purchase_orders')
             ->whereIn('destination_work_location_id', $locationIds)
             ->whereBetween('order_date', [$filters['start_date'], $filters['end_date']])
             ->where('status', '!=', 'cancelled');
 
         $poIds = (clone $poQuery)->pluck('id')->all();
-        $poSubtotal = (string) (clone $poQuery)->sum('items_subtotal');
-        $poTax = ! empty($poIds)
+        $poSubtotal = ! empty($poIds) && empty($grIds)
+            ? (string) (clone $poQuery)->sum('items_subtotal')
+            : '0.00';
+        $poTax = ! empty($poIds) && empty($grIds)
             ? (string) DB::table('purchase_order_items')->whereIn('purchase_order_id', $poIds)->sum('tax_amount')
             : '0.00';
 
-        // 3. Konsolidasi PPN Keluaran & PPN Masukan
+        $totalInboundDpp = Decimal::add($grSubtotal, Decimal::add($emergencySubtotal, $poSubtotal, 2), 2);
+
+        // 4. Konsolidasi PPN Keluaran & PPN Masukan
         $totalOutputDpp = Decimal::add($taxDocsOutDpp, Decimal::add($posSubtotal, $b2bSubtotal, 2), 2);
         $totalOutputTax = Decimal::add($taxDocsOutTax, Decimal::add($posTax, $b2bTax, 2), 2);
 
-        $totalInputDpp = Decimal::add($taxDocsInDpp, $poSubtotal, 2);
-        $totalInputCreditableTax = Decimal::add($taxDocsInCreditable, $poTax, 2);
-        $totalInputNonCreditableTax = $taxDocsInNonCreditable;
+        $totalInputDpp = Decimal::add($taxDocsInDpp, $totalInboundDpp, 2);
+        $totalInputCreditableTax = Decimal::add($taxDocsInCreditable, Decimal::add($grCreditableTax, $poTax, 2), 2);
+        $totalInputNonCreditableTax = Decimal::add($taxDocsInNonCreditable, $grNonCreditableTax, 2);
 
         // 4. Saldo Kompensasi Masa Pajak Sebelumnya
         $periodMonth = (int) date('m', strtotime((string) $filters['start_date']));
@@ -953,16 +989,21 @@ class OwnerOperationalReportService
             default => 'Nihil',
         };
 
-        // 6. Estimasi Pajak Penghasilan (PPh)
+        // 6. Estimasi Pajak Penghasilan (PPh) - Menggunakan tarif dinamis dari konfigurasi tahun terkait
+        $financialYear = DB::table('financial_years')->where('year', $periodYear)->first();
+        $rateFinal = $financialYear ? bcdiv((string) ($financialYear->final_rate ?? '0.5'), '100', 8) : '0.005';
+        $rate31e = $financialYear ? bcdiv((string) ($financialYear->facility_rate ?? '11'), '100', 8) : '0.11';
+        $rateGeneral = $financialYear ? bcdiv((string) ($financialYear->general_rate ?? '22'), '100', 8) : '0.22';
+
         $grossTurnover = Decimal::add($posRevenue, $b2bRevenue, 2);
         $incomeReport = $this->buildIncomeStatement($filters, $base, $canViewSensitive);
         $netTurnover = (string) data_get($incomeReport, 'summary.net_revenue', '0.00');
-        // PPh Final UMKM 0,5% PP 55/2022 dihitung dari Peredaran Bruto Neto (setelah retur)
-        $pphFinalUmkm = Decimal::mul($netTurnover, '0.005', 2);
+        // PPh Final UMKM dihitung dari Peredaran Bruto Neto (setelah retur)
+        $pphFinalUmkm = Decimal::mul($netTurnover, $rateFinal, 2);
         $netProfitForTax = (string) data_get($incomeReport, 'summary.net_operating_profit', '0.00');
         if (Decimal::compare($netProfitForTax, '0', 2) > 0) {
-            $pphBadanNormal = Decimal::mul($netProfitForTax, '0.22', 2);
-            $pphBadan31e = Decimal::mul($netProfitForTax, '0.11', 2);
+            $pphBadanNormal = Decimal::mul($netProfitForTax, $rateGeneral, 2);
+            $pphBadan31e = Decimal::mul($netProfitForTax, $rate31e, 2);
         } else {
             $pphBadanNormal = '0.00';
             $pphBadan31e = '0.00';
@@ -1110,40 +1151,84 @@ class OwnerOperationalReportService
                 ];
             }
 
-            // Ambil sample PO Supplier
-            $samplePo = (clone $poQuery)
-                ->leftJoin('suppliers', 'suppliers.id', '=', 'purchase_orders.supplier_id')
+            // Ambil sample Goods Receipts (Penerimaan Barang Langsung Inbound Supplier)
+            $sampleGr = (clone $grQuery)
+                ->leftJoin('suppliers', 'suppliers.id', '=', 'goods_receipts.supplier_id')
                 ->select([
-                    'purchase_orders.id', 'purchase_orders.number', 'purchase_orders.order_date',
-                    'purchase_orders.items_subtotal', 'purchase_orders.grand_total',
+                    'goods_receipts.id', 'goods_receipts.number', 'goods_receipts.received_at',
+                    'goods_receipts.delivery_note_number', 'goods_receipts.tax_invoice_number',
+                    'goods_receipts.tax_rate', 'goods_receipts.tax_amount', 'goods_receipts.is_tax_creditable',
                     'suppliers.name as supplier_name', 'suppliers.tax_number',
                 ])
-                ->orderByDesc('purchase_orders.order_date')
+                ->orderByDesc('goods_receipts.received_at')
                 ->limit(5)
                 ->get();
 
-            foreach ($samplePo as $po) {
-                $subtotal = (string) $po->items_subtotal;
-                $tax = Decimal::mul($subtotal, '0.11', 2);
+            foreach ($sampleGr as $gr) {
+                $subtotal = (string) DB::table('goods_receipt_items')
+                    ->where('goods_receipt_id', $gr->id)
+                    ->sum(DB::raw('quantity_accepted * unit_price'));
+                $tax = (string) ($gr->tax_amount ?? '0');
+                if (Decimal::compare($tax, '0', 2) <= 0 && ! empty($gr->tax_invoice_number)) {
+                    $tax = Decimal::mul($subtotal, bcdiv((string) ($gr->tax_rate ?? 11), '100', 4), 2);
+                }
                 $coretaxDocs[] = [
-                    'id' => (int) $po->id + 5000,
-                    'document_number' => '010.000-26.'.str_pad((string) ($po->id + 200), 8, '0', STR_PAD_LEFT),
-                    'coretax_reference' => 'CTX-2026-IN-'.str_pad((string) $po->id, 5, '0', STR_PAD_LEFT),
-                    'tax_date' => (string) $po->order_date,
+                    'id' => (int) $gr->id + 5000,
+                    'document_number' => (string) ($gr->tax_invoice_number ?: ($gr->delivery_note_number ?: '010.000-26.'.str_pad((string) $gr->id, 8, '0', STR_PAD_LEFT))),
+                    'coretax_reference' => 'CTX-2026-IN-GR'.str_pad((string) $gr->id, 5, '0', STR_PAD_LEFT),
+                    'tax_date' => (string) $gr->received_at,
                     'direction' => 'in',
                     'direction_label' => 'Masukan',
                     'document_type' => 'faktur_pajak',
                     'document_type_label' => 'Faktur Pajak',
-                    'counterparty_name' => (string) ($po->supplier_name ?: 'Supplier Utama'),
-                    'counterparty_tax_number' => (string) ($po->tax_number ?: '02.345.678.9-023.000'),
+                    'counterparty_name' => (string) ($gr->supplier_name ?: 'Supplier Barang'),
+                    'counterparty_tax_number' => (string) ($gr->tax_number ?: '02.345.678.9-023.000'),
                     'dpp_amount' => $subtotal,
-                    'tax_rate' => '11.00',
+                    'tax_rate' => (string) ($gr->tax_rate ?? '11.00'),
                     'tax_amount' => $tax,
-                    'is_creditable' => true,
+                    'is_creditable' => (bool) ($gr->is_tax_creditable ?? true),
                     'reconciliation_status' => 'reconciled',
-                    'source_type' => 'purchase_order',
-                    'location_name' => 'Penerimaan Gudang',
+                    'source_type' => 'goods_receipt',
+                    'location_name' => 'Penerimaan Inbound',
                 ];
+            }
+
+            // Jika sample GR kosong, fallback ke sample PO historis
+            if ($sampleGr->isEmpty()) {
+                $samplePo = (clone $poQuery)
+                    ->leftJoin('suppliers', 'suppliers.id', '=', 'purchase_orders.supplier_id')
+                    ->select([
+                        'purchase_orders.id', 'purchase_orders.number', 'purchase_orders.order_date',
+                        'purchase_orders.items_subtotal', 'purchase_orders.grand_total',
+                        'suppliers.name as supplier_name', 'suppliers.tax_number',
+                    ])
+                    ->orderByDesc('purchase_orders.order_date')
+                    ->limit(5)
+                    ->get();
+
+                foreach ($samplePo as $po) {
+                    $subtotal = (string) $po->items_subtotal;
+                    $tax = Decimal::mul($subtotal, '0.11', 2);
+                    $coretaxDocs[] = [
+                        'id' => (int) $po->id + 5000,
+                        'document_number' => '010.000-26.'.str_pad((string) ($po->id + 200), 8, '0', STR_PAD_LEFT),
+                        'coretax_reference' => 'CTX-2026-IN-'.str_pad((string) $po->id, 5, '0', STR_PAD_LEFT),
+                        'tax_date' => (string) $po->order_date,
+                        'direction' => 'in',
+                        'direction_label' => 'Masukan',
+                        'document_type' => 'faktur_pajak',
+                        'document_type_label' => 'Faktur Pajak',
+                        'counterparty_name' => (string) ($po->supplier_name ?: 'Supplier Utama'),
+                        'counterparty_tax_number' => (string) ($po->tax_number ?: '02.345.678.9-023.000'),
+                        'dpp_amount' => $subtotal,
+                        'tax_rate' => '11.00',
+                        'tax_amount' => $tax,
+                        'is_creditable' => true,
+                        'reconciliation_status' => 'reconciled',
+                        'source_type' => 'purchase_order',
+                        'location_name' => 'Penerimaan Gudang',
+                    ];
+                }
             }
         }
 

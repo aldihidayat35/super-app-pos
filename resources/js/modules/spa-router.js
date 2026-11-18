@@ -41,27 +41,30 @@ const getProgressBar = () => {
     return progressBarEl;
 };
 
-const startProgressBar = () => {
+export const startProgressBar = () => {
     const bar = getProgressBar();
     if (progressTimer) clearInterval(progressTimer);
 
     bar.style.transition = 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease';
     bar.style.opacity = '1';
-    bar.style.width = '25%';
+    bar.style.width = '20%';
 
-    let current = 25;
+    let current = 20;
     progressTimer = setInterval(() => {
-        if (current < 75) {
-            current += 10;
-            bar.style.width = `${current}%`;
-        } else if (current < 90) {
-            current += 2;
-            bar.style.width = `${current}%`;
+        if (current < 60) {
+            current += 8;
+        } else if (current < 82) {
+            current += 3;
+        } else if (current < 92) {
+            current += 1;
+        } else if (current < 98) {
+            current += 0.25;
         }
-    }, 200);
+        bar.style.width = `${current}%`;
+    }, 180);
 };
 
-const finishProgressBar = () => {
+export const finishProgressBar = () => {
     const bar = getProgressBar();
     if (progressTimer) clearInterval(progressTimer);
 
@@ -70,8 +73,8 @@ const finishProgressBar = () => {
         bar.style.opacity = '0';
         setTimeout(() => {
             bar.style.width = '0%';
-        }, 200);
-    }, 150);
+        }, 220);
+    }, 180);
 };
 
 // Eksekusi script baru yang terdapat di dalam konten halaman baru
@@ -373,5 +376,25 @@ export const initializeSpaRouter = () => {
     // 3. Tangani Navigasi Tombol Back / Forward Browser
     window.addEventListener('popstate', () => {
         navigateTo(window.location.href, false);
+    });
+
+    // 4. Tangani Native Page Transitions (Form submit POST/PUT/DELETE, refresh, non-SPA link)
+    window.addEventListener('beforeunload', () => {
+        startProgressBar();
+        const mainContent = document.getElementById('kt_app_main_content');
+        if (mainContent) {
+            mainContent.classList.add('spa-loading');
+        }
+    });
+
+    // 5. Reset Progress Bar jika Halaman Dipulihkan dari BFCache (Back-Forward Cache)
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            finishProgressBar();
+            const mainContent = document.getElementById('kt_app_main_content');
+            if (mainContent) {
+                mainContent.classList.remove('spa-loading');
+            }
+        }
     });
 };

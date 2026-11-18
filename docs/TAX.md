@@ -56,6 +56,13 @@ flowchart LR
 
 Pilihan skema: PPh Final 0,5% omzet, fasilitas Pasal 31E, tarif umum, atau nominal manual dari konsultan/Coretax. Tarif dan batas omzet tersimpan pada tahun laporan agar laporan terkunci tidak berubah oleh aturan masa depan.
 
+### Konfigurasi Tarif Pajak & Parameter Dinamis
+
+Pada tab **Konfigurasi Tarif Pajak** (`/tax?tab=rates`), pengguna dapat menyesuaikan persentase tarif pajak secara fleksibel:
+- **Tarif PPh Badan per Tahun Buku:** Mengatur tarif PPh Final, tarif fasilitas Pasal 31E, tarif umum, serta batas peredaran bruto (Rp 4,8M dan Rp 50M). Dilengkapi tombol preset regulasi (*Standar UU HPP*, *PP 55 UMKM*, *Tarif Umum Tunggal*). Perubahan tarif otomatis menghitung ulang (*recalculate*) laporan keuangan tahun berjalan yang belum dikunci.
+- **Master Tarif Pajak Transaksi Bertanggal Efektif:** Mengatur aturan tarif transaksi operasional (PPN 11%, PPN 12%, PBJT 10%) dengan masa berlaku tanggal efektif, faktor DPP, dan status aktif.
+- **Keamanan & Audit:** Menggunakan konfirmasi sebelum simpan, pencatatan lengkap pada Audit Log (`finance.year.tax_rates_updated` dan `tax.rule.created`), serta proteksi mutlak pada tahun buku yang berstatus *Locked*.
+
 ## Penutupan tahunan
 
 ```mermaid

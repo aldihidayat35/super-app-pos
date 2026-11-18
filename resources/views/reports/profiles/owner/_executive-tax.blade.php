@@ -330,6 +330,11 @@
             </div>
 
             <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                <a href="{{ route('tax.index', ['tab' => 'rates']) }}" class="btn-dash gold" style="background:#2563eb; color:#fff; border-color:#1d4ed8;" title="Buka Halaman Input & Konfigurasi Tarif Pajak">
+                    <svg class="ico"><use href="#i-shield-tick"/></svg>
+                    <span>Input &amp; Atur Pajak</span>
+                </a>
+
                 <button type="button" class="btn-dash clear" onclick="window.print()">
                     <svg class="ico"><use href="#i-print"/></svg>
                     <span>Cetak A4</span>
@@ -640,12 +645,18 @@
     <div class="tax-info-grid mb-4">
         {{-- Komparasi Skema PPh --}}
         <div class="tax-scheme-card">
-            <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                 <div>
                     <h3 class="fs-6 fw-bold text-dark m-0">Simulasi &amp; Komparasi Skema Pajak Penghasilan (PPh)</h3>
                     <p class="text-muted fs-8 m-0">Evaluasi efisiensi beban pajak usaha antara skema UMKM vs PPh Badan.</p>
                 </div>
-                <span class="badge bg-light-primary text-primary fw-bold fs-8">Perencanaan Pajak</span>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('tax.index', ['tab' => 'rates']) }}" class="badge bg-primary text-white fw-bold fs-8 text-decoration-none py-2 px-3" title="Kelola persentase tarif PPh dan batas omzet">
+                        <svg class="ico me-1" style="width:12px;height:12px;vertical-align:-1px;"><use href="#i-shield-tick"/></svg>
+                        Input &amp; Atur Tarif Pajak
+                    </a>
+                    <span class="badge bg-light-primary text-primary fw-bold fs-8">Perencanaan Pajak</span>
+                </div>
             </div>
 
             <div class="tax-scheme-item">

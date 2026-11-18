@@ -127,7 +127,7 @@ class GoodsReceiptWorkflowTest extends TestCase
         $this->assertSame('300.00', $history->incoming_cost);
         $this->assertSame('100.00', $history->landed_cost_allocated);
         $this->assertSame('30.00', $history->hpp_after);
-        $this->assertSame('10.00', $product->fresh()->cost_price);
+        $this->assertSame('30.00', $product->fresh()->cost_price);
         $this->assertDatabaseHas('stock_batches', [
             'goods_receipt_id' => $receipt->id,
             'product_id' => $product->id,

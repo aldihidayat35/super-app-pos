@@ -42,6 +42,44 @@
         'batch_no' => $item->batch_no ?? '',
         'qc_notes' => $item->qc_notes ?? '',
     ])->values()->all();
+
+    if (old('items')) {
+        $receiptItemsJson = collect(old('items'))->map(fn($item) => [
+            'id' => $item['id'] ?? null,
+            'product_id' => $item['product_id'] ?? null,
+            'purchase_order_item_id' => $item['purchase_order_item_id'] ?? null,
+            'unit_id' => $item['unit_id'] ?? null,
+            'warehouse_location_id' => $item['warehouse_location_id'] ?? null,
+            'quantity_received' => (float) ($item['quantity_received'] ?? 1),
+            'quantity_accepted' => (float) ($item['quantity_accepted'] ?? 1),
+            'quantity_rejected' => (float) ($item['quantity_rejected'] ?? 0),
+            'quantity_damaged' => (float) ($item['quantity_damaged'] ?? 0),
+            'quantity_returned_to_supplier' => (float) ($item['quantity_returned_to_supplier'] ?? 0),
+            'unit_price' => (float) str_replace(['.', ','], ['', '.'], (string) ($item['unit_price'] ?? 0)),
+            'actual_unit_cost' => (float) str_replace(['.', ','], ['', '.'], (string) ($item['actual_unit_cost'] ?? 0)),
+            'sale_price' => (float) str_replace(['.', ','], ['', '.'], (string) ($item['sale_price'] ?? 0)),
+            'batch_no' => $item['batch_no'] ?? '',
+            'qc_notes' => $item['qc_notes'] ?? '',
+        ])->values()->all();
+    } elseif ($receiptItems->isEmpty() && !empty($selectedPo?->items)) {
+        $receiptItemsJson = $selectedPo->items->map(fn($item) => [
+            'id' => null,
+            'product_id' => $item->product_id,
+            'purchase_order_item_id' => $item->id,
+            'unit_id' => $item->unit_id,
+            'warehouse_location_id' => null,
+            'quantity_received' => (float) max(0, $item->quantity - $item->quantity_received),
+            'quantity_accepted' => (float) max(0, $item->quantity - $item->quantity_received),
+            'quantity_rejected' => 0,
+            'quantity_damaged' => 0,
+            'quantity_returned_to_supplier' => 0,
+            'unit_price' => (float) $item->unit_price,
+            'actual_unit_cost' => (float) $item->unit_price,
+            'sale_price' => (float) ($item->product?->minimum_price > 0 ? $item->product->minimum_price : ($item->unit_price * 1.15)),
+            'batch_no' => '',
+            'qc_notes' => '',
+        ])->values()->all();
+    }
 @endphp
 
 <form id="goods-receipt-form" method="POST" action="{{ $action }}" enctype="multipart/form-data">
@@ -182,6 +220,75 @@
                 <label class="form-label fw-bold fs-7">Catatan Penerimaan</label>
                 <input type="text" name="notes" value="{{ old('notes', $receipt->notes) }}" class="form-control form-control-solid fs-7" placeholder="Catatan internal / sopir">
             </div>
+
+            {{-- FAKTUR PAJAK SUPPLIER (PPN MASUKAN) --}}
+            <div class="col-12 mt-2">
+                <div class="border border-gray-300 rounded p-4 bg-light-secondary">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="ki-outline ki-document text-primary fs-3"></i>
+                            <div>
+                                <span class="fw-bolder text-gray-900 fs-7">Faktur Pajak Supplier (PPN Masukan)</span>
+                                <span class="text-muted fs-8 d-block">Aktifkan jika pembelian dari supplier PKP disertai Faktur Pajak resmi untuk dikreditkan (Coretax / SPT Masa 1111).</span>
+                            </div>
+                        </div>
+                        <div class="form-check form-switch form-check-custom form-check-solid">
+                            <input class="form-check-input h-20px w-35px" type="checkbox" id="check-has-tax" {{ ($receipt->tax_invoice_number || (float)($receipt->tax_amount ?? 0) > 0 || old('tax_invoice_number') || old('tax_amount')) ? 'checked' : '' }}>
+                            <label class="form-check-label fw-bold fs-8 text-gray-700" for="check-has-tax">Ada Faktur Pajak</label>
+                        </div>
+                    </div>
+
+                    <div id="tax-fields-container" class="row g-3 {{ ($receipt->tax_invoice_number || (float)($receipt->tax_amount ?? 0) > 0 || old('tax_invoice_number') || old('tax_amount')) ? '' : 'd-none' }}">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold fs-8">Nomor Faktur Pajak (e-Faktur)</label>
+                            <input type="text" name="tax_invoice_number" id="input-tax-invoice-number" 
+                                   value="{{ old('tax_invoice_number', $receipt->tax_invoice_number) }}" 
+                                   class="form-control form-control-sm form-control-solid font-monospace" 
+                                   placeholder="Contoh: 010.000-26.12345678">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold fs-8">Tarif PPN (%)</label>
+                            <div class="input-group input-group-sm input-group-solid">
+                                <input type="number" step="0.1" min="0" max="100" name="tax_rate" id="input-tax-rate" 
+                                       value="{{ old('tax_rate', $receipt->tax_rate ?? 11.0) }}" 
+                                       class="form-control form-control-sm form-control-solid text-end fw-bold">
+                                <span class="input-group-text fs-8">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold fs-8">Nominal PPN Masukan (Rp)</label>
+                            <div class="input-group input-group-sm input-group-solid">
+                                <span class="input-group-text fs-8 text-gray-500">Rp</span>
+                                <input type="text" name="tax_amount" id="input-tax-amount" 
+                                       value="{{ number_format((float) old('tax_amount', $receipt->tax_amount ?? 0), 0, ',', '.') }}" 
+                                       class="form-control form-control-sm form-control-solid fw-bold format-rupiah" 
+                                       placeholder="0">
+                            </div>
+                            <div class="text-muted fs-9 mt-1">Dihitung otomatis atau dapat diedit manual.</div>
+                        </div>
+                        <div class="col-md-2 d-flex flex-column justify-content-center">
+                            <input type="hidden" name="is_tax_included" value="0">
+                            <div class="form-check form-check-custom form-check-solid mt-3">
+                                <input class="form-check-input" type="checkbox" name="is_tax_included" id="check-tax-included" value="1" 
+                                       {{ old('is_tax_included', $receipt->is_tax_included) ? 'checked' : '' }}>
+                                <label class="form-check-label fs-8 fw-semibold text-gray-700" for="check-tax-included">
+                                    Harga Sudah Include PPN
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex flex-column justify-content-center">
+                            <input type="hidden" name="is_tax_creditable" value="0">
+                            <div class="form-check form-check-custom form-check-solid mt-3">
+                                <input class="form-check-input" type="checkbox" name="is_tax_creditable" id="check-tax-creditable" value="1" 
+                                       {{ old('is_tax_creditable', $receipt->is_tax_creditable ?? true) ? 'checked' : '' }}>
+                                <label class="form-check-label fs-8 fw-semibold text-gray-700" for="check-tax-creditable">
+                                    Dapat Dikreditkan (B2)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </x-metronic.card>
 
@@ -202,21 +309,21 @@
             </div>
         </div>
 
-        <div class="table-responsive border border-gray-200 rounded">
+        <div class="table-responsive border border-gray-200 rounded-3 shadow-2xs">
             <table class="table table-row-bordered table-row-gray-200 align-middle gs-4 gy-3 mb-0" id="table-receipt-items">
-                <thead class="bg-light">
-                    <tr class="fw-bolder text-gray-800 fs-8 text-uppercase">
-                        <th style="width: 24%; min-width: 220px;" class="ps-3">Produk &amp; SKU</th>
-                        <th style="width: 13%; min-width: 130px;">Satuan Beli &amp; Konversi</th>
-                        <th style="width: 18%; min-width: 170px;">Kuantitas &amp; QC Fisik</th>
-                        <th style="width: 14%; min-width: 130px;">HPP Beli &amp; Ongkir</th>
-                        <th style="width: 13%; min-width: 120px; background-color: rgba(var(--bs-primary-rgb), 0.03);">HPP Final (Modal/Pcs)</th>
-                        <th style="width: 18%; min-width: 170px; background-color: rgba(var(--bs-success-rgb), 0.03);">Harga Jual Min (Anti-Rugi)</th>
-                        <th style="width: 4%; min-width: 40px;" class="text-center pe-3">Aksi</th>
+                <thead class="bg-light-subtle border-bottom border-gray-300">
+                    <tr class="fw-boldest text-gray-700 fs-8 text-uppercase tracking-wide">
+                        <th style="width: 21%; min-width: 210px;" class="ps-4">Produk &amp; SKU</th>
+                        <th style="width: 12%; min-width: 125px;">Satuan &amp; Konversi</th>
+                        <th style="width: 25%; min-width: 250px;">Kuantitas &amp; QC Fisik</th>
+                        <th style="width: 14%; min-width: 135px;">HPP Beli &amp; Ongkir</th>
+                        <th style="width: 12%; min-width: 125px; background-color: rgba(var(--bs-primary-rgb), 0.03);" class="text-center">HPP Final (Modal/Pcs)</th>
+                        <th style="width: 16%; min-width: 175px; background-color: rgba(var(--bs-success-rgb), 0.03);">Harga Jual Min (Anti-Rugi)</th>
+                        <th style="width: 4%; min-width: 45px;" class="text-center pe-3">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="receipt-items-tbody" class="fs-7">
-                    {{-- Baris akan dirender di sini via Blade atau JS --}}
+                    {{-- Baris akan dirender di sini via JS --}}
                 </tbody>
             </table>
         </div>
@@ -263,12 +370,16 @@
             <div class="col-12 col-lg-4">
                 <div class="p-4 rounded-3 bg-light-primary border border-primary border-opacity-25 d-flex flex-column justify-content-between h-100">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-gray-700 fs-8 fw-bold">Total Nilai Faktur (Barang + Ongkir):</span>
+                        <span class="text-gray-700 fs-8 fw-bold">Total Nilai Tagihan:</span>
                         <span class="fs-3 fw-boldest text-primary" id="summary-total-invoice">Rp 0</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between text-muted fs-8">
+                    <div class="d-flex align-items-center justify-content-between text-muted fs-8 mb-1">
                         <span>Total Ongkir &amp; Biaya:</span>
                         <span class="fw-bold text-gray-800" id="summary-total-landed">Rp 0</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between text-muted fs-8" id="summary-tax-row">
+                        <span>PPN Masukan (Faktur Pajak):</span>
+                        <span class="fw-bold text-success" id="summary-tax-amount">Rp 0</span>
                     </div>
                 </div>
             </div>
@@ -366,6 +477,7 @@
     let initialReceiptItems = @json($receiptItemsJson);
 
     let rowIndexCounter = 0;
+    let isTaxAmountManuallyEdited = {{ old('tax_amount', $receipt->tax_amount) ? 'true' : 'false' }};
 
     // Helper: Parse Angka
     function parseNumber(val) {
@@ -397,6 +509,7 @@
         let selectedProduct = masterProducts.find(p => p.id == selectedProductId) || masterProducts[0];
 
         let selectedUnitId = presetData?.unit_id || selectedProduct?.base_unit_id || (masterUnits[0]?.id || 1);
+        let selectedUnit = masterUnits.find(u => u.id == selectedUnitId) || masterUnits[0];
         let qtyReceived = presetData?.quantity_received !== undefined ? presetData.quantity_received : 1;
         let qtyAccepted = presetData?.quantity_accepted !== undefined ? presetData.quantity_accepted : qtyReceived;
         let qtyDamaged = presetData?.quantity_damaged !== undefined ? presetData.quantity_damaged : 0;
@@ -405,6 +518,8 @@
         let unitPrice = presetData?.unit_price !== undefined ? presetData.unit_price : (selectedProduct?.cost_price || 0);
         let salePrice = presetData?.sale_price !== undefined ? presetData.sale_price : (selectedProduct?.minimum_price || 0);
         let batchNo = presetData?.batch_no || '';
+        let warehouseLocId = presetData?.warehouse_location_id || '';
+        let poItemId = presetData?.purchase_order_item_id || '';
         let qcNotes = presetData?.qc_notes || '';
 
         // Generate Options Produk
@@ -423,105 +538,161 @@
 
         row.innerHTML = `
             {{-- 1. Produk & SKU --}}
-            <td class="ps-3 align-top">
-                <div class="d-flex flex-column gap-1">
-                    <select name="items[${idx}][product_id]" class="form-select form-select-sm form-select-solid select-product fw-semibold fs-8" onchange="onProductChange(${idx})">
+            <td class="ps-4 align-top py-3">
+                <div class="d-flex flex-column gap-1.5">
+                    <select name="items[${idx}][product_id]" class="form-select form-select-sm form-select-solid select-product fw-bold fs-7 border-gray-300" onchange="onProductChange(${idx})">
                         ${productOptions}
                     </select>
-                    <div class="d-flex align-items-center gap-1.5 mt-1">
-                        <span class="badge badge-light-dark font-monospace fs-9 py-0.5 px-1.5 label-sku">${selectedProduct?.sku || '-'}</span>
-                        <span class="text-muted fs-9 label-category">${selectedProduct?.category_name || 'Umum'}</span>
+                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                        <span class="badge badge-light-primary font-monospace fs-9 py-0.5 px-2 label-sku">${selectedProduct?.sku || '-'}</span>
+                        <span class="badge badge-light-secondary text-gray-600 fs-9 py-0.5 px-2 label-category">${selectedProduct?.category_name || 'Umum'}</span>
                     </div>
-                    <div class="mt-1">
-                        <input type="text" name="items[${idx}][batch_no]" class="form-control form-control-sm form-control-solid fs-9 py-1" value="${batchNo}" placeholder="No. Batch (opsional)">
+                    <div class="input-group input-group-sm input-group-solid mt-0.5">
+                        <span class="input-group-text py-0 px-2 text-gray-400 bg-light border-gray-300" title="Nomor Batch atau Lot Produksi">
+                            <i class="ki-outline ki-tag fs-8"></i>
+                        </span>
+                        <input type="text" name="items[${idx}][batch_no]" class="form-control form-control-sm form-control-solid fs-9 py-1 border-gray-300" value="${batchNo}" placeholder="No. Batch / Lot (opsional)">
                     </div>
+                    <input type="hidden" name="items[${idx}][warehouse_location_id]" value="${warehouseLocId}">
+                    <input type="hidden" name="items[${idx}][purchase_order_item_id]" value="${poItemId}">
+                    <input type="hidden" name="items[${idx}][qc_notes]" value="${qcNotes}">
                 </div>
             </td>
 
             {{-- 2. Satuan Beli & Faktor Konversi --}}
-            <td class="align-top">
-                <div class="d-flex flex-column gap-1">
-                    <select name="items[${idx}][unit_id]" class="form-select form-select-sm form-select-solid select-unit fw-semibold fs-8" onchange="calculateRow(${idx})">
+            <td class="align-top py-3">
+                <div class="d-flex flex-column gap-1.5">
+                    <select name="items[${idx}][unit_id]" class="form-select form-select-sm form-select-solid select-unit fw-semibold fs-7 border-gray-300" onchange="calculateRow(${idx})">
                         ${unitOptions}
                     </select>
-                    <div class="badge badge-light-secondary text-gray-700 fs-9 py-0.5 px-1.5 mt-1 label-conversion">
-                        1 = <span class="conversion-factor-text">1</span> <span class="base-unit-text">${selectedProduct?.base_unit_name || 'pcs'}</span>
+                    <div class="p-1.5 rounded bg-light border border-gray-200 text-center">
+                        <span class="fs-9 text-gray-600">
+                            1 <span class="selected-unit-code fw-semibold text-gray-800">${(selectedUnit?.code || 'pcs').toUpperCase()}</span> = <span class="conversion-factor-text fw-bold text-primary">1</span> <span class="base-unit-text">${selectedProduct?.base_unit_name || 'pcs'}</span>
+                        </span>
                     </div>
                 </div>
             </td>
 
             {{-- 3. Kuantitas & QC Fisik --}}
-            <td class="align-top">
-                <div class="d-flex flex-column gap-1.5">
-                    <div class="d-flex align-items-center gap-1">
-                        <span class="text-gray-500 fs-9 fw-bold w-45px">Datang:</span>
-                        <input type="number" step="1" min="0" name="items[${idx}][quantity_received]" class="form-control form-control-sm form-control-solid input-received fs-8 py-1 fw-bold" value="${qtyReceived}" oninput="onReceivedChange(${idx})">
+            <td class="align-top py-3">
+                <div class="p-2.5 rounded-2 border border-gray-200 bg-white shadow-2xs">
+                    <!-- Baris Atas: Datang & Lolos (Diterima) -->
+                    <div class="row g-2 mb-2 align-items-end">
+                        <div class="col-6">
+                            <label class="fs-9 fw-bold text-gray-700 text-uppercase mb-1 d-flex align-items-center gap-1">
+                                <i class="ki-outline ki-delivery-door fs-8 text-primary"></i> Datang
+                            </label>
+                            <input type="number" step="1" min="0" name="items[${idx}][quantity_received]" 
+                                   class="form-control form-control-sm form-control-solid text-center fw-bolder input-received fs-7 py-1 border-gray-300" 
+                                   value="${qtyReceived}" oninput="onReceivedChange(${idx})" title="Total kuantitas barang datang fisik dari supplier">
+                        </div>
+                        <div class="col-6">
+                            <label class="fs-9 fw-bold text-success text-uppercase mb-1 d-flex align-items-center gap-1">
+                                <i class="ki-outline ki-check-circle fs-8 text-success"></i> Lolos (Stok)
+                            </label>
+                            <input type="number" step="1" min="0" name="items[${idx}][quantity_accepted]" 
+                                   class="form-control form-control-sm text-center fw-bolder text-success bg-light-success border-success border-opacity-50 input-accepted fs-7 py-1" 
+                                   value="${qtyAccepted}" oninput="calculateRow(${idx})" title="Kuantitas barang kondisi baik yang masuk stok aktif">
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center gap-1">
-                        <span class="text-success fs-9 fw-bold w-45px">Lolos:</span>
-                        <input type="number" step="1" min="0" name="items[${idx}][quantity_accepted]" class="form-control form-control-sm form-control-solid input-accepted fs-8 py-1 fw-bold text-success bg-light-success" value="${qtyAccepted}" oninput="calculateRow(${idx})">
+
+                    <!-- Baris Bawah: Detail QC Masalah -->
+                    <div class="pt-1.5 border-top border-gray-200">
+                        <div class="d-flex align-items-center justify-content-between mb-1.5">
+                            <span class="fs-9 text-gray-500 fw-semibold">Rincian Masalah:</span>
+                            <span class="qc-balance-badge badge badge-light-success fs-9 py-0.5 px-2 fw-bold">
+                                <i class="ki-outline ki-check fs-9 text-success me-0.5"></i> Seimbang
+                            </span>
+                        </div>
+                        <div class="row g-1">
+                            <div class="col-4 text-center">
+                                <label class="fs-9 fw-bold text-warning d-block mb-0.5" title="Barang Rusak / Cacat Fisik (Masuk Stok Rusak / Karantina)">Rusak</label>
+                                <input type="number" step="1" min="0" name="items[${idx}][quantity_damaged]" 
+                                       class="form-control form-control-sm text-center input-damaged fs-8 py-1 px-1 bg-white border-warning border-opacity-50" 
+                                       value="${qtyDamaged}" oninput="onQcBreakdownChange(${idx})" title="Barang Rusak Fisik">
+                            </div>
+                            <div class="col-4 text-center">
+                                <label class="fs-9 fw-bold text-danger d-block mb-0.5" title="Barang Ditolak (Tidak Sesuai Spek / Tidak Masuk Stok)">Tolak</label>
+                                <input type="number" step="1" min="0" name="items[${idx}][quantity_rejected]" 
+                                       class="form-control form-control-sm text-center input-rejected fs-8 py-1 px-1 bg-white border-danger border-opacity-50" 
+                                       value="${qtyRejected}" oninput="onQcBreakdownChange(${idx})" title="Barang Ditolak">
+                            </div>
+                            <div class="col-4 text-center">
+                                <label class="fs-9 fw-bold text-gray-700 d-block mb-0.5" title="Retur Langsung (Dibawa Kembali oleh Kurir/Supplier)">Retur</label>
+                                <input type="number" step="1" min="0" name="items[${idx}][quantity_returned_to_supplier]" 
+                                       class="form-control form-control-sm text-center input-returned fs-8 py-1 px-1 bg-white border-gray-300" 
+                                       value="${qtyReturned}" oninput="onQcBreakdownChange(${idx})" title="Retur Langsung ke Supplier">
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center gap-1">
-                        <span class="text-warning fs-9 fw-bold w-45px">Rusak:</span>
-                        <input type="number" step="1" min="0" name="items[${idx}][quantity_damaged]" class="form-control form-control-sm form-control-solid input-damaged fs-8 py-1" value="${qtyDamaged}" oninput="onQcBreakdownChange(${idx})">
-                    </div>
-                    <div class="d-flex align-items-center gap-1">
-                        <span class="text-danger fs-9 fw-bold w-45px">Tolak/Ret:</span>
-                        <input type="number" step="1" min="0" name="items[${idx}][quantity_rejected]" class="form-control form-control-sm form-control-solid input-rejected fs-8 py-1" value="${qtyRejected}" oninput="onQcBreakdownChange(${idx})" title="Ditolak">
-                        <input type="number" step="1" min="0" name="items[${idx}][quantity_returned_to_supplier]" class="form-control form-control-sm form-control-solid input-returned fs-8 py-1" value="${qtyReturned}" oninput="onQcBreakdownChange(${idx})" title="Retur Langsung">
-                    </div>
-                    <div class="qc-balance-badge badge badge-light-success fs-9 py-0.5">Seimbang</div>
                 </div>
             </td>
 
             {{-- 4. HPP Beli & Alokasi Ongkir --}}
-            <td class="align-top">
-                <div class="d-flex flex-column gap-1">
-                    <label class="text-gray-500 fs-9 fw-bold text-uppercase mb-0">HPP Beli:</label>
+            <td class="align-top py-3">
+                <div class="d-flex flex-column gap-1.5">
+                    <label class="fs-9 fw-bold text-gray-700 text-uppercase mb-0">HPP Beli (Satuan):</label>
                     <div class="input-group input-group-sm input-group-solid">
-                        <span class="input-group-text fs-9 py-0 px-1.5 text-gray-400">Rp</span>
-                        <input type="text" name="items[${idx}][unit_price]" class="form-control form-control-sm form-control-solid input-unit-price fs-8 py-1 fw-bold format-rupiah" value="${formatRupiah(unitPrice)}" oninput="calculateRow(${idx})">
+                        <span class="input-group-text fs-9 py-0 px-2 fw-semibold text-gray-500 bg-light border-gray-300">Rp</span>
+                        <input type="text" name="items[${idx}][unit_price]" 
+                               class="form-control form-control-sm form-control-solid input-unit-price fs-7 py-1 fw-bold format-rupiah border-gray-300" 
+                               value="${formatRupiah(unitPrice)}" oninput="calculateRow(${idx})" placeholder="0">
                     </div>
-                    <div class="text-muted fs-9 mt-1">
-                        Ongkir/pcs: <span class="fw-bold text-gray-800 label-ongkir-per-pcs">Rp 0</span>
+                    <div class="p-1 rounded bg-light border border-gray-200 mt-0.5">
+                        <div class="d-flex align-items-center justify-content-between text-muted fs-9 px-1">
+                            <span>+ Ongkir:</span>
+                            <span class="fw-bold text-gray-800 label-ongkir-per-pcs">Rp 0</span>
+                        </div>
                     </div>
                 </div>
             </td>
 
             {{-- 5. HPP Final Modal per Pcs --}}
-            <td class="align-top" style="background-color: rgba(var(--bs-primary-rgb), 0.03);">
-                <div class="d-flex flex-column gap-1">
-                    <span class="fs-6 fw-boldest text-primary label-hpp-final">Rp 0</span>
+            <td class="align-top py-3" style="background-color: rgba(var(--bs-primary-rgb), 0.02);">
+                <div class="p-2.5 rounded bg-light-primary border border-primary border-opacity-20 d-flex flex-column justify-content-center text-center">
+                    <span class="text-gray-600 fs-9 fw-semibold text-uppercase">Modal Bersih / <span class="base-unit-text">${selectedProduct?.base_unit_name || 'pcs'}</span></span>
+                    <span class="fs-5 fw-boldest text-primary my-1 label-hpp-final">Rp 0</span>
                     <input type="hidden" name="items[${idx}][actual_unit_cost]" class="input-actual-unit-cost" value="0">
-                    <div class="text-muted fs-9">Modal Bersih / <span class="base-unit-text">${selectedProduct?.base_unit_name || 'pcs'}</span></div>
+                    <span class="text-muted fs-9 fst-italic">HPP + Alokasi Ongkir</span>
                 </div>
             </td>
 
             {{-- 6. Harga Jual Minimum & Margin --}}
-            <td class="align-top" style="background-color: rgba(var(--bs-success-rgb), 0.03);">
+            <td class="align-top py-3" style="background-color: rgba(var(--bs-success-rgb), 0.02);">
                 <div class="d-flex flex-column gap-1.5">
-                    <div class="input-group input-group-sm input-group-solid">
-                        <span class="input-group-text fs-9 py-0 px-1.5 text-gray-400">Rp</span>
-                        <input type="text" name="items[${idx}][sale_price]" class="form-control form-control-sm form-control-solid input-sale-price fs-8 py-1 fw-boldest format-rupiah" value="${formatRupiah(salePrice)}" oninput="calculateRow(${idx})">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text fs-9 py-0 px-2 fw-semibold text-gray-500 bg-light border-gray-300">Rp</span>
+                        <input type="text" name="items[${idx}][sale_price]" 
+                               class="form-control form-control-sm input-sale-price fs-7 py-1 fw-boldest format-rupiah border-gray-300" 
+                               value="${formatRupiah(salePrice)}" oninput="calculateRow(${idx})" placeholder="0">
                     </div>
                     
                     {{-- Shortcut Margin (+10%, +20%, +30%, +50%) --}}
-                    <div class="d-flex align-items-center gap-1">
-                        <button type="button" class="btn btn-xs btn-light-primary px-1.5 py-0.5 fs-9 fw-bold" onclick="applyMarginShortcut(${idx}, 10)">+10%</button>
-                        <button type="button" class="btn btn-xs btn-light-primary px-1.5 py-0.5 fs-9 fw-bold" onclick="applyMarginShortcut(${idx}, 20)">+20%</button>
-                        <button type="button" class="btn btn-xs btn-light-primary px-1.5 py-0.5 fs-9 fw-bold" onclick="applyMarginShortcut(${idx}, 30)">+30%</button>
-                        <button type="button" class="btn btn-xs btn-light-primary px-1.5 py-0.5 fs-9 fw-bold" onclick="applyMarginShortcut(${idx}, 50)">+50%</button>
+                    <div class="d-flex flex-column gap-0.5">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-gray-500 fs-9 fw-semibold">Preset Margin Cepat:</span>
+                        </div>
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            <button type="button" class="btn btn-xs btn-light-primary px-1 py-1 fs-9 fw-bold" onclick="applyMarginShortcut(${idx}, 10)" title="Tambah margin 10% di atas modal bersih">+10%</button>
+                            <button type="button" class="btn btn-xs btn-light-primary px-1 py-1 fs-9 fw-bold" onclick="applyMarginShortcut(${idx}, 20)" title="Tambah margin 20% di atas modal bersih">+20%</button>
+                            <button type="button" class="btn btn-xs btn-light-primary px-1 py-1 fs-9 fw-bold" onclick="applyMarginShortcut(${idx}, 30)" title="Tambah margin 30% di atas modal bersih">+30%</button>
+                            <button type="button" class="btn btn-xs btn-light-primary px-1 py-1 fs-9 fw-bold" onclick="applyMarginShortcut(${idx}, 50)" title="Tambah margin 50% di atas modal bersih">+50%</button>
+                        </div>
                     </div>
 
                     {{-- Margin Status Indicator --}}
-                    <div class="margin-status-badge badge badge-light-success fs-9 py-0.5">+Rp 0 (+0%)</div>
+                    <div class="margin-status-container">
+                        <div class="margin-status-badge badge badge-light-danger text-danger border border-danger border-opacity-25 fs-9 py-1 px-2 d-flex align-items-center justify-content-center gap-1 w-100 fw-bold">
+                            <i class="ki-outline ki-shield-cross fs-7 text-danger"></i> Dilarang di bawah HPP!
+                        </div>
+                    </div>
                 </div>
             </td>
 
             {{-- 7. Tombol Hapus Baris --}}
-            <td class="text-center align-top pe-3">
-                <button type="button" class="btn btn-icon btn-sm btn-light-danger h-28px w-28px" onclick="removeRow(${idx})" title="Hapus Baris">
-                    <i class="ki-outline ki-trash fs-6"></i>
+            <td class="text-center align-middle pe-3 py-3">
+                <button type="button" class="btn btn-icon btn-sm btn-light-danger btn-active-danger h-32px w-32px" onclick="removeRow(${idx})" title="Hapus Baris Produk">
+                    <i class="ki-outline ki-trash fs-5"></i>
                 </button>
             </td>
         `;
@@ -564,6 +735,12 @@
 
         const selectUnit = row.querySelector('.select-unit');
         selectUnit.value = prod.base_unit_id;
+
+        const selectedUnitObj = masterUnits.find(u => u.id == prod.base_unit_id);
+        const unitCodeEl = row.querySelector('.selected-unit-code');
+        if (unitCodeEl) {
+            unitCodeEl.textContent = (selectedUnitObj?.code || 'pcs').toUpperCase();
+        }
 
         const inputUnitPrice = row.querySelector('.input-unit-price');
         inputUnitPrice.value = formatRupiah(prod.cost_price || 0);
@@ -624,7 +801,10 @@
             return;
         }
 
-        const targetPrice = Math.ceil(hppFinal * (1 + (percent / 100)));
+        let targetPrice = Math.ceil((hppFinal * (1 + (percent / 100))) / 100) * 100;
+        if (targetPrice <= hppFinal) {
+            targetPrice = hppFinal + 100;
+        }
         row.querySelector('.input-sale-price').value = formatRupiah(targetPrice);
         calculateRow(idx);
     };
@@ -679,6 +859,11 @@
             const factor = getConversionFactor(prod, unitId);
 
             row.querySelector('.conversion-factor-text').textContent = factor;
+            const selectedUnitObj = masterUnits.find(u => u.id == unitId);
+            const unitCodeEl = row.querySelector('.selected-unit-code');
+            if (unitCodeEl) {
+                unitCodeEl.textContent = (selectedUnitObj?.code || 'pcs').toUpperCase();
+            }
 
             const received = parseNumber(row.querySelector('.input-received').value);
             const accepted = parseNumber(row.querySelector('.input-accepted').value);
@@ -741,12 +926,14 @@
             const balanceBadge = row.querySelector('.qc-balance-badge');
             const totalQc = item.accepted + item.damaged + item.rejected + item.returned;
             if (totalQc === item.received) {
-                balanceBadge.className = 'qc-balance-badge badge badge-light-success fs-9 py-0.5';
-                balanceBadge.textContent = 'Seimbang';
+                balanceBadge.className = 'qc-balance-badge badge badge-light-success fs-9 py-0.5 px-2 fw-bold';
+                balanceBadge.innerHTML = '<i class="ki-outline ki-check fs-9 text-success me-0.5"></i> Seimbang';
             } else {
                 const diff = item.received - totalQc;
-                balanceBadge.className = 'qc-balance-badge badge badge-light-danger fs-9 py-0.5';
-                balanceBadge.textContent = diff > 0 ? `Kurang ${diff}` : `Lebih ${Math.abs(diff)}`;
+                balanceBadge.className = 'qc-balance-badge badge badge-light-danger fs-9 py-0.5 px-2 fw-bold';
+                balanceBadge.innerHTML = diff > 0 
+                    ? `<i class="ki-outline ki-cross fs-9 text-danger me-0.5"></i> Kurang ${diff}` 
+                    : `<i class="ki-outline ki-cross fs-9 text-danger me-0.5"></i> Lebih ${Math.abs(diff)}`;
             }
 
             // Validasi Anti-Rugi & Margin
@@ -754,24 +941,62 @@
             const marginBadge = row.querySelector('.margin-status-badge');
             const profit = salePrice - hppFinalPerBase;
 
-            if (salePrice <= hppFinalPerBase || hppFinalPerBase <= 0) {
+            if (salePrice <= 0) {
                 hasAntiLossViolation = true;
-                marginBadge.className = 'margin-status-badge badge badge-danger text-white fs-9 py-0.5 fw-bold';
-                marginBadge.textContent = 'Dilarang di bawah HPP!';
+                marginBadge.className = 'margin-status-badge badge badge-light-danger text-danger border border-danger border-opacity-25 fs-9 py-1 px-2 d-flex align-items-center justify-content-center gap-1 w-100 fw-bold';
+                marginBadge.innerHTML = '<i class="ki-outline ki-information fs-8 text-danger"></i> Tentukan Harga Jual!';
+            } else if (salePrice <= hppFinalPerBase || hppFinalPerBase <= 0) {
+                hasAntiLossViolation = true;
+                marginBadge.className = 'margin-status-badge badge badge-light-danger text-danger border border-danger border-opacity-25 fs-9 py-1 px-2 d-flex align-items-center justify-content-center gap-1 w-100 fw-bold';
+                marginBadge.innerHTML = '<i class="ki-outline ki-shield-cross fs-8 text-danger"></i> Dilarang &le; HPP Modal!';
             } else {
                 const marginPercent = ((profit / salePrice) * 100).toFixed(1);
-                marginBadge.className = 'margin-status-badge badge badge-light-success text-success fs-9 py-0.5 fw-bold';
-                marginBadge.textContent = `+Rp ${formatRupiah(profit)} (+${marginPercent}%)`;
+                marginBadge.className = 'margin-status-badge badge badge-light-success text-success border border-success border-opacity-25 fs-9 py-1 px-2 d-flex align-items-center justify-content-center gap-1 w-100 fw-bold';
+                marginBadge.innerHTML = `<i class="ki-outline ki-arrow-up-right fs-8 text-success"></i> +Rp ${formatRupiah(profit)} (${marginPercent}%)`;
             }
         });
 
         // Step 3: Update Ringkasan Finansial Bawah
-        const totalInvoice = grandPurchaseValueAccepted + totalLandedCost;
+        const hasTaxCheck = document.getElementById('check-has-tax')?.checked;
+        const taxRate = parseNumber(document.getElementById('input-tax-rate')?.value || 11);
+        const isTaxIncluded = document.getElementById('check-tax-included')?.checked;
+        const taxAmountInput = document.getElementById('input-tax-amount');
+        let activeTaxAmount = 0;
+
+        if (hasTaxCheck) {
+            if (!isTaxAmountManuallyEdited) {
+                if (isTaxIncluded) {
+                    activeTaxAmount = (grandPurchaseValueAccepted > 0 && taxRate > 0)
+                        ? Math.round(grandPurchaseValueAccepted - (grandPurchaseValueAccepted / (1 + (taxRate / 100))))
+                        : 0;
+                } else {
+                    activeTaxAmount = (grandPurchaseValueAccepted > 0 && taxRate > 0)
+                        ? Math.round(grandPurchaseValueAccepted * (taxRate / 100))
+                        : 0;
+                }
+                if (taxAmountInput) {
+                    taxAmountInput.value = formatRupiah(activeTaxAmount);
+                }
+            } else {
+                activeTaxAmount = parseNumber(taxAmountInput?.value || 0);
+            }
+        } else {
+            activeTaxAmount = 0;
+            if (taxAmountInput && !isTaxAmountManuallyEdited) {
+                taxAmountInput.value = '0';
+            }
+        }
+
+        const totalInvoice = isTaxIncluded 
+            ? (grandPurchaseValueAccepted + totalLandedCost)
+            : (grandPurchaseValueAccepted + totalLandedCost + activeTaxAmount);
+
         document.getElementById('summary-total-received').textContent = `${formatRupiah(grandTotalReceived)} pcs`;
         document.getElementById('summary-total-accepted').textContent = `${formatRupiah(grandTotalAccepted)} pcs`;
         document.getElementById('summary-total-nonaccepted').textContent = `${formatRupiah(grandTotalDamaged + grandTotalRejected + grandTotalReturned)} pcs`;
         document.getElementById('summary-subtotal-cost').textContent = `Rp ${formatRupiah(grandPurchaseValueAccepted)}`;
         document.getElementById('summary-total-landed').textContent = `Rp ${formatRupiah(totalLandedCost)}`;
+        document.getElementById('summary-tax-amount').textContent = `Rp ${formatRupiah(activeTaxAmount)}`;
         document.getElementById('summary-total-invoice').textContent = `Rp ${formatRupiah(totalInvoice)}`;
 
         // Button Posting State
@@ -819,6 +1044,9 @@
             }
         }).then((result) => {
             if (result.isConfirmed) {
+                form.querySelectorAll('.format-rupiah').forEach(el => {
+                    el.value = parseNumber(el.value);
+                });
                 const hiddenAction = document.createElement('input');
                 hiddenAction.type = 'hidden';
                 hiddenAction.name = 'action';
@@ -941,6 +1169,44 @@
         const addCostInput = document.getElementById('input-additional-cost');
         if (addCostInput) addCostInput.addEventListener('input', recalculateAll);
 
+        const taxCheck = document.getElementById('check-has-tax');
+        const taxFields = document.getElementById('tax-fields-container');
+        if (taxCheck && taxFields) {
+            taxCheck.addEventListener('change', function() {
+                if (this.checked) {
+                    taxFields.classList.remove('d-none');
+                } else {
+                    taxFields.classList.add('d-none');
+                    isTaxAmountManuallyEdited = false;
+                }
+                recalculateAll();
+            });
+        }
+
+        const taxRateInput = document.getElementById('input-tax-rate');
+        if (taxRateInput) {
+            taxRateInput.addEventListener('input', function() {
+                isTaxAmountManuallyEdited = false;
+                recalculateAll();
+            });
+        }
+
+        const taxAmountInput = document.getElementById('input-tax-amount');
+        if (taxAmountInput) {
+            taxAmountInput.addEventListener('input', function() {
+                isTaxAmountManuallyEdited = true;
+                recalculateAll();
+            });
+        }
+
+        const taxIncludedCheck = document.getElementById('check-tax-included');
+        if (taxIncludedCheck) {
+            taxIncludedCheck.addEventListener('change', function() {
+                isTaxAmountManuallyEdited = false;
+                recalculateAll();
+            });
+        }
+
         const poSelect = document.getElementById('select-purchase-order');
         if (poSelect) {
             poSelect.addEventListener('change', function() {
@@ -955,6 +1221,15 @@
                         $('#select-destination-location').val(locId).trigger('change');
                     }
                 }
+            });
+        }
+
+        const mainForm = document.getElementById('goods-receipt-form');
+        if (mainForm) {
+            mainForm.addEventListener('submit', function() {
+                mainForm.querySelectorAll('.format-rupiah').forEach(el => {
+                    el.value = parseNumber(el.value);
+                });
             });
         }
     });

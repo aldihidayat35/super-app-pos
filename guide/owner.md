@@ -236,6 +236,7 @@ Owner Viewer dan Owner Approver membaca laporan tanpa melakukan persetujuan oper
 3. Pastikan 12 bulan terkunci, HPP lengkap, skema pajak telah dikonfirmasi Kepala Keuangan, dan selisih neraca nol.
 4. Baca rekonsiliasi fiskal, PPh terutang, kredit pajak, serta kurang/lebih bayar.
 5. Unduh PDF untuk dokumen bertanda tangan dan Excel untuk penelusuran rinci.
+6. Tinjau atau sesuaikan persentase tarif pajak pada tab **Konfigurasi Tarif Pajak** (`/tax?tab=rates`) jika terdapat perubahan regulasi (mis. UU HPP, tarif PPh, atau aturan PPN baru). Perubahan pada tahun berjalan aktif akan otomatis menghitung ulang laporan secara instan.
 
 ```mermaid
 flowchart LR

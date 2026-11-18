@@ -3,7 +3,9 @@
 namespace Tests\Feature\Tax;
 
 use App\Enums\FinancialMonthStatus;
+use App\Enums\FinancialYearStatus;
 use App\Enums\IncomeTaxScheme;
+use App\Models\TaxRule;
 use App\Models\User;
 use App\Services\Finance\AnnualFinanceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -123,5 +125,123 @@ class AnnualFinanceTest extends TestCase
         $this->assertSame('0.00', $month->auto_b2b_sales_amount);
         $this->assertNotEmpty($month->source_snapshot['captured_at']);
         $this->assertSame($user->id, $month->prepared_by);
+    }
+
+    public function test_owner_dan_tim_pajak_dapat_mengubah_persentase_tarif_pajak_dan_laporan_dihitung_ulang(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole(Role::findByName('owner_viewer'));
+        $service = app(AnnualFinanceService::class);
+        $year = $service->createYear(['year' => 2025, 'legal_name' => 'PT Uji'], $owner);
+        $month = $year->months->first();
+        $service->addEntry($month, ['account_code' => 'sales_adjustment', 'amount' => '1000000000', 'reason' => 'Omzet pengujian'], $owner);
+        $service->addEntry($month, ['account_code' => 'cogs_adjustment', 'amount' => '800000000', 'reason' => 'HPP pengujian'], $owner);
+
+        $response = $this->actingAs($owner)->put(route('tax.years.rates.update', $year), [
+            'final_rate' => '0.6',
+            'facility_rate' => '10.5',
+            'general_rate' => '20.0',
+            'small_turnover_limit' => '5000000000',
+            'facility_turnover_limit' => '55000000000',
+            'manual_tax_amount' => null,
+            'notes' => 'Penyesuaian tarif oleh Owner',
+        ]);
+
+        $response->assertRedirect(route('tax.index', ['year' => 2025, 'tab' => 'rates']));
+        $year->refresh();
+        $this->assertEquals('0.6000', $year->final_rate);
+        $this->assertEquals('10.5000', $year->facility_rate);
+        $this->assertEquals('20.0000', $year->general_rate);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'finance.year.tax_rates_updated',
+            'module' => 'finance_annual',
+            'actor_user_id' => $owner->id,
+        ]);
+    }
+
+    public function test_tarif_pajak_tidak_dapat_diubah_jika_tahun_laporan_telah_dikunci(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole(Role::findByName('owner_viewer'));
+        $service = app(AnnualFinanceService::class);
+        $year = $service->createYear(['year' => 2025, 'legal_name' => 'PT Uji'], $owner);
+        $year->update(['status' => FinancialYearStatus::LOCKED]);
+
+        $response = $this->actingAs($owner)->put(route('tax.years.rates.update', $year), [
+            'final_rate' => '0.6',
+            'facility_rate' => '11.0',
+            'general_rate' => '22.0',
+            'small_turnover_limit' => '4800000000',
+            'facility_turnover_limit' => '50000000000',
+        ]);
+
+        $response->assertSessionHasErrors('year');
+    }
+
+    public function test_pengguna_dapat_menambah_dan_toggle_aturan_tarif_transaksi(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole(Role::findByName('owner_viewer'));
+
+        $response = $this->actingAs($owner)->post(route('tax.rules.store'), [
+            'code' => 'PPN-12-TEST',
+            'name' => 'PPN 12% Regulasi Baru',
+            'tax_type' => 'ppn',
+            'direction' => 'both',
+            'rate' => '12',
+            'dpp_factor' => '1.00000000',
+            'effective_from' => now()->toDateString(),
+            'is_creditable' => 1,
+            'is_active' => 1,
+            'notes' => 'Uji coba penambahan aturan PPN 12%',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('tax_rules', [
+            'code' => 'PPN-12-TEST',
+            'rate' => 12,
+            'is_active' => true,
+        ]);
+
+        $rule = TaxRule::where('code', 'PPN-12-TEST')->firstOrFail();
+        $toggleResponse = $this->actingAs($owner)->post(route('tax.rules.toggle', $rule));
+        $toggleResponse->assertRedirect();
+        $this->assertFalse($rule->fresh()->is_active);
+    }
+
+    public function test_auto_initialize_year_and_national_rates_when_accessing_empty_year(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole(Role::findByName('owner_viewer'));
+
+        $this->assertDatabaseMissing('financial_years', ['year' => 2027]);
+
+        $response = $this->actingAs($owner)->get(route('tax.index', ['year' => 2027]));
+        $response->assertOk();
+        $response->assertSee('Pusat Pajak');
+        $response->assertSee('Kepatuhan SPT PPN 1111');
+        $response->assertSee('Simulasi PPh Usaha');
+        $response->assertSee('Konfigurasi Tarif Pajak');
+        $response->assertDontSee('Belum ada tahun laporan');
+
+        $this->assertDatabaseHas('financial_years', [
+            'year' => 2027,
+            'final_rate' => '0.50',
+            'facility_rate' => '11.00',
+            'general_rate' => '22.00',
+        ]);
+    }
+
+    public function test_owner_tax_report_redirects_seamlessly_to_unified_tax_hub(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole(Role::findByName('owner_viewer'));
+
+        $response = $this->actingAs($owner)->get('/reports/owner/tax?start_date=2026-11-01&end_date=2026-11-18');
+        $response->assertRedirect(route('tax.index', [
+            'start_date' => '2026-11-01',
+            'end_date' => '2026-11-18',
+        ]));
     }
 }

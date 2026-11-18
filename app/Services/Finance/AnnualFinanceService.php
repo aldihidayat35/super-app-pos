@@ -14,6 +14,7 @@ use App\Models\PosSale;
 use App\Models\Receivable;
 use App\Models\ShiftExpense;
 use App\Models\Stock;
+use App\Models\TaxRule;
 use App\Models\User;
 use App\Services\Control\AuditLogService;
 use App\Support\Decimal;
@@ -40,13 +41,61 @@ class AnnualFinanceService
     {
         return DB::transaction(function () use ($data, $actor): FinancialYear {
             $year = FinancialYear::create([
-                'year' => $data['year'], 'is_historical' => (bool) ($data['is_historical'] ?? false),
-                'legal_name' => $data['legal_name'] ?: config('app.name'), 'created_by' => $actor->id,
+                'year' => $data['year'],
+                'status' => FinancialYearStatus::DRAFT,
+                'is_historical' => (bool) ($data['is_historical'] ?? false),
+                'legal_name' => $data['legal_name'] ?: config('app.name'),
+                'created_by' => $actor->id,
             ]);
             foreach (range(1, 12) as $month) {
                 $year->months()->create(['month' => $month, 'prepared_by' => $actor->id]);
             }
             $this->audit->record('finance.year.created', 'finance_annual', $actor, $year, [], $year->only(['year', 'is_historical', 'legal_name']));
+
+            return $year->load('months.entries');
+        });
+    }
+
+    public function getOrInitializeYear(int $yearNumber, ?User $actor = null): FinancialYear
+    {
+        $year = FinancialYear::query()->with('months.entries.creator')->where('year', $yearNumber)->first();
+        if ($year instanceof FinancialYear) {
+            return $year;
+        }
+
+        return DB::transaction(function () use ($yearNumber, $actor): FinancialYear {
+            $year = FinancialYear::create([
+                'year' => $yearNumber,
+                'status' => FinancialYearStatus::DRAFT,
+                'is_historical' => false,
+                'legal_name' => config('app.name'),
+                'created_by' => $actor?->id,
+                'final_rate' => 0.5,
+                'facility_rate' => 11.0,
+                'general_rate' => 22.0,
+                'small_turnover_limit' => 4800000000,
+                'facility_turnover_limit' => 50000000000,
+                'tax_scheme' => IncomeTaxScheme::ARTICLE_31E->value,
+                'report_city' => 'Jakarta',
+                'commissioner_name' => 'Komisaris',
+                'director_name' => 'Direktur',
+                'fiscal_positive_adjustment' => '0.00',
+                'fiscal_negative_adjustment' => '0.00',
+                'tax_credit_amount' => '0.00',
+                'installment_amount' => '0.00',
+                'prior_payment_amount' => '0.00',
+            ]);
+
+            foreach (range(1, 12) as $month) {
+                $year->months()->create([
+                    'month' => $month,
+                    'prepared_by' => $actor?->id,
+                ]);
+            }
+
+            if ($actor) {
+                $this->audit->record('finance.year.created', 'finance_annual', $actor, $year, [], $year->only(['year', 'is_historical', 'legal_name']));
+            }
 
             return $year->load('months.entries');
         });
@@ -162,6 +211,58 @@ class AnnualFinanceService
         return $this->recalculate($year);
     }
 
+    /** @param array<string, mixed> $data */
+    public function updateTaxRates(FinancialYear $year, array $data, User $actor): FinancialYear
+    {
+        if ($year->status === FinancialYearStatus::LOCKED) {
+            throw ValidationException::withMessages(['year' => 'Tahun laporan telah dikunci. Tarif tidak dapat diubah kecuali dibuka kembali oleh Kepala Keuangan.']);
+        }
+        $fields = ['final_rate', 'facility_rate', 'general_rate', 'small_turnover_limit', 'facility_turnover_limit', 'manual_tax_amount'];
+        $before = $year->only($fields);
+        $updateData = collect($data)->only($fields)->all();
+        $year->update($updateData);
+        $this->audit->record('finance.year.tax_rates_updated', 'finance_annual', $actor, $year, $before, $year->only($fields), $data['notes'] ?? 'Pembaruan persentase tarif pajak');
+
+        return $this->recalculate($year);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function storeTaxRule(array $data, User $actor): TaxRule
+    {
+        $rule = TaxRule::query()->create([
+            ...$data,
+            'is_creditable' => (bool) ($data['is_creditable'] ?? false),
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'created_by' => $actor->id,
+        ]);
+        $this->audit->record('tax.rule.created', 'finance_annual', $actor, $rule, [], $rule->toArray(), $data['notes'] ?? 'Penambahan aturan tarif transaksi bertanggal');
+
+        return $rule;
+    }
+
+    /** @param array<string, mixed> $data */
+    public function updateTaxRule(TaxRule $rule, array $data, User $actor): TaxRule
+    {
+        $before = $rule->toArray();
+        $rule->update([
+            ...$data,
+            'is_creditable' => (bool) ($data['is_creditable'] ?? $rule->is_creditable),
+            'is_active' => (bool) ($data['is_active'] ?? $rule->is_active),
+        ]);
+        $this->audit->record('tax.rule.updated', 'finance_annual', $actor, $rule, $before, $rule->toArray(), $data['notes'] ?? 'Pembaruan aturan tarif transaksi');
+
+        return $rule;
+    }
+
+    public function toggleTaxRule(TaxRule $rule, User $actor): TaxRule
+    {
+        $before = ['is_active' => $rule->is_active];
+        $rule->update(['is_active' => ! $rule->is_active]);
+        $this->audit->record('tax.rule.status_changed', 'finance_annual', $actor, $rule, $before, ['is_active' => $rule->is_active], 'Perubahan status aktif aturan tarif pajak');
+
+        return $rule;
+    }
+
     public function yearTransition(FinancialYear $year, string $action, User $actor, ?string $reason = null): void
     {
         $this->recalculate($year);
@@ -205,16 +306,30 @@ class AnnualFinanceService
         $cogs = $sum('cogs');
         $expenses = $sum('expenses');
         $profit = Decimal::sub(Decimal::sub($sales, $cogs, 2), $expenses, 2);
-        $taxable = Decimal::sub(Decimal::add($profit, $year->fiscal_positive_adjustment, 2), $year->fiscal_negative_adjustment, 2);
+        $taxable = Decimal::sub(
+            Decimal::add($profit, (string) ($year->fiscal_positive_adjustment ?? '0.00'), 2),
+            (string) ($year->fiscal_negative_adjustment ?? '0.00'),
+            2
+        );
         if (Decimal::compare($taxable, 0, 2) < 0) {
             $taxable = '0.00';
         }
         $tax = $this->incomeTax($year, $sales, $taxable);
-        $taxPayable = Decimal::sub(Decimal::sub(Decimal::sub($tax, $year->tax_credit_amount, 2), $year->installment_amount, 2), $year->prior_payment_amount, 2);
+        $taxPayable = Decimal::sub(
+            Decimal::sub(
+                Decimal::sub($tax, (string) ($year->tax_credit_amount ?? '0.00'), 2),
+                (string) ($year->installment_amount ?? '0.00'),
+                2
+            ),
+            (string) ($year->prior_payment_amount ?? '0.00'),
+            2
+        );
         $latest = $year->months->sortByDesc('month')->first();
         $entries = $year->months->flatMap(fn (FinancialMonthlyClosing $month) => $month->entries);
         $account = fn (string $code): string => $entries->where('account_code', $code)->reduce(fn (string $total, FinancialMonthlyEntry $entry): string => Decimal::add($total, $entry->amount, 2), '0.00');
-        $assets = Decimal::add(Decimal::add(Decimal::add($account('cash_bank'), Decimal::add((string) $latest->auto_receivable_balance, $account('receivable_adjustment'), 2), 2), Decimal::add((string) $latest->auto_inventory_balance, $account('inventory_adjustment'), 2), 2), Decimal::add($account('fixed_assets'), $account('other_assets'), 2), 2);
+        $receivableBal = (string) ($latest->auto_receivable_balance ?? '0.00');
+        $inventoryBal = (string) ($latest->auto_inventory_balance ?? '0.00');
+        $assets = Decimal::add(Decimal::add(Decimal::add($account('cash_bank'), Decimal::add($receivableBal, $account('receivable_adjustment'), 2), 2), Decimal::add($inventoryBal, $account('inventory_adjustment'), 2), 2), Decimal::add($account('fixed_assets'), $account('other_assets'), 2), 2);
         $liabilities = Decimal::add(Decimal::add($account('accounts_payable'), $account('tax_payable'), 2), $account('other_liabilities'), 2);
         $netProfit = Decimal::sub($profit, $tax, 2);
         $equity = Decimal::add(Decimal::add($account('paid_in_capital'), $account('retained_earnings'), 2), $netProfit, 2);

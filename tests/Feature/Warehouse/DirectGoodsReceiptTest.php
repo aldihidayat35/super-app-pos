@@ -413,4 +413,61 @@ class DirectGoodsReceiptTest extends TestCase
             'code' => '8991234567890',
         ]);
     }
+
+    public function test_goods_receipt_with_tax_invoice_saves_and_syncs_tax_document(): void
+    {
+        $product = $this->createProduct('Susu Kotak', 'SKU-SUSU-01', 10000, 15000);
+
+        $payload = [
+            'supplier_id' => $this->supplier->id,
+            'destination_work_location_id' => $this->location->id,
+            'received_at' => now()->toDateString(),
+            'delivery_note_number' => 'SJ-TAX-001',
+            'tax_invoice_number' => '010.000-26.99887766',
+            'tax_rate' => '11',
+            'tax_amount' => '11000',
+            'is_tax_included' => 0,
+            'is_tax_creditable' => 1,
+            'actual_freight_cost' => 0,
+            'actual_additional_cost' => 0,
+            'action' => 'post',
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'unit_id' => $this->pcs->id,
+                    'quantity_received' => 10,
+                    'quantity_accepted' => 10,
+                    'quantity_rejected' => 0,
+                    'quantity_damaged' => 0,
+                    'quantity_returned_to_supplier' => 0,
+                    'unit_price' => 10000,
+                    'actual_unit_cost' => 10000,
+                    'sale_price' => 15000,
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->kepalaGudang)
+            ->post(route('warehouse.goods-receipts.store'), $payload);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('goods_receipts', [
+            'tax_invoice_number' => '010.000-26.99887766',
+            'tax_amount' => '11000.00',
+            'is_tax_creditable' => 1,
+            'status' => 'posted',
+        ]);
+
+        $this->assertDatabaseHas('tax_documents', [
+            'document_number' => '010.000-26.99887766',
+            'direction' => 'input',
+            'tax_type' => 'ppn',
+            'dpp_amount' => '100000.00',
+            'tax_amount' => '11000.00',
+            'is_creditable' => 1,
+            'status' => 'posted',
+        ]);
+    }
 }

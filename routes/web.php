@@ -328,15 +328,20 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
     });
 
     Route::prefix('tax')->name('tax.')->group(function (): void {
-        Route::get('/', [AnnualFinanceController::class, 'index'])->middleware('permission:finance_annual.view')->name('index');
+        Route::get('/', [AnnualFinanceController::class, 'index'])->middleware('permission:finance_annual.view|reports.owner.view|tax.view')->name('index');
         Route::post('/years', [AnnualFinanceController::class, 'storeYear'])->middleware('permission:finance_annual.manage')->name('years.store');
         Route::put('/years/{financialYear}', [AnnualFinanceController::class, 'updateYear'])->middleware('permission:finance_annual.manage')->name('years.update');
+        Route::put('/years/{financialYear}/rates', [AnnualFinanceController::class, 'updateTaxRates'])->middleware('permission:finance_annual.view|finance_annual.manage|reports.owner.view')->name('years.rates.update');
         Route::post('/years/{financialYear}/transition', [AnnualFinanceController::class, 'yearTransition'])->middleware('permission:finance_annual.approve')->name('years.transition');
         Route::post('/months/{financialMonth}/snapshot', [AnnualFinanceController::class, 'snapshot'])->middleware('permission:finance_annual.manage')->name('months.snapshot');
         Route::post('/months/{financialMonth}/entries', [AnnualFinanceController::class, 'storeEntry'])->middleware('permission:finance_annual.manage')->name('months.entries.store');
         Route::post('/months/{financialMonth}/transition', [AnnualFinanceController::class, 'monthTransition'])->middleware('permission:finance_annual.manage')->name('months.transition');
-        Route::get('/years/{financialYear}/pdf', [AnnualFinanceController::class, 'pdf'])->middleware('permission:finance_annual.export')->name('years.pdf');
-        Route::get('/years/{financialYear}/excel', [AnnualFinanceController::class, 'excel'])->middleware('permission:finance_annual.export')->name('years.excel');
+        Route::get('/years/{financialYear}/pdf', [AnnualFinanceController::class, 'pdf'])->middleware('permission:finance_annual.export|reports.owner.export')->name('years.pdf');
+        Route::get('/years/{financialYear}/excel', [AnnualFinanceController::class, 'excel'])->middleware('permission:finance_annual.export|reports.owner.export')->name('years.excel');
+
+        Route::post('/rules', [AnnualFinanceController::class, 'storeRule'])->middleware('permission:finance_annual.view|finance_annual.manage|tax.manage|admin.settings.update')->name('rules.store');
+        Route::put('/rules/{taxRule}', [AnnualFinanceController::class, 'updateRule'])->middleware('permission:finance_annual.view|finance_annual.manage|tax.manage|admin.settings.update')->name('rules.update');
+        Route::post('/rules/{taxRule}/toggle', [AnnualFinanceController::class, 'toggleRule'])->middleware('permission:finance_annual.view|finance_annual.manage|tax.manage|admin.settings.update')->name('rules.toggle');
     });
 
     Route::get('/confirm-password', [PasswordConfirmationController::class, 'create'])->name('password.confirm');

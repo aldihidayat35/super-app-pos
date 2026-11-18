@@ -3,33 +3,48 @@
    Transisi perpindahan halaman halus tanpa layar putih berkedip.
    ========================================================================== */
 
-/* Top Loading Progress Bar (YouTube/GitHub style) */
+/* Top Loading Progress Bar (YouTube/GitHub/NProgress style) */
 .spa-progress-bar {
     position: fixed;
     top: 0;
     left: 0;
-    height: 3px;
+    height: 3.5px;
     width: 0%;
-    background: linear-gradient(90deg, #17c653, #10b981, #22c55e);
-    box-shadow: 0 0 10px rgba(23, 198, 83, 0.75);
-    z-index: 99999;
+    background: linear-gradient(90deg, #059669, #10b981, #34d399);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.8), 0 0 5px rgba(52, 211, 153, 0.9);
+    z-index: 999999;
     pointer-events: none;
     opacity: 0;
     transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
 }
 
+/* Glowing Peg Head at the front tip of progress bar */
+.spa-progress-bar::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 100px;
+    height: 100%;
+    box-shadow: 0 0 14px #34d399, 0 0 6px #10b981;
+    opacity: 1;
+    transform: rotate(3deg) translate(0px, -4px);
+    pointer-events: none;
+}
+
 /* Redup halus saat memuat halaman baru */
 #kt_app_main_content.spa-loading {
-    opacity: 0.55 !important;
-    transition: opacity 0.15s ease !important;
+    opacity: 0.6 !important;
+    transition: opacity 0.18s ease !important;
     pointer-events: none !important;
+    user-select: none !important;
 }
 
 /* Animasi Masuk: Bergerak dari samping kanan ke kiri dengan fade-in */
 @keyframes spaSlideInRight {
     0% {
         opacity: 0;
-        transform: translate3d(30px, 0, 0);
+        transform: translate3d(24px, 0, 0);
     }
     100% {
         opacity: 1;

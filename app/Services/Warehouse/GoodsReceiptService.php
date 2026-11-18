@@ -5,6 +5,10 @@ namespace App\Services\Warehouse;
 use App\Enums\GoodsReceiptStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\ReceiptQcStatus;
+use App\Enums\TaxDirection;
+use App\Enums\TaxDocumentStatus;
+use App\Enums\TaxPeriodStatus;
+use App\Enums\TaxType;
 use App\Exceptions\ServiceException;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptItem;
@@ -18,6 +22,8 @@ use App\Models\StockBatch;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\SupplierScore;
+use App\Models\TaxDocument;
+use App\Models\TaxPeriod;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -29,6 +35,7 @@ use App\Services\Organization\DocumentNumberService;
 use App\Services\Pricing\LocationProductPriceService;
 use App\Services\Purchasing\PurchaseOrderService;
 use App\Support\Decimal;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class GoodsReceiptService
@@ -84,10 +91,15 @@ class GoodsReceiptService
                 'supplier_id' => $supplierId,
                 'received_at' => $data['received_at'],
                 'delivery_note_number' => $data['delivery_note_number'] ?? null,
+                'tax_invoice_number' => $data['tax_invoice_number'] ?? null,
                 'received_by' => $actor->id,
                 'status' => GoodsReceiptStatus::DRAFT,
                 'actual_freight_cost' => Decimal::normalize($data['actual_freight_cost'] ?? 0, 2),
                 'actual_additional_cost' => Decimal::normalize($data['actual_additional_cost'] ?? 0, 2),
+                'tax_rate' => Decimal::normalize($data['tax_rate'] ?? 0, 4),
+                'tax_amount' => Decimal::normalize($data['tax_amount'] ?? 0, 2),
+                'is_tax_included' => (bool) ($data['is_tax_included'] ?? false),
+                'is_tax_creditable' => (bool) ($data['is_tax_creditable'] ?? true),
                 'notes' => $data['notes'] ?? null,
                 'proof_path' => $data['proof_path'] ?? null,
                 'idempotency_key' => $data['idempotency_key'] ?? null,
@@ -130,8 +142,13 @@ class GoodsReceiptService
                 'warehouse_id' => $warehouseId,
                 'received_at' => $data['received_at'],
                 'delivery_note_number' => $data['delivery_note_number'] ?? null,
+                'tax_invoice_number' => $data['tax_invoice_number'] ?? null,
                 'actual_freight_cost' => Decimal::normalize($data['actual_freight_cost'] ?? 0, 2),
                 'actual_additional_cost' => Decimal::normalize($data['actual_additional_cost'] ?? 0, 2),
+                'tax_rate' => Decimal::normalize($data['tax_rate'] ?? 0, 4),
+                'tax_amount' => Decimal::normalize($data['tax_amount'] ?? 0, 2),
+                'is_tax_included' => (bool) ($data['is_tax_included'] ?? false),
+                'is_tax_creditable' => (bool) ($data['is_tax_creditable'] ?? true),
                 'notes' => $data['notes'] ?? null,
                 'proof_path' => $data['proof_path'] ?? $receipt->proof_path,
             ])->save();
@@ -202,6 +219,49 @@ class GoodsReceiptService
                 'posted_at' => now(),
                 'posted_by' => $actor->id,
             ])->save();
+
+            // Otomatis sinkronkan PPN Masukan ke Register Dokumen Pajak (Coretax) jika ada faktur pajak supplier
+            if (Decimal::compare((string) ($receipt->tax_amount ?? '0'), '0', 2) > 0 || ! empty($receipt->tax_invoice_number)) {
+                $month = (int) Carbon::parse($receipt->received_at)->format('m');
+                $year = (int) Carbon::parse($receipt->received_at)->format('Y');
+
+                $period = TaxPeriod::query()->firstOrCreate(
+                    ['month' => $month, 'year' => $year],
+                    ['status' => TaxPeriodStatus::OPEN, 'created_by' => $actor->id]
+                );
+
+                TaxDocument::query()->updateOrCreate(
+                    ['source_key' => 'goods_receipt:'.$receipt->id],
+                    [
+                        'tax_period_id' => $period->id,
+                        'work_location_id' => $receipt->destination_work_location_id,
+                        'direction' => TaxDirection::INPUT,
+                        'tax_type' => TaxType::PPN,
+                        'document_type' => 'supplier_invoice',
+                        'document_number' => $receipt->tax_invoice_number ?: ($receipt->delivery_note_number ?: $receipt->number),
+                        'source_type' => GoodsReceipt::class,
+                        'source_id' => $receipt->id,
+                        'counterparty_type' => 'supplier',
+                        'counterparty_id' => $receipt->supplier_id,
+                        'counterparty_name' => $receipt->supplier->name ?? 'Supplier',
+                        'counterparty_tax_number' => $receipt->supplier->tax_number ?? null,
+                        'counterparty_address' => $receipt->supplier->address ?? null,
+                        'issue_date' => $receipt->received_at,
+                        'tax_date' => $receipt->received_at,
+                        'dpp_amount' => $totalLineCost,
+                        'tax_rate' => $receipt->tax_rate ?? 11.0000,
+                        'dpp_factor' => 1.00000000,
+                        'tax_amount' => $receipt->tax_amount ?? '0.00',
+                        'total_amount' => Decimal::add($totalLineCost, (string) ($receipt->tax_amount ?? '0'), 2),
+                        'is_creditable' => (bool) ($receipt->is_tax_creditable ?? true),
+                        'status' => TaxDocumentStatus::POSTED,
+                        'reconciliation_status' => 'unmatched',
+                        'created_by' => $actor->id,
+                        'posted_by' => $actor->id,
+                        'posted_at' => now(),
+                    ]
+                );
+            }
 
             if ($purchaseOrder) {
                 $this->purchaseOrders->recordReceiptProgress($purchaseOrder, $poReceivedMap, $actor);

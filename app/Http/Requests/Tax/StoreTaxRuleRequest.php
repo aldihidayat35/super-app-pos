@@ -10,7 +10,9 @@ class StoreTaxRuleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('tax.manage') === true;
+        return $this->user()?->can('tax.manage') === true
+            || $this->user()?->can('finance_annual.view') === true
+            || $this->user()?->can('finance_annual.manage') === true;
     }
 
     /** @return array<string, mixed> */

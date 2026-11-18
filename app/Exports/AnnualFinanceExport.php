@@ -39,7 +39,19 @@ class AnnualFinanceExport implements WithMultipleSheets
         }
         $credits = Decimal::add(Decimal::add($this->year->tax_credit_amount, $this->year->installment_amount, 2), $this->year->prior_payment_amount, 2);
         $balance = [['NERACA'], ['Kas dan bank', $this->report['accounts']['cash_bank']], ['Piutang dan penyesuaian', Decimal::add($this->year->months->last()->auto_receivable_balance, $this->report['accounts']['receivable_adjustment'], 2)], ['Persediaan dan penyesuaian', Decimal::add($this->year->months->last()->auto_inventory_balance, $this->report['accounts']['inventory_adjustment'], 2)], ['Aset tetap', $this->report['accounts']['fixed_assets']], ['Aset lain', $this->report['accounts']['other_assets']], ['Total aset', $this->report['assets']], ['Total kewajiban', $this->report['liabilities']], ['Total ekuitas', $this->report['equity']], ['Selisih', $this->report['balance_difference']]];
-        $fiscal = [['Skema', $this->year->tax_scheme->label()], ['Laba komersial', $this->report['profit']], ['Koreksi positif', $this->year->fiscal_positive_adjustment], ['Koreksi negatif', $this->year->fiscal_negative_adjustment], ['Penghasilan kena pajak', $this->report['taxable']], ['PPh', $this->report['tax']], ['Kredit/angsuran/pembayaran', $credits], ['Kurang/lebih bayar', $this->report['taxPayable']]];
+        $fiscal = [
+            ['Skema', $this->year->tax_scheme->label()],
+            ['Tarif PPh Final (%)', $this->year->final_rate.'%'],
+            ['Tarif Fasilitas 31E (%)', $this->year->facility_rate.'%'],
+            ['Tarif Umum (%)', $this->year->general_rate.'%'],
+            ['Laba komersial', $this->report['profit']],
+            ['Koreksi positif', $this->year->fiscal_positive_adjustment],
+            ['Koreksi negatif', $this->year->fiscal_negative_adjustment],
+            ['Penghasilan kena pajak', $this->report['taxable']],
+            ['PPh', $this->report['tax']],
+            ['Kredit/angsuran/pembayaran', $credits],
+            ['Kurang/lebih bayar', $this->report['taxPayable']],
+        ];
 
         return [new AnnualFinanceArraySheet('Ringkasan', $summary), new AnnualFinanceArraySheet('Rekap Bulanan', $monthly), new AnnualFinanceArraySheet('Sumber Otomatis', $sources), new AnnualFinanceArraySheet('Koreksi Manual', $entries), new AnnualFinanceArraySheet('Neraca', $balance), new AnnualFinanceArraySheet('Rekonsiliasi Fiskal', $fiscal)];
     }

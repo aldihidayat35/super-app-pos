@@ -13,7 +13,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class GoodsReceipt extends Model
 {
-    protected $fillable = ['number', 'purchase_order_id', 'warehouse_id', 'destination_work_location_id', 'supplier_id', 'received_at', 'delivery_note_number', 'received_by', 'status', 'posted_at', 'posted_by', 'actual_freight_cost', 'actual_additional_cost', 'notes', 'proof_path', 'idempotency_key'];
+    protected $fillable = [
+        'number', 'purchase_order_id', 'warehouse_id', 'destination_work_location_id',
+        'supplier_id', 'received_at', 'delivery_note_number', 'tax_invoice_number',
+        'received_by', 'status', 'posted_at', 'posted_by', 'actual_freight_cost',
+        'actual_additional_cost', 'tax_rate', 'tax_amount', 'is_tax_included',
+        'is_tax_creditable', 'notes', 'proof_path', 'idempotency_key',
+    ];
 
     protected function casts(): array
     {
@@ -23,6 +29,10 @@ class GoodsReceipt extends Model
             'posted_at' => 'datetime',
             'actual_freight_cost' => 'decimal:2',
             'actual_additional_cost' => 'decimal:2',
+            'tax_rate' => 'decimal:4',
+            'tax_amount' => 'decimal:2',
+            'is_tax_included' => 'boolean',
+            'is_tax_creditable' => 'boolean',
         ];
     }
 

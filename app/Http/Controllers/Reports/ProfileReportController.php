@@ -7,6 +7,7 @@ use App\Http\Requests\Reports\ProfileReportRequest;
 use App\Services\Reports\ProfileReportDataService;
 use App\Services\Reports\ReportProfileService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class ProfileReportController extends Controller
 {
@@ -16,7 +17,11 @@ class ProfileReportController extends Controller
         ProfileReportDataService $data,
         string $report = 'overview',
         string $profile = '',
-    ): View {
+    ): View|RedirectResponse {
+        if ($profile === 'owner' && $report === 'tax') {
+            return redirect()->route('tax.index', $request->query());
+        }
+
         $actor = $request->user();
         $result = $data->build($actor, $profile, $report, $request->validated());
         $profileDefinition = $result['profile'];

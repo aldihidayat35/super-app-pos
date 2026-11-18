@@ -16,6 +16,9 @@
     <link rel="stylesheet" href="{{ versioned_asset('assets/css/sidebar-custom.css') }}">
     <link rel="stylesheet" href="{{ versioned_asset('assets/css/header-custom.css') }}">
     <link rel="stylesheet" href="{{ versioned_asset('assets/css/spa-transitions.css') }}">
+    <style>
+        .spa-progress-bar { position: fixed; top: 0; left: 0; height: 3.5px; width: 0%; background: linear-gradient(90deg, #059669, #10b981, #34d399); box-shadow: 0 0 12px rgba(16,185,129,.8), 0 0 5px rgba(52,211,153,.9); z-index: 999999; pointer-events: none; opacity: 0; }
+    </style>
     @vite(['resources/js/vendor.js', 'resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
     <script>
@@ -28,6 +31,42 @@
         if (localStorage.getItem('gudangtoko-sidebar-pinned') === 'false' && window.innerWidth >= 992) {
             document.body.setAttribute('data-kt-app-sidebar-minimize', 'on');
         }
+    </script>
+    {{-- Progress bar instan untuk refresh halaman & inisialisasi PWA --}}
+    <div id="spa-initial-progress-bar" class="spa-progress-bar" style="opacity: 1; width: 28%; transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;"></div>
+    <script>
+        (function() {
+            var bar = document.getElementById('spa-initial-progress-bar');
+            if (!bar) return;
+            var w = 28;
+            var timer = setInterval(function() {
+                if (w < 86) {
+                    w += (86 - w) * 0.14;
+                    bar.style.width = w + '%';
+                }
+            }, 120);
+            function finish() {
+                clearInterval(timer);
+                bar.style.width = '100%';
+                setTimeout(function() {
+                    bar.style.opacity = '0';
+                    setTimeout(function() {
+                        if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+                    }, 250);
+                }, 160);
+            }
+            if (document.readyState === 'complete') {
+                finish();
+            } else {
+                window.addEventListener('load', finish, { once: true });
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (w < 72) {
+                        w = 72;
+                        bar.style.width = '72%';
+                    }
+                }, { once: true });
+            }
+        })();
     </script>
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
         <div class="app-page flex-column flex-column-fluid" id="kt_app_page">

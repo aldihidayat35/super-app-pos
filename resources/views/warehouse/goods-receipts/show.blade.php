@@ -55,6 +55,27 @@
                     <div class="col-md-4"><div class="text-muted">Penerima</div><div>{{ $receipt->receiver?->name }}</div></div>
                     <div class="col-md-4"><div class="text-muted">Posted</div><div>{{ $receipt->posted_at?->format('d/m/Y H:i') ?: '-' }}</div></div>
                     <div class="col-md-4"><div class="text-muted">Bukti</div><div>{{ $receipt->proof_path ?: '-' }}</div></div>
+                    @if($receipt->tax_invoice_number || (float)($receipt->tax_amount ?? 0) > 0)
+                        <div class="col-md-4">
+                            <div class="text-muted">Faktur Pajak Supplier</div>
+                            <div class="fw-bold font-monospace">{{ $receipt->tax_invoice_number ?: '-' }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted">PPN Masukan ({{ $receipt->tax_rate }}%)</div>
+                            <div class="fw-bold text-success">Rp {{ number_format((float) $receipt->tax_amount, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted">Status Pajak</div>
+                            <div>
+                                <span class="badge badge-light-{{ $receipt->is_tax_creditable ? 'success' : 'secondary' }}">
+                                    {{ $receipt->is_tax_creditable ? 'Dapat Dikreditkan (B2)' : 'Tidak Dikreditkan' }}
+                                </span>
+                                @if($receipt->is_tax_included)
+                                    <span class="badge badge-light-primary ms-1">Include PPN</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </div>
                 <div class="table-responsive">
                     <table class="table table-row-dashed align-middle">
