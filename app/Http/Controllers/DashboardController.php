@@ -27,6 +27,10 @@ class DashboardController extends Controller
             return app(SalesDashboardController::class)($request, app(SalesPerformanceService::class));
         }
 
+        if ($user->hasAnyRole(['owner_viewer', 'owner_approver'])) {
+            return redirect()->route('reports.profiles.owner.show', ['report' => 'overview']);
+        }
+
         $filters = $reports->filters($user, $request->query());
 
         $view = match (true) {

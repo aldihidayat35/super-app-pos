@@ -23,7 +23,7 @@ class AuthenticatedSessionController extends Controller
         $user = $authenticate->execute($request);
         $request->session()->regenerate();
         $user->forceFill(['last_login_at' => now()])->save();
-        if ($user->hasRole('staf_toko')) {
+        if ($user->hasRole('staf_toko') || $user->hasAnyRole(['owner_viewer', 'owner_approver'])) {
             $request->session()->forget('url.intended');
         }
 

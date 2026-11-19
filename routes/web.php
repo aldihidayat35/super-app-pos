@@ -140,9 +140,16 @@ Route::get('/manifest.webmanifest', [ManifestController::class, 'show'])->name('
 Route::get('/manifest.json', [ManifestController::class, 'show'])->name('pwa.manifest.json');
 
 Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('dashboard')
-        : redirect()->route('login');
+    if (! auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    $user = auth()->user();
+    if ($user->hasAnyRole(['owner_viewer', 'owner_approver'])) {
+        return redirect()->route('reports.profiles.owner.show', ['report' => 'overview']);
+    }
+
+    return redirect()->route('dashboard');
 })->name('home');
 
 Route::get('/reports/daily/{token}', [SecureDailyReportController::class, 'show'])

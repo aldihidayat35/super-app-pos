@@ -17,7 +17,11 @@
                 $catalogTitle = 'Buka Etalase Toko';
                 $catalogIcon = 'ki-outline ki-shop';
                 $isCatalogActive = false;
+                $brandHomeUrl = route('dashboard');
                 if (auth()->check()) {
+                    if (auth()->user()->hasAnyRole(['owner_viewer', 'owner_approver'])) {
+                        $brandHomeUrl = route('reports.profiles.owner.show', ['report' => 'overview']);
+                    }
                     if (auth()->user()->hasRole(['langganan_owner', 'langganan_pic'])) {
                         $catalogUrl = route('langganan.katalog.index');
                         $catalogLabel = 'Katalog';
@@ -33,7 +37,7 @@
                     }
                 }
             @endphp
-            <a href="{{ route('dashboard') }}" class="d-flex align-items-center gap-2 text-decoration-none overflow-hidden">
+            <a href="{{ $brandHomeUrl }}" class="d-flex align-items-center gap-2 text-decoration-none overflow-hidden">
                 <img alt="{{ $companyName }}" src="{{ $logoUrl }}" class="gt-header-logo flex-shrink-0">
                 <span class="text-gray-900 fw-bold fs-5 gt-header-brand-name">{{ $companyName }}</span>
             </a>
