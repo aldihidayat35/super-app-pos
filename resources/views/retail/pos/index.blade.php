@@ -51,39 +51,34 @@
             <div class="pos-workspace-row">
                 <section class="pos-section-products" aria-labelledby="product-finder-title">
                     <div class="pos-panel bg-body border rounded h-100 d-flex flex-column">
-                        <div class="p-4 border-bottom">
-                            <h2 id="product-finder-title" class="fs-4 fw-bold mb-3">Cari Produk</h2>
-                            <div class="input-group input-group-lg">
-                                <span class="input-group-text bg-light"><i class="ki-outline ki-search fs-2"></i></span>
-                                <input id="pos-scanner" type="search" class="form-control" autocomplete="off" autofocus
-                                    placeholder="Scan barcode / Cari produk" aria-label="Scan barcode atau cari produk">
-                                <span class="input-group-text bg-light"><kbd>F2</kbd></span>
+                        <div class="p-3 p-lg-4 border-bottom">
+                            <h2 id="product-finder-title" class="visually-hidden">Cari Produk</h2>
+                            <div class="input-group input-group-lg shadow-xs">
+                                <span class="input-group-text bg-light border-end-0 text-muted ps-4"><i class="ki-outline ki-magnifier fs-2"></i></span>
+                                <input id="pos-scanner" type="search" class="form-control border-start-0 border-end-0 ps-2" autocomplete="off" autofocus
+                                    placeholder="Scan barcode / Cari produk (F2)..." aria-label="Scan barcode atau cari produk">
+                                <span class="input-group-text bg-light border-start-0 pe-4"><kbd class="bg-body text-gray-700 border px-2 py-1 fs-8 shadow-xs">F2</kbd></span>
                             </div>
-                            <div id="scanner-message" class="fs-7 mt-2 text-muted" aria-live="polite">Scan barcode lalu
-                                Enter, atau ketik nama/SKU untuk mencari.</div>
-                            <div class="row g-2 mt-2">
-                                <div class="col-6">
-                                    <select id="brand-filter" class="form-select form-select-sm"
-                                        data-placeholder="Semua merek" data-allow-clear="true">
-                                        <option value="">Semua merek</option>
-                                        @foreach ($brands as $brand)
-                                            <option value="{{ $brand->id }}">{{ $brand->name }}</option>
-                                        @endforeach
-                                    </select>
+                            <div id="scanner-message" class="d-none fs-7 mt-2 text-muted" aria-live="polite"></div>
+
+                            {{-- Elemen filter disembunyikan agar tampilan minimalis & rapi, fungsi JS tetap berjalan normal --}}
+                            <div class="d-none" aria-hidden="true">
+                                <select id="brand-filter" class="form-select form-select-sm"
+                                    data-placeholder="Semua merek" data-allow-clear="true">
+                                    <option value="">Semua merek</option>
+                                    @foreach ($brands as $brand)
+                                        <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                                    @endforeach
+                                </select>
+                                <input id="stock-filter" class="form-check-input" type="checkbox" checked>
+                                <div id="category-filter">
+                                    <button type="button" class="btn btn-sm btn-primary pos-category active"
+                                        data-category="">Semua</button>
+                                    @foreach ($categories as $category)
+                                        <button type="button" class="btn btn-sm btn-light pos-category flex-shrink-0"
+                                            data-category="{{ $category->id }}">{{ $category->name }}</button>
+                                    @endforeach
                                 </div>
-                                <div class="col-6 d-flex align-items-center">
-                                    <label class="form-check form-switch mb-0"><input id="stock-filter"
-                                            class="form-check-input" type="checkbox" checked><span
-                                            class="form-check-label fs-7">Hanya stok tersedia</span></label>
-                                </div>
-                            </div>
-                            <div id="category-filter" class="d-flex gap-2 overflow-auto pt-3 pb-1">
-                                <button type="button" class="btn btn-sm btn-primary pos-category active"
-                                    data-category="">Semua</button>
-                                @foreach ($categories as $category)
-                                    <button type="button" class="btn btn-sm btn-light pos-category flex-shrink-0"
-                                        data-category="{{ $category->id }}">{{ $category->name }}</button>
-                                @endforeach
                             </div>
                         </div>
                         <div id="product-results" class="pos-product-results p-4 flex-grow-1">
@@ -1310,6 +1305,12 @@
 
                 function showScannerMessage(message, type = 'muted') {
                     const element = document.getElementById('scanner-message');
+                    if (!element) return;
+                    if (!message || message.includes('Scan barcode lalu Enter')) {
+                        element.className = 'd-none';
+                        element.textContent = '';
+                        return;
+                    }
                     element.className = `fs-7 mt-2 text-${type}`;
                     element.textContent = message;
                 }
