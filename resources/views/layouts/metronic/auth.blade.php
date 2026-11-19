@@ -13,6 +13,9 @@
     <script>document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('gudangtoko-theme') || 'light');</script>
 </head>
 <body class="app-blank auth-page">
+    {{-- Opening Splash Screen PWA --}}
+    @include('layouts.metronic.partials.pwa-splash')
+
     @php
         $companyName = \App\Models\SystemSetting::getCompanyName();
     @endphp

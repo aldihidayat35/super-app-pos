@@ -30,6 +30,9 @@
     data-kt-app-sidebar-push-footer="true"
     class="app-default"
 >
+    {{-- Opening Splash Screen PWA --}}
+    @include('layouts.metronic.partials.pwa-splash')
+
     @include('partials.theme-mode._init')
     @include('partials.trackers._ga-tag-manager-for-body')
 

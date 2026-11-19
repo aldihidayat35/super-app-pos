@@ -23,6 +23,9 @@
     </script>
 </head>
 <body id="kt_app_body" class="app-default @yield('body_classes')" data-kt-app-header-fixed="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-hoverable="true" @yield('body_attributes')>
+    {{-- Opening Splash Screen PWA --}}
+    @include('layouts.metronic.partials.pwa-splash')
+
     <script>
         if (localStorage.getItem('gudangtoko-sidebar-pinned') === 'false' && window.innerWidth >= 992) {
             document.body.setAttribute('data-kt-app-sidebar-minimize', 'on');

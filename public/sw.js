@@ -4,7 +4,7 @@
  * Strategy: Cache-First for static assets, Network-First for HTML navigation with /offline fallback.
  */
 
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.0.1';
 const STATIC_CACHE = `gudangtoko-static-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline';
 
@@ -15,6 +15,8 @@ const PRECACHE_ASSETS = [
     '/assets/media/pwa/icon-192x192.png',
     '/assets/media/pwa/icon-512x512.png',
     '/assets/media/pwa/apple-touch-icon.png',
+    '/assets/media/pwa/splash-intro.mp4',
+    '/assets/media/pwa/splash-poster.jpg',
     '/assets/css/ki-icons-fallback.css'
 ];
 
