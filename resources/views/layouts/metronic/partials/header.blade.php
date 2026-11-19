@@ -13,14 +13,23 @@
                 $logoUrl = $companyLogo ?? asset('assets/media/logos/demo38-small.svg');
 
                 $catalogUrl = null;
+                $catalogLabel = 'Etalase';
+                $catalogTitle = 'Buka Etalase Toko';
+                $catalogIcon = 'ki-outline ki-shop';
                 $isCatalogActive = false;
                 if (auth()->check()) {
                     if (auth()->user()->hasRole(['langganan_owner', 'langganan_pic'])) {
                         $catalogUrl = route('langganan.katalog.index');
+                        $catalogLabel = 'Katalog';
+                        $catalogTitle = 'Buka Katalog Produk';
+                        $catalogIcon = 'ki-outline ki-cube-2';
                         $isCatalogActive = request()->routeIs('langganan.katalog.*');
                     } else {
-                        $catalogUrl = route('admin.products.index');
-                        $isCatalogActive = request()->routeIs('admin.products.*');
+                        $catalogUrl = route('retail.storefront.index');
+                        $catalogLabel = 'Etalase';
+                        $catalogTitle = 'Buka Etalase Toko';
+                        $catalogIcon = 'ki-outline ki-shop';
+                        $isCatalogActive = request()->routeIs('retail.storefront.*');
                     }
                 }
             @endphp
@@ -32,15 +41,15 @@
 
         {{-- Right: actions --}}
         <div class="d-flex align-items-stretch flex-shrink-0 gap-2">
-            {{-- Menu Katalog (Tampil di Desktop & Mobile) --}}
+            {{-- Menu Etalase / Katalog (Tampil di Desktop & Mobile) --}}
             @if($catalogUrl)
                 <div class="d-flex align-items-center">
                     <a href="{{ $catalogUrl }}" 
                        class="gt-header-catalog-btn {{ $isCatalogActive ? 'active' : '' }}" 
-                       title="Buka Katalog Produk"
-                       aria-label="Katalog Produk">
-                        <i class="ki-outline ki-cube-2 fs-5"></i>
-                        <span class="gt-header-catalog-label">Katalog</span>
+                       title="{{ $catalogTitle }}"
+                       aria-label="{{ $catalogTitle }}">
+                        <i class="{{ $catalogIcon }} fs-5"></i>
+                        <span class="gt-header-catalog-label">{{ $catalogLabel }}</span>
                     </a>
                 </div>
             @endif

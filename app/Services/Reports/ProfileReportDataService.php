@@ -74,6 +74,18 @@ class ProfileReportDataService
             $payload = $this->ownerOperational->buildAgingReceivablesReport($filters, $payload, $actor->can('margins.view_sensitive'));
         }
 
+        if ($profile === 'owner' && $report === 'purchasing') {
+            $payload = $this->ownerOperational->buildPurchasingReport($filters, $payload, $actor->can('margins.view_sensitive'));
+        }
+
+        if ($profile === 'owner' && $report === 'inventory') {
+            $payload = $this->ownerOperational->buildInventoryReport($filters, $payload, $actor->can('margins.view_sensitive'));
+        }
+
+        if ($profile === 'owner' && $report === 'profitability') {
+            $payload = $this->ownerOperational->buildProfitabilityReport($filters, $payload, $actor->can('margins.view_sensitive'));
+        }
+
         return [
             'profile' => $this->profiles->profile($profile),
             'report_definition' => $reportDefinition,

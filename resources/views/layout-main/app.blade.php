@@ -8,10 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    @php
-        $dynamicLogo = \App\Models\SystemSetting::getCompanyLogo() ?? asset('assets/media/logos/favicon.ico');
-    @endphp
-    <link rel="shortcut icon" href="{{ $dynamicLogo }}">
+    @include('layouts.metronic.partials.pwa-meta')
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700">
     <link rel="stylesheet" href="{{ asset('assets/plugins/custom/fullcalendar/fullcalendar.bundle.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/plugins/global/plugins.bundle.css') }}">

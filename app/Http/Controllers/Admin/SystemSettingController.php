@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateGeneralSettingsRequest;
 use App\Models\SystemSetting;
+use App\Services\System\AppBrandingService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class SystemSettingController extends Controller
         ]);
     }
 
-    public function update(UpdateGeneralSettingsRequest $request): RedirectResponse
+    public function update(UpdateGeneralSettingsRequest $request, AppBrandingService $brandingService): RedirectResponse
     {
         $data = $request->validated();
 
@@ -43,6 +44,9 @@ class SystemSettingController extends Controller
 
             activity()->causedBy($request->user())->log('admin.settings.general_updated');
         });
+
+        // Sinkronisasikan logo & nama perusahaan ke Favicon, PWA icons, dan Web Manifest
+        $brandingService->sync();
 
         return redirect()->route('admin.settings.general.edit')->with('notification', [
             'type' => 'success',

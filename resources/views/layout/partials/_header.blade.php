@@ -10,8 +10,8 @@
 	<div class="btn btn-icon btn-active-color-primary w-35px h-35px me-2" id="kt_app_sidebar_mobile_toggle">
 		<i class="ki-outline ki-abstract-14 fs-2"></i>	</div>
 	<!--begin::Logo image-->
-    <a href="#">
-		<img alt="Logo" src="/assets/media/logos/demo38-small.svg" class="h-22px"/>
+    <a href="{{ route('dashboard') }}">
+		<img alt="Logo" src="{{ \App\Models\SystemSetting::getCompanyLogo() ?? '/assets/media/logos/demo38-small.svg' }}" class="h-22px object-fit-contain"/>
     </a>
     <!--end::Logo image-->
 </div>

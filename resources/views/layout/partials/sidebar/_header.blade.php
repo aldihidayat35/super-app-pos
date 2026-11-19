@@ -1,9 +1,12 @@
 
 <div class="app-sidebar-header d-flex flex-stack d-none d-lg-flex pt-8 pb-2" id="kt_app_sidebar_header">
     <!--begin::Logo-->
-    <a href="#" class="app-sidebar-logo">
-        <img alt="Logo" src="/assets/media/logos/demo38.svg" class="h-25px d-none d-sm-inline app-sidebar-logo-default theme-light-show"/>
-        <img alt="Logo" src="/assets/media/logos/demo38-dark.svg" class="h-20px h-lg-25px theme-dark-show"/>
+    @php
+        $logo = \App\Models\SystemSetting::getCompanyLogo() ?? '/assets/media/logos/demo38.svg';
+    @endphp
+    <a href="{{ route('dashboard') }}" class="app-sidebar-logo">
+        <img alt="Logo" src="{{ $logo }}" class="h-25px d-none d-sm-inline app-sidebar-logo-default theme-light-show object-fit-contain"/>
+        <img alt="Logo" src="{{ $logo }}" class="h-20px h-lg-25px theme-dark-show object-fit-contain"/>
     </a>
     <!--end::Logo-->
             <!--begin::Sidebar toggle-->

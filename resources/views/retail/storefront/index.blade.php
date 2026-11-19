@@ -16,19 +16,251 @@
 
 @push('styles')
 <style>
-    .storefront-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:1.25rem; }
-    .storefront-card { border:1px solid var(--bs-gray-200); border-radius:1rem; overflow:hidden; background:var(--bs-body-bg); height:100%; }
-    .storefront-card.out-of-stock { border:2px solid #dc3545; box-shadow: 0 0 8px rgba(220, 53, 69, 0.3); }
-    .storefront-photo { height:190px; background:var(--bs-gray-100); display:flex; align-items:center; justify-content:center; overflow:hidden; }
-    .storefront-photo img { width:100%; height:100%; object-fit:contain; }
-    .storefront-photo i { font-size:3rem; color:var(--bs-gray-500); }
-    .storefront-card-body { padding:1.25rem; }
-    .storefront-name { min-height:2.7em; line-height:1.35; }
-    .storefront-location { border-top:1px solid var(--bs-gray-200); margin-top:1rem; padding-top:1rem; }
-    .storefront-card details summary { cursor:pointer; color:var(--bs-primary); font-weight:600; }
-    .storefront-card details[open] summary { margin-bottom:.75rem; }
-    .out-of-stock-badge { display: inline-block; background: #dc3545; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; margin-left: 8px; }
-    @media (max-width:575px) { .storefront-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; } .storefront-photo { height:135px; } .storefront-card-body { padding:.9rem; } }
+    /* Storefront Grid: 2 kolom rapi di mobile, responsif di layar lebar */
+    .storefront-grid { 
+        display: grid; 
+        grid-template-columns: repeat(2, minmax(0, 1fr)); 
+        gap: 0.85rem; 
+    }
+    @media (min-width: 576px) {
+        .storefront-grid {
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 1.15rem;
+        }
+    }
+    @media (min-width: 992px) {
+        .storefront-grid {
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 1.25rem;
+        }
+    }
+
+    /* Card styling yang modern, simpel, & clean */
+    .storefront-card { 
+        background: var(--bs-card-bg, #ffffff);
+        border: 1px solid var(--bs-gray-200, #ebedf3); 
+        border-radius: 0.85rem; 
+        overflow: hidden; 
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .storefront-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        border-color: var(--bs-gray-300, #d5d7e0);
+    }
+    .storefront-card.out-of-stock {
+        background: var(--bs-card-bg, #ffffff);
+        border-color: var(--bs-gray-200, #ebedf3);
+    }
+    .storefront-card.out-of-stock .storefront-photo {
+        opacity: 0.85;
+    }
+
+    /* Foto Produk dengan Aspect Ratio 1:1 square */
+    .storefront-photo { 
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        background: var(--bs-gray-100, #f8f9fa); 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        overflow: hidden; 
+    }
+    .storefront-photo img { 
+        width: 100%; 
+        height: 100%; 
+        object-fit: contain; 
+        padding: 0.5rem;
+        transition: transform 0.25s ease;
+    }
+    .storefront-card:hover .storefront-photo img {
+        transform: scale(1.04);
+    }
+    .storefront-img-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bs-gray-100, #f8f9fa);
+    }
+
+    /* Floating Badges di Foto */
+    .storefront-badge-category {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(4px);
+        color: var(--bs-gray-700, #4b5675);
+        font-size: 0.68rem;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        max-width: 90px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .storefront-badge-status {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 2;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 999px;
+        line-height: 1.2;
+    }
+    .storefront-badge-status.status-empty {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+    }
+    .storefront-badge-status.status-low {
+        background: #fef3c7;
+        color: #d97706;
+        border: 1px solid #fde68a;
+    }
+
+    /* Card Body */
+    .storefront-card-body { 
+        padding: 0.75rem; 
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+    @media (min-width: 768px) {
+        .storefront-card-body {
+            padding: 0.9rem;
+        }
+    }
+
+    /* Metadata SKU & Brand */
+    .storefront-meta {
+        font-size: 0.72rem;
+        color: var(--bs-gray-500, #99a1b7);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Judul Produk (Maks 2 baris rapi) */
+    .storefront-product-title { 
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--bs-gray-900, #181c32);
+        line-height: 1.35;
+        margin-bottom: 0.35rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 2.7em;
+    }
+
+    /* Harga Jual */
+    .storefront-price {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--bs-primary, #009ef7);
+        line-height: 1.2;
+        margin-bottom: 0.35rem;
+    }
+
+    /* Informasi Stok */
+    .storefront-stock-info {
+        font-size: 0.72rem;
+        color: var(--bs-gray-600, #7e8299);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Strip Lokasi Pajang */
+    .storefront-location-strip {
+        margin-top: auto;
+        padding: 0.45rem 0.55rem;
+        border-radius: 0.5rem;
+        border-style: solid;
+        border-width: 1px;
+    }
+    .storefront-location-strip.has-placement {
+        background-color: var(--bs-light-primary, #f1faff);
+        border-color: rgba(0, 158, 247, 0.25);
+    }
+    .storefront-location-strip.no-placement {
+        background-color: var(--bs-light-warning, #fff8dd);
+        border-color: rgba(246, 192, 0, 0.35);
+    }
+
+    /* Category Pill Touch-Scroll Bar */
+    .storefront-category-scroll {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding-bottom: 0.35rem;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .storefront-category-scroll::-webkit-scrollbar {
+        display: none;
+    }
+    .category-pill {
+        padding: 0.38rem 0.85rem;
+        border-radius: 999px;
+        background: var(--bs-gray-100, #f4f5f8);
+        color: var(--bs-gray-700, #4b5675);
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+        border: 1px solid transparent;
+        flex-shrink: 0;
+    }
+    .category-pill:hover {
+        background: var(--bs-gray-200, #ebedf3);
+        color: var(--bs-primary, #009ef7);
+    }
+    .category-pill.active {
+        background: var(--bs-primary, #009ef7);
+        color: #ffffff !important;
+        border-color: var(--bs-primary, #009ef7);
+        box-shadow: 0 2px 6px rgba(0, 158, 247, 0.25);
+    }
+
+    /* Mode Gelap Support */
+    [data-bs-theme='dark'] .storefront-card {
+        background: var(--bs-card-bg, #1e1e2d);
+        border-color: var(--bs-gray-300, #2b2b40);
+    }
+    [data-bs-theme='dark'] .storefront-photo {
+        background: rgba(255, 255, 255, 0.03);
+    }
+    [data-bs-theme='dark'] .storefront-badge-category {
+        background: rgba(30, 30, 45, 0.9);
+        color: var(--bs-gray-300, #b5b5c3);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    [data-bs-theme='dark'] .category-pill {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--bs-gray-300, #b5b5c3);
+    }
+    [data-bs-theme='dark'] .category-pill.active {
+        background: var(--bs-primary);
+        color: #ffffff !important;
+    }
 </style>
 @endpush
 
@@ -38,15 +270,15 @@
             <form method="POST" action="{{ route('retail.storefront.sync-stock') }}" class="d-inline me-2" onsubmit="return confirm('Apakah Anda yakin ingin menyinkronkan seluruh lokasi produk dari saldo stok fisik toko?');">
                 @csrf
                 <input type="hidden" name="branch_id" value="{{ $branch->id }}">
-                <button type="submit" class="btn btn-light-primary">
+                <button type="submit" class="btn btn-sm btn-light-primary">
                     <i class="ki-outline ki-arrows-circle fs-5 me-1"></i>Sinkronkan dari Saldo Stok
                 </button>
             </form>
         @endif
     @endcan
     @can('product_requests.view')
-        <a href="{{ route('retail.product-requests.index') }}" class="btn btn-light-primary">
-            <i class="ki-outline ki-plus-circle fs-5 me-1"></i>Pengajuan Produk Baru
+        <a href="{{ route('retail.product-requests.index') }}" class="btn btn-sm btn-light-primary">
+            <i class="ki-outline ki-plus-circle fs-5 me-1"></i>Pengajuan Produk
         </a>
     @endcan
 @endsection
@@ -55,8 +287,8 @@
     <x-metronic.page-title title="Etalase Produk Toko" description="Bantu pelanggan menemukan produk, harga, dan posisi pajang di toko Anda.">
         @can('product_requests.view')
             <x-slot:actions>
-                <a href="{{ route('retail.product-requests.index') }}" class="btn btn-light-primary">
-                    <i class="ki-outline ki-plus-circle fs-5 me-1"></i>Pengajuan Produk Baru
+                <a href="{{ route('retail.product-requests.index') }}" class="btn btn-sm btn-light-primary">
+                    <i class="ki-outline ki-plus-circle fs-5 me-1"></i>Pengajuan Produk
                 </a>
             </x-slot:actions>
         @endcan
@@ -65,53 +297,126 @@
     @if (!$branch)
         <x-metronic.empty-state title="Belum ada toko yang ditugaskan" description="Minta admin menambahkan cabang/toko aktif pada lokasi kerja akun Anda." />
     @else
-        <div class="card mb-6">
-            <div class="card-body">
-                <form method="GET" action="{{ route('retail.storefront.index') }}" class="row g-3 align-items-end">
-                    @if ($branches->count() > 1)
-                        <div class="col-lg-3 col-md-6">
-                            <label for="storefront-branch" class="form-label fw-semibold">Toko</label>
-                            <select id="storefront-branch" name="branch_id" class="form-select form-select-solid">
-                                @foreach ($branches as $availableBranch)
-                                    <option value="{{ $availableBranch->id }}" @selected($branch->id === $availableBranch->id)>{{ $availableBranch->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    @else
-                        <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+        {{-- Search, Filters, & Category Pills --}}
+        <div class="card border-0 shadow-xs mb-4">
+            <div class="card-body p-3 p-md-4">
+                <form method="GET" action="{{ route('retail.storefront.index') }}" id="storefront-filter-form">
+                    @if ($branch)
+                        <input type="hidden" name="branch_id" value="{{ $branch->id }}" id="storefront-input-branch-id">
                     @endif
-                    <div class="col-lg-4 col-md-6">
-                        <label for="storefront-search" class="form-label fw-semibold">Cari produk</label>
-                        <input id="storefront-search" name="q" value="{{ $search }}" class="form-control form-control-solid" placeholder="Nama, SKU, atau model">
+                    @if ($categoryId)
+                        <input type="hidden" name="category_id" value="{{ $categoryId }}" id="storefront-input-category-id">
+                    @endif
+
+                    {{-- Search Row with Quick Filter Toggle --}}
+                    <div class="d-flex gap-2">
+                        <div class="input-group input-group-solid flex-grow-1">
+                            <span class="input-group-text bg-light-subtle border-0 pe-1">
+                                <i class="ki-outline ki-magnifier fs-4 text-gray-500"></i>
+                            </span>
+                            <input type="text" 
+                                   id="storefront-search" 
+                                   name="q" 
+                                   value="{{ $search }}" 
+                                   class="form-control form-control-solid border-0 ps-2" 
+                                   placeholder="Cari nama barang, SKU, atau model...">
+                            @if ($search !== '')
+                                <a href="{{ route('retail.storefront.index', array_merge(request()->except(['q', 'page']))) }}" 
+                                   class="btn btn-icon btn-sm btn-light border-0 my-auto me-1" 
+                                   title="Hapus pencarian">
+                                    <i class="ki-outline ki-cross fs-4"></i>
+                                </a>
+                            @endif
+                        </div>
+                        <button type="submit" class="btn btn-primary px-3 px-sm-4 d-flex align-items-center gap-1">
+                            <i class="ki-outline ki-magnifier fs-5 d-none d-sm-inline"></i>
+                            <span>Cari</span>
+                        </button>
+                        @php
+                            $filterCount = ($area !== '' ? 1 : 0) + ($showEmpty ? 1 : 0);
+                        @endphp
+                        <button type="button" 
+                                class="btn btn-light-primary px-3 d-flex align-items-center gap-1 {{ ($area !== '' || $showEmpty) ? 'active' : '' }}" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#storefrontFilterCollapse" 
+                                aria-expanded="{{ ($area !== '' || $showEmpty) ? 'true' : 'false' }}"
+                                title="Filter Lanjutan">
+                            <i class="ki-outline ki-filter fs-5"></i>
+                            <span class="d-none d-md-inline">Filter</span>
+                            @if ($filterCount > 0)
+                                <span class="badge badge-circle badge-primary w-18px h-18px fs-9">{{ $filterCount }}</span>
+                            @endif
+                        </button>
                     </div>
-                    <div class="col-lg-2 col-md-6">
-                        <label for="storefront-category" class="form-label fw-semibold">Kategori</label>
-                        <select id="storefront-category" name="category_id" class="form-select form-select-solid">
-                            <option value="">Semua kategori</option>
-                            @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" @selected($categoryId === $category->id)>{{ $category->name }}</option>
-                            @endforeach
-                        </select>
+
+                    {{-- Collapsible Filter: Area, Toko, & Kosong --}}
+                    <div class="collapse {{ ($area !== '' || $showEmpty) ? 'show' : '' }} mt-3 pt-3 border-top" id="storefrontFilterCollapse">
+                        <div class="row g-3 align-items-end">
+                            @if ($branches->count() > 1)
+                                <div class="col-12 col-md-4">
+                                    <label for="storefront-branch" class="form-label fs-8 fw-semibold text-gray-700">Toko</label>
+                                    <select id="storefront-branch" name="branch_id" class="form-select form-select-solid form-select-sm" onchange="this.form.submit()">
+                                        @foreach ($branches as $availableBranch)
+                                            <option value="{{ $availableBranch->id }}" @selected($branch->id === $availableBranch->id)>{{ $availableBranch->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+
+                            <div class="col-12 col-md-4">
+                                <label for="storefront-area" class="form-label fs-8 fw-semibold text-gray-700">Area Pajang</label>
+                                <select id="storefront-area" name="area" class="form-select form-select-solid form-select-sm">
+                                    <option value="">Semua area</option>
+                                    @foreach ($areas as $availableArea)
+                                        <option value="{{ $availableArea }}" @selected($area === $availableArea)>{{ $availableArea }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <div class="form-check form-switch pt-2">
+                                    <input class="form-check-input" type="checkbox" id="show-empty-switch" name="show_empty" value="1" @checked($showEmpty)>
+                                    <label class="form-check-label fs-8 fw-semibold text-gray-700" for="show-empty-switch">
+                                        Termasuk stok kosong
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-12 d-flex justify-content-end gap-2 pt-2">
+                                <a href="{{ route('retail.storefront.index', ['branch_id' => $branch->id]) }}" class="btn btn-sm btn-light">
+                                    Reset
+                                </a>
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    Terapkan Filter
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-lg-2 col-md-6">
-                        <label for="storefront-area" class="form-label fw-semibold">Area pajang</label>
-                        <select id="storefront-area" name="area" class="form-select form-select-solid">
-                            <option value="">Semua area</option>
-                            @foreach ($areas as $availableArea)
-                                <option value="{{ $availableArea }}" @selected($area === $availableArea)>{{ $availableArea }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-lg-2 col-md-6"><label class="form-check"><input class="form-check-input" type="checkbox" name="show_empty" value="1" @checked($showEmpty)><span class="form-check-label">Termasuk stok kosong</span></label></div>
-                    <div class="col-lg-1 col-md-6"><button type="submit" class="btn btn-primary w-100">Cari</button></div>
                 </form>
+
+                {{-- Category Horizontal Pills --}}
+                @if ($categories->isNotEmpty())
+                    <div class="storefront-category-scroll mt-3">
+                        <a href="{{ route('retail.storefront.index', array_merge(request()->except(['category_id', 'page']))) }}" 
+                           class="category-pill {{ empty($categoryId) ? 'active' : '' }}">
+                            Semua Kategori
+                        </a>
+                        @foreach ($categories as $cat)
+                            <a href="{{ route('retail.storefront.index', array_merge(request()->except('page'), ['category_id' => $cat->id])) }}" 
+                               class="category-pill {{ $categoryId == $cat->id ? 'active' : '' }}">
+                                {{ $cat->name }}
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
 
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-5">
+        {{-- Toko & Status Header --}}
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4 px-1">
             <div>
-                <div class="fw-bold fs-3">{{ $branch->name }}</div>
-                <div class="text-muted">{{ $products->total() }} produk tersedia untuk dilayani</div>
+                <div class="fw-bold fs-4 text-gray-900">{{ $branch->name }}</div>
+                <div class="text-muted fs-8">{{ $products->total() }} produk tersedia untuk dilayani</div>
             </div>
             @can('retail.catalog.manage')
                 <form method="POST" action="{{ route('retail.storefront.sync-stock') }}" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menyinkronkan seluruh lokasi produk yang belum diatur dari saldo stok fisik toko?');">
@@ -136,85 +441,124 @@
                         $cardClass = $isOutOfStock ? 'storefront-card out-of-stock' : 'storefront-card';
                     @endphp
                     <article class="{{ $cardClass }}">
+                        {{-- Foto Produk dengan Floating Badges --}}
                         <div class="storefront-photo">
+                            @if ($product->category)
+                                <span class="storefront-badge-category" title="{{ $product->category->name }}">
+                                    {{ $product->category->name }}
+                                </span>
+                            @endif
+
+                            @if ($isOutOfStock)
+                                <span class="storefront-badge-status status-empty">Stok Kosong</span>
+                            @elseif (floatval($stockData['stock']) <= 2)
+                                <span class="storefront-badge-status status-low">Sisa {{ qty($stockData['stock']) }}</span>
+                            @endif
+
                             @if ($product->main_image_url)
                                 <x-metronic.image-preview url="{{ $product->main_image_url }}" title="{{ $product->name }}" classes="" size="" />
                             @else
-                                <i class="ki-outline ki-package" aria-hidden="true"></i>
+                                <div class="storefront-img-placeholder">
+                                    <i class="ki-outline ki-package fs-2 text-muted" aria-hidden="true"></i>
+                                </div>
                             @endif
                         </div>
+
+                        {{-- Card Body --}}
                         <div class="storefront-card-body">
-                            <div class="text-muted fs-8 mb-2">{{ $product->category?->name ?? 'Tanpa kategori' }} · {{ $product->sku }}</div>
-                            <h2 class="storefront-name fs-5 fw-bold mb-2">{{ $product->name }}</h2>
-                            @if ($product->brand)<div class="text-muted fs-8 mb-2">{{ $product->brand->name }}</div>@endif
-                            <div class="fw-bold fs-3 text-primary">{{ \App\Support\CurrencyFormatter::rupiah($cards[$product->id]['price']) }}</div>
-                            <div class="text-muted fs-8">Total siap jual: {{ qty($cards[$product->id]['stock']) }} {{ $product->baseUnit?->symbol ?? $product->baseUnit?->name }}</div>
+                            {{-- SKU & Brand --}}
+                            <div class="storefront-meta text-truncate">
+                                <span>{{ $product->sku }}</span>
+                                @if ($product->brand)
+                                    <span class="text-gray-400 mx-1">•</span><span class="fw-medium text-gray-700">{{ $product->brand->name }}</span>
+                                @endif
+                            </div>
+
+                            {{-- Judul Produk --}}
+                            <h2 class="storefront-product-title" title="{{ $product->name }}">{{ $product->name }}</h2>
+
+                            {{-- Harga Jual --}}
+                            <div class="storefront-price">
+                                {{ \App\Support\CurrencyFormatter::rupiah($stockData['price']) }}
+                            </div>
+
+                            {{-- Ketersediaan Stok --}}
                             @if ($isOutOfStock)
-                                <span class="out-of-stock-badge">STOK KOSONG</span>
-                            @endif
-                            <div class="text-muted fs-9">Reguler {{ qty($cards[$product->id]['regular_stock']) }} · Darurat {{ qty($cards[$product->id]['emergency_stock']) }}</div>
-                            @can('emergency_purchases.create')<a class="btn btn-sm btn-light-warning mt-3 w-100" href="{{ route('retail.emergency.create', ['branch_id' => $branch->id, 'product_id' => $product->id]) }}">Pembelian darurat / restok</a>@endcan
-                            <div class="storefront-location">
-                                <div class="text-muted fs-8 fw-semibold mb-1 d-flex align-items-center justify-content-between">
-                                    <span>LOKASI PAJANG</span>
-                                    @if ($placement && !empty($placement->is_from_stock))
-                                        <span class="badge badge-light-primary fs-9 py-1 px-2" title="Mengikuti saldo stok fisik di toko">Dari Saldo Stok</span>
+                                <div class="storefront-stock-info text-danger">
+                                    <span><i class="ki-outline ki-cross-circle fs-8 text-danger me-1"></i>Stok Kosong</span>
+                                </div>
+                            @else
+                                <div class="storefront-stock-info">
+                                    <span class="text-gray-700">
+                                        <i class="ki-outline ki-check-circle fs-8 text-success me-1"></i>Stok: <strong>{{ qty($stockData['stock']) }} {{ $product->baseUnit?->symbol ?? 'PCS' }}</strong>
+                                    </span>
+                                    @if (floatval($stockData['emergency_stock']) > 0)
+                                        <span class="badge badge-light-warning py-0 px-1 fs-9 ms-auto" title="Stok darurat toko">
+                                            Drt: {{ qty($stockData['emergency_stock']) }}
+                                        </span>
                                     @endif
                                 </div>
-                                @if ($placement)
-                                    <div class="fw-bold text-gray-800">{{ $placement->area }}</div>
-                                    <div class="text-muted fs-8">
-                                        @php
-                                            $detailRack = collect([$placement->rack, $placement->shelf])->filter()->implode(' · ');
-                                            if (! $detailRack && !empty($placement->full_code)) {
-                                                $detailRack = $placement->full_code;
-                                            }
-                                        @endphp
-                                        {{ $detailRack ?: 'Area '.$placement->area }}
-                                        @if (!empty($placement->additional_locations_count) && $placement->additional_locations_count > 0)
-                                            <span class="text-primary ms-1" title="Terdapat stok di {{ $placement->additional_locations_count }} lokasi lain">(+{{ $placement->additional_locations_count }} lokasi lain)</span>
-                                        @endif
+                            @endif
+
+                            {{-- Lokasi Pajang --}}
+                            <div class="storefront-location-strip {{ $placement ? 'has-placement' : 'no-placement' }}">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center text-truncate me-1">
+                                        <i class="ki-outline ki-geolocation {{ $placement ? 'text-primary' : 'text-warning' }} fs-7 me-1 flex-shrink-0"></i>
+                                        <div class="text-truncate">
+                                            @if ($placement)
+                                                <span class="fs-9 fw-bold text-gray-800 d-block text-truncate">{{ $placement->area }}</span>
+                                                <span class="fs-9 text-muted d-block text-truncate">
+                                                    @php
+                                                        $detailRack = collect([$placement->rack, $placement->shelf])->filter()->implode(' · ');
+                                                        if (! $detailRack && !empty($placement->full_code)) {
+                                                            $detailRack = $placement->full_code;
+                                                        }
+                                                    @endphp
+                                                    {{ $detailRack ?: 'Area '.$placement->area }}
+                                                </span>
+                                            @else
+                                                <span class="fs-9 fw-semibold text-warning d-block">
+                                                    Belum ditata
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
-                                @else
-                                    <div class="text-warning fw-semibold fs-8">
-                                        <i class="ki-outline ki-information-2 text-warning fs-7 me-1"></i>Belum ditata
+                                    @can('retail.catalog.manage')
+                                        <button type="button" 
+                                                class="btn btn-icon btn-xs {{ $placement ? 'btn-light-primary' : 'btn-light-warning' }} w-24px h-24px flex-shrink-0 rounded-circle btn-placement-trigger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modal-placement"
+                                                data-product-id="{{ $product->id }}"
+                                                data-product-name="{{ $product->name }}"
+                                                data-product-sku="{{ $product->sku }}"
+                                                data-area="{{ $placement?->area ?? '' }}"
+                                                data-rack="{{ $placement?->rack ?? '' }}"
+                                                data-shelf="{{ $placement?->shelf ?? '' }}"
+                                                data-location-id="{{ $placement?->location_id ?? '' }}"
+                                                title="Atur lokasi pajang">
+                                            <i class="ki-outline {{ $placement ? 'ki-pencil' : 'ki-plus' }} fs-8"></i>
+                                        </button>
+                                    @endcan
+                                </div>
+                                @if ($placement && !empty($placement->is_from_stock))
+                                    <div class="mt-1 fs-9 text-primary text-truncate d-flex align-items-center">
+                                        <span class="badge badge-light-primary py-0 px-1 fs-9" style="font-size: 0.65rem !important;">Dari Saldo Stok</span>
+                                        @if (!empty($placement->additional_locations_count) && $placement->additional_locations_count > 0)
+                                            <span class="text-muted ms-1" style="font-size: 0.65rem !important;">(+{{ $placement->additional_locations_count }} lokasi lain)</span>
+                                        @endif
                                     </div>
                                 @endif
                             </div>
-                            @can('retail.catalog.manage')
-                                <details class="mt-4">
-                                    <summary>Atur lokasi pajang</summary>
-                                    <form method="POST" action="{{ route('retail.storefront.placement.update', $product) }}">
-                                        @csrf @method('PUT')
-                                        <input type="hidden" name="branch_id" value="{{ $branch->id }}">
 
-                                        @if ($storeLocations->isNotEmpty())
-                                            <div class="mb-2">
-                                                <label class="form-label fs-9 text-muted mb-1">Pilih dari Lokasi Toko:</label>
-                                                <select class="form-select form-select-sm" onchange="if(this.value){ const opt=this.options[this.selectedIndex]; document.getElementById('area-{{ $product->id }}').value=opt.dataset.area||''; document.getElementById('rack-{{ $product->id }}').value=opt.dataset.rack||''; document.getElementById('shelf-{{ $product->id }}').value=opt.dataset.shelf||''; }">
-                                                    <option value="">-- Pilih Lokasi Fisik --</option>
-                                                    @foreach ($storeLocations as $loc)
-                                                        <option value="{{ $loc->id }}"
-                                                            @selected(isset($placement->location_id) && $placement->location_id == $loc->id)
-                                                            data-area="{{ $loc->parent ? ($loc->parent->parent?->name ?? $loc->parent->name) : $loc->name }}"
-                                                            data-rack="{{ $loc->type->value === 'rack' ? $loc->name : ($loc->parent?->type->value === 'rack' ? $loc->parent->name : '') }}"
-                                                            data-shelf="{{ $loc->type->value === 'bin' ? $loc->name : '' }}">
-                                                            {{ $loc->full_code }} ({{ $loc->name }})
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        @endif
-
-                                        <label class="form-label fs-8" for="area-{{ $product->id }}">Area</label>
-                                        <input id="area-{{ $product->id }}" name="area" value="{{ $placement?->area }}" required maxlength="80" class="form-control form-control-sm mb-2">
-                                        <label class="form-label fs-8" for="rack-{{ $product->id }}">Rak</label>
-                                        <input id="rack-{{ $product->id }}" name="rack" value="{{ $placement?->rack }}" maxlength="80" class="form-control form-control-sm mb-2">
-                                        <label class="form-label fs-8" for="shelf-{{ $product->id }}">Tingkat rak</label>
-                                        <input id="shelf-{{ $product->id }}" name="shelf" value="{{ $placement?->shelf }}" maxlength="80" class="form-control form-control-sm mb-3">
-                                        <button type="submit" class="btn btn-sm btn-primary w-100">Simpan lokasi</button>
-                                    </form>
-                                </details>
+                            {{-- Tombol Beli Darurat (hanya muncul saat stok kosong/kritis) --}}
+                            @can('emergency_purchases.create')
+                                @if ($isOutOfStock || floatval($stockData['stock']) <= 2)
+                                    <a href="{{ route('retail.emergency.create', ['branch_id' => $branch->id, 'product_id' => $product->id]) }}" 
+                                       class="btn btn-xs btn-light-warning w-100 mt-2 py-1 fs-9 d-flex align-items-center justify-content-center gap-1">
+                                        <i class="ki-outline ki-flash fs-8"></i> Beli Darurat
+                                    </a>
+                                @endif
                             @endcan
                         </div>
                     </article>
@@ -222,5 +566,124 @@
             </div>
             {{ $products->links() }}
         @endif
+
+        {{-- Modal Atur Lokasi Pajang (Satu modal reusable untuk semua produk) --}}
+        @can('retail.catalog.manage')
+            <div class="modal fade" id="modal-placement" tabindex="-1" aria-labelledby="modalPlacementLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <form id="form-placement" method="POST" action="">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+
+                            <div class="modal-header pb-0 border-0">
+                                <h3 class="modal-title fs-5 fw-bold" id="modalPlacementLabel">
+                                    <i class="ki-outline ki-geolocation text-primary me-2 fs-3"></i>Atur Lokasi Pajang
+                                </h3>
+                                <button type="button" class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Tutup">
+                                    <i class="ki-outline ki-cross fs-2"></i>
+                                </button>
+                            </div>
+
+                            <div class="modal-body py-4">
+                                <div class="p-3 bg-light rounded mb-4">
+                                    <div class="fw-bold text-gray-900 fs-6" id="modal-product-name">-</div>
+                                    <div class="text-muted fs-8">SKU: <span id="modal-product-sku">-</span></div>
+                                </div>
+
+                                @if ($storeLocations->isNotEmpty())
+                                    <div class="mb-4">
+                                        <label class="form-label fs-7 fw-semibold" for="modal-location-select">Pilih dari Master Rak / Lokasi Toko:</label>
+                                        <select id="modal-location-select" class="form-select form-select-solid form-select-sm">
+                                            <option value="">-- Pilih Lokasi Fisik Toko --</option>
+                                            @foreach ($storeLocations as $loc)
+                                                <option value="{{ $loc->id }}"
+                                                    data-area="{{ $loc->parent ? ($loc->parent->parent?->name ?? $loc->parent->name) : $loc->name }}"
+                                                    data-rack="{{ $loc->type->value === 'rack' ? $loc->name : ($loc->parent?->type->value === 'rack' ? $loc->parent->name : '') }}"
+                                                    data-shelf="{{ $loc->type->value === 'bin' ? $loc->name : '' }}">
+                                                    {{ $loc->full_code }} ({{ $loc->name }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <div class="form-text fs-9">Memilih lokasi fisik akan otomatis mengisi field Area, Rak, dan Tingkat di bawah.</div>
+                                    </div>
+                                @endif
+
+                                <div class="mb-3">
+                                    <label class="form-label fs-7 fw-semibold required" for="modal-input-area">Area Pajang</label>
+                                    <input id="modal-input-area" name="area" required maxlength="80" class="form-control form-control-solid" placeholder="Contoh: Area Depan, Lantai 1, dsb.">
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <label class="form-label fs-7 fw-semibold" for="modal-input-rack">Rak</label>
+                                        <input id="modal-input-rack" name="rack" maxlength="80" class="form-control form-control-solid" placeholder="Contoh: Rak A1">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fs-7 fw-semibold" for="modal-input-shelf">Tingkat Rak</label>
+                                        <input id="modal-input-shelf" name="shelf" maxlength="80" class="form-control form-control-solid" placeholder="Contoh: Tingkat 2">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer pt-0 border-0">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                                <button type="submit" class="btn btn-primary">Simpan lokasi</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endcan
     @endif
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const placementModal = document.getElementById('modal-placement');
+        if (!placementModal) return;
+
+        placementModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            if (!button) return;
+
+            const productId = button.getAttribute('data-product-id');
+            const productName = button.getAttribute('data-product-name');
+            const productSku = button.getAttribute('data-product-sku');
+            const area = button.getAttribute('data-area') || '';
+            const rack = button.getAttribute('data-rack') || '';
+            const shelf = button.getAttribute('data-shelf') || '';
+            const locationId = button.getAttribute('data-location-id') || '';
+
+            const form = document.getElementById('form-placement');
+            const updateUrl = "{{ route('retail.storefront.placement.update', ':id') }}";
+            form.action = updateUrl.replace(':id', productId);
+
+            document.getElementById('modal-product-name').textContent = productName;
+            document.getElementById('modal-product-sku').textContent = productSku;
+            document.getElementById('modal-input-area').value = area;
+            document.getElementById('modal-input-rack').value = rack;
+            document.getElementById('modal-input-shelf').value = shelf;
+
+            const locSelect = document.getElementById('modal-location-select');
+            if (locSelect) {
+                locSelect.value = locationId;
+            }
+        });
+
+        const locationSelect = document.getElementById('modal-location-select');
+        if (locationSelect) {
+            locationSelect.addEventListener('change', function () {
+                if (this.value) {
+                    const opt = this.options[this.selectedIndex];
+                    document.getElementById('modal-input-area').value = opt.dataset.area || '';
+                    document.getElementById('modal-input-rack').value = opt.dataset.rack || '';
+                    document.getElementById('modal-input-shelf').value = opt.dataset.shelf || '';
+                }
+            });
+        }
+    });
+</script>
+@endpush

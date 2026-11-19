@@ -1825,4 +1825,325 @@ class OwnerOperationalReportService
 
         return Decimal::mul(Decimal::div($part, $total, 4, 4, 4), '100', 2, 2, 2);
     }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @param  array<string, mixed>  $base
+     * @return array<string, mixed>
+     */
+    public function buildPurchasingReport(array $filters, array $base, bool $canViewSensitive): array
+    {
+        $locationIds = array_map('intval', $filters['location_ids'] ?? []);
+
+        $poQuery = DB::table('purchase_orders')
+            ->whereBetween('order_date', [$filters['start'], $filters['end']])
+            ->whereNot('status', 'cancelled');
+
+        $grQuery = DB::table('goods_receipts')
+            ->where('status', 'posted')
+            ->whereBetween('received_at', [$filters['start'], $filters['end']]);
+
+        if (! empty($locationIds)) {
+            $poQuery->where(function ($q) use ($locationIds) {
+                $q->whereIn('destination_work_location_id', $locationIds)
+                    ->orWhereNull('destination_work_location_id');
+            });
+            $grQuery->where(function ($q) use ($locationIds) {
+                $q->whereIn('destination_work_location_id', $locationIds)
+                    ->orWhereNull('destination_work_location_id');
+            });
+        }
+
+        $totalPurchaseValue = (string) (clone $poQuery)->sum('grand_total');
+        $totalFreightCost = (string) (clone $grQuery)->sum('actual_freight_cost');
+        $postedGrCount = (clone $grQuery)->count();
+        $totalPoCount = (clone $poQuery)->count();
+        $completedPoCount = (clone $poQuery)->where('status', 'completed')->count();
+        $pendingPoCount = (clone $poQuery)->whereIn('status', ['approved', 'sent_to_supplier', 'partially_received'])->count();
+        $activeSuppliersCount = (clone $poQuery)->distinct('supplier_id')->count('supplier_id');
+        $avgSupplierScore = (string) (DB::table('supplier_scores')->avg('total_score') ?? 0);
+
+        // Top Suppliers & Matrix
+        $topSuppliersQuery = DB::table('purchase_orders')
+            ->leftJoin('suppliers', 'suppliers.id', '=', 'purchase_orders.supplier_id')
+            ->whereBetween('purchase_orders.order_date', [$filters['start'], $filters['end']])
+            ->whereNot('purchase_orders.status', 'cancelled');
+
+        if (! empty($locationIds)) {
+            $topSuppliersQuery->where(function ($q) use ($locationIds) {
+                $q->whereIn('purchase_orders.destination_work_location_id', $locationIds)
+                    ->orWhereNull('purchase_orders.destination_work_location_id');
+            });
+        }
+
+        $suppliersList = $topSuppliersQuery
+            ->selectRaw("
+                COALESCE(suppliers.id, 0) as supplier_id,
+                COALESCE(suppliers.name, 'Tanpa Supplier') as supplier,
+                suppliers.code as supplier_code,
+                suppliers.phone_number as phone,
+                suppliers.contact_name as contact_person,
+                COUNT(*) as po_count,
+                COALESCE(SUM(purchase_orders.grand_total), 0) as purchase_value,
+                MAX(purchase_orders.order_date) as last_order_date
+            ")
+            ->groupBy('suppliers.id', 'suppliers.name', 'suppliers.code', 'suppliers.phone_number', 'suppliers.contact_name')
+            ->orderByDesc('purchase_value')
+            ->get()
+            ->map(function ($s) use ($totalPurchaseValue) {
+                $val = (string) $s->purchase_value;
+                $pct = (float) $totalPurchaseValue > 0 ? round(((float) $val / (float) $totalPurchaseValue) * 100, 1) : 0;
+
+                return [
+                    'id' => $s->supplier_id,
+                    'name' => $s->supplier,
+                    'code' => $s->supplier_code ?? '-',
+                    'phone' => $s->phone ?? '-',
+                    'contact_person' => $s->contact_person ?? '-',
+                    'po_count' => (int) $s->po_count,
+                    'purchase_value' => $val,
+                    'share_percent' => $pct,
+                    'last_order_date' => $s->last_order_date,
+                ];
+            })
+            ->all();
+
+        // Recent Purchase Orders
+        $recentPoQuery = DB::table('purchase_orders')
+            ->leftJoin('suppliers', 'suppliers.id', '=', 'purchase_orders.supplier_id')
+            ->leftJoin('work_locations', 'work_locations.id', '=', 'purchase_orders.destination_work_location_id')
+            ->whereBetween('purchase_orders.order_date', [$filters['start'], $filters['end']])
+            ->whereNot('purchase_orders.status', 'cancelled');
+
+        if (! empty($locationIds)) {
+            $recentPoQuery->where(function ($q) use ($locationIds) {
+                $q->whereIn('purchase_orders.destination_work_location_id', $locationIds)
+                    ->orWhereNull('purchase_orders.destination_work_location_id');
+            });
+        }
+
+        $recentPos = $recentPoQuery
+            ->selectRaw('purchase_orders.id, purchase_orders.number, purchase_orders.order_date, purchase_orders.status, purchase_orders.grand_total, suppliers.name as supplier_name, work_locations.name as destination_name')
+            ->latest('purchase_orders.order_date')
+            ->limit(15)
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->all();
+
+        // Recent Goods Receipts
+        $recentGrQuery = DB::table('goods_receipts')
+            ->leftJoin('suppliers', 'suppliers.id', '=', 'goods_receipts.supplier_id')
+            ->leftJoin('work_locations', 'work_locations.id', '=', 'goods_receipts.destination_work_location_id')
+            ->whereBetween('goods_receipts.received_at', [$filters['start'], $filters['end']]);
+
+        if (! empty($locationIds)) {
+            $recentGrQuery->where(function ($q) use ($locationIds) {
+                $q->whereIn('goods_receipts.destination_work_location_id', $locationIds)
+                    ->orWhereNull('goods_receipts.destination_work_location_id');
+            });
+        }
+
+        $recentGrs = $recentGrQuery
+            ->selectRaw('goods_receipts.id, goods_receipts.number, goods_receipts.received_at, goods_receipts.status, goods_receipts.actual_freight_cost, goods_receipts.delivery_note_number, suppliers.name as supplier_name, work_locations.name as destination_name')
+            ->latest('goods_receipts.received_at')
+            ->limit(15)
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->all();
+
+        return array_merge($base, [
+            'summary' => [
+                'purchase_value' => $totalPurchaseValue,
+                'total_freight_cost' => $totalFreightCost,
+                'posted_receipts' => $postedGrCount,
+                'total_po_count' => $totalPoCount,
+                'completed_po_count' => $completedPoCount,
+                'pending_po_count' => $pendingPoCount,
+                'active_suppliers_count' => $activeSuppliersCount,
+                'avg_supplier_score' => round((float) $avgSupplierScore, 1),
+            ],
+            'suppliers_matrix' => $suppliersList,
+            'recent_purchase_orders' => $recentPos,
+            'recent_goods_receipts' => $recentGrs,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @param  array<string, mixed>  $base
+     * @return array<string, mixed>
+     */
+    public function buildInventoryReport(array $filters, array $base, bool $canViewSensitive): array
+    {
+        $locationIds = array_map('intval', $filters['location_ids'] ?? []);
+
+        // Location Breakdown
+        $locationBreakdown = DB::table('stocks')
+            ->join('work_locations', 'work_locations.id', '=', 'stocks.work_location_id')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->whereIn('stocks.work_location_id', $locationIds)
+            ->selectRaw('
+                work_locations.id as location_id,
+                work_locations.name as location_name,
+                work_locations.type as location_type,
+                COUNT(DISTINCT stocks.product_id) as sku_count,
+                COALESCE(SUM(stocks.quantity_on_hand), 0) as total_qty,
+                COALESCE(SUM(stocks.quantity_on_hand - stocks.quantity_reserved - stocks.quantity_damaged), 0) as available_qty,
+                COALESCE(SUM(stocks.quantity_damaged), 0) as damaged_qty,
+                COALESCE(SUM(stocks.quantity_on_hand * products.cost_price), 0) as stock_valuation
+            ')
+            ->groupBy('work_locations.id', 'work_locations.name', 'work_locations.type')
+            ->orderByDesc('stock_valuation')
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->all();
+
+        // Critical Stock Items (<= minimum_stock)
+        $criticalStock = DB::table('stocks')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->join('work_locations', 'work_locations.id', '=', 'stocks.work_location_id')
+            ->whereIn('stocks.work_location_id', $locationIds)
+            ->whereRaw('stocks.quantity_on_hand <= products.minimum_stock')
+            ->selectRaw('
+                products.sku,
+                products.name as product_name,
+                work_locations.name as location_name,
+                stocks.quantity_on_hand,
+                products.minimum_stock,
+                products.safety_stock,
+                products.cost_price,
+                (products.minimum_stock - stocks.quantity_on_hand) as shortage_qty
+            ')
+            ->orderBy('stocks.quantity_on_hand')
+            ->limit(20)
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->all();
+
+        // Top 10 by valuation
+        $topValuableItems = DB::table('stocks')
+            ->join('products', 'products.id', '=', 'stocks.product_id')
+            ->join('work_locations', 'work_locations.id', '=', 'stocks.work_location_id')
+            ->whereIn('stocks.work_location_id', $locationIds)
+            ->selectRaw('
+                products.sku,
+                products.name as product_name,
+                work_locations.name as location_name,
+                stocks.quantity_on_hand,
+                products.cost_price,
+                (stocks.quantity_on_hand * products.cost_price) as total_value
+            ')
+            ->orderByDesc('total_value')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->all();
+
+        return array_merge($base, [
+            'location_breakdown' => $locationBreakdown,
+            'critical_stock_items' => $criticalStock,
+            'top_valuable_items' => $topValuableItems,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @param  array<string, mixed>  $base
+     * @return array<string, mixed>
+     */
+    public function buildProfitabilityReport(array $filters, array $base, bool $canViewSensitive): array
+    {
+        $locationIds = array_map('intval', $filters['location_ids'] ?? []);
+
+        // Retail POS Sales Aggregation
+        $posQuery = DB::table('pos_sales')
+            ->whereIn('work_location_id', $locationIds)
+            ->whereBetween('completed_at', [$filters['start'], $filters['end']])
+            ->whereIn('status', ['completed', 'returned']);
+
+        $posRevenue = (string) (clone $posQuery)->sum('grand_total_amount');
+        $posMargin = (string) (clone $posQuery)->sum('total_margin_amount');
+        $posTxCount = (clone $posQuery)->count();
+
+        // B2B Orders Aggregation
+        $b2bQuery = DB::table('b2b_orders')
+            ->whereBetween('created_at', [$filters['start'], $filters['end']])
+            ->whereNotIn('status', ['cancelled', 'rejected']);
+
+        $b2bRevenue = (string) (clone $b2bQuery)->sum('grand_total_amount');
+        $totalRevenue = Decimal::add($posRevenue, $b2bRevenue, 2);
+        $totalMargin = $posMargin;
+
+        $avgMarginPercent = (float) $totalRevenue > 0
+            ? round(((float) $totalMargin / (float) $totalRevenue) * 100, 1)
+            : 0;
+
+        // Top Profitable Products in Retail
+        $topProfitableProducts = DB::table('pos_sale_items')
+            ->join('pos_sales', 'pos_sales.id', '=', 'pos_sale_items.pos_sale_id')
+            ->join('products', 'products.id', '=', 'pos_sale_items.product_id')
+            ->whereIn('pos_sales.work_location_id', $locationIds)
+            ->whereBetween('pos_sales.completed_at', [$filters['start'], $filters['end']])
+            ->whereIn('pos_sales.status', ['completed', 'returned'])
+            ->selectRaw('
+                products.sku,
+                products.name as product_name,
+                SUM(pos_sale_items.quantity) as total_sold_qty,
+                SUM(pos_sale_items.line_total) as total_revenue,
+                SUM(pos_sale_items.margin_amount) as total_margin,
+                AVG(CASE WHEN pos_sale_items.line_total > 0 THEN (pos_sale_items.margin_amount / pos_sale_items.line_total * 100) ELSE 0 END) as avg_margin_pct
+            ')
+            ->groupBy('products.sku', 'products.name')
+            ->orderByDesc('total_margin')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->all();
+
+        // Low Margin / Risk Products (< 15% margin)
+        $lowMarginProducts = DB::table('pos_sale_items')
+            ->join('pos_sales', 'pos_sales.id', '=', 'pos_sale_items.pos_sale_id')
+            ->join('products', 'products.id', '=', 'pos_sale_items.product_id')
+            ->whereIn('pos_sales.work_location_id', $locationIds)
+            ->whereBetween('pos_sales.completed_at', [$filters['start'], $filters['end']])
+            ->whereIn('pos_sales.status', ['completed', 'returned'])
+            ->selectRaw('
+                products.sku,
+                products.name as product_name,
+                SUM(pos_sale_items.quantity) as total_sold_qty,
+                SUM(pos_sale_items.line_total) as total_revenue,
+                SUM(pos_sale_items.margin_amount) as total_margin,
+                AVG(CASE WHEN pos_sale_items.line_total > 0 THEN (pos_sale_items.margin_amount / pos_sale_items.line_total * 100) ELSE 0 END) as avg_margin_pct
+            ')
+            ->groupBy('products.sku', 'products.name')
+            ->havingRaw('avg_margin_pct < 15')
+            ->orderBy('avg_margin_pct')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->all();
+
+        // Pending price approvals & Anomaly counts
+        $pendingApprovals = DB::table('price_approval_requests')->where('status', 'pending')->count();
+        $anomaliesCount = DB::table('anomaly_alerts')->where('rule_key', 'pricing_sensitive')->where('status', 'open')->count();
+        $priceChangesCount = DB::table('price_histories')
+            ->whereBetween('created_at', [$filters['start'], $filters['end']])
+            ->count();
+
+        return array_merge($base, [
+            'summary' => [
+                'total_revenue' => $totalRevenue,
+                'total_margin' => $totalMargin,
+                'pos_revenue' => $posRevenue,
+                'pos_margin' => $posMargin,
+                'b2b_revenue' => $b2bRevenue,
+                'average_margin' => $avgMarginPercent,
+                'pending_approvals' => $pendingApprovals,
+                'sensitive_anomalies' => $anomaliesCount,
+                'price_changes' => $priceChangesCount,
+            ],
+            'top_profitable_products' => $topProfitableProducts,
+            'low_margin_products' => $lowMarginProducts,
+        ]);
+    }
 }

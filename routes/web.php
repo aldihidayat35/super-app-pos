@@ -111,6 +111,7 @@ use App\Http\Controllers\ShipmentController;
 use App\Http\Controllers\ShipmentProofController;
 use App\Http\Controllers\StaffBonus\StaffBonusController;
 use App\Http\Controllers\System\HealthController;
+use App\Http\Controllers\System\ManifestController;
 use App\Http\Controllers\System\OperationsController;
 use App\Http\Controllers\Tax\AnnualFinanceController;
 use App\Http\Controllers\Warehouse\B2bOrderController as WarehouseB2bOrderController;
@@ -134,6 +135,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/offline', function () {
     return response()->view('pwa.offline');
 })->name('pwa.offline');
+
+Route::get('/manifest.webmanifest', [ManifestController::class, 'show'])->name('pwa.manifest');
+Route::get('/manifest.json', [ManifestController::class, 'show'])->name('pwa.manifest.json');
 
 Route::get('/', function () {
     return auth()->check()
@@ -1435,7 +1439,7 @@ Route::middleware(['auth', 'active.user', 'internal.access', 'work.location'])->
         Route::post('/pembelian-darurat/{purchase}/teruskan-gudang', [EmergencyPurchaseController::class, 'forwardWarehouse'])->middleware('permission:emergency_purchases.manage')->name('emergency.forward-warehouse');
         Route::post('/pembelian-darurat/{purchase}/selesai-gudang', [EmergencyPurchaseController::class, 'completeWarehouse'])->middleware('permission:emergency_purchases.manage')->name('emergency.complete-warehouse');
         Route::get('/etalase', [StorefrontController::class, 'index'])
-            ->middleware('permission:retail.catalog.view')
+            ->middleware('permission:retail.catalog.view|products.view')
             ->name('storefront.index');
         Route::post('/etalase/sinkronkan-stok', [StorefrontController::class, 'syncFromStock'])
             ->middleware('permission:retail.catalog.manage')

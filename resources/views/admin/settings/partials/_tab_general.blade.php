@@ -16,7 +16,18 @@
                 <x-metronic.form-group name="company_email" label="Email Perusahaan">
                     <input type="email" name="company_email" value="{{ old('company_email', $settings['company_email']) }}" class="form-control @error('company_email') is-invalid @enderror">
                 </x-metronic.form-group>
-                <x-metronic.form-group name="logo" label="Logo" help="Format gambar, maksimal 2 MB.">
+                <x-metronic.form-group name="logo" label="Logo Perusahaan" help="Format PNG/JPG/WEBP, maksimal 2 MB. Otomatis diterapkan untuk Kop Faktur, Struk, Header, Favicon, dan Ikon Unduh Aplikasi (PWA).">
+                    @if(!empty($settings['logo_path']))
+                        <div class="d-flex align-items-center gap-4 mb-3 p-3 bg-light rounded border border-gray-200">
+                            <img src="{{ asset('storage/' . $settings['logo_path']) }}" alt="Logo {{ $settings['company_name'] }}" class="h-60px max-w-160px object-fit-contain rounded bg-white p-1 shadow-xs border">
+                            <div>
+                                <span class="badge badge-light-success fw-bold mb-1">
+                                    <i class="ki-outline ki-check-circle text-success fs-7 me-1"></i> Logo Aktif
+                                </span>
+                                <div class="text-muted fs-8">Pilih file baru di bawah ini hanya jika ingin mengganti logo perusahaan.</div>
+                            </div>
+                        </div>
+                    @endif
                     <input type="file" name="logo" class="form-control @error('logo') is-invalid @enderror" accept="image/*">
                 </x-metronic.form-group>
             </x-metronic.card>
