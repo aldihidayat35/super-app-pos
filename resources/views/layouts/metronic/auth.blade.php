@@ -18,41 +18,132 @@
 
     @php
         $companyName = \App\Models\SystemSetting::getCompanyName();
+        $isSingleColumn = View::hasSection('single_column')
+            || isset($exception)
+            || request()->routeIs('password.*')
+            || request()->routeIs('verification.*')
+            || request()->routeIs('langganan.password.*');
     @endphp
-    <main class="auth-panel">
-        <div class="auth-decoration auth-decoration--circle-left" aria-hidden="true"></div>
-        <div class="auth-decoration auth-decoration--circle-right" aria-hidden="true"></div>
-        <div class="auth-decoration auth-decoration--dots auth-decoration--dots-top" aria-hidden="true"></div>
-        <div class="auth-decoration auth-decoration--dots auth-decoration--dots-bottom" aria-hidden="true"></div>
 
-        <svg class="auth-warehouse-illustration" viewBox="0 0 420 320" aria-hidden="true">
-            <g fill="none" stroke="currentColor" stroke-width="7">
-                <path d="M18 296V102l112-76 112 76v194M48 296V126h164v170M75 153h46v42H75zm70 0h42v42h-42M75 219h112v77" />
-                <path d="M254 296h106v-91H254zm14-91v-39h77v39M291 166v-37h42v37" />
-            </g>
-            <g fill="currentColor">
-                <rect x="20" y="286" width="350" height="12" rx="6" />
-                <rect x="87" y="235" width="42" height="51" rx="3" />
-                <rect x="135" y="235" width="42" height="51" rx="3" />
-                <circle cx="288" cy="305" r="8" /><circle cx="340" cy="305" r="8" />
-            </g>
-        </svg>
-
-        <svg class="auth-boxes-illustration" viewBox="0 0 330 300" aria-hidden="true">
-            <g fill="none" stroke="currentColor" stroke-width="6">
-                <path d="M35 271h264M58 169h112v98H58zm112 0h103v98H170zM105 72h112v97H105z" />
-                <path d="M93 169v35h42v-35m111 0v35h-42v-35M140 72v34h42V72" />
-            </g>
-        </svg>
-
-        <section class="auth-content">
-            <div class="auth-content__inner">@yield('content')</div>
-            <footer class="auth-footer">
-                <span class="auth-footer__icon" aria-hidden="true"><i class="ki-outline ki-cube-2 fs-2"></i></span>
-                <span>&copy; {{ now()->year }} {{ $companyName }}</span>
+    @if ($isSingleColumn)
+        <main class="d-flex flex-column flex-root min-vh-100 justify-content-center align-items-center p-6 auth-single-wrapper">
+            <div class="w-100 max-w-500px mx-auto">
+                @yield('content')
+            </div>
+            <footer class="mt-8 text-center text-muted fs-8">
+                &copy; {{ now()->year }} {{ $companyName }}. Seluruh hak cipta dilindungi.
             </footer>
-        </section>
-    </main>
+        </main>
+    @else
+        <main class="d-flex flex-column flex-lg-row flex-column-fluid min-vh-100 auth-split-wrapper">
+            {{-- Form Side --}}
+            <div class="d-flex flex-column flex-lg-row-fluid w-lg-50 p-6 p-md-10 p-xl-16 justify-content-between auth-form-side">
+                {{-- Header Brand Info --}}
+                <div class="d-flex align-items-center justify-content-between mb-8 mb-lg-12">
+                    <a href="{{ route('home') }}" class="d-flex align-items-center gap-2 text-decoration-none">
+                        <span class="d-inline-flex align-items-center justify-content-center bg-light-primary text-primary rounded-2 w-32px h-32px">
+                            <i class="ki-outline ki-shop fs-4"></i>
+                        </span>
+                        <span class="text-gray-900 fw-bold fs-6 tracking-tight">{{ $companyName }}</span>
+                    </a>
+                    <span class="badge badge-light-primary fw-semibold fs-8 px-3 py-1.5 rounded-pill d-inline-flex align-items-center gap-1">
+                        <span class="badge badge-primary badge-circle w-6px h-6px"></span> Portal Sistem
+                    </span>
+                </div>
+
+                {{-- Content Form Area --}}
+                <div class="d-flex flex-center flex-column flex-column-fluid my-auto">
+                    <div class="w-100 max-w-450px mx-auto">
+                        @yield('content')
+                    </div>
+                </div>
+
+                {{-- Form Footer --}}
+                <div class="d-flex flex-stack pt-8 text-muted fs-8 fw-medium">
+                    <div>&copy; {{ now()->year }} {{ $companyName }}.</div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span>v2.0 Enterprise</span>
+                        <span>•</span>
+                        <span>Multi-Gudang & POS</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Enterprise Showcase Side (Desktop Only) --}}
+            <div class="d-none d-lg-flex flex-lg-row-fluid w-lg-50 p-12 p-xl-16 flex-column justify-content-between text-white auth-showcase-side position-relative overflow-hidden">
+                @sectionMissing('showcase')
+                    {{-- Showcase Header Pill --}}
+                    <div class="position-relative z-index-2">
+                        <div class="d-inline-flex align-items-center gap-2.5 px-3.5 py-1.5 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-15 text-white fs-7 fw-semibold">
+                            <span class="badge badge-success badge-circle w-8px h-8px"></span>
+                            <span>Enterprise Warehouse & POS Architecture</span>
+                        </div>
+                    </div>
+
+                    {{-- Showcase Main Body --}}
+                    <div class="position-relative z-index-2 my-auto py-8">
+                        <h2 class="display-6 fw-bolder text-white mb-5 lh-base tracking-tight" style="max-width: 540px;">
+                            Satu Platform Terpadu untuk Pergudangan, Kasir Retail & Grosir B2B.
+                        </h2>
+                        <p class="text-white-50 fs-5 mb-8 lh-lg" style="max-width: 500px;">
+                            Sinkronisasi inventori multi-gudang dan cabang secara instan, pengelolaan rak bin terstruktur, serta transaksi kasir cepat dengan proteksi margin modal anti-rugi.
+                        </p>
+
+                        {{-- Feature Highlight Cards --}}
+                        <div class="d-flex flex-column gap-3" style="max-width: 520px;">
+                            {{-- Feature 1 --}}
+                            <div class="auth-feature-card p-4 d-flex align-items-start gap-4">
+                                <div class="w-45px h-45px rounded-3 bg-primary bg-opacity-20 border border-primary border-opacity-25 d-flex align-items-center justify-content-center flex-shrink-0 text-primary">
+                                    <i class="ki-outline ki-cube-2 fs-2 text-info"></i>
+                                </div>
+                                <div>
+                                    <h3 class="fs-6 fw-bold text-white mb-1">Manajemen Stok Multi-Lokasi & Rak Bin</h3>
+                                    <p class="fs-7 text-white-50 mb-0">Kontrol stok gudang pusat hingga display toko dengan barcode scanner, pelacakan batch, dan audit opname presisi.</p>
+                                </div>
+                            </div>
+
+                            {{-- Feature 2 --}}
+                            <div class="auth-feature-card p-4 d-flex align-items-start gap-4">
+                                <div class="w-45px h-45px rounded-3 bg-success bg-opacity-20 border border-success border-opacity-25 d-flex align-items-center justify-content-center flex-shrink-0 text-success">
+                                    <i class="ki-outline ki-shop fs-2 text-success"></i>
+                                </div>
+                                <div>
+                                    <h3 class="fs-6 fw-bold text-white mb-1">POS Kasir Cepat & Proteksi Anti-Rugi</h3>
+                                    <p class="fs-7 text-white-50 mb-0">Validasi otomatis mencegah penjualan di bawah HPP modal, multi-metode pembayaran, dan cetak struk instan.</p>
+                                </div>
+                            </div>
+
+                            {{-- Feature 3 --}}
+                            <div class="auth-feature-card p-4 d-flex align-items-start gap-4">
+                                <div class="w-45px h-45px rounded-3 bg-warning bg-opacity-20 border border-warning border-opacity-25 d-flex align-items-center justify-content-center flex-shrink-0 text-warning">
+                                    <i class="ki-outline ki-chart-line-star fs-2 text-warning"></i>
+                                </div>
+                                <div>
+                                    <h3 class="fs-6 fw-bold text-white mb-1">Laporan Eksekutif & Margin Real-Time</h3>
+                                    <p class="fs-7 text-white-50 mb-0">Visibilitas penuh profitabilitas, perputaran barang cepat/lambat, serta monitoring piutang tempo terperinci.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Showcase Metric Footer --}}
+                    <div class="position-relative z-index-2 pt-6 border-top border-white border-opacity-10 d-flex align-items-center justify-content-between" style="max-width: 520px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="ki-outline ki-shield-tick fs-3 text-success"></i>
+                            <span class="fs-7 text-white-50">100% Audit Trail & Mutasi Stok</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="ki-outline ki-time fs-3 text-info"></i>
+                            <span class="fs-7 text-white-50">Respon Kasir &lt; 2 Detik</span>
+                        </div>
+                    </div>
+                @else
+                    @yield('showcase')
+                @endif
+            </div>
+        </main>
+    @endif
+
     @include('layouts.metronic.partials.loading-overlay')
     @include('layouts.metronic.partials.flash-toast')
     @include('layouts.metronic.partials.pwa-scripts')
